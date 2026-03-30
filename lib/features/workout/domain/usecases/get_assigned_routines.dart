@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/routine.dart';
 import '../repositories/workout_repository.dart';
 
@@ -6,7 +8,7 @@ class GetAssignedRoutines {
 
   GetAssignedRoutines(this.repository);
 
-  Future<List<Routine>> call(String userId) {
+  Future<Either<Failure, List<Routine>>> call(String userId) {
     return repository.getAssignedRoutines(userId);
   }
 }

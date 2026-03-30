@@ -25,74 +25,56 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     required this.getRoutineExercises,
   }) : super(WorkoutInitial()) {
     on<FetchAssignedRoutines>((event, emit) async {
-      print(
-        'WorkoutBloc: FetchAssignedRoutines triggered for userId: ${event.userId}',
-      );
       emit(WorkoutLoading());
-      try {
-        final routines = await getAssignedRoutines(event.userId);
-        print(
-          'WorkoutBloc: FetchAssignedRoutines succeeded with ${routines.length} routines',
-        );
-        emit(RoutinesLoaded(routines));
-      } catch (e, st) {
-        print('WorkoutBloc: FetchAssignedRoutines Failed: $e\n$st');
-        emit(WorkoutError(e.toString()));
-      }
+      final result = await getAssignedRoutines(event.userId);
+      result.fold(
+        (failure) => emit(WorkoutError(failure.message)),
+        (routines) => emit(RoutinesLoaded(routines)),
+      );
     });
 
     on<FetchLastExercisePerformance>((event, emit) async {
       emit(WorkoutLoading());
-      try {
-        final lastSet = await getLastExercisePerformance(event.exerciseId);
-        emit(ExercisePerformanceLoaded(lastSet));
-      } catch (e) {
-        emit(WorkoutError(e.toString()));
-      }
+      final result = await getLastExercisePerformance(event.exerciseId);
+      result.fold(
+        (failure) => emit(WorkoutError(failure.message)),
+        (lastSet) => emit(ExercisePerformanceLoaded(lastSet)),
+      );
     });
 
     on<AddSetLogEvent>((event, emit) async {
       emit(SavingSetLog());
-      try {
-        await saveSetLog(event.setLog);
-        emit(SetLogSuccess());
-      } catch (e) {
-        emit(WorkoutError(e.toString()));
-      }
+      final result = await saveSetLog(event.setLog);
+      result.fold(
+        (failure) => emit(WorkoutError(failure.message)),
+        (_) => emit(SetLogSuccess()),
+      );
     });
 
     on<FinishSessionEvent>((event, emit) async {
       emit(WorkoutLoading());
-      try {
-        await finishWorkoutSession(event.sessionId, event.totalVolume);
-        emit(WorkoutFinishedSuccess());
-      } catch (e) {
-        emit(WorkoutError(e.toString()));
-      }
+      final result = await finishWorkoutSession(event.sessionId, event.totalVolume);
+      result.fold(
+        (failure) => emit(WorkoutError(failure.message)),
+        (_) => emit(WorkoutFinishedSuccess()),
+      );
     });
 
     on<StartWorkoutEvent>((event, emit) async {
-      print(
-        'WorkoutBloc: StartWorkoutEvent triggered. routineId: ${event.routineId}',
-      );
       emit(WorkoutLoading());
-      try {
-        // Start the session and fetch the exercises in parallel
-        final results = await Future.wait([
-          startWorkoutSession(event.userId, event.routineId),
-          getRoutineExercises(event.routineId),
-        ]);
-
-        print('WorkoutBloc: StartWorkoutEvent succeeded.');
-
-        // emit state
-        emit(
-          WorkoutSessionStarted(results[0] as dynamic, results[1] as dynamic),
-        );
-      } catch (e, stack) {
-        print('WorkoutBloc: StartWorkoutEvent Failed: $e\n$stack');
-        emit(WorkoutError(e.toString()));
-      }
+      
+      final sessionResult = await startWorkoutSession(event.userId, event.routineId);
+      
+      await sessionResult.fold(
+        (failure) async => emit(WorkoutError(failure.message)),
+        (session) async {
+          final exercisesResult = await getRoutineExercises(event.routineId);
+          exercisesResult.fold(
+            (failure) => emit(WorkoutError(failure.message)),
+            (exercises) => emit(WorkoutSessionStarted(session, exercises)),
+          );
+        },
+      );
     });
   }
 }

@@ -1,7 +1,12 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+
+import 'core/database/database_helper.dart';
+import 'core/network/network_info.dart';
 
 import 'features/workout/data/datasources/workout_remote_data_source.dart';
+import 'features/workout/data/datasources/workout_local_data_source.dart';
 import 'features/workout/data/repositories/workout_repository_impl.dart';
 import 'features/workout/domain/repositories/workout_repository.dart';
 import 'features/workout/domain/usecases/finish_workout_session.dart';
@@ -43,7 +48,10 @@ Future<void> init() async {
 
   // Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(remoteDataSource: sl()),
+    () => AuthRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
   );
 
   // Data sources
@@ -74,14 +82,26 @@ Future<void> init() async {
 
   // Repository
   sl.registerLazySingleton<WorkoutRepository>(
-    () => WorkoutRepositoryImpl(remoteDataSource: sl()),
+    () => WorkoutRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      networkInfo: sl(),
+    ),
   );
 
   // Data sources
   sl.registerLazySingleton<WorkoutRemoteDataSource>(
     () => WorkoutRemoteDataSourceImpl(client: sl()),
   );
+  sl.registerLazySingleton<WorkoutLocalDataSource>(
+    () => WorkoutLocalDataSourceImpl(dbHelper: sl()),
+  );
+
+  // Core
+  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
+  sl.registerLazySingleton(() => DatabaseHelper.instance);
 
   // External
   sl.registerLazySingleton(() => Supabase.instance.client);
+  sl.registerLazySingleton(() => InternetConnection());
 }

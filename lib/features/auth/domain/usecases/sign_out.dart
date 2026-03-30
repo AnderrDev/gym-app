@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../repositories/auth_repository.dart';
 
 class SignOut {
@@ -5,7 +7,7 @@ class SignOut {
 
   SignOut(this.repository);
 
-  Future<void> call() async {
+  Future<Either<Failure, void>> call() async {
     return await repository.signOut();
   }
 }

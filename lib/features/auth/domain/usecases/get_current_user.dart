@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
 
@@ -6,7 +8,7 @@ class GetCurrentUser {
 
   GetCurrentUser(this.repository);
 
-  Future<User?> call() async {
+  Future<Either<Failure, User?>> call() async {
     return await repository.getCurrentUser();
   }
 }

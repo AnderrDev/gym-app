@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart' hide State;
+import '../../../../core/error/failures.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -25,7 +27,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
   // Store the number of sets added in this session locally
   int currentSetIndex = 1;
 
-  late Future<SetLog?> _lastPerformanceFuture;
+  late Future<Either<Failure, SetLog?>> _lastPerformanceFuture;
 
   @override
   void initState() {
@@ -67,7 +69,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
             const SizedBox(height: 16),
 
             // Previous Performance View
-            FutureBuilder<SetLog?>(
+            FutureBuilder<Either<Failure, SetLog?>>(
               future: _lastPerformanceFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -84,32 +86,37 @@ class _ExerciseCardState extends State<ExerciseCard> {
                   );
                 }
 
-                if (snapshot.hasData && snapshot.data != null) {
-                  final lastSetLog = snapshot.data!;
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.surfaceHighlight),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.history,
-                          color: AppColors.textDisabled,
-                          size: 16,
+                if (snapshot.hasData) {
+                  return snapshot.data!.fold(
+                    (failure) => const SizedBox(),
+                    (lastSetLog) {
+                      if (lastSetLog == null) return const SizedBox();
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.surfaceHighlight),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Last Session: ${lastSetLog.actualWeight} lbs x ${lastSetLog.actualReps} reps',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textDisabled,
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.history,
+                              color: AppColors.textDisabled,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Last Session: ${lastSetLog.actualWeight} lbs x ${lastSetLog.actualReps} reps',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textDisabled,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 }
                 return const SizedBox();

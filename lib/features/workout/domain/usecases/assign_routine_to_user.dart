@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../repositories/workout_repository.dart';
 
 class AssignRoutineToUser {
@@ -5,7 +7,7 @@ class AssignRoutineToUser {
 
   AssignRoutineToUser(this.repository);
 
-  Future<void> call(String userId, String routineId) async {
+  Future<Either<Failure, void>> call(String userId, String routineId) async {
     return await repository.assignRoutineToUser(userId, routineId);
   }
 }

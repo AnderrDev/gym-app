@@ -1,10 +1,18 @@
 # gym_flutter
 
-A new Flutter project.
+A new Flutter project for tracking gym workouts.
+
+## Revisa la documentación
+
+Para más detalles sobre el proyecto y su arquitectura, consulta la carpeta `docs`:
+
+- [Documentación del Proyecto](docs/DOCUMENTACION.md)
+- [Configuración de Supabase](docs/supabase.md)
 
 ## Getting Started
 
 This project is a starting point for a Flutter application.
+...
 
 A few resources to get you started if this is your first Flutter project:
 

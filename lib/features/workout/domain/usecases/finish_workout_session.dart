@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../repositories/workout_repository.dart';
 
 class FinishWorkoutSession {
@@ -5,7 +7,7 @@ class FinishWorkoutSession {
 
   FinishWorkoutSession(this.repository);
 
-  Future<void> call(String sessionId, double totalVolume) {
+  Future<Either<Failure, void>> call(String sessionId, double totalVolume) {
     return repository.finishWorkoutSession(sessionId, totalVolume);
   }
 }

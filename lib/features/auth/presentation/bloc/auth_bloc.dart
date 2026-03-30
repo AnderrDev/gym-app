@@ -26,7 +26,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignOutRequested>(_onSignOutRequested);
 
     // Escuchar automáticamente los cambios de estado de sesión (Supabase)
-    // Esto hace que la sesión sea verdaderamente persistente
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.signedIn ||
@@ -39,16 +38,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    try {
-      final user = await getCurrentUser();
-      if (user != null) {
-        emit(Authenticated(user));
-      } else {
-        emit(Unauthenticated());
-      }
-    } catch (_) {
-      emit(Unauthenticated());
-    }
+    final result = await getCurrentUser();
+    result.fold(
+      (failure) => emit(Unauthenticated()),
+      (user) {
+        if (user != null) {
+          emit(Authenticated(user));
+        } else {
+          emit(Unauthenticated());
+        }
+      },
+    );
   }
 
   Future<void> _onAuthStateChanged(
@@ -56,12 +56,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     if (event.isAuthenticated) {
-      final user = await getCurrentUser();
-      if (user != null) {
-        emit(Authenticated(user));
-      } else {
-        emit(Unauthenticated());
-      }
+      final result = await getCurrentUser();
+      result.fold(
+        (failure) => emit(Unauthenticated()),
+        (user) {
+          if (user != null) {
+            emit(Authenticated(user));
+          } else {
+            emit(Unauthenticated());
+          }
+        },
+      );
     } else {
       emit(Unauthenticated());
     }
@@ -72,13 +77,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    try {
-      final user = await signInWithEmail(event.email, event.password);
-      emit(Authenticated(user));
-    } catch (e) {
-      emit(AuthError(e.toString()));
-      emit(Unauthenticated());
-    }
+    final result = await signInWithEmail(event.email, event.password);
+    result.fold(
+      (failure) {
+        emit(AuthError(failure.message));
+        emit(Unauthenticated());
+      },
+      (user) => emit(Authenticated(user)),
+    );
   }
 
   Future<void> _onSignUpRequested(
@@ -86,17 +92,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    try {
-      final user = await signUpWithEmail(
-        event.email,
-        event.password,
-        event.fullName,
-      );
-      emit(Authenticated(user));
-    } catch (e) {
-      emit(AuthError(e.toString()));
-      emit(Unauthenticated());
-    }
+    final result = await signUpWithEmail(
+      event.email,
+      event.password,
+      event.fullName,
+    );
+    result.fold(
+      (failure) {
+        emit(AuthError(failure.message));
+        emit(Unauthenticated());
+      },
+      (user) => emit(Authenticated(user)),
+    );
   }
 
   Future<void> _onSignOutRequested(
@@ -104,11 +111,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    try {
-      await signOut();
-      emit(Unauthenticated());
-    } catch (e) {
-      emit(AuthError(e.toString()));
-    }
+    final result = await signOut();
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(Unauthenticated()),
+    );
   }
 }

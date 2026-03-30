@@ -1,15 +1,15 @@
 import 'package:equatable/equatable.dart';
 
-abstract class AuthEvent extends Equatable {
+sealed class AuthEvent extends Equatable {
   const AuthEvent();
 
   @override
   List<Object> get props => [];
 }
 
-class AppStarted extends AuthEvent {}
+final class AppStarted extends AuthEvent {}
 
-class AuthStateChanged extends AuthEvent {
+final class AuthStateChanged extends AuthEvent {
   final bool isAuthenticated;
   
   const AuthStateChanged({required this.isAuthenticated});
@@ -18,7 +18,7 @@ class AuthStateChanged extends AuthEvent {
   List<Object> get props => [isAuthenticated];
 }
 
-class SignInRequested extends AuthEvent {
+final class SignInRequested extends AuthEvent {
   final String email;
   final String password;
 
@@ -28,7 +28,7 @@ class SignInRequested extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
-class SignUpRequested extends AuthEvent {
+final class SignUpRequested extends AuthEvent {
   final String email;
   final String password;
   final String fullName;
@@ -39,4 +39,4 @@ class SignUpRequested extends AuthEvent {
   List<Object> get props => [email, password, fullName];
 }
 
-class SignOutRequested extends AuthEvent {}
+final class SignOutRequested extends AuthEvent {}

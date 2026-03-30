@@ -1,3 +1,5 @@
+import 'package:fpdart/fpdart.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/set_log.dart';
 import '../repositories/workout_repository.dart';
 
@@ -6,7 +8,7 @@ class GetLastExercisePerformance {
 
   GetLastExercisePerformance(this.repository);
 
-  Future<SetLog?> call(String exerciseId) {
+  Future<Either<Failure, SetLog?>> call(String exerciseId) {
     return repository.getLastExercisePerformance(exerciseId);
   }
 }

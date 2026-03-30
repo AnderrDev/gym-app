@@ -1,14 +1,14 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/set_log.dart';
 
-abstract class WorkoutEvent extends Equatable {
+sealed class WorkoutEvent extends Equatable {
   const WorkoutEvent();
 
   @override
   List<Object?> get props => [];
 }
 
-class FetchAssignedRoutines extends WorkoutEvent {
+final class FetchAssignedRoutines extends WorkoutEvent {
   final String userId;
 
   const FetchAssignedRoutines(this.userId);
@@ -17,7 +17,7 @@ class FetchAssignedRoutines extends WorkoutEvent {
   List<Object?> get props => [userId];
 }
 
-class FetchLastExercisePerformance extends WorkoutEvent {
+final class FetchLastExercisePerformance extends WorkoutEvent {
   final String exerciseId;
 
   const FetchLastExercisePerformance(this.exerciseId);
@@ -26,7 +26,7 @@ class FetchLastExercisePerformance extends WorkoutEvent {
   List<Object?> get props => [exerciseId];
 }
 
-class AddSetLogEvent extends WorkoutEvent {
+final class AddSetLogEvent extends WorkoutEvent {
   final SetLog setLog;
 
   const AddSetLogEvent(this.setLog);
@@ -35,7 +35,7 @@ class AddSetLogEvent extends WorkoutEvent {
   List<Object?> get props => [setLog];
 }
 
-class FinishSessionEvent extends WorkoutEvent {
+final class FinishSessionEvent extends WorkoutEvent {
   final String sessionId;
   final double totalVolume;
 
@@ -45,7 +45,7 @@ class FinishSessionEvent extends WorkoutEvent {
   List<Object?> get props => [sessionId, totalVolume];
 }
 
-class StartWorkoutEvent extends WorkoutEvent {
+final class StartWorkoutEvent extends WorkoutEvent {
   final String userId;
   final String routineId;
 
