@@ -1,29 +1,30 @@
 import 'package:equatable/equatable.dart';
+import 'coaching_analysis.dart';
 
 class WorkoutSession extends Equatable {
   final String id;
   final String userId;
-  final String routineId;
-  final DateTime startedAt;
+  final String routineDayId;
+  final DateTime sessionDate;
   final DateTime? completedAt;
-  final double totalVolume;
+  final int completedSetsCount;
+  final int totalTargetSets;
+  final List<CoachingAnalysis>? coachingAnalysis;
 
   const WorkoutSession({
     required this.id,
     required this.userId,
-    required this.routineId,
-    required this.startedAt,
+    required this.routineDayId,
+    required this.sessionDate,
     this.completedAt,
-    this.totalVolume = 0.0,
+    this.completedSetsCount = 0,
+    this.totalTargetSets = 0,
+    this.coachingAnalysis,
   });
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    routineId,
-    startedAt,
-    completedAt,
-    totalVolume,
+    id, userId, routineDayId, sessionDate, completedAt, completedSetsCount, 
+    totalTargetSets, coachingAnalysis,
   ];
 }

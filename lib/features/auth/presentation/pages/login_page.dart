@@ -107,29 +107,29 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 32),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state is AuthLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.accent,
+                    return switch (state) {
+                      AuthLoading() => const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.accent,
+                          ),
                         ),
-                      );
-                    }
-                    return ElevatedButton(
-                      onPressed: _onLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      _ => ElevatedButton(
+                          onPressed: _onLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'INICIAR SESIÓN',
+                            style: AppTextStyles.heading2.copyWith(
+                              color: AppColors.background,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'INICIAR SESIÓN',
-                        style: AppTextStyles.heading2.copyWith(
-                          color: AppColors.background,
-                        ),
-                      ),
-                    );
+                    };
                   },
                 ),
                 const SizedBox(height: 16),

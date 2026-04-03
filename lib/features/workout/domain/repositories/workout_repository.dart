@@ -1,28 +1,73 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/routine.dart';
+import '../entities/routine_day.dart';
 import '../entities/set_log.dart';
 import '../entities/exercise.dart';
 import '../entities/workout_session.dart';
+import '../entities/coaching_analysis.dart';
+import '../entities/exercise_history_session.dart';
 
 abstract class WorkoutRepository {
   /// Fetches the routines assigned to a specific user
   Future<Either<Failure, List<Routine>>> getAssignedRoutines(String userId);
 
-  /// Fetches the latest set log for a given exercise to show previous performance
-  Future<Either<Failure, SetLog?>> getLastExercisePerformance(String exerciseId);
+  /// Gets all days (with exercises) for a routine
+  Future<Either<Failure, List<RoutineDay>>> getRoutineDays(String routineId);
 
-  /// Saves a single set log to the database
+  /// Gets exercises configured for a specific routine day
+  Future<Either<Failure, List<Exercise>>> getExercisesForDay(String routineDayId);
+
+  /// Busca una sesión existente para un usuario/día/fecha (no crea una nueva)
+  Future<Either<Failure, WorkoutSession?>> getExistingSession(
+      String userId, String routineDayId, DateTime sessionDate);
+
+  /// Gets all workout sessions for a given week (offline-first)
+  Future<Either<Failure, List<WorkoutSession>>> getWeekSessions(
+      String userId, DateTime weekStart, DateTime weekEnd);
+
+  /// Starts (or resumes) a workout session for a specific day and date
+  Future<Either<Failure, WorkoutSession>> startWorkoutForDay(
+      String userId, String routineDayId, DateTime sessionDate);
+
+  /// Saves a single set log
   Future<Either<Failure, void>> saveSetLog(SetLog setLog);
 
-  /// Finishes a workout session, updating its completion time and total volume
-  Future<Either<Failure, void>> finishWorkoutSession(String sessionId, double totalVolume);
+  /// Gets previous performance for an exercise
+  Future<Either<Failure, SetLog?>> getLastExercisePerformance(String exerciseId);
 
+  /// Gets all set logs for a session (history view)
+  Future<Either<Failure, List<SetLog>>> getSessionSetLogs(String sessionId);
+
+  /// Saves (creates or updates) a routine
+  Future<Either<Failure, void>> saveRoutine(Routine routine);
+
+  /// Deletes a routine and all its dependencies
+  Future<Either<Failure, void>> deleteRoutine(String routineId);
+
+  /// Saves (creates or updates) a routine day
+  Future<Either<Failure, void>> saveRoutineDay(RoutineDay day);
+
+  /// Deletes a routine day and its exercise mappings
+  Future<Either<Failure, void>> deleteRoutineDay(String dayId);
+
+  /// Toggles an exercise in a specific day
+  Future<Either<Failure, void>> toggleExerciseInDay(String dayId, String exerciseId);
+
+  /// Reorders exercises in a specific day
+  Future<Either<Failure, void>> reorderExercisesInDay(String dayId, List<String> exerciseIds);
+
+  /// Assigns a routine to a user
   Future<Either<Failure, void>> assignRoutineToUser(String userId, String routineId);
 
-  /// Starts a new workout session for tracking
-  Future<Either<Failure, WorkoutSession>> startWorkoutSession(String userId, String routineId);
+  /// Gets recent completed sessions for a specific routine day
+  Future<Either<Failure, List<WorkoutSession>>> getRecentSessionsForDay(String userId, String routineDayId, DateTime beforeDate, {int limit = 3});
+  Future<Either<Failure, void>> finishWorkoutSession(String sessionId, {List<CoachingAnalysis>? coachingAnalysis});
+  
+  /// Gets the historical logs for an exercise
+  Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(String userId, String exerciseId);
 
-  /// Gets all configure exercises for a specific routine
-  Future<Either<Failure, List<Exercise>>> getRoutineExercises(String routineId);
+  // Gestión de Rutinas
+  /// Syncs pending offline data to Supabase
+  Future<Either<Failure, void>> syncPendingData();
 }

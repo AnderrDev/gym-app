@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "flutter-building-layouts": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "computedHash": "2fc5b3828e53902e4e61d79d2bbd5557409e27e9713ea0aa4efb307a6c9cda43"
+    },
+    "flutter-implementing-navigation-and-routing": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "computedHash": "1ac3fdf915c37ddf8acd943c316e3119dc1436f159b3d8d7f5a4c70eaa1583bd"
+    },
+    "flutter-working-with-databases": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "computedHash": "37ca76b0ec9e681b9b1d58f788f3ff1338a924ed1247983f6adf6c302d44887b"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9c87c315aed143ee3b34bec8117100f5035e0df09e6b23e1ecc772cff434c9ad"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
+    }
+  }
+}

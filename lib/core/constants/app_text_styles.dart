@@ -34,4 +34,10 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
   );
+
+  static TextStyle get bodySmall => GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textSecondary,
+  );
 }

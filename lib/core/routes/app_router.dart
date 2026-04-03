@@ -5,9 +5,13 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/workout/domain/entities/routine.dart';
-import '../../features/workout/presentation/pages/active_workout_page.dart';
+import '../../features/workout/domain/entities/routine_day.dart';
+import '../../features/workout/presentation/pages/routine_day_page.dart';
 import '../../features/workout/presentation/pages/dashboard_page.dart';
+import '../../features/workout/presentation/pages/database_inspector_page.dart';
+import '../../features/workout/presentation/pages/routine_list_page.dart';
+import '../../features/workout/presentation/pages/routine_editor_page.dart';
+import '../../features/workout/presentation/pages/day_editor_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -18,9 +22,6 @@ class AppRouter {
     initialLocation: '/login',
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
     redirect: (context, state) {
-      print(
-        'Router redirect triggered. Location: ${state.matchedLocation}, AuthState: ${authBloc.state}',
-      );
       final bool isAuthenticated = authBloc.state is Authenticated;
       final bool isAuthRoute =
           state.matchedLocation == '/login' ||
@@ -35,12 +36,10 @@ class AppRouter {
       }
 
       if (!isAuthenticated && !isAuthRoute) {
-        print('Redirecting to /login');
         return '/login';
       }
 
       if (isAuthenticated && isAuthRoute) {
-        print('Redirecting to /dashboard');
         return '/dashboard';
       }
 
@@ -57,18 +56,43 @@ class AppRouter {
         builder: (context, state) => const DashboardPage(),
       ),
       GoRoute(
-        path: '/active-workout',
+        path: '/db-inspector',
+        builder: (context, state) => const DatabaseInspectorPage(),
+      ),
+      GoRoute(
+        path: '/routine-list',
+        builder: (context, state) => const RoutineListPage(),
+      ),
+      GoRoute(
+        path: '/routine-editor',
         builder: (context, state) {
-          print(
-            'GoRouter: Building /active-workout with extra: ${state.extra}',
-          );
+          final routineId = state.extra as String?;
+          return RoutineEditorPage(routineId: routineId);
+        },
+      ),
+      GoRoute(
+        path: '/day-editor',
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          final day = extras['day'] as RoutineDay;
+          final routineId = extras['routineId'] as String;
+          return DayEditorPage(day: day, routineId: routineId);
+        },
+      ),
+      GoRoute(
+        path: '/routine-day',
+        builder: (context, state) {
           try {
             final extras = state.extra as Map;
-            final routine = extras['routine'] as Routine;
+            final routineDay = extras['routineDay'] as RoutineDay;
             final userId = extras['userId'] as String;
-            return ActiveWorkoutPage(routine: routine, userId: userId);
-          } catch (e, st) {
-            print('GoRouter Error building /active-workout: $e\n$st');
+            final sessionDate = extras['sessionDate'] as DateTime;
+            return RoutineDayPage(
+              routineDay: routineDay,
+              userId: userId,
+              sessionDate: sessionDate,
+            );
+          } catch (e) {
             return Scaffold(body: Center(child: Text('Error: $e')));
           }
         },

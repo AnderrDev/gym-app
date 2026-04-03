@@ -12,15 +12,18 @@ class SetLogModel extends SetLog {
   });
 
   factory SetLogModel.fromJson(Map<String, dynamic> json) {
+    // id puede ser: String (UUID de Supabase), int (rowid SQLite), o null
+    final id = json['id']?.toString();
+
     return SetLogModel(
-      id: json['id'] as String?,
+      id: id,
       sessionId: json['session_id'] as String,
       exerciseId: json['exercise_id'] as String,
       actualWeight: (json['actual_weight'] as num).toDouble(),
       actualReps: json['actual_reps'] as int,
       setIndex: json['set_index'] as int,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
     );
   }

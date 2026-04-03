@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../domain/usecases/sign_in_with_email.dart';
@@ -12,6 +13,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpWithEmail signUpWithEmail;
   final SignOut signOut;
   final GetCurrentUser getCurrentUser;
+  late final StreamSubscription _authSubscription;
 
   AuthBloc({
     required this.signInWithEmail,
@@ -26,7 +28,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignOutRequested>(_onSignOutRequested);
 
     // Escuchar automáticamente los cambios de estado de sesión (Supabase)
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.signedIn ||
           event == AuthChangeEvent.userUpdated) {
@@ -116,5 +118,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (failure) => emit(AuthError(failure.message)),
       (_) => emit(Unauthenticated()),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription.cancel();
+    return super.close();
   }
 }
