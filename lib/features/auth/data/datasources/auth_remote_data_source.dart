@@ -88,9 +88,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserModel?> getCurrentUser() async {
-    final user = client.auth.currentUser;
+    // currentUser puede ser null en arranque frío antes del initialSession.
+    // Usamos currentSession?.user como fallback (misma sesión en memoria).
+    final user = client.auth.currentUser ?? client.auth.currentSession?.user;
     if (user == null) return null;
-    return await _getUserProfile(user.id, user.email!);
+    return await _getUserProfile(user.id, user.email ?? '');
   }
 
   Future<UserModel> _getUserProfile(String userId, String email) async {

@@ -28,9 +28,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignOutRequested>(_onSignOutRequested);
 
     // Escuchar automáticamente los cambios de estado de sesión (Supabase)
+    // initialSession se dispara siempre al iniciar la app (con o sin sesión) y
+    // es el único que resuelve el estado inicial, evitando la race condition
+    // donde AppStarted lee currentUser antes de que Supabase restaure storage.
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
-      if (event == AuthChangeEvent.signedIn ||
+      if (event == AuthChangeEvent.initialSession) {
+        add(AuthStateChanged(isAuthenticated: data.session != null));
+      } else if (event == AuthChangeEvent.signedIn ||
           event == AuthChangeEvent.userUpdated) {
         add(const AuthStateChanged(isAuthenticated: true));
       } else if (event == AuthChangeEvent.signedOut) {
@@ -40,17 +45,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    final result = await getCurrentUser();
-    result.fold(
-      (failure) => emit(Unauthenticated()),
-      (user) {
-        if (user != null) {
-          emit(Authenticated(user));
-        } else {
-          emit(Unauthenticated());
-        }
-      },
-    );
+    // Solo mostrar loading. El estado real lo resuelve el evento initialSession
+    // de onAuthStateChange. Llamar getCurrentUser() aquí causaba Unauthenticated
+    // prematuro porque currentUser es null antes de que Supabase restaure storage.
+    emit(AuthLoading());
   }
 
   Future<void> _onAuthStateChanged(

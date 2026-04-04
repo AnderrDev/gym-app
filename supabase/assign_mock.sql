@@ -171,18 +171,14 @@ BEGIN
   -- ── 7. Sesiones históricas de ejemplo ────────────────────
   -- Semana pasada: Lunes y Martes completados
   INSERT INTO public.workout_sessions
-    (user_id, routine_day_id, session_date, started_at, completed_at, total_volume)
+    (user_id, routine_day_id, session_date, completed_at)
   VALUES
     (v_user_id, v_day_lun,
       CURRENT_DATE - INTERVAL '7 days' + (1 - EXTRACT(DOW FROM CURRENT_DATE)::INT + 7) % 7 * INTERVAL '1 day',
-      NOW() - INTERVAL '8 days',
-      NOW() - INTERVAL '8 days' + INTERVAL '1 hour',
-      3200.0),
+      NOW() - INTERVAL '8 days' + INTERVAL '1 hour'),
     (v_user_id, v_day_mar,
       CURRENT_DATE - INTERVAL '6 days' + (2 - EXTRACT(DOW FROM CURRENT_DATE)::INT + 7) % 7 * INTERVAL '1 day',
-      NOW() - INTERVAL '7 days',
-      NOW() - INTERVAL '7 days' + INTERVAL '1.5 hours',
-      5800.0);
+      NOW() - INTERVAL '7 days' + INTERVAL '1.5 hours');
 
   RAISE NOTICE '✅ Mock data creado exitosamente para usuario %', v_user_id;
   RAISE NOTICE '   Rutina: Rutina de Fuerza 4 días';

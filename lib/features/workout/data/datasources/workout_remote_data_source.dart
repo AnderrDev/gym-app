@@ -25,6 +25,10 @@ abstract class WorkoutRemoteDataSource {
   Future<List<Map<String, dynamic>>> getExerciseLogsHistory(String userId, String exerciseId);
   Future<List<Map<String, dynamic>>> getRoutineStats(String userId, String routineId);
 
+  /// Busca cualquier sesión sin completar para el usuario (para reanudación al abrir app)
+  Future<WorkoutSessionModel?> getActiveSessionForUser(String userId);
+  Future<String?> getRoutineDayNameById(String routineDayId);
+
   // ─── Nuevos métodos de gestión ──────────────────────────────────────────
   Future<void> saveRoutine(RoutineModel routine);
   Future<void> deleteRoutine(String routineId);
@@ -121,6 +125,12 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       String userId, String routineDayId, DateTime sessionDate) async {
     final dateStr = '${sessionDate.year.toString().padLeft(4, '0')}-${sessionDate.month.toString().padLeft(2, '0')}-${sessionDate.day.toString().padLeft(2, '0')}';
 
+    // Regla de negocio: solo puede existir una sesión activa por usuario.
+    final activeSession = await getActiveSessionForUser(userId);
+    if (activeSession != null) {
+      return activeSession;
+    }
+
     // Buscar sesión existente
     final existing = await getExistingSession(userId, routineDayId, sessionDate);
     if (existing != null) {
@@ -216,6 +226,33 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     // Pero SetLogModel.fromJson espera los campos del log. 
     // PostgREST aplana si el campo es de la misma tabla o via asterisco.
     return SetLogModel.fromJson(response);
+  }
+
+  @override
+  Future<WorkoutSessionModel?> getActiveSessionForUser(String userId) async {
+    final response = await client
+        .from('workout_sessions')
+        .select()
+        .eq('user_id', userId)
+        .filter('completed_at', 'is', null)
+        .order('session_date', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return WorkoutSessionModel.fromJson(response);
+  }
+
+  @override
+  Future<String?> getRoutineDayNameById(String routineDayId) async {
+    final response = await client
+        .from('routine_days')
+        .select('name')
+        .eq('id', routineDayId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return response['name']?.toString();
   }
 
   @override

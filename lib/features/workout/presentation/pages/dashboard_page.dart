@@ -23,6 +23,8 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   DateTime _currentWeekStart = _getWeekStart(DateTime.now());
   Routine? _selectedRoutine;
+  ActiveSessionDetected? _activeSession;
+  bool _autoResumeHandled = false;
 
   static DateTime _getWeekStart(DateTime date) {
     // Lunes de la semana actual
@@ -34,8 +36,25 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
+      // Verificar sesión activa antes de cargar rutinas
+      context.read<WorkoutBloc>().add(CheckActiveSession(authState.user.id));
       context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
     }
+  }
+
+  void _resumeActiveSession(ActiveSessionDetected session) {
+    final routineDay = RoutineDay(
+      id: session.routineDayId,
+      routineId: '',
+      name: session.routineDayName,
+      dayOfWeek: session.sessionDate.weekday,
+      exercises: const [],
+    );
+    context.push('/routine-day', extra: {
+      'routineDay': routineDay,
+      'userId': session.userId,
+      'sessionDate': session.sessionDate,
+    });
   }
 
   void _loadWeeklyPlan(Routine routine) {
@@ -84,16 +103,49 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       body: BlocConsumer<WorkoutBloc, WorkoutState>(
         listener: (context, state) {
-          // Al volver de RoutineDayPage, ResetWorkout emite WorkoutInitial.
-          // El listener recarga el plan sin tocar el build.
-          if (state is WorkoutInitial && _selectedRoutine != null) {
-            _loadWeeklyPlan(_selectedRoutine!);
+          // Sesión activa detectada al abrir app: redirigir automáticamente una sola vez
+          if (state is ActiveSessionDetected) {
+            setState(() => _activeSession = state);
+            final authState = context.read<AuthBloc>().state;
+            if (authState is Authenticated) {
+              context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+            }
+            if (!_autoResumeHandled) {
+              _autoResumeHandled = true;
+              _resumeActiveSession(state);
+            }
+          }
+
+          // Entrenamiento finalizado: limpiar banner de sesión activa
+          if (state is WorkoutFinishedSuccess) {
+            setState(() => _activeSession = null);
+          }
+
+          // Al volver de RoutineDayPage (ResetWorkout → WorkoutInitial): recargar datos.
+          // NO se vuelve a despachar CheckActiveSession para no caer en spinner infinito:
+          // ActiveSessionDetected no tiene builder propio y cae al spinner (_).
+          if (state is WorkoutInitial) {
+            final authState = context.read<AuthBloc>().state;
+            if (authState is Authenticated) {
+              context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+            }
+            if (_selectedRoutine != null) {
+              _loadWeeklyPlan(_selectedRoutine!);
+            }
           }
         },
         builder: (context, state) {
-          return switch (state) {
+          final content = switch (state) {
             WorkoutInitial() || WorkoutLoading() => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            ActiveSessionDetected() => Center(
+                child: Text(
+                  'Sesion activa detectada, cargando tablero...',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             WorkoutError(message: final msg) => Center(
                 child: Padding(
@@ -132,6 +184,50 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
           };
+
+          return Column(
+            children: [
+              if (_activeSession != null)
+                Material(
+                  color: AppColors.background,
+                  child: InkWell(
+                    onTap: () => _resumeActiveSession(_activeSession!),
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.timelapse_rounded, color: AppColors.primary, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Sesion en curso: ${_activeSession!.routineDayName}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                            ),
+                          ),
+                          Text(
+                            'Retomar',
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Expanded(child: content),
+            ],
+          );
         },
       ),
     );
@@ -320,6 +416,11 @@ class _DashboardPageState extends State<DashboardPage> {
         statusColor = const Color(0xFF4CAF50);
         statusIcon = Icons.check_circle;
         statusLabel = 'Completado';
+        break;
+      case WorkoutDayStatus.completedPartial:
+        statusColor = const Color(0xFFFF9800);
+        statusIcon = Icons.check_circle_outline;
+        statusLabel = 'Completado parcial';
         break;
       case WorkoutDayStatus.inProgress:
         statusColor = AppColors.primary;

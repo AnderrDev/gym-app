@@ -56,6 +56,7 @@ class RoutineDay extends Equatable {
 
 enum WorkoutDayStatus {
   completed,   // Sesión finalizada esta semana ✅
+  completedPartial, // Sesión finalizada sin completar todas las series ⚠️
   inProgress,  // Sesión iniciada pero no terminada ⏱️
   pending,     // No hay sesión aún ⬜
   rest,        // No hay entrenamiento este día

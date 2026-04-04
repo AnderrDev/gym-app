@@ -40,8 +40,9 @@ final class ConfirmStartWorkout extends WorkoutEvent {
   final String userId;
   final String routineDayId;
   final DateTime sessionDate;
-  const ConfirmStartWorkout({required this.userId, required this.routineDayId, required this.sessionDate});
-  @override List<Object?> get props => [userId, routineDayId, sessionDate];
+  final String routineDayName;
+  const ConfirmStartWorkout({required this.userId, required this.routineDayId, required this.sessionDate, required this.routineDayName});
+  @override List<Object?> get props => [userId, routineDayId, sessionDate, routineDayName];
 }
 
 // Carga los set logs históricos de una sesión completada
@@ -63,6 +64,13 @@ final class FetchLastExercisePerformance extends WorkoutEvent {
   final String exerciseId;
   const FetchLastExercisePerformance(this.exerciseId);
   @override List<Object?> get props => [exerciseId];
+}
+
+// Verifica si hay una sesión activa al arrancar la app
+final class CheckActiveSession extends WorkoutEvent {
+  final String userId;
+  const CheckActiveSession(this.userId);
+  @override List<Object?> get props => [userId];
 }
 
 final class ResetWorkout extends WorkoutEvent {

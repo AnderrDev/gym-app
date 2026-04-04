@@ -74,6 +74,12 @@ abstract class WorkoutRepository {
   /// Actualiza el objetivo de un ejercicio (peso/reps) en una rutina específica
   Future<Either<Failure, void>> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps);
 
+  /// Busca la sesión activa (sin completar) del usuario para reanudar al abrir app
+  Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(String userId);
+
+    /// Obtiene el nombre del día de rutina por id (usado para banner/reanudación)
+    Future<Either<Failure, String?>> getRoutineDayNameById(String routineDayId);
+
   // Gestión de Rutinas
   /// Syncs pending offline data to Supabase
   Future<Either<Failure, void>> syncPendingData();

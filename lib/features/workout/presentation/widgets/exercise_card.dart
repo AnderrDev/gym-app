@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/coaching_analysis.dart';
@@ -316,6 +317,25 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                               exerciseId: widget.exercise.id,
                               exerciseName: widget.exercise.name,
                             );
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                        color: AppColors.primary.withOpacity(0.9),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Ver progreso completo',
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          final authState = context.read<AuthBloc>().state;
+                          if (authState is Authenticated) {
+                            context.push('/exercise-progress', extra: {
+                              'userId': authState.user.id,
+                              'exerciseId': widget.exercise.id,
+                              'exerciseName': widget.exercise.name,
+                            });
                           }
                         },
                       ),

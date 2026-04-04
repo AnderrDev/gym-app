@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/services/active_session_service.dart';
 import 'features/workout/data/datasources/workout_remote_data_source.dart';
 import 'features/workout/data/repositories/workout_repository_impl.dart';
 import 'features/workout/domain/repositories/workout_repository.dart';
@@ -70,6 +71,7 @@ Future<void> init() async {
       getWeeklyPlan: sl(),
       saveSetLog: sl(),
       repository: sl(),
+      activeSessionService: sl(),
     ),
   );
 
@@ -97,4 +99,5 @@ Future<void> init() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => Supabase.instance.client);
+  sl.registerLazySingleton(() => ActiveSessionService(sl()));
 }

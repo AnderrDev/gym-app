@@ -6,8 +6,10 @@ A new Flutter project for tracking gym workouts.
 
 Para más detalles sobre el proyecto y su arquitectura, consulta la carpeta `docs`:
 
+- [Contexto Maestro para Agentes IA](docs/AGENT_CONTEXT.md)
 - [Documentación del Proyecto](docs/DOCUMENTACION.md)
 - [Configuración de Supabase](docs/supabase.md)
+- [Plan de Servicios Supabase](docs/SUPABASE_SERVICES_PLAN.md)
 
 ## Getting Started
 

@@ -42,6 +42,8 @@ final class DayInfoLoaded extends WorkoutState {
   final WorkoutSession? existingSession; // hoy
   final List<WorkoutSession> recentSessions; // sesiones anteriores completadas
   final Map<String, List<SetLog>> recentSessionsLogs; // sessionId -> logs
+  final bool hasAnotherActiveSession;
+  final String? anotherActiveSessionDayName;
   final String userId;
   final String routineDayId;
   final DateTime sessionDate;
@@ -55,11 +57,14 @@ final class DayInfoLoaded extends WorkoutState {
     this.existingSession,
     this.recentSessions = const [],
     this.recentSessionsLogs = const {},
+    this.hasAnotherActiveSession = false,
+    this.anotherActiveSessionDayName,
     this.lastPerformances = const {},
   });
   
   @override List<Object?> get props => [
-    exercises, existingSession, recentSessions, recentSessionsLogs, 
+    exercises, existingSession, recentSessions, recentSessionsLogs,
+    hasAnotherActiveSession, anotherActiveSessionDayName,
     userId, routineDayId, sessionDate, lastPerformances
   ];
 }
@@ -114,6 +119,23 @@ final class ExercisePerformanceLoaded extends WorkoutState {
   final SetLog? lastSetLog;
   const ExercisePerformanceLoaded(this.lastSetLog);
   @override List<Object?> get props => [lastSetLog];
+}
+
+// Sesión activa detectada al abrir la app (para redirigir)
+final class ActiveSessionDetected extends WorkoutState {
+  final String sessionId;
+  final String routineDayId;
+  final String userId;
+  final DateTime sessionDate;
+  final String routineDayName;
+  const ActiveSessionDetected({
+    required this.sessionId,
+    required this.routineDayId,
+    required this.userId,
+    required this.sessionDate,
+    required this.routineDayName,
+  });
+  @override List<Object?> get props => [sessionId, routineDayId, userId, sessionDate, routineDayName];
 }
 
 final class ManagementSuccess extends WorkoutState {

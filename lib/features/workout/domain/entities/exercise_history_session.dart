@@ -13,11 +13,21 @@ class ExerciseHistorySession extends Equatable {
   @override
   List<Object?> get props => [sessionDate, logs];
 
-  double get maxWeight => logs.isEmpty ? 0 : logs.map((l) => l.actualWeight).reduce((a, b) => a > b ? a : b);
+  double get maxWeight => logs.fold(0.0, (max, l) => l.actualWeight > max ? l.actualWeight : max);
   double get totalVolume => logs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
   double get estimated1RM {
     if (logs.isEmpty) return 0.0;
-    final bestSet = logs.reduce((a, b) => (a.actualWeight * (1 + a.actualReps / 30)) > (b.actualWeight * (1 + b.actualReps / 30)) ? a : b);
+    var bestSet = logs.first;
+    var bestScore = bestSet.actualWeight * (1 + bestSet.actualReps / 30.0);
+
+    for (final log in logs.skip(1)) {
+      final score = log.actualWeight * (1 + log.actualReps / 30.0);
+      if (score > bestScore) {
+        bestSet = log;
+        bestScore = score;
+      }
+    }
+
     return bestSet.actualWeight * (1 + bestSet.actualReps / 30.0);
   }
 }

@@ -105,7 +105,8 @@ CREATE TABLE IF NOT EXISTS public.routine_exercises (
   "order"         INT NOT NULL DEFAULT 0,
   target_sets     INT NOT NULL DEFAULT 3,
   target_reps     INT NOT NULL DEFAULT 10,
-  target_weight   DECIMAL DEFAULT 0
+  target_weight   DECIMAL DEFAULT 0,
+  rest_timer_seconds INT NOT NULL DEFAULT 90
 );
 
 ALTER TABLE public.routine_exercises ENABLE ROW LEVEL SECURITY;

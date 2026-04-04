@@ -13,6 +13,7 @@ import '../../features/workout/presentation/pages/routine_list_page.dart';
 import '../../features/workout/presentation/pages/routine_editor_page.dart';
 import '../../features/workout/presentation/pages/day_editor_page.dart';
 import '../../features/workout/presentation/pages/routine_stats_page.dart';
+import '../../features/workout/presentation/pages/exercise_progress_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -106,6 +107,17 @@ class AppRouter {
             userId: extras['userId'] as String,
             routineId: extras['routineId'] as String,
             routineName: extras['routineName'] as String,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/exercise-progress',
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          return ExerciseProgressPage(
+            userId: extras['userId'] as String,
+            exerciseId: extras['exerciseId'] as String,
+            exerciseName: extras['exerciseName'] as String,
           );
         },
       ),

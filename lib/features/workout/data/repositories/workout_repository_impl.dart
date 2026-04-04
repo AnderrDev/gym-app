@@ -320,6 +320,26 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(String userId) async {
+    try {
+      final result = await remoteDataSource.getActiveSessionForUser(userId);
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String?>> getRoutineDayNameById(String routineDayId) async {
+    try {
+      final result = await remoteDataSource.getRoutineDayNameById(routineDayId);
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   // ─── Sync (no-op mientras offline está desactivado) ───────────────────────
   @override
   Future<Either<Failure, void>> syncPendingData() async {

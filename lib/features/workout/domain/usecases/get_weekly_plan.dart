@@ -25,7 +25,11 @@ class GetWeeklyPlan {
     final sessionsResult = await repository.getWeekSessions(userId, weekStart, weekEnd);
     final sessions = sessionsResult.getOrElse((_) => []);
 
-    // 3. Mapear cada día con su estado de completado
+    // 3. Mapear cada día con su estado semanal:
+    // - inProgress: existe sesión abierta (completedAt == null)
+    // - completed: sesión cerrada y objetivo de series cumplido
+    // - completedPartial: sesión cerrada sin cumplir objetivo completo
+    // - pending: sin sesiones
     final enrichedDays = days.map((day) {
       final sessionsForDay = sessions.where((s) => s.routineDayId == day.id).toList();
 
@@ -33,12 +37,19 @@ class GetWeeklyPlan {
       if (sessionsForDay.isEmpty) {
         status = WorkoutDayStatus.pending;
       } else {
-        final session = sessionsForDay.first;
-        // A session is completed ONLY if all target sets are performed
-        final isFullyCompleted = session.completedAt != null && 
-                                  session.completedSetsCount >= day.targetSetsCount;
-        
-        status = isFullyCompleted ? WorkoutDayStatus.completed : WorkoutDayStatus.inProgress;
+        final activeSession = sessionsForDay.where((s) => s.completedAt == null).toList();
+
+        if (activeSession.isNotEmpty) {
+          status = WorkoutDayStatus.inProgress;
+        } else {
+          sessionsForDay.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+          final latestClosedSession = sessionsForDay.first;
+
+          final isFullyCompleted = latestClosedSession.completedSetsCount >= day.targetSetsCount;
+          status = isFullyCompleted
+              ? WorkoutDayStatus.completed
+              : WorkoutDayStatus.completedPartial;
+        }
       }
 
       if (day is RoutineDayModel) {

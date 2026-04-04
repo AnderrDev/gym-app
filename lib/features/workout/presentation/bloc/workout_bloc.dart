@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/services/active_session_service.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/routine.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,12 +18,14 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
   final GetWeeklyPlan getWeeklyPlan;
   final SaveSetLog saveSetLog;
   final WorkoutRepository repository;
+  final ActiveSessionService activeSessionService;
 
   WorkoutBloc({
     required this.getAssignedRoutines,
     required this.getWeeklyPlan,
     required this.saveSetLog,
     required this.repository,
+    required this.activeSessionService,
   }) : super(WorkoutInitial()) {
     
     // ─── Cargar rutinas ──────────────────────────────────────
@@ -65,12 +68,14 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           repository.getExercisesForDay(event.routineDayId),
           repository.getExistingSession(event.userId, event.routineDayId, event.sessionDate),
           repository.getRecentSessionsForDay(event.userId, event.routineDayId, event.sessionDate, limit: 3),
+          repository.getActiveSessionForUser(event.userId),
         ]);
 
         final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse((_) => []);
         final session = (results[1] as Either<Failure, WorkoutSession?>).getOrElse((_) => null);
         final recentSessions = (results[2] as Either<Failure, List<WorkoutSession>>).getOrElse((_) => []);
-        
+        final activeSession = (results[3] as Either<Failure, WorkoutSession?>).getOrElse((_) => null);
+
         final Map<String, List<SetLog>> recentLogs = {};
         for (final s in recentSessions) {
           final res = await repository.getSessionSetLogs(s.id);
@@ -79,31 +84,186 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
         final perfRes = await _fetchPreloadedRecords(exercises);
 
-        WorkoutSession? activeSession = session;
-        if (activeSession == null) {
-          final sessionResult = await repository.startWorkoutForDay(event.userId, event.routineDayId, event.sessionDate);
-          activeSession = sessionResult.getOrElse((_) => throw Exception('Failed to start session'));
+        // Si ya existe sesión del día (completada o no), abrirla directamente.
+        // Cuando completedAt != null la UI entra en modo solo lectura y muestra resultados.
+        if (session != null) {
+          final logsRes = await repository.getSessionSetLogs(session.id);
+          final setLogs = logsRes.getOrElse((_) => []);
+          emit(DayWorkoutStarted(
+            session,
+            exercises,
+            setLogs: setLogs,
+            lastPerformances: perfRes,
+            recentSessions: recentSessions,
+            recentSessionsLogs: recentLogs,
+          ));
+        } else {
+          bool hasAnotherActiveSession = false;
+          String? anotherActiveSessionDayName;
+
+          if (activeSession != null &&
+              activeSession.completedAt == null &&
+              activeSession.routineDayId != event.routineDayId) {
+            hasAnotherActiveSession = true;
+            final nameRes = await repository.getRoutineDayNameById(activeSession.routineDayId);
+            anotherActiveSessionDayName = nameRes.getOrElse((_) => null);
+          }
+
+          // No hay sesión en curso: mostrar pantalla de preinicio
+          emit(DayInfoLoaded(
+            exercises: exercises,
+            userId: event.userId,
+            routineDayId: event.routineDayId,
+            sessionDate: event.sessionDate,
+            existingSession: session, // null o completada de otro día
+            recentSessions: recentSessions,
+            recentSessionsLogs: recentLogs,
+            hasAnotherActiveSession: hasAnotherActiveSession,
+            anotherActiveSessionDayName: anotherActiveSessionDayName,
+            lastPerformances: perfRes,
+          ));
         }
-
-        final logsRes = await repository.getSessionSetLogs(activeSession.id);
-        final setLogs = logsRes.getOrElse((_) => []);
-
-        emit(DayWorkoutStarted(
-          activeSession, 
-          exercises, 
-          setLogs: setLogs, 
-          lastPerformances: perfRes, 
-          recentSessions: recentSessions, 
-          recentSessionsLogs: recentLogs,
-        ));
       } catch (e) {
         emit(WorkoutError('Error al cargar día: $e'));
       }
     });
 
+    // ─── Confirmar inicio: ahora sí se crea la sesión ─────────
+    on<ConfirmStartWorkout>((event, emit) async {
+      emit(WorkoutLoading());
+      try {
+        final sessionResult = await repository.startWorkoutForDay(
+          event.userId, event.routineDayId, event.sessionDate,
+        );
+        final session = sessionResult.getOrElse(
+          (_) => throw Exception('No se pudo iniciar la sesión'),
+        );
 
+        final effectiveRoutineDayId = session.routineDayId;
+        final effectiveSessionDate = session.sessionDate;
 
-    // ─── Registrar serie (fire & forget) ─────────────────────
+        final results = await Future.wait([
+          repository.getExercisesForDay(effectiveRoutineDayId),
+          repository.getRecentSessionsForDay(event.userId, effectiveRoutineDayId, effectiveSessionDate, limit: 3),
+          repository.getSessionSetLogs(session.id),
+        ]);
+
+        final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse((_) => []);
+        final recentSessions = (results[1] as Either<Failure, List<WorkoutSession>>).getOrElse((_) => []);
+        final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse((_) => []);
+
+        final Map<String, List<SetLog>> recentLogs = {};
+        for (final s in recentSessions) {
+          final res = await repository.getSessionSetLogs(s.id);
+          recentLogs[s.id] = res.getOrElse((_) => []);
+        }
+
+        final perfRes = await _fetchPreloadedRecords(exercises);
+
+        String routineDayName = event.routineDayName;
+        if (effectiveRoutineDayId != event.routineDayId) {
+          final nameRes = await repository.getRoutineDayNameById(effectiveRoutineDayId);
+          routineDayName = nameRes.getOrElse((_) => null) ?? routineDayName;
+
+          // Guardrail: si el backend devolvió una sesión activa de otro día,
+          // volvemos a la vista de preinicio con bloqueo explícito.
+          final fallbackRecentSessions = (await repository.getRecentSessionsForDay(
+            event.userId,
+            event.routineDayId,
+            event.sessionDate,
+            limit: 3,
+          )).getOrElse((_) => <WorkoutSession>[]);
+
+          final Map<String, List<SetLog>> fallbackRecentLogs = {};
+          for (final s in fallbackRecentSessions) {
+            final res = await repository.getSessionSetLogs(s.id);
+            fallbackRecentLogs[s.id] = res.getOrElse((_) => <SetLog>[]);
+          }
+
+          final requestedExercises =
+              (await repository.getExercisesForDay(event.routineDayId))
+                  .getOrElse((_) => <Exercise>[]);
+          final requestedPerf = await _fetchPreloadedRecords(requestedExercises);
+
+          emit(DayInfoLoaded(
+            exercises: requestedExercises,
+            userId: event.userId,
+            routineDayId: event.routineDayId,
+            sessionDate: event.sessionDate,
+            existingSession: null,
+            recentSessions: fallbackRecentSessions,
+            recentSessionsLogs: fallbackRecentLogs,
+            hasAnotherActiveSession: true,
+            anotherActiveSessionDayName: routineDayName,
+            lastPerformances: requestedPerf,
+          ));
+          return;
+        }
+
+        // Persistir contexto para reanudación automática
+        await activeSessionService.save(
+          sessionId: session.id,
+          routineDayId: effectiveRoutineDayId,
+          userId: event.userId,
+          sessionDate: effectiveSessionDate,
+          routineDayName: routineDayName,
+        );
+
+        emit(DayWorkoutStarted(
+          session,
+          exercises,
+          setLogs: setLogs,
+          lastPerformances: perfRes,
+          recentSessions: recentSessions,
+          recentSessionsLogs: recentLogs,
+        ));
+      } catch (e) {
+        emit(WorkoutError('Error al iniciar sesión: $e'));
+      }
+    });
+
+    // ─── Verificar sesión activa al abrir app ───────────────────
+    on<CheckActiveSession>((event, emit) async {
+      try {
+        final ctx = activeSessionService.getContext();
+
+        // Siempre validar con remoto para cubrir reinstalaciones, limpieza de cache
+        // o contexto local perdido.
+        final result = await repository.getActiveSessionForUser(event.userId);
+        final session = result.getOrElse((_) => null);
+
+        if (session == null || session.completedAt != null) {
+          await activeSessionService.clear();
+          return;
+        }
+
+        String routineDayName = 'Sesion en curso';
+        if (ctx != null && ctx.sessionId == session.id) {
+          routineDayName = ctx.routineDayName;
+        } else {
+          final nameRes = await repository.getRoutineDayNameById(session.routineDayId);
+          routineDayName = nameRes.getOrElse((_) => null) ?? 'Sesion en curso';
+
+          await activeSessionService.save(
+            sessionId: session.id,
+            routineDayId: session.routineDayId,
+            userId: session.userId,
+            sessionDate: session.sessionDate,
+            routineDayName: routineDayName,
+          );
+        }
+
+        emit(ActiveSessionDetected(
+          sessionId: session.id,
+          routineDayId: session.routineDayId,
+          userId: session.userId,
+          sessionDate: session.sessionDate,
+          routineDayName: routineDayName,
+        ));
+      } catch (_) {
+        // Fallo silencioso: no bloquear al usuario
+      }
+    });
     on<AddSetLogEvent>((event, emit) async {
       final currentState = state;
       try {
@@ -150,10 +310,14 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           event.sessionId, 
           coachingAnalysis: event.coachingAnalysis,
         );
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (_) => emit(WorkoutFinishedSuccess()),
-        );
+        // No usar fold con lambda async: el handler terminaría antes de que
+        // el Future se resuelva y emit lanzaría _AssertionError.
+        if (result.isLeft()) {
+          emit(WorkoutError(result.fold((f) => f.message, (_) => 'Error')));
+        } else {
+          await activeSessionService.clear();
+          emit(WorkoutFinishedSuccess());
+        }
       } catch (e) {
         emit(WorkoutError('Error al finalizar sesión: $e'));
       }
