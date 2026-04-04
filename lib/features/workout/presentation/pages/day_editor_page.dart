@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
 import '../widgets/exercise_catalog_sheet.dart';
 import '../../domain/entities/routine_day.dart';
 import '../../domain/entities/exercise.dart';
@@ -115,59 +116,71 @@ class _DayEditorPageState extends State<DayEditorPage> {
             body: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                SliverAppBar(
-                  expandedHeight: 160,
-                  pinned: true,
-                  backgroundColor: AppColors.background,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-                    onPressed: () => context.pop(),
-                  ),
+                  SliverAppBar(
+                    expandedHeight: 140,
+                    pinned: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
+                      onPressed: () => context.pop(),
+                    ),
                     actions: [
-                      TextButton(
-                        onPressed: () {
-                          final authState = context.read<AuthBloc>().state;
-                          final userId = (authState is Authenticated) ? authState.user.id : '';
-                          
-                          context.read<WorkoutBloc>().add(SaveRoutineDay(
-                            userId: userId,
-                            routineId: widget.routineId,
-                            day: currentDay.copyWith(name: _nameController.text),
-                          ));
-                        },
-                        child: Text('GUARDAR', style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: TextButton(
+                          onPressed: () {
+                            final authState = context.read<AuthBloc>().state;
+                            final userId = (authState is Authenticated) ? authState.user.id : '';
+                            
+                            context.read<WorkoutBloc>().add(SaveRoutineDay(
+                              userId: userId,
+                              routineId: widget.routineId,
+                              day: currentDay.copyWith(name: _nameController.text),
+                            ));
+                          },
+                          child: Text(
+                            'GUARDAR', 
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.primary, 
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    title: Text(
-                      _nameController.text,
-                      style: AppTextStyles.heading2.copyWith(fontSize: 18),
-                    ),
-                    background: Container(
-                      padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [AppColors.primary.withValues(alpha: 0.05), AppColors.background],
+                    flexibleSpace: FlexibleSpaceBar(
+                      titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      title: Text(
+                        _nameController.text.toUpperCase(),
+                        style: AppTextStyles.heading2.copyWith(
+                          fontSize: 16,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      child: TextField(
-                        controller: _nameController,
-                        onChanged: (v) => setState(() {}),
-                        style: AppTextStyles.heading1.copyWith(fontSize: 28),
-                        decoration: const InputDecoration(
-                          hintText: 'Nombre del Día',
-                          hintStyle: TextStyle(color: AppColors.textDisabled),
-                          border: InputBorder.none,
+                      background: Container(
+                        padding: const EdgeInsets.fromLTRB(24, 60, 24, 0),
+                        color: AppColors.background,
+                        child: TextField(
+                          controller: _nameController,
+                          onChanged: (v) => setState(() {}),
+                          style: AppTextStyles.heading1.copyWith(fontSize: 24, letterSpacing: -0.5),
+                          decoration: InputDecoration(
+                            hintText: 'NOMBRE DEL DÍA',
+                            hintStyle: AppTextStyles.heading1.copyWith(
+                              color: AppColors.textDisabled, 
+                              fontSize: 24,
+                              letterSpacing: -0.5,
+                            ),
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
                 SliverToBoxAdapter(
                   child: Padding(
@@ -228,9 +241,18 @@ class _DayEditorPageState extends State<DayEditorPage> {
             
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () => _showExerciseCatalog(exercises),
+              elevation: 0,
+              highlightElevation: 0,
               backgroundColor: AppColors.primary,
-              icon: const Icon(Icons.search, color: Colors.black),
-              label: const Text('CATÁLOGO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              icon: const Icon(Icons.search_rounded, color: Colors.black, size: 22),
+              label: Text(
+                'CATÁLOGO', 
+                style: AppTextStyles.label.copyWith(
+                  color: Colors.black, 
+                  fontWeight: FontWeight.w900, 
+                  letterSpacing: 1.5,
+                ),
+              ),
             ),
           );
         },
@@ -256,36 +278,53 @@ class _DayEditorPageState extends State<DayEditorPage> {
       },
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(color: AppColors.error.withOpacity(0.8), borderRadius: BorderRadius.circular(16)),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: const Icon(Icons.delete_sweep, color: Colors.white, size: 28),
       ),
-      child: Container(
+      child: GlassContainer(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceHighlight, width: 0.5),
-        ),
+        padding: EdgeInsets.zero,
+        borderRadius: BorderRadius.circular(22),
         child: ListTile(
-          contentPadding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+          contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           leading: Container(
             width: 44, height: 44,
-            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.fitness_center, color: AppColors.primary, size: 20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1), 
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.fitness_center_rounded, color: AppColors.primary, size: 20),
           ),
-          title: Text(exercise.name, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+          title: Text(
+            exercise.name.toUpperCase(), 
+            style: AppTextStyles.heading2.copyWith(
+              fontSize: 14, 
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
           subtitle: Row(
             children: [
-              Text(exercise.targetMuscle, style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+              Text(
+                exercise.targetMuscle.toUpperCase(), 
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.primary, 
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(width: 8),
               const Text('•', style: TextStyle(color: AppColors.textDisabled)),
               const SizedBox(width: 8),
-              Text('3 x 10', style: AppTextStyles.label),
+              Text(
+                '${exercise.targetSets} X ${exercise.targetReps}', 
+                style: AppTextStyles.label.copyWith(fontSize: 10),
+              ),
             ],
           ),
-          trailing: const Icon(Icons.reorder, color: AppColors.textDisabled, size: 20),
+          trailing: const Icon(Icons.drag_indicator_rounded, color: AppColors.textDisabled, size: 20),
         ),
       ),
     );

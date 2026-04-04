@@ -12,6 +12,7 @@ import '../../features/workout/presentation/pages/database_inspector_page.dart';
 import '../../features/workout/presentation/pages/routine_list_page.dart';
 import '../../features/workout/presentation/pages/routine_editor_page.dart';
 import '../../features/workout/presentation/pages/day_editor_page.dart';
+import '../../features/workout/presentation/pages/routine_stats_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -95,6 +96,17 @@ class AppRouter {
           } catch (e) {
             return Scaffold(body: Center(child: Text('Error: $e')));
           }
+        },
+      ),
+      GoRoute(
+        path: '/routine-stats',
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          return RoutineStatsPage(
+            userId: extras['userId'] as String,
+            routineId: extras['routineId'] as String,
+            routineName: extras['routineName'] as String,
+          );
         },
       ),
     ],

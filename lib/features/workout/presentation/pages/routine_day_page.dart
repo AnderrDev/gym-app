@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:collection/collection.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/presentation/widgets/kinetic_button.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/routine_day.dart';
 import '../../domain/entities/set_log.dart';
@@ -32,6 +35,53 @@ class RoutineDayPage extends StatefulWidget {
 
 class _RoutineDayPageState extends State<RoutineDayPage> {
   final List<SetLog> _currentSessionLogs = [];
+  
+  // ── Timer Global ──────────────────────────────────────────
+  Timer? _globalRestTimer;
+  int _secondsRemaining = 0;
+  int _totalRestSeconds = 60;
+  bool _isResting = false;
+
+  @override
+  void dispose() {
+    _globalRestTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startRestTimer(int seconds) {
+    _globalRestTimer?.cancel();
+    setState(() {
+      _secondsRemaining = seconds;
+      _totalRestSeconds = seconds;
+      _isResting = true;
+    });
+
+    _globalRestTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+        if (_secondsRemaining <= 3 && _secondsRemaining > 0) {
+          HapticFeedback.lightImpact();
+        }
+      } else {
+        _stopTimer();
+      }
+    });
+  }
+
+  void _stopTimer() {
+    _globalRestTimer?.cancel();
+    setState(() {
+      _isResting = false;
+      _secondsRemaining = 0;
+    });
+    HapticFeedback.heavyImpact();
+  }
+
+  String _formatTime(int seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = seconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
+  }
 
   @override
   void initState() {
@@ -52,27 +102,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         _currentSessionLogs.add(log);
       }
     });
+    
+    // Iniciar timer global (90s por defecto si no es edición)
+    _startRestTimer(90);
   }
 
   double get _totalVolume => _currentSessionLogs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
   
-  bool get _isPastWeek {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    // Inicio de la semana actual (Lunes)
-    final startOfWorkWeek = today.subtract(Duration(days: today.weekday - 1));
-    return widget.sessionDate.isBefore(startOfWorkWeek);
-  }
 
-  bool get _isFutureWeek {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    // Fin de la semana actual (Domingo)
-    final endOfWorkWeek = today.add(Duration(days: 7 - today.weekday));
-    return widget.sessionDate.isAfter(endOfWorkWeek);
-  }
-
-  bool get _isReadOnly => _isPastWeek || _isFutureWeek;
+  bool get _isReadOnly => false;
 
   String get _dateLabel {
     const months = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -112,12 +150,12 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
-                  expandedHeight: 220, // 140 + 80
+                  expandedHeight: 200,
                   pinned: true,
                   backgroundColor: AppColors.background,
                   elevation: 0,
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary, size: 24),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   actions: [
@@ -129,102 +167,89 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                     const SizedBox(width: 8),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 80), // Ajustado para el bottom
+                    centerTitle: false,
+                    titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     title: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.routineDay.name, style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-                        Text(_dateLabel.toUpperCase(), style: AppTextStyles.label.copyWith(color: AppColors.textSecondary, letterSpacing: 0.5, fontSize: 8)),
+                        Text(
+                          widget.routineDay.name.toUpperCase(),
+                          style: AppTextStyles.heading2.copyWith(fontSize: 16, letterSpacing: 1.2),
+                        ),
+                        Text(
+                          _dateLabel,
+                          style: AppTextStyles.label.copyWith(color: AppColors.textSecondary, fontSize: 10),
+                        ),
                       ],
                     ),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [AppColors.primary.withValues(alpha: 0.03), AppColors.background],
-                        ),
-                      ),
-                    ),
-                  ),
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(80),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.background.withValues(alpha: 0.95),
-                        border: const Border(bottom: BorderSide(color: AppColors.surfaceHighlight, width: 0.5)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _dateLabel,
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.normal),
-                              ),
-                                if (effectiveReadOnly)
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isCompleted ? AppColors.success.withValues(alpha: 0.1) : (_isPastWeek ? Colors.blue.withValues(alpha: 0.1) : Colors.amber.withValues(alpha: 0.1)),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: isCompleted ? AppColors.success.withValues(alpha: 0.2) : (_isPastWeek ? Colors.blue.withValues(alpha: 0.2) : Colors.amber.withValues(alpha: 0.2)), width: 0.5),
-                                    ),
-                                    child: Text(
-                                      isCompleted ? 'SESIÓN COMPLETADA' : (_isPastWeek ? 'HISTORIAL: SOLO LECTURA' : 'PRÓXIMO: BLOQUEADO'),
-                                      style: TextStyle(
-                                        color: isCompleted ? AppColors.success : (_isPastWeek ? Colors.blue[300] : Colors.amber[300]),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                            ],
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text('VOLUMEN ESTIMADO', style: AppTextStyles.label.copyWith(color: AppColors.textDisabled, fontSize: 9, letterSpacing: 0.8)),
-                              Text('${_totalVolume.toStringAsFixed(0)} kg', style: AppTextStyles.heading2.copyWith(color: AppColors.primary, fontSize: 24)),
-                            ],
-                          ),
-                          ElevatedButton(
-                            onPressed: effectiveReadOnly ? null : () {
-                              HapticFeedback.vibrate();
-                              if (state is DayWorkoutStarted) {
-                                final analysis = _analyzePerformance(
-                                  state.exercises, 
-                                  _currentSessionLogs,
-                                  history: state.recentSessions,
-                                  historyLogs: state.recentSessionsLogs,
-                                );
-                                _showSummaryModal(context, state.exercises, _currentSessionLogs, state.session.id, analysis);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: effectiveReadOnly ? AppColors.surfaceHighlight.withValues(alpha: 0.1) : AppColors.surface,
-                              foregroundColor: effectiveReadOnly ? AppColors.textDisabled : AppColors.textPrimary,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: effectiveReadOnly ? Colors.transparent : AppColors.surfaceHighlight, width: 0.5),
-                              ),
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                AppColors.primary.withOpacity(0.1),
+                                AppColors.background,
+                              ],
                             ),
-                            child: Text(effectiveReadOnly ? (isCompleted ? 'COMPLETADO' : 'BLOQUEADO') : 'FINALIZAR', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1)),
                           ),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          right: -20,
+                          top: 40,
+                          child: Icon(
+                            Icons.fitness_center,
+                            size: 180,
+                            color: AppColors.primary.withOpacity(0.03),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'VOLUMEN ACTUAL',
+                              style: AppTextStyles.label.copyWith(letterSpacing: 1.5, fontSize: 10),
+                            ),
+                            Text(
+                              '${_totalVolume.toStringAsFixed(0)} KG',
+                              style: AppTextStyles.displayNumber,
+                            ),
+                          ],
+                        ),
+                        if (effectiveReadOnly)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isCompleted ? AppColors.success.withOpacity(0.1) : AppColors.surfaceHighlight,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              isCompleted ? 'COMPLETADO' : 'LECTURA',
+                              style: AppTextStyles.label.copyWith(
+                                color: isCompleted ? AppColors.success : AppColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                
                 if (state is WorkoutInitial || state is WorkoutLoading)
                   const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
                 else if (state is WorkoutError)
@@ -271,9 +296,59 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 else
                   const SliverFillRemaining(child: SizedBox()),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: 140)),
               ],
             ),
+            bottomNavigationBar: effectiveReadOnly 
+              ? null 
+              : GlassContainer(
+                  blur: 30,
+                  opacity: 0.1,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 34),
+                  child: Row(
+                    children: [
+                      _buildTimerCircle(),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'EN PROGRESO',
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            Text(
+                              '${exercises.length} ejercicios planificados',
+                              style: AppTextStyles.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      KineticButton(
+                        fullWidth: false,
+                        label: 'FINALIZAR',
+                        onTap: () {
+                          HapticFeedback.heavyImpact();
+                          if (state is DayWorkoutStarted) {
+                             final analysis = _analyzePerformance(
+                              state.exercises, 
+                              _currentSessionLogs,
+                              history: state.recentSessions,
+                              historyLogs: state.recentSessionsLogs,
+                            );
+                            _showSummaryModal(context, state.exercises, _currentSessionLogs, state.session.id, analysis);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
           );
         },
       ),
@@ -305,7 +380,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.surfaceHighlight.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +406,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           ...logs.map((log) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.surfaceHighlight.withValues(alpha: 0.3))),
+              border: Border(bottom: BorderSide(color: AppColors.surfaceHighlight.withOpacity(0.3))),
             ),
             child: Row(children: [
               _Circle(label: '${log.setIndex}'),
@@ -364,9 +439,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.1),
+        color: accentColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +466,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.background.withValues(alpha: 0.4),
+                color: AppColors.background.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -491,9 +566,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                           padding: const EdgeInsets.all(16),
                           margin: const EdgeInsets.only(bottom: 24),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.05),
+                            color: AppColors.primary.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
                           ),
                           child: Row(
                             children: [
@@ -757,6 +832,67 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     return results;
   }
 
+  Widget _buildTimerCircle() {
+    final progress = _totalRestSeconds > 0 ? _secondsRemaining / _totalRestSeconds : 0.0;
+    
+    return GestureDetector(
+      onTap: () {
+        if (_isResting) {
+          _stopTimer();
+        } else {
+          _startRestTimer(60); // Quick start 60s
+        }
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 54,
+            height: 54,
+            child: CircularProgressIndicator(
+              value: _isResting ? progress : 0,
+              strokeWidth: 3,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary,
+            ),
+          ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _isResting ? AppColors.primary : AppColors.surfaceHighlight,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _isResting ? Icons.timer_rounded : Icons.play_arrow_rounded,
+              color: _isResting ? Colors.black : AppColors.textPrimary,
+              size: 20,
+            ),
+          ),
+          if (_isResting)
+            Positioned(
+              bottom: -15,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _formatTime(_secondsRemaining),
+                  style: AppTextStyles.label.copyWith(
+                    color: Colors.black,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPersistedCoachingSection(List<CoachingAnalysis> analysis) {
     final relevantAnalysis = analysis.where((a) => a.recommendation.isNotEmpty).toList();
     if (relevantAnalysis.isEmpty) return const SizedBox.shrink();
@@ -765,9 +901,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
+        color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1), width: 1.5),
+        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,7 +913,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.psychology, color: AppColors.primary, size: 24),
@@ -889,7 +1025,7 @@ class _Circle extends StatelessWidget {
     return Container(
       width: 24,
       height: 24,
-      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
       child: Center(
         child: Text(
           label,

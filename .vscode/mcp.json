@@ -1,0 +1,90 @@
+{
+	"servers": {
+		"dart-mcp-server": {
+			"type": "stdio",
+			"command": "dart",
+			"args": [
+				"mcp-server"
+			]
+		},
+		"firebase-mcp-server": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"firebase-tools@latest",
+				"mcp"
+			]
+		},
+		"com.supabase/mcp": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"--registry",
+				"https://registry.npmjs.org",
+				"@supabase/mcp-server-supabase@0.7.0",
+				"--project-ref",
+				"benadgxgowycjxypyunc",
+				"--access-token",
+				"sbp_59ab4f569ef9e99b6e46cf0a2e23b5a80010be19"
+			],
+			"env": {},
+			"gallery": "https://api.mcp.github.com",
+			"version": "0.7.0"
+		},
+		"io.github.ChromeDevTools/chrome-devtools-mcp": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"--registry",
+				"https://registry.npmjs.org",
+				"chrome-devtools-mcp@0.21.0"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "0.21.0"
+		},
+		"context7": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@upstash/context7-mcp"
+			],
+			"env": {
+				"CONTEXT7_API_KEY": "${input:CONTEXT7_API_KEY}"
+			}
+		},
+		"StitchMCP": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://stitch.googleapis.com/mcp",
+				"--header",
+				"X-Goog-Api-Key: ${input:STITCH_API_KEY}"
+			]
+		}
+	},
+	"inputs": [
+		{
+			"id": "SUPABASE_ACCESS_TOKEN",
+			"type": "promptString",
+			"description": "Personal access token for Supabase API",
+			"password": true
+		},
+		{
+			"id": "CONTEXT7_API_KEY",
+			"type": "promptString",
+			"description": "API key for Context7 MCP",
+			"password": true
+		},
+		{
+			"id": "STITCH_API_KEY",
+			"type": "promptString",
+			"description": "API key for Stitch MCP",
+			"password": true
+		}
+	]
+}

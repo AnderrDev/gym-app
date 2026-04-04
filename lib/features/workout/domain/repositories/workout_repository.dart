@@ -7,6 +7,7 @@ import '../entities/exercise.dart';
 import '../entities/workout_session.dart';
 import '../entities/coaching_analysis.dart';
 import '../entities/exercise_history_session.dart';
+import '../entities/routine_history_session.dart';
 
 abstract class WorkoutRepository {
   /// Fetches the routines assigned to a specific user
@@ -66,6 +67,12 @@ abstract class WorkoutRepository {
   
   /// Gets the historical logs for an exercise
   Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(String userId, String exerciseId);
+
+  /// Gets unified stats for a specific routine (volume per session)
+  Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(String userId, String routineId);
+
+  /// Actualiza el objetivo de un ejercicio (peso/reps) en una rutina específica
+  Future<Either<Failure, void>> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps);
 
   // Gestión de Rutinas
   /// Syncs pending offline data to Supabase

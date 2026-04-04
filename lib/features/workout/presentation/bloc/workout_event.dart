@@ -126,3 +126,11 @@ final class ReorderExercises extends WorkoutEvent {
   const ReorderExercises({required this.userId, required this.routineId, required this.dayId, required this.exerciseIds});
   @override List<Object?> get props => [userId, routineId, dayId, exerciseIds];
 }
+
+final class UpdateExerciseTarget extends WorkoutEvent {
+  final String exerciseId;
+  final double targetWeight;
+  final int targetReps;
+  const UpdateExerciseTarget({required this.exerciseId, required this.targetWeight, required this.targetReps});
+  @override List<Object?> get props => [exerciseId, targetWeight, targetReps];
+}

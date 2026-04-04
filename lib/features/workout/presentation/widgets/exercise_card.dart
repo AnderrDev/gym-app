@@ -11,7 +11,7 @@ import '../bloc/workout_bloc.dart';
 import '../bloc/workout_event.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import 'exercise_stats_sheet.dart';
+import 'exercise_stats_bottom_sheet.dart';
 
 // Duración de descanso por defecto (segundos)
 const int _kDefaultRestSeconds = 90;
@@ -51,6 +51,10 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
   bool _isResting = false;
   int _restSecondsLeft = _kDefaultRestSeconds;
   Timer? _restTimer;
+
+  // ── Feedback en tiempo real ────────────────────────────────
+  String? _liveAdvice;
+  bool _showLiveAdvice = false;
 
   int get _targetSets => widget.exercise.targetSets;
   bool get _allDone => _completedSets.length >= _targetSets;
@@ -104,6 +108,9 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
     // Si era una edición de una serie ya completada, no activamos descanso
     final wasEditing = _completedSets.containsKey(setIndex);
 
+    // Calcular feedback en tiempo real
+    _calculateLiveAdvice(log);
+
     setState(() {
       _completedSets[setIndex] = log;
       _activeSetIndex = null;
@@ -121,6 +128,31 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
       _startRestTimer(next);
     } else {
       setState(() => _isExpanded = false);
+    }
+  }
+
+  void _calculateLiveAdvice(SetLog log) {
+    final targetW = widget.exercise.targetWeight;
+    final targetR = widget.exercise.targetReps;
+
+    String? advice;
+    if (log.actualWeight < targetW) {
+      advice = "No alcanzaste el peso objetivo. Baja un poco el ritmo y prioriza técnica, o mantén este peso para la siguiente.";
+    } else if (log.actualReps < targetR) {
+       advice = "Te faltaron repeticiones. Intenta descansar un poco más antes de la siguiente serie o reduce el peso 2.5kg.";
+    } else if (log.actualWeight >= targetW && log.actualReps >= targetR) {
+      advice = "¡Excelente! Objetivo cumplido. ¡Mantenlo así!";
+    }
+
+    if (advice != null) {
+      setState(() {
+        _liveAdvice = advice;
+        _showLiveAdvice = true;
+      });
+      // Ocultar después de 8 segundos
+      Future.delayed(const Duration(seconds: 8), () {
+        if (mounted) setState(() => _showLiveAdvice = false);
+      });
     }
   }
 
@@ -202,7 +234,7 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                       Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: _allDone ? const Color(0xFF4CAF50).withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12),
+                          color: _allDone ? const Color(0xFF4CAF50).withOpacity(0.15) : AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -225,7 +257,7 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.1),
+                                        color: AppColors.primary.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -242,12 +274,12 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                                   ],
                                 ),
                                 if (widget.lastPerformance != null) ...[
-                                  Text('  •  ', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
-                                  Icon(Icons.history, size: 12, color: AppColors.primary.withValues(alpha: 0.7)),
+                                  Text('  •  ', style: TextStyle(color: AppColors.textSecondary.withOpacity(0.5))),
+                                  Icon(Icons.history, size: 12, color: AppColors.primary.withOpacity(0.7)),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Record: ${widget.lastPerformance!.actualWeight.toStringAsFixed(0)}kg x ${widget.lastPerformance!.actualReps}',
-                                    style: AppTextStyles.label.copyWith(color: AppColors.primary.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
+                                    style: AppTextStyles.label.copyWith(color: AppColors.primary.withOpacity(0.8), fontWeight: FontWeight.w600),
                                   ),
                                 ]
                               ],
@@ -255,6 +287,15 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                           ],
                         ),
                       ),
+                      // ── Control Remoto de Objetivo ─────────────────
+                      if (!widget.readOnly)
+                        IconButton(
+                          icon: const Icon(Icons.settings_remote, size: 20),
+                          color: AppColors.primary.withOpacity(0.6),
+                          tooltip: 'Cambiar Objetivo Remotamente',
+                          onPressed: () => _showRemoteTargetEditor(),
+                        ),
+                      const SizedBox(width: 4),
                       Text(
                         '$doneCount/$_targetSets',
                         style: AppTextStyles.bodyMedium.copyWith(color: widget.readOnly ? AppColors.textSecondary : (_allDone ? const Color(0xFF4CAF50) : AppColors.primary), fontWeight: FontWeight.w700),
@@ -269,7 +310,7 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                           HapticFeedback.selectionClick();
                           final authState = context.read<AuthBloc>().state;
                           if (authState is Authenticated) {
-                            ExerciseStatsSheet.show(
+                            ExerciseStatsBottomSheet.show(
                               context,
                               userId: authState.user.id,
                               exerciseId: widget.exercise.id,
@@ -306,6 +347,10 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
                   if (widget.coachingAnalysis != null && widget.coachingAnalysis!.feedback != 'PENDING' && !_isExpanded) ...[
                     const SizedBox(height: 12),
                     _buildCoachingAdvice(widget.coachingAnalysis!, compact: true),
+                  ],
+                  if (_showLiveAdvice && _liveAdvice != null) ...[
+                    const SizedBox(height: 12),
+                    _buildLiveAdviceWidget(),
                   ],
                 ],
               ),
@@ -410,12 +455,12 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
+          color: color.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
+          border: Border.all(color: color.withOpacity(0.4), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               blurRadius: 4,
               spreadRadius: 1,
             ),
@@ -454,9 +499,9 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
       return Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: accentColor.withValues(alpha: 0.05),
+          color: accentColor.withOpacity(0.05),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: accentColor.withValues(alpha: 0.15), width: 1),
+          border: Border.all(color: accentColor.withOpacity(0.15), width: 1),
         ),
         child: Row(
           children: [
@@ -479,9 +524,9 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.08),
+        color: accentColor.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,6 +584,83 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
     }
   }
 
+  Widget _buildLiveAdviceWidget() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.flash_on, color: AppColors.primary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _liveAdvice!,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRemoteTargetEditor() {
+    final weightCtrl = TextEditingController(text: widget.exercise.targetWeight.toStringAsFixed(0));
+    final repsCtrl = TextEditingController(text: widget.exercise.targetReps.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Cambiar Objetivo Remoto', style: AppTextStyles.heading2),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Ajusta el objetivo para el resto de la sesión:', style: AppTextStyles.bodyMedium),
+            const SizedBox(height: 16),
+            TextField(
+              controller: weightCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Nuevo Peso (kg)'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: repsCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Nuevas Reps'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () {
+              final w = double.tryParse(weightCtrl.text) ?? widget.exercise.targetWeight;
+              final r = int.tryParse(repsCtrl.text) ?? widget.exercise.targetReps;
+              context.read<WorkoutBloc>().add(UpdateExerciseTarget(
+                exerciseId: widget.exercise.id,
+                targetWeight: w,
+                targetReps: r,
+              ));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Objetivo actualizado remotamente')),
+              );
+            },
+            child: const Text('Actualizar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRestTimer() {
     final nextSet = _completedSets.length + 1; 
     final fraction = _restSecondsLeft / widget.exercise.restTimerSeconds;
@@ -546,13 +668,13 @@ class _ExerciseCardState extends State<ExerciseCard> with TickerProviderStateMix
     return Container(
       key: const ValueKey('rest_timer'),
       width: double.infinity, padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: (isDanger ? AppColors.error : AppColors.primary).withValues(alpha: 0.06), borderRadius: BorderRadius.circular(16), border: Border.all(color: (isDanger ? AppColors.error : AppColors.primary).withValues(alpha: 0.25), width: 1.5)),
+      decoration: BoxDecoration(color: (isDanger ? AppColors.error : AppColors.primary).withOpacity(0.06), borderRadius: BorderRadius.circular(16), border: Border.all(color: (isDanger ? AppColors.error : AppColors.primary).withValues(alpha: 0.25), width: 1.5)),
       child: Column(children: [
         Text('DESCANSO', style: AppTextStyles.label.copyWith(color: isDanger ? AppColors.error : AppColors.primary, letterSpacing: 2, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         SizedBox(width: 80, height: 80, child: Stack(alignment: Alignment.center, children: [CircularProgressIndicator(value: fraction.clamp(0.0, 1.0), strokeWidth: 6, strokeCap: StrokeCap.round, backgroundColor: AppColors.background, color: isDanger ? AppColors.error : AppColors.primary), Text(_fmtTime(_restSecondsLeft), style: AppTextStyles.heading2.copyWith(fontSize: 24, color: isDanger ? AppColors.error : AppColors.textPrimary))])),
         const SizedBox(height: 20),
-        TextButton.icon(onPressed: () => _skipRest(nextSet), icon: const Icon(Icons.skip_next, size: 20), label: const Text('Saltar descanso'), style: TextButton.styleFrom(foregroundColor: AppColors.primary, backgroundColor: AppColors.primary.withValues(alpha: 0.1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))))
+        TextButton.icon(onPressed: () => _skipRest(nextSet), icon: const Icon(Icons.skip_next, size: 20), label: const Text('Saltar descanso'), style: TextButton.styleFrom(foregroundColor: AppColors.primary, backgroundColor: AppColors.primary.withOpacity(0.1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))))
       ]),
     );
   }
@@ -638,7 +760,7 @@ class _SetRowState extends State<_SetRow> {
           curve: Curves.easeOutCubic,
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(color: const Color(0xFF4CAF50).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.3))),
+          decoration: BoxDecoration(color: const Color(0xFF4CAF50).withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.3))),
           child: Row(children: [
             _Circle(label: '${widget.setNumber}', filled: true),
             const SizedBox(width: 12),
@@ -655,7 +777,7 @@ class _SetRowState extends State<_SetRow> {
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5)),
+        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             _Circle(label: '${widget.setNumber}', filled: false, active: true),

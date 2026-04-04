@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -150,23 +151,43 @@ class _DashboardPageState extends State<DashboardPage> {
             itemCount: routines.length,
             itemBuilder: (context, index) {
               final routine = routines[index];
-              return Card(
-                color: AppColors.surface,
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassContainer(
+                  opacity: 0.1,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.fitness_center, color: AppColors.primary),
                     ),
-                    child: const Icon(Icons.fitness_center, color: AppColors.primary),
+                    title: Text(routine.name, style: AppTextStyles.bodyLarge),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
+                          onPressed: () {
+                            final authState = context.read<AuthBloc>().state;
+                            if (authState is Authenticated) {
+                              context.push('/routine-stats', extra: {
+                                'userId': authState.user.id,
+                                'routineId': routine.id,
+                                'routineName': routine.name,
+                              });
+                            }
+                          },
+                        ),
+                        const Icon(Icons.calendar_month, color: AppColors.primary),
+                      ],
+                    ),
+                    onTap: () => _loadWeeklyPlan(routine),
                   ),
-                  title: Text(routine.name, style: AppTextStyles.bodyLarge),
-                  trailing: const Icon(Icons.calendar_month, color: AppColors.primary),
-                  onTap: () => _loadWeeklyPlan(routine),
                 ),
               );
             },
@@ -205,8 +226,31 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Column(
                   children: [
                     if (_selectedRoutine != null)
-                      Text(_selectedRoutine!.name,
-                          style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+                      InkWell(
+                        onTap: () {
+                          final authState = context.read<AuthBloc>().state;
+                          if (authState is Authenticated) {
+                            context.push('/routine-stats', extra: {
+                              'userId': authState.user.id,
+                              'routineId': _selectedRoutine!.id,
+                              'routineName': _selectedRoutine!.name,
+                            });
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_selectedRoutine!.name,
+                                  style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.analytics_outlined, size: 14, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      ),
                     Text(
                       '${_formatDate(weekStart)} – ${_formatDate(weekEnd)}',
                       style: AppTextStyles.bodyLarge,
@@ -217,7 +261,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         margin: const EdgeInsets.only(top: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color: AppColors.primary.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text('Esta semana',
@@ -294,18 +338,18 @@ class _DashboardPageState extends State<DashboardPage> {
         break;
     }
 
-    return Container(
+    return GlassContainer(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: isToday
-            ? AppColors.primary.withValues(alpha: 0.08)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isToday ? AppColors.primary : AppColors.surfaceHighlight,
-          width: isToday ? 1.5 : 1,
+      borderRadius: BorderRadius.circular(12),
+      opacity: isToday ? 0.2 : 0.05,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isToday ? AppColors.primary : Colors.transparent,
+            width: isToday ? 1.5 : 0,
+          ),
         ),
-      ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Column(
@@ -358,6 +402,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 }
               }
             : null,
+      ),
       ),
     );
   }

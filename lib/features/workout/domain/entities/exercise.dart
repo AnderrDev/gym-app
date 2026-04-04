@@ -21,11 +21,34 @@ class Exercise extends Equatable {
     this.restTimerSeconds = 90,
   });
 
+  Exercise copyWith({
+    String? id,
+    String? routineDayId,
+    String? name,
+    String? targetMuscle,
+    double? targetWeight,
+    int? targetReps,
+    int? targetSets,
+    int? restTimerSeconds,
+  }) {
+    return Exercise(
+      id: id ?? this.id,
+      routineDayId: routineDayId ?? this.routineDayId,
+      name: name ?? this.name,
+      targetMuscle: targetMuscle ?? this.targetMuscle,
+      targetWeight: targetWeight ?? this.targetWeight,
+      targetReps: targetReps ?? this.targetReps,
+      targetSets: targetSets ?? this.targetSets,
+      restTimerSeconds: restTimerSeconds ?? this.restTimerSeconds,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id, 
     routineDayId, 
     name, 
+    targetMuscle,
     targetWeight, 
     targetReps, 
     targetSets,

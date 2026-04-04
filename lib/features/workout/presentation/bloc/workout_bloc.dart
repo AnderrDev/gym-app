@@ -255,6 +255,39 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
         emit(WorkoutError('Error al reordenar ejercicios: $e'));
       }
     });
+
+    on<UpdateExerciseTarget>((event, emit) async {
+      final currentState = state;
+      if (currentState is DayWorkoutStarted) {
+        try {
+          // 1. Actualizar localmente el estado actual
+          final newExercises = currentState.exercises.map((e) {
+            if (e.id == event.exerciseId) {
+              return e.copyWith(
+                targetWeight: event.targetWeight,
+                targetReps: event.targetReps,
+              );
+            }
+            return e;
+          }).toList();
+
+          // 2. Persistir en repositorio
+          await repository.updateExerciseTarget(currentState.session.routineDayId, event.exerciseId, event.targetWeight, event.targetReps);
+
+          // 3. Emitir nuevo estado con los ejercicios actualizados
+          emit(DayWorkoutStarted(
+            currentState.session,
+            newExercises,
+            setLogs: currentState.setLogs,
+            lastPerformances: currentState.lastPerformances,
+            recentSessions: currentState.recentSessions,
+            recentSessionsLogs: currentState.recentSessionsLogs,
+          ));
+        } catch (e) {
+          emit(WorkoutError('Error al actualizar objetivo: $e'));
+        }
+      }
+    });
   }
 
   // Helper para precargar récords de todos los ejercicios del día

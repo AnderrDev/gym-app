@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
 
 class RoutineListPage extends StatelessWidget {
   const RoutineListPage({super.key});
@@ -16,22 +17,21 @@ class RoutineListPage extends StatelessWidget {
         slivers: [
           // ── App Bar Premium ──────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 140,
+            expandedHeight: 120,
             pinned: true,
-            backgroundColor: AppColors.background,
+            backgroundColor: Colors.transparent,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              title: Text('Mis Rutinas', style: AppTextStyles.heading2),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [AppColors.primary.withValues(alpha: 0.05), AppColors.background],
-                  ),
+              titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              title: Text(
+                'MIS RUTINAS', 
+                style: AppTextStyles.heading2.copyWith(
+                  letterSpacing: 2,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
+              background: Container(color: AppColors.background),
             ),
           ),
 
@@ -76,11 +76,17 @@ class RoutineListPage extends StatelessWidget {
           HapticFeedback.mediumImpact();
           context.push('/routine-editor');
         },
+        elevation: 0,
+        highlightElevation: 0,
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.black, size: 28),
-        label: const Text(
+        icon: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
+        label: Text(
           'NUEVA RUTINA',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+          style: AppTextStyles.label.copyWith(
+            color: Colors.black, 
+            fontWeight: FontWeight.w900, 
+            letterSpacing: 1.5,
+          ),
         ),
       ),
     );
@@ -98,16 +104,11 @@ class RoutineListPage extends StatelessWidget {
         HapticFeedback.selectionClick();
         context.push('/routine-editor');
       },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isActive ? AppColors.primary : AppColors.surfaceHighlight,
-            width: isActive ? 1.5 : 0.5,
-          ),
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(24),
+        borderRadius: BorderRadius.circular(28),
+        borderOpacity: isActive ? 0.4 : 0.1,
+        borderColor: isActive ? AppColors.primary : Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -115,8 +116,11 @@ class RoutineListPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    title,
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold, fontSize: 18),
+                    title.toUpperCase(),
+                    style: AppTextStyles.heading2.copyWith(
+                      fontSize: 16,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
                 if (isActive)
@@ -124,29 +128,40 @@ class RoutineListPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'ACTIVA',
-                      style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900),
+                      style: AppTextStyles.label.copyWith(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Row(
               children: [
-                _buildInfoTag(Icons.calendar_today_rounded, '$daysCount días/sem'),
+                _buildInfoTag(Icons.calendar_today_rounded, '$daysCount DÍAS / SEM'),
                 const SizedBox(width: 12),
-                _buildInfoTag(Icons.history_rounded, lastDone),
+                _buildInfoTag(Icons.history_rounded, lastDone.toUpperCase()),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Ver detalles', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 12)),
-                const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.primary, size: 14),
+                Text(
+                  'DETALLES DE RUTINA', 
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.primary, 
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 20),
               ],
             ),
           ],
@@ -157,10 +172,10 @@ class RoutineListPage extends StatelessWidget {
 
   Widget _buildInfoTag(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [

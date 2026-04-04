@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/presentation/widgets/kinetic_button.dart';
 import '../../domain/entities/routine_day.dart';
 import '../bloc/workout_bloc.dart';
 import '../bloc/workout_event.dart';
@@ -69,23 +71,22 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverAppBar(
-                    expandedHeight: 180,
-                    floating: false,
+                    expandedHeight: 160,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: Colors.transparent,
                     elevation: 0,
                     leading: IconButton(
-                      icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
                       onPressed: () => context.pop(),
                     ),
                     actions: [
                       if (widget.routineId != null)
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
                           onPressed: () => _showDeleteConfirmation(context, userId),
                         ),
                       Padding(
-                        padding: const EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         child: TextButton(
                           onPressed: () {
                             context.read<WorkoutBloc>().add(CreateOrUpdateRoutine(
@@ -99,40 +100,40 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                             'GUARDAR',
                             style: AppTextStyles.label.copyWith(
                               color: AppColors.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
                             ),
                           ),
                         ),
                       ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                      centerTitle: false,
-                      titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                       title: Text(
-                        _nameController.text.isEmpty ? 'Nueva Rutina' : _nameController.text,
-                        style: AppTextStyles.heading2.copyWith(fontSize: 20),
+                        _nameController.text.isEmpty ? 'NUEVA RUTINA' : _nameController.text.toUpperCase(),
+                        style: AppTextStyles.heading2.copyWith(
+                          fontSize: 16,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       background: Container(
-                        padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.primary.withValues(alpha: 0.1),
-                              AppColors.background,
-                            ],
-                          ),
-                        ),
+                        padding: const EdgeInsets.fromLTRB(24, 70, 24, 0),
+                        color: AppColors.background,
                         child: TextField(
                           controller: _nameController,
                           onChanged: (v) => setState(() {}),
-                          style: AppTextStyles.heading1.copyWith(fontSize: 32),
+                          style: AppTextStyles.heading1.copyWith(
+                            fontSize: 28,
+                            letterSpacing: -1,
+                          ),
                           decoration: InputDecoration(
-                            hintText: 'Nombre de la Rutina',
-                            hintStyle: AppTextStyles.heading1.copyWith(color: AppColors.textDisabled, fontSize: 32),
+                            hintText: 'NOMBRE DE RUTINA',
+                            hintStyle: AppTextStyles.heading1.copyWith(
+                              color: AppColors.textDisabled, 
+                              fontSize: 28,
+                              letterSpacing: -1,
+                            ),
                             border: InputBorder.none,
                           ),
                         ),
@@ -179,8 +180,10 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: GestureDetector(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: KineticButton(
+                        label: 'AÑADIR DÍA',
+                        icon: Icons.add_circle_outline_rounded,
                         onTap: () {
                           if (widget.routineId != null) {
                             context.read<WorkoutBloc>().add(SaveRoutineDay(
@@ -197,29 +200,6 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                           }
                           HapticFeedback.heavyImpact();
                         },
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 24),
-                              const SizedBox(width: 8),
-                              Text(
-                                'AÑADIR DÍA',
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                   ),
@@ -275,42 +255,50 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   Widget _buildDayCard(int index, RoutineDay day) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceHighlight, width: 0.5),
-      ),
-      child: Material(
-        color: Colors.transparent,
+      child: GlassContainer(
+        padding: EdgeInsets.zero,
+        borderRadius: BorderRadius.circular(24),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           onTap: () => context.push('/day-editor', extra: {
             'day': day,
             'routineId': widget.routineId ?? '',
           }),
           leading: Container(
-            padding: const EdgeInsets.all(10),
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '${index + 1}',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: AppTextStyles.displayNumber.copyWith(
+                fontSize: 18, 
+                color: Colors.black,
+              ),
             ),
           ),
           title: Text(
-            day.name,
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+            day.name.toUpperCase(),
+            style: AppTextStyles.heading2.copyWith(
+              fontSize: 14, 
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              '${day.exercises.length} ejercicios',
-              style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+              '${day.exercises.length} EJERCICIOS',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
             ),
           ),
-          trailing: const Icon(Icons.reorder, color: AppColors.textDisabled),
+          trailing: const Icon(Icons.drag_handle_rounded, color: AppColors.textDisabled),
         ),
       ),
     );

@@ -182,8 +182,8 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: isAlreadyInDay 
-            ? AppColors.textDisabled.withValues(alpha: 0.1)
-            : (isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent),
+            ? AppColors.textDisabled.withOpacity(0.1)
+            : (isSelected ? AppColors.primary.withOpacity(0.05) : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -250,7 +250,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
         color: AppColors.background,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)],
       ),
       child: ElevatedButton(
         onPressed: hasSelection ? () => Navigator.pop(context, _selectedExercises) : null,

@@ -6,10 +6,14 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'core/routes/app_router.dart';
 import 'features/workout/presentation/bloc/workout_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize date formatting for Spanish locale
+  await initializeDateFormatting('es', null);
 
   // Initialize Supabase
   await SupabaseConfig.instance.init();

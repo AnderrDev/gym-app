@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/presentation/widgets/kinetic_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -50,103 +52,131 @@ class _LoginPageState extends State<LoginPage> {
         },
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(
-                  Icons.fitness_center,
-                  size: 80,
-                  color: AppColors.accent,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Smart Gym Tracker',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.heading1,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Inicia sesión para continuar',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLarge,
-                ),
-                const SizedBox(height: 48),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+            padding: const EdgeInsets.all(28.0),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(32.0),
+              borderRadius: BorderRadius.circular(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(
+                    Icons.bolt_rounded,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'GYM TRACKER',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.heading1.copyWith(
+                      letterSpacing: 4,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                  const SizedBox(height: 8),
+                  Text(
+                    'PRECISIÓN KINÉTICA',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.label.copyWith(
+                      letterSpacing: 2,
+                      color: AppColors.primary.withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    return switch (state) {
-                      AuthLoading() => const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accent,
-                          ),
-                        ),
-                      _ => ElevatedButton(
-                          onPressed: _onLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'INICIAR SESIÓN',
-                            style: AppTextStyles.heading2.copyWith(
-                              color: AppColors.background,
-                            ),
-                          ),
-                        ),
-                    };
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    context.go('/register');
-                  },
-                  child: Text(
-                    '¿No tienes cuenta? Regístrate',
-                    style: TextStyle(color: AppColors.accent),
+                  const SizedBox(height: 48),
+                  _buildTextField(
+                    controller: _emailController,
+                    label: 'EMAIL',
+                    icon: Icons.alternate_email_rounded,
+                    keyboardType: TextInputType.emailAddress,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _passwordController,
+                    label: 'CONTRASEÑA',
+                    icon: Icons.lock_outline_rounded,
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 40),
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      return KineticButton(
+                        label: 'INICIAR SESIÓN',
+                        isLoading: state is AuthLoading,
+                        onTap: _onLogin,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () => context.go('/register'),
+                    child: RichText(
+                      text: TextSpan(
+                        style: AppTextStyles.bodyMedium,
+                        children: [
+                          const TextSpan(text: '¿NUEVO AQUÍ? '),
+                          TextSpan(
+                            text: 'REGÍSTRATE',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.label.copyWith(
+            letterSpacing: 1.5,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: AppColors.primary, size: 18),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

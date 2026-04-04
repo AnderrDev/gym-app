@@ -11,6 +11,7 @@ import '../../domain/entities/set_log.dart';
 import '../../domain/entities/workout_session.dart';
 import '../../domain/entities/coaching_analysis.dart';
 import '../../domain/entities/exercise_history_session.dart';
+import '../../domain/entities/routine_history_session.dart';
 import '../../domain/repositories/workout_repository.dart';
 
 /// Implementación 100% remota (Supabase).
@@ -193,7 +194,6 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
       
       return Right(sessions);
     } catch (e) {
-      print('--- ERROR getExerciseLogsHistory: \$e');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -266,6 +266,55 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     try {
       await remoteDataSource.reorderExercisesInDay(dayId, exerciseIds);
       return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps) async {
+    try {
+      await remoteDataSource.updateExerciseTarget(routineDayId, exerciseId, targetWeight, targetReps);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(String userId, String routineId) async {
+    try {
+      final rawData = await remoteDataSource.getRoutineStats(userId, routineId);
+      
+      final List<RoutineHistorySession> stats = rawData.map((row) {
+        final sessionDateStr = row['session_date'] as String;
+        final date = DateTime.parse(sessionDateStr);
+        final routineDayData = row['routine_days'] as Map<String, dynamic>;
+        
+        // set_logs puede ser null si se acaba de empezar y no hay sets
+        final logs = (row['set_logs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        
+        double totalVolume = 0;
+        int totalReps = 0;
+        
+        for (var log in logs) {
+          final w = (log['actual_weight'] as num?)?.toDouble() ?? 0.0;
+          final r = (log['actual_reps'] as int?) ?? 0;
+          totalVolume += w * r;
+          totalReps += r;
+        }
+
+        return RoutineHistorySession(
+          sessionDate: date,
+          routineDayId: row['routine_day_id'].toString(),
+          routineDayName: routineDayData['name'].toString(),
+          totalVolume: totalVolume,
+          totalReps: totalReps,
+          exerciseCount: logs.length, 
+        );
+      }).toList();
+
+      return Right(stats);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

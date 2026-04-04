@@ -23,6 +23,7 @@ abstract class WorkoutRemoteDataSource {
   Future<List<WorkoutSessionModel>> getRecentSessionsForDay(String userId, String routineDayId, DateTime beforeDate, {int limit = 3});
   Future<void> finishWorkoutSession(String sessionId, {List<CoachingAnalysis>? coachingAnalysis});
   Future<List<Map<String, dynamic>>> getExerciseLogsHistory(String userId, String exerciseId);
+  Future<List<Map<String, dynamic>>> getRoutineStats(String userId, String routineId);
 
   // ─── Nuevos métodos de gestión ──────────────────────────────────────────
   Future<void> saveRoutine(RoutineModel routine);
@@ -31,6 +32,7 @@ abstract class WorkoutRemoteDataSource {
   Future<void> deleteRoutineDay(String dayId);
   Future<void> toggleExerciseInDay(String dayId, String exerciseId);
   Future<void> reorderExercisesInDay(String dayId, List<String> exerciseIds);
+  Future<void> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps);
 }
 
 class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
@@ -371,5 +373,37 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
           .eq('routine_day_id', dayId)
           .eq('exercise_id', exerciseIds[i]);
     }
+  }
+
+  @override
+  Future<void> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps) async {
+    await client
+        .from('routine_exercises')
+        .update({
+          'target_weight': targetWeight,
+          'target_reps': targetReps,
+        })
+        .match({
+          'routine_day_id': routineDayId,
+          'exercise_id': exerciseId,
+        });
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRoutineStats(String userId, String routineId) async {
+    final response = await client
+        .from('workout_sessions')
+        .select('''
+          id,
+          session_date,
+          routine_day_id,
+          routine_days!inner(name, routine_id),
+          set_logs(actual_weight, actual_reps)
+        ''')
+        .eq('user_id', userId)
+        .eq('routine_days.routine_id', routineId)
+        .order('session_date', ascending: true);
+
+    return List<Map<String, dynamic>>.from(response);
   }
 }
