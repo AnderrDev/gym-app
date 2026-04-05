@@ -10,6 +10,19 @@ Para más detalles sobre el proyecto y su arquitectura, consulta la carpeta `doc
 - [Documentación del Proyecto](docs/DOCUMENTACION.md)
 - [Configuración de Supabase](docs/supabase.md)
 - [Plan de Servicios Supabase](docs/SUPABASE_SERVICES_PLAN.md)
+- [Edge Functions (implementadas)](docs/EDGE_FUNCTIONS.md)
+
+## Ejecutar con Supabase
+
+La app espera credenciales mediante `--dart-define`.
+
+Ejemplo:
+
+```bash
+flutter run \
+	--dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+	--dart-define=SUPABASE_ANON_KEY=your-anon-key
+```
 
 ## Getting Started
 
