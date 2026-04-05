@@ -25,7 +25,7 @@
 				"https://registry.npmjs.org",
 				"@supabase/mcp-server-supabase@0.7.0",
 				"--project-ref",
-				"benadgxgowycjxypyunc",
+				"benadgxgowycjxyp yunc",
 				"--access-token",
 				"sbp_59ab4f569ef9e99b6e46cf0a2e23b5a80010be19"
 			],

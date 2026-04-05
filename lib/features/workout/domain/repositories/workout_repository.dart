@@ -8,6 +8,7 @@ import '../entities/workout_session.dart';
 import '../entities/coaching_analysis.dart';
 import '../entities/exercise_history_session.dart';
 import '../entities/routine_history_session.dart';
+import '../entities/weekly_insights.dart';
 
 abstract class WorkoutRepository {
   /// Fetches the routines assigned to a specific user
@@ -70,6 +71,12 @@ abstract class WorkoutRepository {
 
   /// Gets unified stats for a specific routine (volume per session)
   Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(String userId, String routineId);
+
+  /// Gets weekly insights (adherence, volume trend, PRs) for a routine
+  Future<Either<Failure, WeeklyInsights>> getWeeklyInsights({
+    required String routineId,
+    required DateTime weekStart,
+  });
 
   /// Actualiza el objetivo de un ejercicio (peso/reps) en una rutina específica
   Future<Either<Failure, void>> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps);

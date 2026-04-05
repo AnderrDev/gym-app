@@ -9,6 +9,7 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/routine.dart';
 import '../../domain/entities/routine_day.dart';
+import '../../domain/entities/weekly_insights.dart';
 import '../bloc/workout_bloc.dart';
 import '../bloc/workout_event.dart';
 import '../bloc/workout_state.dart';
@@ -176,8 +177,12 @@ class _DashboardPageState extends State<DashboardPage> {
             RoutinesLoaded(routines: final routines) => routines.isEmpty
                 ? _buildEmptyState()
                 : _buildRoutineSelector(routines),
-            WeeklyPlanLoaded(days: final days, weekStart: final weekStart) =>
-              _buildWeeklyView(days, weekStart),
+            WeeklyPlanLoaded(
+              days: final days,
+              weekStart: final weekStart,
+              insights: final insights,
+              insightsError: final insightsError,
+            ) => _buildWeeklyView(days, weekStart, insights, insightsError),
             // Cualquier otro estado: mostrar spinner
             // El listener de arriba se encarga de disparar el reload si hay rutina
             _ => const Center(
@@ -293,7 +298,12 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildWeeklyView(List<RoutineDay> days, DateTime weekStart) {
+  Widget _buildWeeklyView(
+    List<RoutineDay> days,
+    DateTime weekStart,
+    WeeklyInsights? insights,
+    String? insightsError,
+  ) {
     final isCurrentWeek = _isSameWeek(weekStart, DateTime.now());
     final weekEnd = weekStart.add(const Duration(days: 6));
 
@@ -378,15 +388,20 @@ class _DashboardPageState extends State<DashboardPage> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: 7,
+            itemCount: 7 + 1,
             itemBuilder: (context, index) {
-              final dayOfWeek = index + 1; // 1=Lun, 7=Dom
-              final date = weekStart.add(Duration(days: index));
-              final routineDay = dayMap[dayOfWeek];
+              if (index == 0) {
+                return _buildWeeklyInsightsCard(insights, insightsError);
+              }
+
+              final dayIndex = index - 1;
+              final normalizedDayOfWeek = dayIndex + 1;
+              final date = weekStart.add(Duration(days: dayIndex));
+              final routineDay = dayMap[normalizedDayOfWeek];
               final isToday = _isToday(date);
 
               return _buildDayCard(
-                dayOfWeek: dayOfWeek,
+                dayOfWeek: normalizedDayOfWeek,
                 date: date,
                 routineDay: routineDay,
                 isToday: isToday,
@@ -395,6 +410,99 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWeeklyInsightsCard(WeeklyInsights? insights, String? insightsError) {
+    if (insightsError != null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.surfaceHighlight),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'No se pudieron cargar insights esta semana. El plan sigue disponible.',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (insights == null) {
+      return const SizedBox.shrink();
+    }
+
+    final trendColor = insights.volumeTrendPercent >= 0 ? AppColors.success : AppColors.error;
+    final trendLabel = insights.volumeTrendPercent >= 0
+        ? '+${insights.volumeTrendPercent.toStringAsFixed(1)}%'
+        : '${insights.volumeTrendPercent.toStringAsFixed(1)}%';
+
+    return GlassContainer(
+      margin: const EdgeInsets.only(bottom: 12),
+      borderRadius: BorderRadius.circular(12),
+      opacity: 0.08,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.insights, color: AppColors.primary, size: 18),
+                const SizedBox(width: 8),
+                Text('Insights semanales', style: AppTextStyles.bodyLarge),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                _metricChip('Adherencia', '${insights.adherenceRate.toStringAsFixed(0)}%'),
+                _metricChip('Sesiones', '${insights.completedSessions}'),
+                _metricChip('Volumen', '${insights.totalVolume.toStringAsFixed(0)} kg'),
+                _metricChip('Tendencia', trendLabel, valueColor: trendColor),
+                _metricChip('PRs', '${insights.personalRecords}'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _metricChip(String label, String value, {Color? valueColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.surfaceHighlight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.label.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: valueColor ?? AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

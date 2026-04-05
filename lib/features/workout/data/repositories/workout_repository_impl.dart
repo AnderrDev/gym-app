@@ -12,6 +12,7 @@ import '../../domain/entities/workout_session.dart';
 import '../../domain/entities/coaching_analysis.dart';
 import '../../domain/entities/exercise_history_session.dart';
 import '../../domain/entities/routine_history_session.dart';
+import '../../domain/entities/weekly_insights.dart';
 import '../../domain/repositories/workout_repository.dart';
 
 /// Implementación 100% remota (Supabase).
@@ -152,6 +153,22 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     try {
       await remoteDataSource.finishWorkoutSession(sessionId, coachingAnalysis: coachingAnalysis);
       return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, WeeklyInsights>> getWeeklyInsights({
+    required String routineId,
+    required DateTime weekStart,
+  }) async {
+    try {
+      final result = await remoteDataSource.getWeeklyInsights(
+        routineId: routineId,
+        weekStart: weekStart,
+      );
+      return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

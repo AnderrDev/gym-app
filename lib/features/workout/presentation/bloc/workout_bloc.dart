@@ -51,10 +51,31 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           routineId: event.routineId,
           weekStart: event.weekStart,
         );
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (days) => emit(WeeklyPlanLoaded(days, event.weekStart)),
+
+        if (result.isLeft()) {
+          emit(WorkoutError(result.fold((failure) => failure.message, (_) => 'Error al cargar plan semanal')));
+          return;
+        }
+
+        final days = result.getOrElse((_) => []);
+        final insightsResult = await repository.getWeeklyInsights(
+          routineId: event.routineId,
+          weekStart: event.weekStart,
         );
+
+        if (insightsResult.isRight()) {
+          emit(WeeklyPlanLoaded(
+            days,
+            event.weekStart,
+            insights: insightsResult.getOrElse((_) => throw StateError('Unreachable')),
+          ));
+        } else {
+          emit(WeeklyPlanLoaded(
+            days,
+            event.weekStart,
+            insightsError: insightsResult.fold((f) => f.message, (_) => null),
+          ));
+        }
       } catch (e) {
         emit(WorkoutError('Error al cargar plan semanal: $e'));
       }

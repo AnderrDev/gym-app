@@ -4,6 +4,7 @@ import '../../domain/entities/routine.dart';
 import '../../domain/entities/routine_day.dart';
 import '../../domain/entities/set_log.dart';
 import '../../domain/entities/workout_session.dart';
+import '../../domain/entities/weekly_insights.dart';
 
 sealed class WorkoutState extends Equatable {
   const WorkoutState();
@@ -31,8 +32,15 @@ final class RoutinesLoaded extends WorkoutState {
 final class WeeklyPlanLoaded extends WorkoutState {
   final List<RoutineDay> days;       // Los 7 días con sus ejercicios y estado
   final DateTime weekStart;
-  const WeeklyPlanLoaded(this.days, this.weekStart);
-  @override List<Object?> get props => [days, weekStart];
+  final WeeklyInsights? insights;
+  final String? insightsError;
+  const WeeklyPlanLoaded(
+    this.days,
+    this.weekStart, {
+    this.insights,
+    this.insightsError,
+  });
+  @override List<Object?> get props => [days, weekStart, insights, insightsError];
 }
 
 // Info del día cargada: ejercicios + sesión existente (puede ser null)

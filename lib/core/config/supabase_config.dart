@@ -7,18 +7,20 @@ class SupabaseConfig {
 
   static SupabaseConfig get instance => _instance;
 
-  static const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String _supabaseUrl =
+      String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://benadgxgowycjxypyunc.supabase.co');
+  static const String _supabaseAnonKey =
+      String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'sb_publishable_keJTLk2DKwhbWxvwx-mm6w_yd-qH-DX');
 
   SupabaseClient get client => Supabase.instance.client;
 
   Future<void> init() async {
     if (_supabaseUrl.isEmpty || _supabaseAnonKey.isEmpty) {
       throw StateError(
-        'Missing SUPABASE_URL or SUPABASE_ANON_KEY. '
-        'Run with --dart-define SUPABASE_URL=... --dart-define SUPABASE_ANON_KEY=...',
+        'Missing Supabase config. Run with --dart-define=SUPABASE_URL=... and --dart-define=SUPABASE_ANON_KEY=...',
       );
     }
+
     await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
   }
 }

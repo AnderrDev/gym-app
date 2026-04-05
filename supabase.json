@@ -1,0 +1,16 @@
+{
+  "functions": [
+    {
+      "slug": "finalize_workout_session_v1",
+      "verify_jwt": false
+    },
+    {
+      "slug": "generate_coaching_v1",
+      "verify_jwt": false
+    },
+    {
+      "slug": "get_weekly_insights_v1",
+      "verify_jwt": false
+    }
+  ]
+}

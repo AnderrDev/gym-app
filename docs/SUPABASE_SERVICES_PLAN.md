@@ -1,165 +1,172 @@
-# Plan de Aprovechamiento de Supabase para Smart Gym Tracker
+# Plan Maestro de Maximización de Supabase para Smart Gym Tracker
 
-Este documento traduce los servicios de Supabase a oportunidades concretas para la app.
+Documento estratégico para explotar Supabase al máximo en esta app, con foco principal en Edge Functions.
 
-## 1) Estado Actual Verificado
-Servicios/stack ya en uso:
-- Postgres + API auto-generada (PostgREST)
+Plan táctico de ejecución por fases:
+- `docs/SUPABASE_IMPLEMENTATION_PLAN.md`
+
+Alcance de esta fase:
+- Incluido: Database, Auth básico, RLS, Edge Functions, observabilidad.
+- Excluido por ahora: Realtime, Storage, Cron (`pg_cron`), Vault y roles/claims avanzados.
+
+## 1) Estado actual verificado (hoy)
+En uso real:
+- Postgres + PostgREST
 - Auth (email/password)
-- RLS en tablas principales
-- RPC (`get_last_exercise_performance`)
-- Vista analitica (`view_workout_sessions_summary`)
+- RLS en tablas core
+- RPC `get_last_exercise_performance`
+- Vista `view_workout_sessions_summary`
 
-Extensiones instaladas en remoto:
-- `pgcrypto`
-- `pg_stat_statements`
-- `pg_graphql`
-- `supabase_vault`
-- `uuid-ossp`
+Verificado en remoto:
+- Migraciones alineadas en repo con las migraciones detectadas en remoto.
+- Índice único parcial para una sola sesión activa por usuario.
+- Edge Functions desplegadas actualmente: ninguna (`list_edge_functions` vacío).
 
-No instaladas (segun snapshot actual de `pg_extension`):
-- `pg_cron`
-- `pg_net`
+Extensiones instaladas:
+- `pgcrypto`, `pg_stat_statements`, `pg_graphql`, `supabase_vault`, `uuid-ossp`
 
-## 2) Servicios Supabase y Como Explotarlos
+No instaladas:
+- `pg_cron`, `pg_net`
 
-### A. Auth
-Uso actual:
-- Login/registro email-password.
+## 2) Mapa completo de servicios Supabase y cómo integrarlos
 
-Mejoras propuestas:
-1. Endurecer sesiones y seguridad:
-- activar reglas de password y email verification segun producto.
-- agregar auditoria basica de auth events.
+### 2.1 Database (Postgres)
+Qué aporta:
+- Modelo transaccional del negocio fitness (rutinas, sesiones, set logs).
 
-2. Rolado de permisos por claims:
-- usar custom claims para separar usuario normal vs coach/admin.
+Cómo explotarlo más:
+- Constraints de integridad (unicidad de set por `session_id, exercise_id, set_index`).
+- Índices compuestos de consultas calientes (dashboard semanal, histórico por ejercicio).
+- Funciones SQL para operaciones atómicas críticas (completar sesión + snapshot de métricas).
 
-Impacto:
-- mejor control de acceso a funciones admin (ej. creador global de rutinas).
+### 2.2 Auth
+Qué aporta:
+- Identidad y sesión segura del atleta.
 
-### B. Postgres + RLS
-Uso actual:
-- modelo central del producto y ownership por usuario.
+Cómo explotarlo más:
+- Verificación de email y políticas de contraseña.
+- Auditoría de eventos auth para soporte y seguridad.
 
-Mejoras propuestas:
-1. Cerrar drift repo-remoto (prioridad inmediata).
-2. Revisar politicas `SELECT USING (true)` para catalogos y decidir:
-- catalogo realmente publico, o
-- acceso segmentado por tenant/rol.
-3. Añadir constraints de integridad de negocio:
-- unicidad de set por (`session_id`,`exercise_id`,`set_index`) para evitar deduplicacion manual.
+### 2.3 Row Level Security (RLS)
+Qué aporta:
+- Aislamiento por usuario en datos sensibles.
 
-Impacto:
-- menos bugs de datos y menor deuda tecnica.
+Cómo explotarlo más:
+- Decisión explícita de modelo de catálogo:
+	- público (`SELECT true`) o
+	- segmentado por usuario/tenant.
+- Tests de seguridad SQL para evitar regresiones de políticas.
 
-### C. Realtime
-Uso actual:
-- no hay evidencia de suscripciones activas en cliente para workout.
+### 2.6 Edge Functions (prioridad alta)
+Qué aporta:
+- Lógica de negocio server-side, integraciones externas, webhooks, tareas seguras.
 
-Mejoras propuestas:
-1. Realtime para sincronizacion multi-dispositivo de sesion activa.
-2. Canal de presencia para escenarios coach-atleta (futuro premium).
-3. Empezar por `postgres_changes` en tablas criticas y evolucionar a `broadcast` en flujos de colaboracion/estado efimero.
+Cómo explotarlo más (en este proyecto):
+- Orquestar cierre de sesión, coaching, notificaciones, ingesta externa.
+- Evitar lógica sensible dispersa en el cliente.
+- Centralizar validaciones e idempotencia.
 
-Impacto:
-- experiencia mas viva y consistente cuando el usuario cambia de dispositivo.
+Buenas prácticas clave:
+- `verify_jwt=true` por defecto.
+- Service role solo dentro de función cuando sea estrictamente necesario.
+- Idempotencia por request-id/session-id.
+- Logging estructurado por `user_id`, `session_id`, `correlation_id`.
 
-### D. Edge Functions
-Uso actual:
-- no integradas en flujo principal.
+### 2.7 GraphQL (`pg_graphql`)
+Qué aporta:
+- Capa alternativa de consulta (útil para clientes ricos en lectura).
 
-Mejoras propuestas:
-1. Mover coaching avanzado a Edge Function:
-- entrada: resumen de sesion + historico reciente.
-- salida: recomendaciones estructuradas guardadas en `coaching_analysis`.
-2. Webhooks de integracion externa (Wearables / WhatsApp / Email).
-3. Jobs de saneamiento de datos y backfills controlados.
+Cómo explotarlo más:
+- Mantenerlo opcional por ahora.
+- Activarlo solo para vistas analíticas complejas si aporta claridad frente a PostgREST.
 
-Impacto:
-- logica compleja fuera del cliente, mas mantenible y segura.
+### 2.8 Observabilidad
+Qué aporta:
+- Detección de cuellos de botella y costos.
 
-### E. Storage
-Uso actual:
-- no evidenciado en flujo workout.
+Cómo explotarlo más:
+- Revisiones periódicas con `pg_stat_statements`.
+- SLO de latencia para endpoints críticos (dashboard, apertura de día, cierre sesión).
 
-Mejoras propuestas:
-1. Bucket para multimedia de ejercicios (gif/video/imagen).
-2. Bucket para avatares de usuario.
-3. Politicas por bucket con acceso publico solo donde aplique.
+## 3) Plan específico de Edge Functions (lo más importante)
 
-Impacto:
-- mejor UX en planner y entrenamiento (ejecucion correcta del ejercicio).
+### Fase A (base, 1 sprint)
+1. `finalize_workout_session_v1`
+- Entrada: `session_id`.
+- Proceso: valida ownership, calcula completitud estricta, marca `completed_at`, persiste resumen.
+- Salida: estado final + métricas de sesión.
 
-### F. Cron + Jobs Programados (pg_cron)
-Uso actual:
-- no disponible en extensiones instaladas.
+2. `generate_coaching_v1`
+- Entrada: `session_id`, contexto mínimo.
+- Proceso: analiza rendimiento vs histórico reciente.
+- Salida: recomendaciones estructuradas para `coaching_analysis`.
 
-Mejoras propuestas:
-1. Instalar `pg_cron` (y `pg_net` si se invocaran endpoints).
-2. Programar tareas:
-- consolidacion semanal de metricas.
-- recordatorios de inactividad.
-- recálculo nocturno de insights.
+3. `get_weekly_insights_v1`
+- Entrada: `user_id`, rango semanal.
+- Salida: volumen, adherencia, tendencia, PRs.
 
-Impacto:
-- automatizacion operativa sin depender de cliente abierto.
+### Fase B (producto, 1-2 sprints)
+4. `ingest_wearable_webhook_v1`
+- Endpoint para integrar datos externos (pasos, HR, etc.) bajo firma segura.
 
-### G. Vault
-Uso actual:
-- extension instalada (`supabase_vault`).
+5. `backfill_coaching_v1`
+- Reprocesa sesiones antiguas cuando se actualiza algoritmo de coaching.
 
-Mejoras propuestas:
-1. Guardar secretos usados por jobs/funciones.
-2. Evitar claves hardcodeadas en app y SQL.
+### Contrato técnico recomendado para Functions
+- Versionado explícito (`*_v1`, `*_v2`).
+- Respuesta estándar:
+	- `success: bool`
+	- `code: string`
+	- `data: object`
+	- `error: { message, details? }`
+- Idempotencia por `session_id` y `operation_key`.
 
-Impacto:
-- mejor postura de seguridad.
+## 4) Arquitectura objetivo (Supabase-first)
+1. Flutter
+- UI + estado + validaciones de experiencia.
 
-### H. Observabilidad y Performance
-Uso actual:
-- `pg_stat_statements` instalado.
+2. Postgres/RLS
+- Fuente de verdad transaccional.
 
-Mejoras propuestas:
-1. Auditar top queries lentas de dashboard/historial.
-2. Ajustar indices compuestos segun consultas reales.
-3. Definir SLO basico de latencia para consultas clave.
+3. Edge Functions
+- Casos de negocio complejos e integraciones externas.
 
-Impacto:
-- app mas fluida y menor costo de BD.
+4. Cliente Flutter
+- Solo consumo de API/Auth/Functions en esta fase (sin Storage).
 
-## 3) Roadmap Recomendado por Fases
+## 5) Roadmap priorizado (90 días)
 
-Fase 0 (inmediata, 1 sprint):
-1. Alinear migraciones locales con remoto (hecho en repo).
-2. Corregir seed desalineado (`assign_mock.sql`).
-3. Quitar secretos hardcodeados del cliente.
+### Sprint 1
+1. Quitar secretos hardcodeados del cliente (`--dart-define` + entorno).
+2. Crear `finalize_workout_session_v1`.
+3. Añadir constraint único de set logs por set.
+4. Tests de RLS y de flujo de cierre de sesión.
 
-Fase 1 (corto plazo):
-1. Revisar/ajustar RLS de catalogos.
-2. Integrar Storage para assets de ejercicios.
-3. Instrumentar monitoreo con `pg_stat_statements`.
+### Sprint 2
+1. Crear `generate_coaching_v1`.
+2. Integrar lectura/escritura de coaching desde función.
+3. Hardening de errores y retries idempotentes en functions.
 
-Fase 2 (medio plazo):
-1. Realtime en sesion activa (sincronizacion entre dispositivos).
-2. Edge Function para coaching avanzado.
-3. Pruebas de integracion DB + reglas RLS.
+### Sprint 3
+1. Crear `get_weekly_insights_v1`.
+2. Integrar dashboard con insights de función.
+3. Pruebas end-to-end de functions + hardening de contratos.
 
-Fase 3 (premium/escala):
-1. Presencia coach-atleta y colaboracion en vivo.
-2. Jobs programados con cron para insights y retention.
-3. Exponer endpoints especializados para analitica avanzada.
+### Sprint 4
+1. Integración de `ingest_wearable_webhook_v1`.
+2. Ejecutar `backfill_coaching_v1` controlado para histórico.
+3. Hardening de observabilidad y costos.
 
-## 4) Backlog Tecnico Priorizado
-1. Definir y aplicar modelo canon de musculo (`muscle_group` vs `target_muscle`).
-2. Constraint unico para set logs por set.
-3. Endurecer politicas write/update donde falten.
-4. Crear scripts de verificacion automatica de drift schema.
-5. Diseñar contrato de datos para coaching (input/output versionado).
+## 6) Backlog técnico recomendado
+1. Unificar dominio `muscle_group` vs `target_muscle`.
+2. Test suite SQL (RLS + funciones + vistas).
+3. Script de “drift check” repo vs remoto.
+4. Catálogo de errores de negocio estandarizado.
+5. Estrategia de retries en funciones idempotentes.
 
-## 5) Criterios de Exito
+## 7) Criterios de éxito
 - Cero drift entre remoto y `supabase/migrations`.
-- Deploy reproducible en un proyecto nuevo.
-- Tiempo de carga de dashboard y sesion estable bajo carga normal.
-- Sin secretos hardcodeados en repo.
+- 100% de cierres de sesión pasan por función server-side.
+- Latencia aceptable en flujos críticos (abrir día/cerrar sesión/dashboard).
+- Sin secretos hardcodeados en app/repo.
 - Recomendaciones de coaching consistentes y auditables.

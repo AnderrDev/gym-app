@@ -5,6 +5,7 @@ import '../models/set_log_model.dart';
 import '../models/workout_session_model.dart';
 import '../models/routine_model.dart';
 import '../../domain/entities/coaching_analysis.dart';
+import '../../domain/entities/weekly_insights.dart';
 
 abstract class WorkoutRemoteDataSource {
   Future<List<RoutineModel>> getAssignedRoutines(String userId);
@@ -22,6 +23,10 @@ abstract class WorkoutRemoteDataSource {
   Future<List<SetLogModel>> getSessionSetLogs(String sessionId);
   Future<List<WorkoutSessionModel>> getRecentSessionsForDay(String userId, String routineDayId, DateTime beforeDate, {int limit = 3});
   Future<void> finishWorkoutSession(String sessionId, {List<CoachingAnalysis>? coachingAnalysis});
+  Future<WeeklyInsights> getWeeklyInsights({
+    required String routineId,
+    required DateTime weekStart,
+  });
   Future<List<Map<String, dynamic>>> getExerciseLogsHistory(String userId, String exerciseId);
   Future<List<Map<String, dynamic>>> getRoutineStats(String userId, String routineId);
 
@@ -294,18 +299,184 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
   @override
   Future<void> finishWorkoutSession(String sessionId, {List<CoachingAnalysis>? coachingAnalysis}) async {
-    final Map<String, dynamic> updateData = {
-      'completed_at': DateTime.now().toIso8601String(),
+    final Map<String, dynamic> payload = {
+      'session_id': sessionId,
     };
 
     if (coachingAnalysis != null) {
-      updateData['coaching_analysis'] = coachingAnalysis.map((e) => e.toJson()).toList();
+      payload['coaching_analysis'] = coachingAnalysis.map((e) => e.toJson()).toList();
     }
 
-    await client
-        .from('workout_sessions')
-        .update(updateData)
-        .eq('id', sessionId);
+    try {
+      // Get the user's auth token with automatic refresh if needed
+      final session = (await client.auth.refreshSession()).session;
+      final token = session?.accessToken;
+      
+      if (token == null) {
+        throw const WorkoutFunctionException(
+          code: 'UNAUTHORIZED',
+          userMessage: 'Tu sesión expiró. Inicia sesión nuevamente.',
+        );
+      }
+
+      final response = await client.functions.invoke(
+        'finalize_workout_session_v1',
+        body: payload,
+        headers: {
+          'X-User-Token': token, // Kept only for internal function legacy logic
+        },
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw const WorkoutFunctionException(
+          code: 'TIMEOUT',
+          userMessage: 'La solicitud tardó demasiado. Intenta nuevamente.',
+        ),
+      );
+
+      final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : <String, dynamic>{};
+      final statusCode = response.status;
+      final code = data['code']?.toString();
+      final success = data['success'] == true;
+
+      // Handle API errors
+      if (statusCode == 404 || code == 'NOT_FOUND_OR_ALREADY_COMPLETED') {
+        throw const WorkoutFunctionException(
+          code: 'NOT_FOUND_OR_ALREADY_COMPLETED',
+          userMessage: 'Esta sesión ya fue finalizada o no existe.',
+        );
+      }
+
+      if (statusCode == 400 || code == 'VALIDATION_ERROR') {
+        throw const WorkoutFunctionException(
+          code: 'VALIDATION_ERROR',
+          userMessage: 'No se pudo finalizar la sesión por datos inválidos.',
+        );
+      }
+
+      if (statusCode == 401 || code == 'UNAUTHORIZED') {
+        throw const WorkoutFunctionException(
+          code: 'UNAUTHORIZED',
+          userMessage: 'Tu sesión expiró. Inicia sesión nuevamente.',
+        );
+      }
+
+      if (!success || statusCode < 200 || statusCode >= 300) {
+        throw WorkoutFunctionException(
+          code: code ?? 'UNKNOWN_FUNCTION_ERROR',
+          userMessage: 'No se pudo finalizar la sesión en este momento. Intenta nuevamente.',
+        );
+      }
+      return;
+    } on FunctionException catch (e) {
+      // Extract detailed information from the SDK exception
+      final status = e.status;
+      final errorMessage = e.details?.toString() ?? e.toString();
+      
+      if (status == 401) {
+        throw const WorkoutFunctionException(
+          code: 'UNAUTHORIZED',
+          userMessage: 'Tu sesión expiró (401). Inicia sesión nuevamente.',
+        );
+      }
+      
+      throw WorkoutFunctionException(
+        code: 'FUNCTION_ERROR_$status',
+        userMessage: 'Error del servidor ($status): $errorMessage',
+      );
+    } catch (e) {
+      if (e is WorkoutFunctionException) {
+        rethrow;
+      }
+      throw WorkoutFunctionException(
+        code: 'EDGE_RUNTIME_ERROR',
+        userMessage: 'No se pudo conectar con el servidor: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<WeeklyInsights> getWeeklyInsights({
+    required String routineId,
+    required DateTime weekStart,
+  }) async {
+    try {
+      final weekStartIso =
+          '${weekStart.year.toString().padLeft(4, '0')}-${weekStart.month.toString().padLeft(2, '0')}-${weekStart.day.toString().padLeft(2, '0')}';
+
+      // Get the user's auth token with automatic refresh if needed
+      final session = (await client.auth.refreshSession()).session;
+      final token = session?.accessToken;
+      if (token == null) {
+        throw const WorkoutFunctionException(
+          code: 'UNAUTHORIZED',
+          userMessage: 'Tu sesión expiró. Inicia sesión nuevamente.',
+        );
+      }
+
+      final payload = {
+        'routine_id': routineId,
+        'week_start': weekStartIso,
+      };
+
+      final response = await client.functions.invoke(
+        'get_weekly_insights_v1',
+        body: payload,
+        headers: {
+          'X-User-Token': token, // Kept only for internal function legacy logic
+        },
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw const WorkoutFunctionException(
+          code: 'TIMEOUT',
+          userMessage: 'La solicitud tardó demasiado. Intenta nuevamente.',
+        ),
+      );
+
+      final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : <String, dynamic>{};
+      final statusCode = response.status;
+      final success = data['success'] == true;
+
+      if (!success || statusCode < 200 || statusCode >= 300) {
+        final code = data['code']?.toString() ?? 'WEEKLY_INSIGHTS_ERROR';
+        throw WorkoutFunctionException(
+          code: code,
+          userMessage: 'No se pudieron cargar los insights semanales.',
+        );
+      }
+
+      final body = data['data'];
+      if (body is! Map<String, dynamic>) {
+        throw const WorkoutFunctionException(
+          code: 'INVALID_INSIGHTS_PAYLOAD',
+          userMessage: 'La respuesta de insights no es válida.',
+        );
+      }
+
+      return WeeklyInsights.fromJson(body);
+    } on FunctionException catch (e) {
+      final status = e.status;
+      final errorMessage = e.details?.toString() ?? e.toString();
+      
+      if (status == 401) {
+        throw const WorkoutFunctionException(
+          code: 'UNAUTHORIZED',
+          userMessage: 'Tu sesión expiró (401). Inicia sesión nuevamente.',
+        );
+      }
+      
+      throw WorkoutFunctionException(
+        code: 'INSIGHTS_FUNCTION_ERROR_$status',
+        userMessage: 'Error de insights ($status): $errorMessage',
+      );
+    } catch (e) {
+      if (e is WorkoutFunctionException) {
+        rethrow;
+      }
+      throw WorkoutFunctionException(
+        code: 'INSIGHTS_ERROR',
+        userMessage: 'Error de conexión: ${e.toString()}',
+      );
+    }
   }
 
   @override
@@ -443,4 +614,13 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
     return List<Map<String, dynamic>>.from(response);
   }
+}
+
+class WorkoutFunctionException implements Exception {
+  final String code;
+  final String userMessage;
+  const WorkoutFunctionException({required this.code, required this.userMessage});
+
+  @override
+  String toString() => userMessage;
 }
