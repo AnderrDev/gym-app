@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/routes/app_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
@@ -26,6 +27,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Routine? _selectedRoutine;
   ActiveSessionDetected? _activeSession;
   bool _autoResumeHandled = false;
+  WorkoutState? _lastDashboardState;
+  bool _autoPlanRequested = false;
+  WeeklyPlanLoaded? _cachedWeeklyPlan;
 
   static DateTime _getWeekStart(DateTime date) {
     // Lunes de la semana actual
@@ -70,7 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
       exercises: const [],
     );
     context.push(
-      '/routine-day',
+      AppRoutes.routineDay,
       extra: {
         'routineDay': routineDay,
         'userId': session.userId,
@@ -82,6 +86,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void _loadWeeklyPlan(Routine routine) {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
+      _autoPlanRequested = true;
       setState(() => _selectedRoutine = routine);
       context.read<WorkoutBloc>().add(
         FetchWeeklyPlan(
@@ -102,6 +107,15 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  bool _isDashboardState(WorkoutState state) {
+    return state is WorkoutInitial ||
+        state is WorkoutLoading ||
+        state is WorkoutError ||
+        state is RoutinesLoaded ||
+        state is WeeklyPlanLoaded ||
+        state is ActiveSessionDetected;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,11 +127,20 @@ class _DashboardPageState extends State<DashboardPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: AppColors.primary),
-            onPressed: () => context.push('/routine-list'),
+            onPressed: () async {
+              final authState = context.read<AuthBloc>().state;
+              final workoutBloc = context.read<WorkoutBloc>();
+              final userId = authState is Authenticated
+                  ? authState.user.id
+                  : null;
+              final didChange = await context.push<bool>(AppRoutes.routineList);
+              if (!mounted || didChange != true || userId == null) return;
+              workoutBloc.add(FetchAssignedRoutines(userId));
+            },
           ),
           IconButton(
             icon: const Icon(Icons.storage, color: AppColors.primary),
-            onPressed: () => context.push('/db-inspector'),
+            onPressed: () => context.push(AppRoutes.dbInspector),
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.primary),
@@ -126,9 +149,15 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body: BlocConsumer<WorkoutBloc, WorkoutState>(
+        listenWhen: (previous, current) =>
+            current is ActiveSessionDetected ||
+            current is WorkoutFinishedSuccess ||
+            current is RoutinesLoaded ||
+            current is WeeklyPlanLoaded,
         listener: (context, state) {
           // Sesión activa detectada al abrir app: redirigir automáticamente una sola vez
           if (state is ActiveSessionDetected) {
+            if (!mounted) return;
             setState(() => _activeSession = state);
             if (!_autoResumeHandled) {
               _autoResumeHandled = true;
@@ -138,56 +167,71 @@ class _DashboardPageState extends State<DashboardPage> {
 
           // Entrenamiento finalizado: limpiar banner de sesión activa
           if (state is WorkoutFinishedSuccess) {
+            if (!mounted) return;
             setState(() => _activeSession = null);
           }
 
-          if (state is ManagementSuccess || state is WorkoutFinishedSuccess) {
-            // Mostrar mensaje de éxito si lo hay
-            final msg = (state is ManagementSuccess)
-                ? state.message
-                : '¡Entrenamiento completado!';
+          if (state is WorkoutFinishedSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(msg),
+              const SnackBar(
+                content: Text('¡Entrenamiento completado!'),
                 backgroundColor: AppColors.success,
-                duration: const Duration(seconds: 2),
+                duration: Duration(seconds: 2),
               ),
             );
-
-            // Importante: Si venimos de activar/crear rutina, forzar carga de rutinas asignadas
-            final authState = context.read<AuthBloc>().state;
-            if (authState is Authenticated) {
-              context.read<WorkoutBloc>().add(
-                FetchAssignedRoutines(authState.user.id),
-              );
-            }
-            setState(() => _selectedRoutine = null);
           }
 
           // Al recibir las rutinas asignadas, si solo hay una, disparar carga del plan semanal
           if (state is RoutinesLoaded) {
             if (state.routines.length == 1) {
-              _loadWeeklyPlan(state.routines.first);
+              final routine = state.routines.first;
+              final cachedMatches =
+                  _cachedWeeklyPlan?.routine?.id == routine.id;
+              if (_selectedRoutine?.id != routine.id) {
+                if (!mounted) return;
+                setState(() => _selectedRoutine = routine);
+              }
+              if (!cachedMatches) {
+                _autoPlanRequested = false;
+              }
+              if (!_autoPlanRequested || !cachedMatches) {
+                _loadWeeklyPlan(routine);
+              }
+            } else {
+              if (!mounted) return;
+              _autoPlanRequested = false;
+              setState(() => _selectedRoutine = null);
             }
           }
 
-          // Al recibir respuesta de activación exitosa (obsolescente por el bloque de arriba pero mantenemos por seguridad)
-          if (state is ManagementSuccess) {
-            setState(() => _selectedRoutine = null);
+          if (state is WeeklyPlanLoaded) {
+            _cachedWeeklyPlan = state;
+            if (_selectedRoutine?.id != state.routine?.id) {
+              if (!mounted) return;
+              setState(() => _selectedRoutine = state.routine);
+            }
           }
 
-          // Al volver de RoutineDayPage (ResetWorkout → WorkoutInitial): recargar datos.
-          if (state is WorkoutInitial) {
-            final authState = context.read<AuthBloc>().state;
-            if (authState is Authenticated) {
-              context.read<WorkoutBloc>().add(
-                FetchAssignedRoutines(authState.user.id),
-              );
-            }
+          if (state is WeeklyPlanLoaded) {
+            _cachedWeeklyPlan = state;
           }
         },
         builder: (context, state) {
-          final content = switch (state) {
+          final shouldUseCached =
+              (state is WorkoutLoading || state is WorkoutInitial) &&
+              _lastDashboardState != null;
+          final effectiveState = shouldUseCached
+              ? _lastDashboardState!
+              : (_isDashboardState(state)
+                    ? state
+                    : (_lastDashboardState ?? state));
+          if (_isDashboardState(effectiveState) &&
+              effectiveState is! WorkoutLoading &&
+              effectiveState is! WorkoutInitial) {
+            _lastDashboardState = effectiveState;
+          }
+
+          final content = switch (effectiveState) {
             WorkoutInitial() ||
             WorkoutLoading() ||
             SavingSetLog() => const Center(
@@ -276,21 +320,29 @@ class _DashboardPageState extends State<DashboardPage> {
               routines.isEmpty
                   ? _buildEmptyState()
                   : routines.length == 1
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Cargando tu rutina...',
-                            style: AppTextStyles.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    )
+                  ? (_cachedWeeklyPlan != null &&
+                            _cachedWeeklyPlan!.routine?.id == routines.first.id
+                        ? _buildWeeklyView(
+                            _cachedWeeklyPlan!.days,
+                            _cachedWeeklyPlan!.weekStart,
+                            _cachedWeeklyPlan!.insights,
+                            _cachedWeeklyPlan!.insightsError,
+                          )
+                        : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Cargando tu rutina...',
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ))
                   : _buildRoutineSelector(routines),
             WeeklyPlanLoaded(
               days: final days,
@@ -415,7 +467,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is Authenticated) {
                               context.push(
-                                '/routine-stats',
+                                AppRoutes.routineStats,
                                 extra: {
                                   'userId': authState.user.id,
                                   'routineId': routine.id,
@@ -483,7 +535,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           final authState = context.read<AuthBloc>().state;
                           if (authState is Authenticated) {
                             context.push(
-                              '/routine-stats',
+                              AppRoutes.routineStats,
                               extra: {
                                 'userId': authState.user.id,
                                 'routineId': _selectedRoutine!.id,
@@ -806,7 +858,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   final authState = context.read<AuthBloc>().state;
                   if (authState is Authenticated) {
                     context.push(
-                      '/routine-day',
+                      AppRoutes.routineDay,
                       extra: {
                         'routineDay': routineDay,
                         'userId': authState.user.id,
@@ -846,7 +898,16 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () => context.push('/routine-list'),
+            onPressed: () async {
+              final authState = context.read<AuthBloc>().state;
+              final workoutBloc = context.read<WorkoutBloc>();
+              final userId = authState is Authenticated
+                  ? authState.user.id
+                  : null;
+              final didChange = await context.push<bool>(AppRoutes.routineList);
+              if (!mounted || didChange != true || userId == null) return;
+              workoutBloc.add(FetchAssignedRoutines(userId));
+            },
             icon: const Icon(Icons.explore_rounded, color: Colors.black),
             label: const Text(
               'EXPLORAR CATÁLOGO',
@@ -866,7 +927,27 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 16),
           TextButton(
-            onPressed: () => context.push('/routine-editor'),
+            onPressed: () async {
+              final authState = context.read<AuthBloc>().state;
+              final workoutBloc = context.read<WorkoutBloc>();
+              final userId = authState is Authenticated
+                  ? authState.user.id
+                  : null;
+              final routine = _selectedRoutine;
+              final didChange = await context.push<bool>(
+                AppRoutes.routineEditor,
+              );
+              if (!mounted || didChange != true || userId == null) return;
+              if (routine != null) {
+                workoutBloc.add(
+                  FetchWeeklyPlan(
+                    userId: userId,
+                    routineId: routine.id,
+                    weekStart: _currentWeekStart,
+                  ),
+                );
+              }
+            },
             child: Text(
               'CREAR RUTINA MANUALMENTE',
               style: AppTextStyles.label.copyWith(

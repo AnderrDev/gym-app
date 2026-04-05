@@ -287,7 +287,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .order('created_at', ascending: false);
 
     for (final row in response) {
-      final json = row as Map<String, dynamic>;
+      final json = row;
       final exerciseId = json['exercise_id']?.toString();
       if (exerciseId == null || !result.containsKey(exerciseId)) continue;
       result[exerciseId] ??= SetLogModel.fromJson(json);
@@ -362,7 +362,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
     final grouped = <String, List<SetLogModel>>{};
     for (final row in response) {
-      final model = SetLogModel.fromJson(row as Map<String, dynamic>);
+      final model = SetLogModel.fromJson(row);
       grouped.putIfAbsent(model.sessionId, () => <SetLogModel>[]).add(model);
     }
 

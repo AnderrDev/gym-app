@@ -1,3 +1,4 @@
+// ignore_for_file: must_be_immutable
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/features/auth/data/datasources/auth_remote_data_source.dart';

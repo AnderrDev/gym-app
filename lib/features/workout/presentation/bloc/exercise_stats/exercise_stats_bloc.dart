@@ -6,18 +6,30 @@ import 'exercise_stats_state.dart';
 class ExerciseStatsBloc extends Bloc<ExerciseStatsEvent, ExerciseStatsState> {
   final WorkoutRepository repository;
 
-  ExerciseStatsBloc({required this.repository}) : super(ExerciseStatsInitial()) {
+  ExerciseStatsBloc({required this.repository})
+    : super(ExerciseStatsInitial()) {
     on<LoadExerciseStats>(_onLoadExerciseStats);
   }
 
   Future<void> _onLoadExerciseStats(
-      LoadExerciseStats event, Emitter<ExerciseStatsState> emit) async {
-    emit(ExerciseStatsLoading());
-    final result = await repository.getExerciseLogsHistory(event.userId, event.exerciseId);
-    
-    result.fold(
-      (failure) => emit(ExerciseStatsError(message: failure.message)),
-      (history) => emit(ExerciseStatsLoaded(history: history)),
-    );
+    LoadExerciseStats event,
+    Emitter<ExerciseStatsState> emit,
+  ) async {
+    if (state is! ExerciseStatsLoading) {
+      emit(ExerciseStatsLoading());
+    }
+    try {
+      final result = await repository.getExerciseLogsHistory(
+        event.userId,
+        event.exerciseId,
+      );
+
+      result.fold(
+        (failure) => emit(ExerciseStatsError(message: failure.message)),
+        (history) => emit(ExerciseStatsLoaded(history: history)),
+      );
+    } catch (e) {
+      emit(ExerciseStatsError(message: 'Error al cargar estadisticas: $e'));
+    }
   }
 }

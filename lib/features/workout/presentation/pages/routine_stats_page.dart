@@ -26,8 +26,9 @@ class RoutineStatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => RoutineStatsBloc(repository: sl())
-        ..add(FetchRoutineStats(userId: userId, routineId: routineId)),
+      create: (context) =>
+          RoutineStatsBloc(repository: sl())
+            ..add(FetchRoutineStats(userId: userId, routineId: routineId)),
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -35,13 +36,35 @@ class RoutineStatsPage extends StatelessWidget {
           elevation: 0,
           title: Text('Historial: $routineName', style: AppTextStyles.heading2),
         ),
-        body: BlocBuilder<RoutineStatsBloc, RoutineStatsState>(
+        body: BlocConsumer<RoutineStatsBloc, RoutineStatsState>(
+          listenWhen: (previous, current) => current is RoutineStatsError,
+          listener: (context, state) {
+            if (state is RoutineStatsError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          },
+          buildWhen: (previous, current) =>
+              current is RoutineStatsLoading ||
+              current is RoutineStatsLoaded ||
+              current is RoutineStatsError,
           builder: (context, state) {
             if (state is RoutineStatsLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
             }
             if (state is RoutineStatsError) {
-              return Center(child: Text(state.message, style: const TextStyle(color: AppColors.error)));
+              return Center(
+                child: Text(
+                  state.message,
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              );
             }
             if (state is RoutineStatsLoaded) {
               if (state.stats.isEmpty) {
@@ -61,11 +84,18 @@ class RoutineStatsPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.bar_chart, size: 64, color: AppColors.surfaceHighlight),
+          const Icon(
+            Icons.bar_chart,
+            size: 64,
+            color: AppColors.surfaceHighlight,
+          ),
           const SizedBox(height: 16),
           Text('Sin datos suficientes', style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          Text('Completa sesiones para ver tu evolución.', style: AppTextStyles.bodyMedium),
+          Text(
+            'Completa sesiones para ver tu evolución.',
+            style: AppTextStyles.bodyMedium,
+          ),
         ],
       ),
     );
@@ -77,7 +107,10 @@ class RoutineStatsPage extends StatelessWidget {
       children: [
         _buildVolumeChart(stats),
         const SizedBox(height: 24),
-        Text('EVOLUCIÓN DE VOLUMEN', style: AppTextStyles.label.copyWith(letterSpacing: 2)),
+        Text(
+          'EVOLUCIÓN DE VOLUMEN',
+          style: AppTextStyles.label.copyWith(letterSpacing: 2),
+        ),
         const SizedBox(height: 16),
         ...stats.reversed.map((s) => _buildSessionCard(s)),
       ],
@@ -95,7 +128,12 @@ class RoutineStatsPage extends StatelessWidget {
             children: [
               const Icon(Icons.show_chart, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text('VOLUMEN TOTAL (kg)', style: AppTextStyles.label.copyWith(fontWeight: FontWeight.w900)),
+              Text(
+                'VOLUMEN TOTAL (kg)',
+                style: AppTextStyles.label.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -105,9 +143,15 @@ class RoutineStatsPage extends StatelessWidget {
               LineChartData(
                 gridData: const FlGridData(show: false),
                 titlesData: const FlTitlesData(
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -129,7 +173,7 @@ class RoutineStatsPage extends StatelessWidget {
                     dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -152,20 +196,35 @@ class RoutineStatsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.fitness_center, color: AppColors.primary, size: 20),
+            child: const Icon(
+              Icons.fitness_center,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(session.routineDayName, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
                 Text(
-                  DateFormat('EEEE, d MMM', 'es').format(session.sessionDate).toUpperCase(),
-                  style: AppTextStyles.label.copyWith(fontSize: 10, color: AppColors.textDisabled),
+                  session.routineDayName,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  DateFormat(
+                    'EEEE, d MMM',
+                    'es',
+                  ).format(session.sessionDate).toUpperCase(),
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 10,
+                    color: AppColors.textDisabled,
+                  ),
                 ),
               ],
             ),
@@ -173,9 +232,17 @@ class RoutineStatsPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${session.totalVolume.toStringAsFixed(0)} kg', 
-                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900)),
-              Text('VOL. TOTAL', style: AppTextStyles.label.copyWith(fontSize: 8)),
+              Text(
+                '${session.totalVolume.toStringAsFixed(0)} kg',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                'VOL. TOTAL',
+                style: AppTextStyles.label.copyWith(fontSize: 8),
+              ),
             ],
           ),
         ],

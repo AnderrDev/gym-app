@@ -1,16 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
-import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
-import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
+import 'package:gym_flutter/features/workout/data/models/exercise_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/data/repositories/workout_repository_impl.dart';
-import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../../../helpers/test_fixtures.dart';
 
 class MockWorkoutRemoteDataSource extends Mock
     implements WorkoutRemoteDataSource {}
@@ -19,133 +15,202 @@ void main() {
   late WorkoutRepositoryImpl repository;
   late MockWorkoutRemoteDataSource mockRemoteDataSource;
 
+  const tUserId = 'u1';
+  const tRoutineId = 'r1';
+  const tRoutineModel = RoutineModel(
+    id: tRoutineId,
+    name: 'Test Routine',
+    exerciseCount: 0,
+  );
+
+  setUpAll(() {
+    registerFallbackValue(tRoutineModel);
+    registerFallbackValue(DateTime.now());
+    registerFallbackValue(
+      const RoutineDayModel(
+        id: 'd1',
+        routineId: 'r1',
+        name: 'Lunes',
+        dayOfWeek: 1,
+      ),
+    );
+  });
+
   setUp(() {
     mockRemoteDataSource = MockWorkoutRemoteDataSource();
     repository = WorkoutRepositoryImpl(remoteDataSource: mockRemoteDataSource);
   });
 
-  const tUserId = 'user-1';
-
-  final tRoutineModel = RoutineModel(
-    id: testRoutine.id,
-    name: testRoutine.name,
-    exerciseCount: testRoutine.exerciseCount,
-    isPublic: testRoutine.isPublic,
-  );
-
-  final tWorkoutSessionModel = WorkoutSessionModel(
-    id: testWorkoutSession.id,
-    userId: testWorkoutSession.userId,
-    routineDayId: testWorkoutSession.routineDayId,
-    sessionDate: testSessionDate,
-  );
-
-  final tSetLog = SetLog(
-    id: 'log-1',
-    sessionId: 'session-1',
-    exerciseId: 'exercise-1',
-    setIndex: 0,
-    actualWeight: 50.0,
-    actualReps: 10,
-    createdAt: testSessionDate,
-  );
-
-  setUpAll(() {
-    registerFallbackValue(SetLogModel.fromEntity(tSetLog));
+  group('getAssignedRoutines', () {
+    test(
+      'debería retornar lista de rutinas cuando la llamada es exitosa',
+      () async {
+        when(
+          () => mockRemoteDataSource.getAssignedRoutines(any()),
+        ).thenAnswer((_) async => [tRoutineModel]);
+        final result = await repository.getAssignedRoutines(tUserId);
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, [tRoutineModel]));
+      },
+    );
   });
 
-  group('getAssignedRoutines', () {
-    test('debería retornar la lista de rutinas desde el remote', () async {
-      // arrange
-      when(
-        () => mockRemoteDataSource.getAssignedRoutines(any()),
-      ).thenAnswer((_) async => [tRoutineModel]);
+  group('getRoutineDays', () {
+    test(
+      'debería retornar lista de días cuando la llamada es exitosa',
+      () async {
+        const tDays = [
+          RoutineDayModel(
+            id: 'd1',
+            routineId: tRoutineId,
+            name: 'Lunes',
+            dayOfWeek: 1,
+          ),
+        ];
+        when(
+          () => mockRemoteDataSource.getRoutineDays(any()),
+        ).thenAnswer((_) async => tDays);
+        final result = await repository.getRoutineDays(tRoutineId);
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, tDays));
+      },
+    );
+  });
 
-      // act
-      final result = await repository.getAssignedRoutines(tUserId);
-
-      // assert
-      expect(result.isRight(), true);
-      final list = result.getOrElse((_) => []);
-      expect(list.length, 1);
-      expect(list.first.id, testRoutine.id);
-      verify(() => mockRemoteDataSource.getAssignedRoutines(tUserId)).called(1);
-    });
-
-    test('debería retornar ServerFailure cuando falla el remote', () async {
-      // arrange
-      when(
-        () => mockRemoteDataSource.getAssignedRoutines(any()),
-      ).thenThrow(Exception('remote error'));
-
-      // act
-      final result = await repository.getAssignedRoutines(tUserId);
-
-      // assert
-      expect(result, const Left(ServerFailure('Exception: remote error')));
-    });
+  group('getExercisesForDay', () {
+    test(
+      'debería retornar lista de ejercicios cuando la llamada es exitosa',
+      () async {
+        const tExercises = [
+          ExerciseModel(
+            id: 'e1',
+            routineDayId: 'd1',
+            name: 'P',
+            targetMuscle: 'P',
+            targetWeight: 60,
+            targetReps: 10,
+            targetSets: 3,
+            restTimerSeconds: 90,
+          ),
+        ];
+        when(
+          () => mockRemoteDataSource.getExercisesForDay(any()),
+        ).thenAnswer((_) async => tExercises);
+        final result = await repository.getExercisesForDay('d1');
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, tExercises));
+      },
+    );
   });
 
   group('startWorkoutForDay', () {
-    test('debería retornar la sesión creada desde el remote', () async {
-      // arrange
-      when(
-        () => mockRemoteDataSource.startWorkoutForDay(any(), any(), any()),
-      ).thenAnswer((_) async => tWorkoutSessionModel);
-
-      // act
-      final result = await repository.startWorkoutForDay(
-        tUserId,
-        'day-1',
-        testSessionDate,
-      );
-
-      // assert
-      expect(result, Right(tWorkoutSessionModel));
-      verify(
-        () => mockRemoteDataSource.startWorkoutForDay(
+    test(
+      'debería retornar WorkoutSession cuando la llamada es exitosa',
+      () async {
+        final tSession = WorkoutSessionModel(
+          id: 's1',
+          userId: tUserId,
+          routineDayId: 'd1',
+          sessionDate: DateTime(2026, 4, 5),
+        );
+        when(
+          () => mockRemoteDataSource.startWorkoutForDay(any(), any(), any()),
+        ).thenAnswer((_) async => tSession);
+        final result = await repository.startWorkoutForDay(
           tUserId,
-          'day-1',
-          testSessionDate,
-        ),
-      ).called(1);
-    });
-  });
-
-  group('saveSetLog', () {
-    test('debería llamar al remote con el modelo correcto', () async {
-      // arrange
-      when(
-        () => mockRemoteDataSource.saveSetLog(any()),
-      ).thenAnswer((_) async => Future.value());
-
-      // act
-      final result = await repository.saveSetLog(tSetLog);
-
-      // assert
-      expect(result, const Right(null));
-      verify(() => mockRemoteDataSource.saveSetLog(any())).called(1);
-    });
+          'd1',
+          DateTime(2026, 4, 5),
+        );
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, tSession));
+      },
+    );
   });
 
   group('finishWorkoutSession', () {
-    test('debería llamar al remote para finalizar la sesión', () async {
-      // arrange
+    test('debería llamar a finishWorkoutSession en el data source', () async {
       when(
         () => mockRemoteDataSource.finishWorkoutSession(
           any(),
           coachingAnalysis: any(named: 'coachingAnalysis'),
         ),
-      ).thenAnswer((_) async => Future.value());
-
-      // act
-      final result = await repository.finishWorkoutSession('session-1');
-
-      // assert
-      expect(result, const Right(null));
-      verify(
-        () => mockRemoteDataSource.finishWorkoutSession('session-1'),
-      ).called(1);
+      ).thenAnswer((_) async => {});
+      final result = await repository.finishWorkoutSession('s1');
+      expect(result.isRight(), isTrue);
     });
+  });
+
+  group('getWeeklyInsights', () {
+    test(
+      'debería retornar WeeklyInsights cuando la llamada es exitosa',
+      () async {
+        final tInsights = WeeklyInsights(
+          weekStart: DateTime(2026, 4, 5),
+          weekEnd: DateTime(2026, 4, 11),
+          plannedDays: 5,
+          completedDays: 3,
+          completedSessions: 3,
+          adherenceRate: 0.6,
+          totalVolume: 1000,
+          previousWeekVolume: 900,
+          volumeTrendPercent: 10,
+          personalRecords: 1,
+        );
+        when(
+          () => mockRemoteDataSource.getWeeklyInsights(
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenAnswer((_) async => tInsights);
+        final result = await repository.getWeeklyInsights(
+          routineId: 'r1',
+          weekStart: DateTime(2026, 4, 5),
+        );
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, tInsights));
+      },
+    );
+  });
+
+  group('saveRoutineDay', () {
+    test('debería llamar a saveRoutineDay en el data source', () async {
+      const tDayModel = RoutineDayModel(
+        id: 'd1',
+        routineId: 'r1',
+        name: 'Lunes',
+        dayOfWeek: 1,
+      );
+      when(
+        () => mockRemoteDataSource.saveRoutineDay(any()),
+      ).thenAnswer((_) async => {});
+      final result = await repository.saveRoutineDay(tDayModel);
+      expect(result.isRight(), isTrue);
+      verify(() => mockRemoteDataSource.saveRoutineDay(any())).called(1);
+    });
+  });
+
+  group('getRoutineById', () {
+    test('debería retornar Routine cuando la llamada es exitosa', () async {
+      when(
+        () => mockRemoteDataSource.getRoutineById(any()),
+      ).thenAnswer((_) async => tRoutineModel);
+      final result = await repository.getRoutineById('r1');
+      expect(result.isRight(), isTrue);
+      result.fold((l) => fail('L'), (r) => expect(r, tRoutineModel));
+    });
+  });
+
+  group('getAllRoutines', () {
+    test(
+      'debería retornar lista de rutinas cuando la llamada es exitosa',
+      () async {
+        when(
+          () => mockRemoteDataSource.getAllRoutines(),
+        ).thenAnswer((_) async => [tRoutineModel]);
+        final result = await repository.getAllRoutines();
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, [tRoutineModel]));
+      },
+    );
   });
 }

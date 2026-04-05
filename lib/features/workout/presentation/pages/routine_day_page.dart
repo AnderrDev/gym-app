@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:collection/collection.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
@@ -58,7 +59,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
 
     _globalRestTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
-        setState(() => _secondsRemaining--);
+        setState(() {
+          _secondsRemaining--;
+        });
         if (_secondsRemaining <= 3 && _secondsRemaining > 0) {
           HapticFeedback.lightImpact();
         }
@@ -140,8 +143,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) context.read<WorkoutBloc>().add(const ResetWorkout());
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && result == true) {
+          context.read<WorkoutBloc>().add(const ResetWorkout());
+        }
       },
       child: BlocConsumer<WorkoutBloc, WorkoutState>(
         buildWhen: (previous, current) {
@@ -152,13 +157,13 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               current is DayWorkoutStarted ||
               current is WorkoutFinishedSuccess;
         },
+        listenWhen: (previous, current) => current is WorkoutFinishedSuccess,
         listener: (context, state) {
           if (state is WorkoutFinishedSuccess) {
-            context.read<WorkoutBloc>().add(const ResetWorkout());
-            Navigator.of(context).pop();
-          }
-          if (state is DayWorkoutStarted && _currentSessionLogs.isEmpty) {
-            _currentSessionLogs.addAll(state.setLogs);
+            if (!mounted) {
+              return;
+            }
+            context.pop(true);
           }
         },
         builder: (context, state) {
@@ -200,7 +205,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                       color: AppColors.textPrimary,
                       size: 24,
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => context.pop(),
                   ),
                   actions: [
                     if (lastSession != null)
@@ -253,7 +258,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                AppColors.primary.withOpacity(0.1),
+                                AppColors.primary.withValues(alpha: 0.1),
                                 AppColors.background,
                               ],
                             ),
@@ -265,7 +270,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                           child: Icon(
                             Icons.fitness_center,
                             size: 180,
-                            color: AppColors.primary.withOpacity(0.03),
+                            color: AppColors.primary.withValues(alpha: 0.03),
                           ),
                         ),
                       ],
@@ -303,7 +308,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                             ),
                             decoration: BoxDecoration(
                               color: isCompleted
-                                  ? AppColors.success.withOpacity(0.1)
+                                  ? AppColors.success.withValues(alpha: 0.1)
                                   : AppColors.surfaceHighlight,
                               borderRadius: BorderRadius.circular(20),
                             ),
@@ -507,10 +512,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withOpacity(0.12),
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: const Color(0xFFFF9800).withOpacity(0.45),
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.45),
                   ),
                 ),
                 child: Row(
@@ -616,7 +621,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -627,7 +632,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -666,7 +671,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -725,7 +730,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceHighlight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -764,7 +769,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: deltaColor!.withOpacity(0.1),
+                color: deltaColor!.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -790,9 +795,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.04),
+        color: AppColors.primary.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -883,8 +888,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     final relevantAnalysis = analysis
         .where((a) => a.completedSets! > 0 && a.recommendation.isNotEmpty)
         .toList();
-    if (relevantAnalysis.isEmpty)
+    if (relevantAnalysis.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverToBoxAdapter(
       child: _buildPersistedCoachingSection(relevantAnalysis),
@@ -902,7 +908,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceHighlight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -941,7 +947,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: AppColors.surfaceHighlight.withOpacity(0.3),
+                    color: AppColors.surfaceHighlight.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -992,9 +998,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accentColor.withOpacity(0.1),
+        color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,7 +1025,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.background.withOpacity(0.4),
+                color: AppColors.background.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -1184,10 +1190,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                           padding: const EdgeInsets.all(16),
                           margin: const EdgeInsets.only(bottom: 24),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.05),
+                            color: AppColors.primary.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Row(
@@ -1537,7 +1543,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceHighlight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1781,7 +1787,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             child: CircularProgressIndicator(
               value: _isResting ? progress : 0,
               strokeWidth: 3,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
               color: AppColors.primary,
             ),
           ),
@@ -1834,10 +1840,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           width: 1.5,
         ),
       ),
@@ -1849,7 +1855,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1981,7 +1987,7 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight.withOpacity(0.4),
+        color: AppColors.surfaceHighlight.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -2017,7 +2023,7 @@ class _Circle extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Center(

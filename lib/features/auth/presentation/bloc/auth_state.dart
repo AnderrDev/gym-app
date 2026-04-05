@@ -12,6 +12,8 @@ final class AuthInitial extends AuthState {}
 
 final class AuthLoading extends AuthState {}
 
+final class AuthSubmitting extends AuthState {}
+
 final class Authenticated extends AuthState {
   final User user;
 

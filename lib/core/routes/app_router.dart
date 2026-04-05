@@ -14,6 +14,7 @@ import '../../features/workout/presentation/pages/routine_editor_page.dart';
 import '../../features/workout/presentation/pages/day_editor_page.dart';
 import '../../features/workout/presentation/pages/routine_stats_page.dart';
 import '../../features/workout/presentation/pages/exercise_progress_page.dart';
+import 'app_routes.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -21,13 +22,13 @@ class AppRouter {
   AppRouter(this.authBloc);
 
   late final GoRouter router = GoRouter(
-    initialLocation: '/login',
+    initialLocation: AppRoutes.login,
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
     redirect: (context, state) {
       final bool isAuthenticated = authBloc.state is Authenticated;
       final bool isAuthRoute =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
+          state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.register;
 
       final bool isInitial =
           authBloc.state is AuthInitial || authBloc.state is AuthLoading;
@@ -38,42 +39,45 @@ class AppRouter {
       }
 
       if (!isAuthenticated && !isAuthRoute) {
-        return '/login';
+        return AppRoutes.login;
       }
 
       if (isAuthenticated && isAuthRoute) {
-        return '/dashboard';
+        return AppRoutes.dashboard;
       }
 
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
-        path: '/register',
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
         builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
-        path: '/dashboard',
+        path: AppRoutes.dashboard,
         builder: (context, state) => const DashboardPage(),
       ),
       GoRoute(
-        path: '/db-inspector',
+        path: AppRoutes.dbInspector,
         builder: (context, state) => const DatabaseInspectorPage(),
       ),
       GoRoute(
-        path: '/routine-list',
+        path: AppRoutes.routineList,
         builder: (context, state) => const RoutineListPage(),
       ),
       GoRoute(
-        path: '/routine-editor',
+        path: AppRoutes.routineEditor,
         builder: (context, state) {
           final routineId = state.extra as String?;
           return RoutineEditorPage(routineId: routineId);
         },
       ),
       GoRoute(
-        path: '/day-editor',
+        path: AppRoutes.dayEditor,
         builder: (context, state) {
           final extras = state.extra as Map<String, dynamic>;
           final day = extras['day'] as RoutineDay;
@@ -82,7 +86,7 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/routine-day',
+        path: AppRoutes.routineDay,
         builder: (context, state) {
           try {
             final extras = state.extra as Map;
@@ -100,7 +104,7 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/routine-stats',
+        path: AppRoutes.routineStats,
         builder: (context, state) {
           final extras = state.extra as Map<String, dynamic>;
           return RoutineStatsPage(
@@ -111,7 +115,7 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/exercise-progress',
+        path: AppRoutes.exerciseProgress,
         builder: (context, state) {
           final extras = state.extra as Map<String, dynamic>;
           return ExerciseProgressPage(

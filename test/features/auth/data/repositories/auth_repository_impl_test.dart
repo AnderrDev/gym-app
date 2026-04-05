@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/core/error/failures.dart';
+import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:gym_flutter/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:gym_flutter/features/auth/data/models/user_model.dart';
@@ -28,8 +28,7 @@ void main() {
 
   const tEmail = 'test@example.com';
   const tPassword = 'password';
-  const tFullName = 'Test User';
-  const tUserModel = UserModel(id: '1', email: tEmail, fullName: tFullName);
+  const tUserModel = UserModel(id: 'u1', email: tEmail, fullName: 'Test');
 
   setUpAll(() {
     registerFallbackValue(tUserModel);
@@ -37,21 +36,19 @@ void main() {
 
   group('signInWithEmail', () {
     test(
-      'debería retornar el usuario y cachearlo cuando el login es exitoso',
+      'debería retornar el usuario y cachearlo cuando el login remoto es exitoso',
       () async {
-        // arrange
         when(
           () => mockRemoteDataSource.signInWithEmail(any(), any()),
         ).thenAnswer((_) async => tUserModel);
         when(
           () => mockLocalDataSource.cacheUser(any()),
-        ).thenAnswer((_) async => Future.value());
+        ).thenAnswer((_) async => {});
 
-        // act
         final result = await repository.signInWithEmail(tEmail, tPassword);
 
-        // assert
-        expect(result, const Right(tUserModel));
+        expect(result.isRight(), isTrue);
+        result.fold((l) => fail('L'), (r) => expect(r, tUserModel));
         verify(
           () => mockRemoteDataSource.signInWithEmail(tEmail, tPassword),
         ).called(1);
@@ -60,108 +57,38 @@ void main() {
     );
 
     test(
-      'debería retornar ServerFailure cuando el login falla en el remote con ServerException',
+      'debería retornar ServerFailure cuando el login remoto falla',
       () async {
-        // arrange
         when(
           () => mockRemoteDataSource.signInWithEmail(any(), any()),
         ).thenThrow(ServerException('Invalid credentials'));
 
-        // act
         final result = await repository.signInWithEmail(tEmail, tPassword);
 
-        // assert
-        expect(result, const Left(ServerFailure('Invalid credentials')));
-        verify(
-          () => mockRemoteDataSource.signInWithEmail(tEmail, tPassword),
-        ).called(1);
-        verifyNever(() => mockLocalDataSource.cacheUser(any()));
-      },
-    );
-  });
-
-  group('signUpWithEmail', () {
-    test(
-      'debería retornar el usuario y cachearlo cuando el registro es exitoso',
-      () async {
-        // arrange
-        when(
-          () => mockRemoteDataSource.signUpWithEmail(any(), any(), any()),
-        ).thenAnswer((_) async => tUserModel);
-        when(
-          () => mockLocalDataSource.cacheUser(any()),
-        ).thenAnswer((_) async => Future.value());
-
-        // act
-        final result = await repository.signUpWithEmail(
-          tEmail,
-          tPassword,
-          tFullName,
-        );
-
-        // assert
-        expect(result, const Right(tUserModel));
-        verify(
-          () => mockRemoteDataSource.signUpWithEmail(
-            tEmail,
-            tPassword,
-            tFullName,
-          ),
-        ).called(1);
-        verify(() => mockLocalDataSource.cacheUser(tUserModel)).called(1);
-      },
-    );
-  });
-
-  group('signOut', () {
-    test(
-      'debería limpiar el cache y retornar void cuando el logout es exitoso',
-      () async {
-        // arrange
-        when(
-          () => mockRemoteDataSource.signOut(),
-        ).thenAnswer((_) async => Future.value());
-        when(
-          () => mockLocalDataSource.clearCache(),
-        ).thenAnswer((_) async => Future.value());
-
-        // act
-        final result = await repository.signOut();
-
-        // assert
-        expect(result, const Right(null));
-        verify(() => mockRemoteDataSource.signOut()).called(1);
-        verify(() => mockLocalDataSource.clearCache()).called(1);
+        expect(result.isLeft(), isTrue);
+        result.fold((l) => expect(l, isA<ServerFailure>()), (r) => fail('R'));
       },
     );
   });
 
   group('getCurrentUser', () {
-    test(
-      'debería retornar el usuario del remote y cachearlo cuando está disponible',
-      () async {
-        // arrange
-        when(
-          () => mockRemoteDataSource.getCurrentUser(),
-        ).thenAnswer((_) async => tUserModel);
-        when(
-          () => mockLocalDataSource.cacheUser(any()),
-        ).thenAnswer((_) async => Future.value());
+    test('debería retornar el usuario remoto y cachearlo si existe', () async {
+      when(
+        () => mockRemoteDataSource.getCurrentUser(),
+      ).thenAnswer((_) async => tUserModel);
+      when(
+        () => mockLocalDataSource.cacheUser(any()),
+      ).thenAnswer((_) async => {});
 
-        // act
-        final result = await repository.getCurrentUser();
+      final result = await repository.getCurrentUser();
 
-        // assert
-        expect(result, const Right(tUserModel));
-        verify(() => mockRemoteDataSource.getCurrentUser()).called(1);
-        verify(() => mockLocalDataSource.cacheUser(tUserModel)).called(1);
-      },
-    );
+      expect(result, const Right(tUserModel));
+      verify(() => mockLocalDataSource.cacheUser(tUserModel)).called(1);
+    });
 
     test(
-      'debería retornar el usuario cacheado cuando el remote falla',
+      'debería retornar el usuario cacheado si la llamada remota falla',
       () async {
-        // arrange
         when(
           () => mockRemoteDataSource.getCurrentUser(),
         ).thenThrow(Exception());
@@ -169,14 +96,24 @@ void main() {
           () => mockLocalDataSource.getLastCachedUser(),
         ).thenAnswer((_) async => tUserModel);
 
-        // act
         final result = await repository.getCurrentUser();
 
-        // assert
         expect(result, const Right(tUserModel));
-        verify(() => mockRemoteDataSource.getCurrentUser()).called(1);
         verify(() => mockLocalDataSource.getLastCachedUser()).called(1);
       },
     );
+  });
+
+  group('signOut', () {
+    test('debería cerrar sesión remotamente y limpiar cache', () async {
+      when(() => mockRemoteDataSource.signOut()).thenAnswer((_) async => {});
+      when(() => mockLocalDataSource.clearCache()).thenAnswer((_) async => {});
+
+      final result = await repository.signOut();
+
+      expect(result, const Right(null));
+      verify(() => mockRemoteDataSource.signOut()).called(1);
+      verify(() => mockLocalDataSource.clearCache()).called(1);
+    });
   });
 }

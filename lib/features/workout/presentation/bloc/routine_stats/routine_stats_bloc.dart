@@ -14,12 +14,21 @@ class RoutineStatsBloc extends Bloc<RoutineStatsEvent, RoutineStatsState> {
     FetchRoutineStats event,
     Emitter<RoutineStatsState> emit,
   ) async {
-    emit(RoutineStatsLoading());
-    final result = await repository.getRoutineStats(event.userId, event.routineId);
-    
-    result.fold(
-      (failure) => emit(RoutineStatsError(failure.message)),
-      (stats) => emit(RoutineStatsLoaded(stats)),
-    );
+    if (state is! RoutineStatsLoading) {
+      emit(RoutineStatsLoading());
+    }
+    try {
+      final result = await repository.getRoutineStats(
+        event.userId,
+        event.routineId,
+      );
+
+      result.fold(
+        (failure) => emit(RoutineStatsError(failure.message)),
+        (stats) => emit(RoutineStatsLoaded(stats)),
+      );
+    } catch (e) {
+      emit(RoutineStatsError('Error al cargar estadisticas: $e'));
+    }
   }
 }

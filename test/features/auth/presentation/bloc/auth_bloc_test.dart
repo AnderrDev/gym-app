@@ -72,7 +72,7 @@ void main() {
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, Authenticated] al iniciar sesion con exito',
+    'emite [AuthSubmitting] al iniciar sesion con exito',
     build: buildBloc,
     setUp: () {
       when(
@@ -81,11 +81,11 @@ void main() {
     },
     act: (bloc) =>
         bloc.add(const SignInRequested('test@example.com', 'password')),
-    expect: () => [AuthLoading(), const Authenticated(testUser)],
+    expect: () => [AuthSubmitting()],
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, AuthError, Unauthenticated] si login falla',
+    'emite [AuthSubmitting, AuthError] si login falla',
     build: buildBloc,
     setUp: () {
       when(
@@ -94,11 +94,11 @@ void main() {
     },
     act: (bloc) =>
         bloc.add(const SignInRequested('test@example.com', 'password')),
-    expect: () => [AuthLoading(), const AuthError('boom'), Unauthenticated()],
+    expect: () => [AuthSubmitting(), const AuthError('boom')],
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, Authenticated] al registrarse con exito',
+    'emite [AuthSubmitting] al registrarse con exito',
     build: buildBloc,
     setUp: () {
       when(
@@ -108,11 +108,11 @@ void main() {
     act: (bloc) => bloc.add(
       const SignUpRequested('test@example.com', 'password', 'Test User'),
     ),
-    expect: () => [AuthLoading(), const Authenticated(testUser)],
+    expect: () => [AuthSubmitting()],
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, AuthError, Unauthenticated] si registro falla',
+    'emite [AuthSubmitting, AuthError] si registro falla',
     build: buildBloc,
     setUp: () {
       when(
@@ -122,21 +122,21 @@ void main() {
     act: (bloc) => bloc.add(
       const SignUpRequested('test@example.com', 'password', 'Test User'),
     ),
-    expect: () => [AuthLoading(), const AuthError('boom'), Unauthenticated()],
+    expect: () => [AuthSubmitting(), const AuthError('boom')],
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, Unauthenticated] al cerrar sesion con exito',
+    'emite [AuthSubmitting] al cerrar sesion con exito',
     build: buildBloc,
     setUp: () {
       when(() => mockSignOut()).thenAnswer((_) async => const Right(null));
     },
     act: (bloc) => bloc.add(SignOutRequested()),
-    expect: () => [AuthLoading(), Unauthenticated()],
+    expect: () => [AuthSubmitting()],
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthLoading, AuthError] si logout falla',
+    'emite [AuthSubmitting, AuthError] si logout falla',
     build: buildBloc,
     setUp: () {
       when(
@@ -144,6 +144,6 @@ void main() {
       ).thenAnswer((_) async => const Left(ServerFailure('boom')));
     },
     act: (bloc) => bloc.add(SignOutRequested()),
-    expect: () => [AuthLoading(), const AuthError('boom')],
+    expect: () => [AuthSubmitting(), const AuthError('boom')],
   );
 }

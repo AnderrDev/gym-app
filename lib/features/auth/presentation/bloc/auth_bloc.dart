@@ -53,7 +53,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Solo mostrar loading. El estado real lo resuelve el evento initialSession
     // de onAuthStateChange. Llamar getCurrentUser() aquí causaba Unauthenticated
     // prematuro porque currentUser es null antes de que Supabase restaure storage.
-    emit(AuthLoading());
+    if (state is! AuthLoading) {
+      emit(AuthLoading());
+    }
   }
 
   Future<void> _onAuthStateChanged(
@@ -78,19 +80,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SignInRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    if (state is! AuthSubmitting) {
+      emit(AuthSubmitting());
+    }
     final result = await signInWithEmail(event.email, event.password);
     result.fold((failure) {
       emit(AuthError(failure.message));
-      emit(Unauthenticated());
-    }, (user) => emit(Authenticated(user)));
+    }, (_) => null);
   }
 
   Future<void> _onSignUpRequested(
     SignUpRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    if (state is! AuthSubmitting) {
+      emit(AuthSubmitting());
+    }
     final result = await signUpWithEmail(
       event.email,
       event.password,
@@ -98,20 +103,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold((failure) {
       emit(AuthError(failure.message));
-      emit(Unauthenticated());
-    }, (user) => emit(Authenticated(user)));
+    }, (_) => null);
   }
 
   Future<void> _onSignOutRequested(
     SignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    if (state is! AuthSubmitting) {
+      emit(AuthSubmitting());
+    }
     final result = await signOut();
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (_) => emit(Unauthenticated()),
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) => null);
   }
 
   @override

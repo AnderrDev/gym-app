@@ -37,7 +37,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
   }) : super(WorkoutInitial()) {
     // ─── Cargar rutinas asignadas ─────────────────────────────
     on<FetchAssignedRoutines>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit);
       try {
         final result = await getAssignedRoutines(event.userId);
         result.fold(
@@ -51,7 +51,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
     // ─── Cargar plan semanal ───────────────────────────────────
     on<FetchWeeklyPlan>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit);
       try {
         final normalizedWeekStart = event.weekStart.subtract(
           Duration(days: event.weekStart.weekday - 1),
@@ -101,7 +101,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
     // ─── Cargar info del día (SIN crear sesión) ───────────────
     on<LoadDayInfo>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit);
       try {
         final results = await Future.wait([
           repository.getExercisesForDay(event.routineDayId),
@@ -187,7 +187,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<ConfirmStartWorkout>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final sessionResult = await repository.startWorkoutForDay(
           event.userId,
@@ -375,7 +375,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<FinishWorkoutSession>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final result = await repository.finishWorkoutSession(
           event.sessionId,
@@ -395,7 +395,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     // ─── Gestión de Rutinas ──────────────────────────────────────────
 
     on<FetchAllRoutines>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit);
       try {
         final result = await getAllRoutines();
         result.fold(
@@ -408,7 +408,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<AssignRoutineEvent>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final result = await assignRoutine(event.userId, event.routineId);
         result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
@@ -421,7 +421,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<CreateOrUpdateRoutine>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final routine = Routine(
           id: event.id ?? '',
@@ -430,30 +430,30 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           isPublic: event.isPublic,
         );
         final result = await repository.saveRoutine(routine);
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (_) => add(FetchAssignedRoutines(event.userId)),
-        );
+        result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
+          emit(const ManagementSuccess('Rutina guardada correctamente'));
+          add(FetchAssignedRoutines(event.userId));
+        });
       } catch (e) {
         emit(WorkoutError('Error al guardar rutina: $e'));
       }
     });
 
     on<DeleteRoutine>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final result = await repository.deleteRoutine(event.routineId);
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (_) => add(FetchAssignedRoutines(event.userId)),
-        );
+        result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
+          emit(const ManagementSuccess('Rutina eliminada correctamente'));
+          add(FetchAssignedRoutines(event.userId));
+        });
       } catch (e) {
         emit(WorkoutError('Error al eliminar rutina: $e'));
       }
     });
 
     on<SaveRoutineDay>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final result = await repository.saveRoutineDay(event.day);
         result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
@@ -472,7 +472,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<DeleteRoutineDay>((event, emit) async {
-      emit(WorkoutLoading());
+      _emitLoadingIfNeeded(emit, force: true);
       try {
         final result = await repository.deleteRoutineDay(event.dayId);
         result.fold(
@@ -569,6 +569,25 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     });
 
     on<ResetWorkout>((event, emit) => emit(WorkoutInitial()));
+  }
+
+  void _emitLoadingIfNeeded(Emitter<WorkoutState> emit, {bool force = false}) {
+    if (force) {
+      emit(WorkoutLoading());
+      return;
+    }
+    if (state is WorkoutLoading) return;
+    if (_isDataState(state)) return;
+    emit(WorkoutLoading());
+  }
+
+  bool _isDataState(WorkoutState current) {
+    return current is RoutinesLoaded ||
+        current is WeeklyPlanLoaded ||
+        current is DayInfoLoaded ||
+        current is DayWorkoutStarted ||
+        current is SessionHistoryLoaded ||
+        current is AllRoutinesLoaded;
   }
 
   Future<Map<String, SetLog?>> _fetchPreloadedRecords(

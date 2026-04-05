@@ -7,7 +7,7 @@ import '../../../../core/presentation/widgets/kinetic_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/routes/router_helpers.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -20,6 +20,14 @@ class _RegisterPageState extends State<RegisterPage> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _onRegister() {
     FocusScope.of(context).unfocus();
@@ -42,6 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (previous, current) => current is AuthError,
         listener: (context, state) {
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -83,7 +92,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.label.copyWith(
                       letterSpacing: 2,
-                      color: AppColors.primary.withOpacity(0.7),
+                      color: AppColors.primary.withValues(alpha: 0.7),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -109,17 +118,25 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 32),
                   BlocBuilder<AuthBloc, AuthState>(
+                    buildWhen: (previous, current) =>
+                        current is AuthSubmitting ||
+                        current is AuthLoading ||
+                        current is AuthError ||
+                        current is Unauthenticated ||
+                        current is Authenticated,
                     builder: (context, state) {
+                      final isLoading =
+                          state is AuthSubmitting || state is AuthLoading;
                       return KineticButton(
                         label: 'REGISTRARSE',
-                        isLoading: state is AuthLoading,
-                        onTap: _onRegister,
+                        isLoading: isLoading,
+                        onTap: isLoading ? null : _onRegister,
                       );
                     },
                   ),
                   const SizedBox(height: 20),
                   TextButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => goToLogin(context),
                     child: RichText(
                       text: TextSpan(
                         style: AppTextStyles.bodyMedium,
@@ -168,9 +185,9 @@ class _RegisterPageState extends State<RegisterPage> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: TextField(
             controller: controller,
@@ -180,7 +197,10 @@ class _RegisterPageState extends State<RegisterPage> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: AppColors.primary, size: 18),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),

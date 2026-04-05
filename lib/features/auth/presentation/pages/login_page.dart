@@ -7,7 +7,7 @@ import '../../../../core/presentation/widgets/kinetic_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/routes/router_helpers.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,6 +19,13 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _onLogin() {
     FocusScope.of(context).unfocus();
@@ -40,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (previous, current) => current is AuthError,
         listener: (context, state) {
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -81,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.label.copyWith(
                       letterSpacing: 2,
-                      color: AppColors.primary.withOpacity(0.7),
+                      color: AppColors.primary.withValues(alpha: 0.7),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -101,17 +109,25 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 40),
                   BlocBuilder<AuthBloc, AuthState>(
+                    buildWhen: (previous, current) =>
+                        current is AuthSubmitting ||
+                        current is AuthLoading ||
+                        current is AuthError ||
+                        current is Unauthenticated ||
+                        current is Authenticated,
                     builder: (context, state) {
+                      final isLoading =
+                          state is AuthSubmitting || state is AuthLoading;
                       return KineticButton(
                         label: 'INICIAR SESIÓN',
-                        isLoading: state is AuthLoading,
-                        onTap: _onLogin,
+                        isLoading: isLoading,
+                        onTap: isLoading ? null : _onLogin,
                       );
                     },
                   ),
                   const SizedBox(height: 24),
                   TextButton(
-                    onPressed: () => context.go('/register'),
+                    onPressed: () => goToRegister(context),
                     child: RichText(
                       text: TextSpan(
                         style: AppTextStyles.bodyMedium,
@@ -160,9 +176,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: TextField(
             controller: controller,
@@ -172,7 +188,10 @@ class _LoginPageState extends State<LoginPage> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: AppColors.primary, size: 18),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),

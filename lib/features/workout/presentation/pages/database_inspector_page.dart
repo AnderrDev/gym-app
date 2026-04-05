@@ -40,7 +40,8 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
       final supabase = sl<SupabaseClient>();
 
       // 1. Cargar Auth Cache de inmediato (Es lo más rápido)
-      final cachedUser = prefs.getString('CACHED_USER') ?? "No hay usuario en caché";
+      final cachedUser =
+          prefs.getString('CACHED_USER') ?? "No hay usuario en caché";
       setState(() {
         _authCache = cachedUser;
       });
@@ -49,24 +50,45 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
       await Future.wait([
         // Locales
         db.getAllRows('workouts').then((data) {
-          setState(() { _workoutsLocal = data; });
+          if (!mounted) return;
+          setState(() {
+            _workoutsLocal = data;
+          });
         }),
         db.getAllRows('set_logs').then((data) {
-          setState(() { _setLogsLocal = data; });
+          if (!mounted) return;
+          setState(() {
+            _setLogsLocal = data;
+          });
         }),
-        
+
         // Remotos (con manejo de error individual para no romper lo local)
-        supabase.from('workouts').select().order('started_at', ascending: false).limit(20)
-          .then((data) {
-            setState(() { _workoutsRemote = List<Map<String, dynamic>>.from(data as List); });
-          }).catchError((e) => null),
+        supabase
+            .from('workouts')
+            .select()
+            .order('started_at', ascending: false)
+            .limit(20)
+            .then((data) {
+              if (!mounted) return;
+              setState(() {
+                _workoutsRemote = List<Map<String, dynamic>>.from(data as List);
+              });
+            })
+            .catchError((e) => null),
 
-        supabase.from('set_logs').select().order('created_at', ascending: false).limit(20)
-          .then((data) {
-            setState(() { _setLogsRemote = List<Map<String, dynamic>>.from(data as List); });
-          }).catchError((e) => null),
+        supabase
+            .from('set_logs')
+            .select()
+            .order('created_at', ascending: false)
+            .limit(20)
+            .then((data) {
+              if (!mounted) return;
+              setState(() {
+                _setLogsRemote = List<Map<String, dynamic>>.from(data as List);
+              });
+            })
+            .catchError((e) => null),
       ]);
-
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -88,12 +110,20 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: Text('¿Limpiar Base de Datos?', style: AppTextStyles.bodyLarge),
-        content: const Text('Esto borrará todos los entrenamientos y logs locales.'),
+        content: const Text(
+          'Esto borrará todos los entrenamientos y logs locales.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true), 
-            child: const Text('Borrar', style: TextStyle(color: AppColors.error))
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Borrar',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -114,13 +144,23 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
           backgroundColor: AppColors.background,
           title: Text('DB Inspector', style: AppTextStyles.heading2),
           actions: [
-            if (_isLoading) 
+            if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(12.0),
-                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
-            IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshData),
-            IconButton(icon: const Icon(Icons.delete_sweep, color: AppColors.error), onPressed: _clearDB),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshData,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: AppColors.error),
+              onPressed: _clearDB,
+            ),
           ],
           bottom: const TabBar(
             isScrollable: true,
@@ -136,17 +176,17 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
             ],
           ),
         ),
-        body: _errorMessage.isNotEmpty 
-          ? _buildErrorView() 
-          : TabBarView(
-              children: [
-                _buildWorkoutsTable(_workoutsLocal, isRemote: false),
-                _buildSetLogsTable(_setLogsLocal, isRemote: false),
-                _buildWorkoutsTable(_workoutsRemote, isRemote: true),
-                _buildSetLogsTable(_setLogsRemote, isRemote: true),
-                _buildAuthInfo(),
-              ],
-            ),
+        body: _errorMessage.isNotEmpty
+            ? _buildErrorView()
+            : TabBarView(
+                children: [
+                  _buildWorkoutsTable(_workoutsLocal, isRemote: false),
+                  _buildSetLogsTable(_setLogsLocal, isRemote: false),
+                  _buildWorkoutsTable(_workoutsRemote, isRemote: true),
+                  _buildSetLogsTable(_setLogsRemote, isRemote: true),
+                  _buildAuthInfo(),
+                ],
+              ),
       ),
     );
   }
@@ -160,16 +200,26 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
           children: [
             const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
-            Text(_errorMessage, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.error),
+            ),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _refreshData, child: const Text('Reintentar')),
+            ElevatedButton(
+              onPressed: _refreshData,
+              child: const Text('Reintentar'),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWorkoutsTable(List<Map<String, dynamic>> data, {required bool isRemote}) {
+  Widget _buildWorkoutsTable(
+    List<Map<String, dynamic>> data, {
+    required bool isRemote,
+  }) {
     if (data.isEmpty) return _buildEmpty();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -181,18 +231,35 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
             DataColumn(label: Text('Started At')),
             DataColumn(label: Text('Sync?')),
           ],
-          rows: data.map((w) => DataRow(cells: [
-            DataCell(Text(w['id'].toString().substring(0, 8))),
-            DataCell(Text(w['user_id'].toString().substring(0, 8))),
-            DataCell(Text(w['started_at'].toString().substring(5, 16))),
-            DataCell(isRemote ? const Icon(Icons.cloud_done, color: AppColors.primary, size: 18) : _buildStatusIcon(w['is_synced'])),
-          ])).toList(),
+          rows: data
+              .map(
+                (w) => DataRow(
+                  cells: [
+                    DataCell(Text(w['id'].toString().substring(0, 8))),
+                    DataCell(Text(w['user_id'].toString().substring(0, 8))),
+                    DataCell(Text(w['started_at'].toString().substring(5, 16))),
+                    DataCell(
+                      isRemote
+                          ? const Icon(
+                              Icons.cloud_done,
+                              color: AppColors.primary,
+                              size: 18,
+                            )
+                          : _buildStatusIcon(w['is_synced']),
+                    ),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ),
     );
   }
 
-  Widget _buildSetLogsTable(List<Map<String, dynamic>> data, {required bool isRemote}) {
+  Widget _buildSetLogsTable(
+    List<Map<String, dynamic>> data, {
+    required bool isRemote,
+  }) {
     if (data.isEmpty) return _buildEmpty();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -204,12 +271,26 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
             DataColumn(label: Text('Created At')),
             DataColumn(label: Text('Sync?')),
           ],
-          rows: data.map((l) => DataRow(cells: [
-            DataCell(Text('${l['actual_weight']} lbs')),
-            DataCell(Text('${l['actual_reps']}')),
-            DataCell(Text(l['created_at'].toString().substring(5, 16))),
-            DataCell(isRemote ? const Icon(Icons.cloud_done, color: AppColors.primary, size: 18) : _buildStatusIcon(l['is_synced'])),
-          ])).toList(),
+          rows: data
+              .map(
+                (l) => DataRow(
+                  cells: [
+                    DataCell(Text('${l['actual_weight']} lbs')),
+                    DataCell(Text('${l['actual_reps']}')),
+                    DataCell(Text(l['created_at'].toString().substring(5, 16))),
+                    DataCell(
+                      isRemote
+                          ? const Icon(
+                              Icons.cloud_done,
+                              color: AppColors.primary,
+                              size: 18,
+                            )
+                          : _buildStatusIcon(l['is_synced']),
+                    ),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -221,7 +302,10 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SharedPreferences: CACHED_USER', style: AppTextStyles.bodyLarge),
+          Text(
+            'SharedPreferences: CACHED_USER',
+            style: AppTextStyles.bodyLarge,
+          ),
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
@@ -230,7 +314,10 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(_authCache, style: const TextStyle(fontFamily: 'Courier', fontSize: 12)),
+            child: Text(
+              _authCache,
+              style: const TextStyle(fontFamily: 'Courier', fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -246,5 +333,6 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage> {
     );
   }
 
-  Widget _buildEmpty() => const Center(child: Text('No hay datos en esta tabla'));
+  Widget _buildEmpty() =>
+      const Center(child: Text('No hay datos en esta tabla'));
 }
