@@ -35,7 +35,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     required this.assignRoutine,
     required this.getAllRoutines,
   }) : super(WorkoutInitial()) {
-    
     // ─── Cargar rutinas asignadas ─────────────────────────────
     on<FetchAssignedRoutines>((event, emit) async {
       emit(WorkoutLoading());
@@ -54,38 +53,47 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     on<FetchWeeklyPlan>((event, emit) async {
       emit(WorkoutLoading());
       try {
+        final normalizedWeekStart = event.weekStart.subtract(
+          Duration(days: event.weekStart.weekday - 1),
+        );
         final results = await Future.wait([
-          repository.getRoutineDays(event.routineId),
-          repository.getWeekSessions(
-            event.userId,
-            event.weekStart.subtract(Duration(days: event.weekStart.weekday - 1)),
-            event.weekStart.add(Duration(days: 7 - event.weekStart.weekday)),
+          getWeeklyPlan(
+            userId: event.userId,
+            routineId: event.routineId,
+            weekStart: normalizedWeekStart,
           ),
           repository.getWeeklyInsights(
             routineId: event.routineId,
-            weekStart: event.weekStart,
+            weekStart: normalizedWeekStart,
           ),
           repository.getRoutineById(event.routineId),
         ]);
 
         final daysResult = results[0] as Either<Failure, List<RoutineDay>>;
-        final sessionsResult = results[1] as Either<Failure, List<WorkoutSession>>;
-        // ignore: unused_local_variable
-        final sessions = sessionsResult.getOrElse((_) => []);
-        final insightsResult = results[2] as Either<Failure, WeeklyInsights>;
-        final routineResult = results[3] as Either<Failure, Routine>;
+        final insightsResult = results[1] as Either<Failure, WeeklyInsights>;
+        final routineResult = results[2] as Either<Failure, Routine>;
 
         if (daysResult.isLeft()) {
-          emit(WorkoutError(daysResult.fold((f) => f.message, (_) => 'Error charging days')));
+          emit(
+            WorkoutError(
+              daysResult.fold((f) => f.message, (_) => 'Error charging days'),
+            ),
+          );
           return;
         }
 
-        emit(WeeklyPlanLoaded(
-          daysResult.getOrElse((_) => []),
-          event.weekStart,
-          routine: routineResult.getOrElse((_) => throw Exception('Routine not found')),
-          insights: insightsResult.getOrElse((_) => throw Exception('Insights error')),
-        ));
+        emit(
+          WeeklyPlanLoaded(
+            daysResult.getOrElse((_) => []),
+            normalizedWeekStart,
+            routine: routineResult.getOrElse(
+              (_) => throw Exception('Routine not found'),
+            ),
+            insights: insightsResult.getOrElse(
+              (_) => throw Exception('Insights error'),
+            ),
+          ),
+        );
       } catch (e) {
         emit(WorkoutError('Error al cargar plan semanal: $e'));
       }
@@ -97,35 +105,53 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       try {
         final results = await Future.wait([
           repository.getExercisesForDay(event.routineDayId),
-          repository.getExistingSession(event.userId, event.routineDayId, event.sessionDate),
-          repository.getRecentSessionsForDay(event.userId, event.routineDayId, event.sessionDate, limit: 3),
+          repository.getExistingSession(
+            event.userId,
+            event.routineDayId,
+            event.sessionDate,
+          ),
+          repository.getRecentSessionsForDay(
+            event.userId,
+            event.routineDayId,
+            event.sessionDate,
+            limit: 3,
+          ),
           repository.getActiveSessionForUser(event.userId),
         ]);
 
-        final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse((_) => []);
-        final session = (results[1] as Either<Failure, WorkoutSession?>).getOrElse((_) => null);
-        final recentSessions = (results[2] as Either<Failure, List<WorkoutSession>>).getOrElse((_) => []);
-        final activeSession = (results[3] as Either<Failure, WorkoutSession?>).getOrElse((_) => null);
+        final exercises = (results[0] as Either<Failure, List<Exercise>>)
+            .getOrElse((_) => []);
+        final session = (results[1] as Either<Failure, WorkoutSession?>)
+            .getOrElse((_) => null);
+        final recentSessions =
+            (results[2] as Either<Failure, List<WorkoutSession>>).getOrElse(
+              (_) => [],
+            );
+        final activeSession = (results[3] as Either<Failure, WorkoutSession?>)
+            .getOrElse((_) => null);
 
-        final Map<String, List<SetLog>> recentLogs = {};
-        for (final s in recentSessions) {
-          final res = await repository.getSessionSetLogs(s.id);
-          recentLogs[s.id] = res.getOrElse((_) => []);
-        }
+        final recentLogsRes = await repository.getSetLogsForSessions(
+          recentSessions.map((s) => s.id).toList(),
+        );
+        final recentLogs = recentLogsRes.getOrElse(
+          (_) => <String, List<SetLog>>{},
+        );
 
         final perfRes = await _fetchPreloadedRecords(exercises);
 
         if (session != null) {
           final logsRes = await repository.getSessionSetLogs(session.id);
           final setLogs = logsRes.getOrElse((_) => []);
-          emit(DayWorkoutStarted(
-            session,
-            exercises,
-            setLogs: setLogs,
-            lastPerformances: perfRes,
-            recentSessions: recentSessions,
-            recentSessionsLogs: recentLogs,
-          ));
+          emit(
+            DayWorkoutStarted(
+              session,
+              exercises,
+              setLogs: setLogs,
+              lastPerformances: perfRes,
+              recentSessions: recentSessions,
+              recentSessionsLogs: recentLogs,
+            ),
+          );
         } else {
           bool hasAnotherActiveSession = false;
           String? anotherActiveSessionDayName;
@@ -134,22 +160,26 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
               activeSession.completedAt == null &&
               activeSession.routineDayId != event.routineDayId) {
             hasAnotherActiveSession = true;
-            final nameRes = await repository.getRoutineDayNameById(activeSession.routineDayId);
+            final nameRes = await repository.getRoutineDayNameById(
+              activeSession.routineDayId,
+            );
             anotherActiveSessionDayName = nameRes.getOrElse((_) => null);
           }
 
-          emit(DayInfoLoaded(
-            exercises: exercises,
-            userId: event.userId,
-            routineDayId: event.routineDayId,
-            sessionDate: event.sessionDate,
-            existingSession: session,
-            recentSessions: recentSessions,
-            recentSessionsLogs: recentLogs,
-            hasAnotherActiveSession: hasAnotherActiveSession,
-            anotherActiveSessionDayName: anotherActiveSessionDayName,
-            lastPerformances: perfRes,
-          ));
+          emit(
+            DayInfoLoaded(
+              exercises: exercises,
+              userId: event.userId,
+              routineDayId: event.routineDayId,
+              sessionDate: event.sessionDate,
+              existingSession: session,
+              recentSessions: recentSessions,
+              recentSessionsLogs: recentLogs,
+              hasAnotherActiveSession: hasAnotherActiveSession,
+              anotherActiveSessionDayName: anotherActiveSessionDayName,
+              lastPerformances: perfRes,
+            ),
+          );
         }
       } catch (e) {
         emit(WorkoutError('Error al cargar día: $e'));
@@ -160,7 +190,9 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       emit(WorkoutLoading());
       try {
         final sessionResult = await repository.startWorkoutForDay(
-          event.userId, event.routineDayId, event.sessionDate,
+          event.userId,
+          event.routineDayId,
+          event.sessionDate,
         );
         final session = sessionResult.getOrElse(
           (_) => throw Exception('No se pudo iniciar la sesión'),
@@ -171,57 +203,77 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
         final results = await Future.wait([
           repository.getExercisesForDay(effectiveRoutineDayId),
-          repository.getRecentSessionsForDay(event.userId, effectiveRoutineDayId, effectiveSessionDate, limit: 3),
+          repository.getRecentSessionsForDay(
+            event.userId,
+            effectiveRoutineDayId,
+            effectiveSessionDate,
+            limit: 3,
+          ),
           repository.getSessionSetLogs(session.id),
         ]);
 
-        final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse((_) => []);
-        final recentSessions = (results[1] as Either<Failure, List<WorkoutSession>>).getOrElse((_) => []);
-        final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse((_) => []);
+        final exercises = (results[0] as Either<Failure, List<Exercise>>)
+            .getOrElse((_) => []);
+        final recentSessions =
+            (results[1] as Either<Failure, List<WorkoutSession>>).getOrElse(
+              (_) => [],
+            );
+        final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse(
+          (_) => [],
+        );
 
-        final Map<String, List<SetLog>> recentLogs = {};
-        for (final s in recentSessions) {
-          final res = await repository.getSessionSetLogs(s.id);
-          recentLogs[s.id] = res.getOrElse((_) => []);
-        }
+        final recentLogsRes = await repository.getSetLogsForSessions(
+          recentSessions.map((s) => s.id).toList(),
+        );
+        final recentLogs = recentLogsRes.getOrElse(
+          (_) => <String, List<SetLog>>{},
+        );
 
         final perfRes = await _fetchPreloadedRecords(exercises);
 
         String routineDayName = event.routineDayName;
         if (effectiveRoutineDayId != event.routineDayId) {
-          final nameRes = await repository.getRoutineDayNameById(effectiveRoutineDayId);
+          final nameRes = await repository.getRoutineDayNameById(
+            effectiveRoutineDayId,
+          );
           routineDayName = nameRes.getOrElse((_) => null) ?? routineDayName;
 
-          final fallbackRecentSessions = (await repository.getRecentSessionsForDay(
-            event.userId,
+          final fallbackRecentSessions =
+              (await repository.getRecentSessionsForDay(
+                event.userId,
+                event.routineDayId,
+                event.sessionDate,
+                limit: 3,
+              )).getOrElse((_) => <WorkoutSession>[]);
+
+          final fallbackRecentLogsRes = await repository.getSetLogsForSessions(
+            fallbackRecentSessions.map((s) => s.id).toList(),
+          );
+          final fallbackRecentLogs = fallbackRecentLogsRes.getOrElse(
+            (_) => <String, List<SetLog>>{},
+          );
+
+          final requestedExercises = (await repository.getExercisesForDay(
             event.routineDayId,
-            event.sessionDate,
-            limit: 3,
-          )).getOrElse((_) => <WorkoutSession>[]);
+          )).getOrElse((_) => <Exercise>[]);
+          final requestedPerf = await _fetchPreloadedRecords(
+            requestedExercises,
+          );
 
-          final Map<String, List<SetLog>> fallbackRecentLogs = {};
-          for (final s in fallbackRecentSessions) {
-            final res = await repository.getSessionSetLogs(s.id);
-            fallbackRecentLogs[s.id] = res.getOrElse((_) => <SetLog>[]);
-          }
-
-          final requestedExercises =
-              (await repository.getExercisesForDay(event.routineDayId))
-                  .getOrElse((_) => <Exercise>[]);
-          final requestedPerf = await _fetchPreloadedRecords(requestedExercises);
-
-          emit(DayInfoLoaded(
-            exercises: requestedExercises,
-            userId: event.userId,
-            routineDayId: event.routineDayId,
-            sessionDate: event.sessionDate,
-            existingSession: null,
-            recentSessions: fallbackRecentSessions,
-            recentSessionsLogs: fallbackRecentLogs,
-            hasAnotherActiveSession: true,
-            anotherActiveSessionDayName: routineDayName,
-            lastPerformances: requestedPerf,
-          ));
+          emit(
+            DayInfoLoaded(
+              exercises: requestedExercises,
+              userId: event.userId,
+              routineDayId: event.routineDayId,
+              sessionDate: event.sessionDate,
+              existingSession: null,
+              recentSessions: fallbackRecentSessions,
+              recentSessionsLogs: fallbackRecentLogs,
+              hasAnotherActiveSession: true,
+              anotherActiveSessionDayName: routineDayName,
+              lastPerformances: requestedPerf,
+            ),
+          );
           return;
         }
 
@@ -233,14 +285,16 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           routineDayName: routineDayName,
         );
 
-        emit(DayWorkoutStarted(
-          session,
-          exercises,
-          setLogs: setLogs,
-          lastPerformances: perfRes,
-          recentSessions: recentSessions,
-          recentSessionsLogs: recentLogs,
-        ));
+        emit(
+          DayWorkoutStarted(
+            session,
+            exercises,
+            setLogs: setLogs,
+            lastPerformances: perfRes,
+            recentSessions: recentSessions,
+            recentSessionsLogs: recentLogs,
+          ),
+        );
       } catch (e) {
         emit(WorkoutError('Error al iniciar sesión: $e'));
       }
@@ -261,7 +315,9 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
         if (ctx != null && ctx.sessionId == session.id) {
           routineDayName = ctx.routineDayName;
         } else {
-          final nameRes = await repository.getRoutineDayNameById(session.routineDayId);
+          final nameRes = await repository.getRoutineDayNameById(
+            session.routineDayId,
+          );
           routineDayName = nameRes.getOrElse((_) => null) ?? 'Sesion en curso';
 
           await activeSessionService.save(
@@ -273,13 +329,15 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           );
         }
 
-        emit(ActiveSessionDetected(
-          sessionId: session.id,
-          routineDayId: session.routineDayId,
-          userId: session.userId,
-          sessionDate: session.sessionDate,
-          routineDayName: routineDayName,
-        ));
+        emit(
+          ActiveSessionDetected(
+            sessionId: session.id,
+            routineDayId: session.routineDayId,
+            userId: session.userId,
+            sessionDate: session.sessionDate,
+            routineDayName: routineDayName,
+          ),
+        );
       } catch (_) {}
     });
 
@@ -287,23 +345,29 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       final currentState = state;
       try {
         await repository.saveSetLog(event.setLog);
-        
+
         if (currentState is DayWorkoutStarted) {
           final newLogs = List<SetLog>.from(currentState.setLogs);
-          final idx = newLogs.indexWhere((l) => l.exerciseId == event.setLog.exerciseId && l.setIndex == event.setLog.setIndex);
+          final idx = newLogs.indexWhere(
+            (l) =>
+                l.exerciseId == event.setLog.exerciseId &&
+                l.setIndex == event.setLog.setIndex,
+          );
           if (idx != -1) {
             newLogs[idx] = event.setLog;
           } else {
             newLogs.add(event.setLog);
           }
-          emit(DayWorkoutStarted(
-            currentState.session, 
-            currentState.exercises, 
-            setLogs: newLogs, 
-            lastPerformances: currentState.lastPerformances,
-            recentSessions: currentState.recentSessions,
-            recentSessionsLogs: currentState.recentSessionsLogs,
-          ));
+          emit(
+            DayWorkoutStarted(
+              currentState.session,
+              currentState.exercises,
+              setLogs: newLogs,
+              lastPerformances: currentState.lastPerformances,
+              recentSessions: currentState.recentSessions,
+              recentSessionsLogs: currentState.recentSessionsLogs,
+            ),
+          );
         }
       } catch (e) {
         emit(WorkoutError('Error al guardar serie: $e'));
@@ -314,7 +378,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       emit(WorkoutLoading());
       try {
         final result = await repository.finishWorkoutSession(
-          event.sessionId, 
+          event.sessionId,
           coachingAnalysis: event.coachingAnalysis,
         );
         if (result.isLeft()) {
@@ -347,13 +411,10 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       emit(WorkoutLoading());
       try {
         final result = await assignRoutine(event.userId, event.routineId);
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (_) {
-            emit(const ManagementSuccess('Rutina activada correctamente'));
-            add(FetchAssignedRoutines(event.userId));
-          },
-        );
+        result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
+          emit(const ManagementSuccess('Rutina activada correctamente'));
+          add(FetchAssignedRoutines(event.userId));
+        });
       } catch (e) {
         emit(WorkoutError('Error al activar rutina: $e'));
       }
@@ -395,17 +456,16 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       emit(WorkoutLoading());
       try {
         final result = await repository.saveRoutineDay(event.day);
-        result.fold(
-          (failure) => emit(WorkoutError(failure.message)),
-          (_) {
-            emit(const ManagementSuccess('Día guardado correctamente'));
-            add(FetchWeeklyPlan(
-              userId: event.userId, 
-              routineId: event.routineId, 
+        result.fold((failure) => emit(WorkoutError(failure.message)), (_) {
+          emit(const ManagementSuccess('Día guardado correctamente'));
+          add(
+            FetchWeeklyPlan(
+              userId: event.userId,
+              routineId: event.routineId,
               weekStart: DateTime.now(),
-            ));
-          },
-        );
+            ),
+          );
+        });
       } catch (e) {
         emit(WorkoutError('Error al guardar día: $e'));
       }
@@ -428,11 +488,13 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       try {
         await repository.toggleExerciseInDay(event.dayId, event.exerciseId);
         emit(const ManagementSuccess('Ejercicio actualizado'));
-        add(FetchWeeklyPlan(
-          userId: event.userId,
-          routineId: event.routineId,
-          weekStart: DateTime.now(),
-        ));
+        add(
+          FetchWeeklyPlan(
+            userId: event.userId,
+            routineId: event.routineId,
+            weekStart: DateTime.now(),
+          ),
+        );
       } catch (e) {
         emit(WorkoutError('Error al alternar ejercicio: $e'));
       }
@@ -442,11 +504,13 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       try {
         await repository.reorderExercisesInDay(event.dayId, event.exerciseIds);
         emit(const ManagementSuccess('Orden actualizado'));
-        add(FetchWeeklyPlan(
-          userId: event.userId,
-          routineId: event.routineId,
-          weekStart: DateTime.now(),
-        ));
+        add(
+          FetchWeeklyPlan(
+            userId: event.userId,
+            routineId: event.routineId,
+            weekStart: DateTime.now(),
+          ),
+        );
       } catch (e) {
         emit(WorkoutError('Error al reordenar ejercicios: $e'));
       }
@@ -466,27 +530,39 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
             return e;
           }).toList();
 
-          await repository.updateExerciseTarget(currentState.session.routineDayId, event.exerciseId, event.targetWeight, event.targetReps);
+          await repository.updateExerciseTarget(
+            currentState.session.routineDayId,
+            event.exerciseId,
+            event.targetWeight,
+            event.targetReps,
+          );
 
-          emit(DayWorkoutStarted(
-            currentState.session,
-            newExercises,
-            setLogs: currentState.setLogs,
-            lastPerformances: currentState.lastPerformances,
-            recentSessions: currentState.recentSessions,
-            recentSessionsLogs: currentState.recentSessionsLogs,
-          ));
+          emit(
+            DayWorkoutStarted(
+              currentState.session,
+              newExercises,
+              setLogs: currentState.setLogs,
+              lastPerformances: currentState.lastPerformances,
+              recentSessions: currentState.recentSessions,
+              recentSessionsLogs: currentState.recentSessionsLogs,
+            ),
+          );
         } catch (e) {
           emit(WorkoutError('Error al actualizar objetivo: $e'));
         }
       }
     });
-    
+
     // Legacy support
     on<FetchLastExercisePerformance>((event, emit) async {
       try {
-        final result = await repository.getLastExercisePerformance(event.exerciseId);
-        result.fold((failure) => emit(WorkoutError(failure.message)), (lastSet) => emit(ExercisePerformanceLoaded(lastSet)));
+        final result = await repository.getLastExercisePerformance(
+          event.exerciseId,
+        );
+        result.fold(
+          (failure) => emit(WorkoutError(failure.message)),
+          (lastSet) => emit(ExercisePerformanceLoaded(lastSet)),
+        );
       } catch (e) {
         emit(WorkoutError('Error al cargar rendimiento: $e'));
       }
@@ -495,18 +571,19 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     on<ResetWorkout>((event, emit) => emit(WorkoutInitial()));
   }
 
-  Future<Map<String, SetLog?>> _fetchPreloadedRecords(List<Exercise> exercises) async {
-    final Map<String, SetLog?> performances = {};
-    if (exercises.isEmpty) return performances;
-    
-    final futures = exercises.map((e) => repository.getLastExercisePerformance(e.id)).toList();
-    final results = await Future.wait(futures);
-    
-    for (int i = 0; i < exercises.length; i++) {
-        final exercise = exercises[i];
-        final result = results[i];
-        performances[exercise.id] = result.getOrElse((_) => null);
+  Future<Map<String, SetLog?>> _fetchPreloadedRecords(
+    List<Exercise> exercises,
+  ) async {
+    if (exercises.isEmpty) return {};
+
+    final exerciseIds = exercises.map((e) => e.id).toList();
+    final result = await repository.getLastExercisePerformances(exerciseIds);
+    final performances = result.getOrElse((_) => <String, SetLog?>{});
+
+    for (final id in exerciseIds) {
+      performances.putIfAbsent(id, () => null);
     }
+
     return performances;
   }
 }

@@ -35,7 +35,7 @@ class RoutineDayPage extends StatefulWidget {
 
 class _RoutineDayPageState extends State<RoutineDayPage> {
   final List<SetLog> _currentSessionLogs = [];
-  
+
   // ── Timer Global ──────────────────────────────────────────
   Timer? _globalRestTimer;
   int _secondsRemaining = 0;
@@ -86,34 +86,54 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   @override
   void initState() {
     super.initState();
-    context.read<WorkoutBloc>().add(LoadDayInfo(
-      userId: widget.userId,
-      routineDayId: widget.routineDay.id,
-      sessionDate: widget.sessionDate,
-    ));
+    context.read<WorkoutBloc>().add(
+      LoadDayInfo(
+        userId: widget.userId,
+        routineDayId: widget.routineDay.id,
+        sessionDate: widget.sessionDate,
+      ),
+    );
   }
 
   void _onSetAdded(SetLog log) {
     setState(() {
-      final idx = _currentSessionLogs.indexWhere((l) => l.exerciseId == log.exerciseId && l.setIndex == log.setIndex);
+      final idx = _currentSessionLogs.indexWhere(
+        (l) => l.exerciseId == log.exerciseId && l.setIndex == log.setIndex,
+      );
       if (idx != -1) {
         _currentSessionLogs[idx] = log;
       } else {
         _currentSessionLogs.add(log);
       }
     });
-    
+
     // Iniciar timer global (90s por defecto si no es edición)
     _startRestTimer(90);
   }
 
-  double get _totalVolume => _currentSessionLogs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
-  
+  double get _totalVolume => _currentSessionLogs.fold(
+    0.0,
+    (s, l) => s + (l.actualWeight * l.actualReps),
+  );
 
   bool get _isReadOnly => false;
 
   String get _dateLabel {
-    const months = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const months = [
+      '',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
     return '${widget.sessionDate.day} ${months[widget.sessionDate.month]} ${widget.sessionDate.year}';
   }
 
@@ -124,6 +144,14 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         if (didPop) context.read<WorkoutBloc>().add(const ResetWorkout());
       },
       child: BlocConsumer<WorkoutBloc, WorkoutState>(
+        buildWhen: (previous, current) {
+          return current is WorkoutInitial ||
+              current is WorkoutLoading ||
+              current is WorkoutError ||
+              current is DayInfoLoaded ||
+              current is DayWorkoutStarted ||
+              current is WorkoutFinishedSuccess;
+        },
         listener: (context, state) {
           if (state is WorkoutFinishedSuccess) {
             context.read<WorkoutBloc>().add(const ResetWorkout());
@@ -137,12 +165,24 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           final session = state is DayWorkoutStarted ? state.session : null;
           final isCompleted = session?.completedAt != null;
           final effectiveReadOnly = _isReadOnly || isCompleted;
-          
-          final recentSessions = state is DayInfoLoaded ? state.recentSessions : (state is DayWorkoutStarted ? state.recentSessions : <WorkoutSession>[]);
-          final recentSessionsLogs = (state is DayInfoLoaded ? state.recentSessionsLogs : (state is DayWorkoutStarted ? state.recentSessionsLogs : <String, List<SetLog>>{}));
+
+          final recentSessions = state is DayInfoLoaded
+              ? state.recentSessions
+              : (state is DayWorkoutStarted
+                    ? state.recentSessions
+                    : <WorkoutSession>[]);
+          final recentSessionsLogs = (state is DayInfoLoaded
+              ? state.recentSessionsLogs
+              : (state is DayWorkoutStarted
+                    ? state.recentSessionsLogs
+                    : <String, List<SetLog>>{}));
           final lastSession = recentSessions.firstOrNull;
-          final lastLogs = lastSession != null ? (recentSessionsLogs[lastSession.id] ?? <SetLog>[]) : <SetLog>[];
-          final exercises = (state is DayInfoLoaded ? state.exercises : (state is DayWorkoutStarted ? state.exercises : <Exercise>[]));
+          final lastLogs = lastSession != null
+              ? (recentSessionsLogs[lastSession.id] ?? <SetLog>[])
+              : <SetLog>[];
+          final exercises = (state is DayInfoLoaded
+              ? state.exercises
+              : (state is DayWorkoutStarted ? state.exercises : <Exercise>[]));
 
           return Scaffold(
             backgroundColor: AppColors.background,
@@ -155,31 +195,52 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   backgroundColor: AppColors.background,
                   elevation: 0,
                   leading: IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary, size: 24),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textPrimary,
+                      size: 24,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   actions: [
                     if (lastSession != null)
                       IconButton(
-                        icon: const Icon(Icons.history_rounded, color: AppColors.primary, size: 24),
-                        onPressed: () => _showLastSessionDetails(lastSession, lastLogs, exercises),
+                        icon: const Icon(
+                          Icons.history_rounded,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                        onPressed: () => _showLastSessionDetails(
+                          lastSession,
+                          lastLogs,
+                          exercises,
+                        ),
                       ),
                     const SizedBox(width: 8),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: false,
-                    titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    titlePadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     title: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.routineDay.name.toUpperCase(),
-                          style: AppTextStyles.heading2.copyWith(fontSize: 16, letterSpacing: 1.2),
+                          style: AppTextStyles.heading2.copyWith(
+                            fontSize: 16,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                         Text(
                           _dateLabel,
-                          style: AppTextStyles.label.copyWith(color: AppColors.textSecondary, fontSize: 10),
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
@@ -223,7 +284,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                             children: [
                               Text(
                                 'VOLUMEN ACTUAL',
-                                style: AppTextStyles.label.copyWith(letterSpacing: 1.5, fontSize: 10),
+                                style: AppTextStyles.label.copyWith(
+                                  letterSpacing: 1.5,
+                                  fontSize: 10,
+                                ),
                               ),
                               Text(
                                 '${_totalVolume.toStringAsFixed(0)} KG',
@@ -233,15 +297,22 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                           ),
                         if (effectiveReadOnly)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: isCompleted ? AppColors.success.withOpacity(0.1) : AppColors.surfaceHighlight,
+                              color: isCompleted
+                                  ? AppColors.success.withOpacity(0.1)
+                                  : AppColors.surfaceHighlight,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               isCompleted ? 'COMPLETADO' : 'LECTURA',
                               style: AppTextStyles.label.copyWith(
-                                color: isCompleted ? AppColors.success : AppColors.textSecondary,
+                                color: isCompleted
+                                    ? AppColors.success
+                                    : AppColors.textSecondary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -250,9 +321,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                     ),
                   ),
                 ),
-                
+
                 if (state is WorkoutInitial || state is WorkoutLoading)
-                  const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  )
                 else if (state is WorkoutError)
                   SliverFillRemaining(child: _buildError(state.message))
                 else if (state is DayInfoLoaded)
@@ -261,97 +338,108 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   SliverPadding(
                     padding: const EdgeInsets.all(16),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final ex = state.exercises[index];
-                          final liveAnalysis = _analyzePerformance(
-                            state.exercises, 
-                            _currentSessionLogs,
-                            history: state.recentSessions,
-                            historyLogs: state.recentSessionsLogs,
-                          );
-                          final exAnalysis = liveAnalysis.firstWhereOrNull(
-                            (a) => a.exerciseId == ex.id || a.exerciseName == ex.name
-                          );
-                          
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: ExerciseCard(
-                              exercise: ex,
-                              sessionId: state.session.id,
-                              initialCompletedSets: _currentSessionLogs,
-                              lastPerformance: state.lastPerformances[ex.id],
-                              readOnly: effectiveReadOnly,
-                              coachingAnalysis: exAnalysis,
-                              onSetAdded: effectiveReadOnly ? null : (log) {
-                                _onSetAdded(log);
-                                HapticFeedback.selectionClick();
-                              },
-                            ),
-                          );
-                        },
-                        childCount: state.exercises.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final ex = state.exercises[index];
+                        final liveAnalysis = _analyzePerformance(
+                          state.exercises,
+                          _currentSessionLogs,
+                          history: state.recentSessions,
+                          historyLogs: state.recentSessionsLogs,
+                        );
+                        final exAnalysis = liveAnalysis.firstWhereOrNull(
+                          (a) =>
+                              a.exerciseId == ex.id ||
+                              a.exerciseName == ex.name,
+                        );
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ExerciseCard(
+                            exercise: ex,
+                            sessionId: state.session.id,
+                            initialCompletedSets: _currentSessionLogs,
+                            lastPerformance: state.lastPerformances[ex.id],
+                            readOnly: effectiveReadOnly,
+                            coachingAnalysis: exAnalysis,
+                            onSetAdded: effectiveReadOnly
+                                ? null
+                                : (log) {
+                                    _onSetAdded(log);
+                                    HapticFeedback.selectionClick();
+                                  },
+                          ),
+                        );
+                      }, childCount: state.exercises.length),
                     ),
                   ),
-                  _buildLiveCoachingSection(state.exercises, _currentSessionLogs),
-                ]
-                else
+                  _buildLiveCoachingSection(
+                    state.exercises,
+                    _currentSessionLogs,
+                  ),
+                ] else
                   const SliverFillRemaining(child: SizedBox()),
 
                 const SliverToBoxAdapter(child: SizedBox(height: 140)),
               ],
             ),
             bottomNavigationBar: (effectiveReadOnly || state is DayInfoLoaded)
-              ? null
-              : GlassContainer(
-                  blur: 30,
-                  opacity: 0.1,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 34),
-                  child: Row(
-                    children: [
-                      _buildTimerCircle(),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'EN PROGRESO',
-                              style: AppTextStyles.label.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
+                ? null
+                : GlassContainer(
+                    blur: 30,
+                    opacity: 0.1,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 34),
+                    child: Row(
+                      children: [
+                        _buildTimerCircle(),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'EN PROGRESO',
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '${exercises.length} ejercicios planificados',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                          ],
+                              Text(
+                                '${exercises.length} ejercicios planificados',
+                                style: AppTextStyles.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      KineticButton(
-                        fullWidth: false,
-                        label: 'FINALIZAR',
-                        onTap: () {
-                          HapticFeedback.heavyImpact();
-                          if (state is DayWorkoutStarted) {
-                             final analysis = _analyzePerformance(
-                              state.exercises, 
-                              _currentSessionLogs,
-                              history: state.recentSessions,
-                              historyLogs: state.recentSessionsLogs,
-                            );
-                            _showSummaryModal(context, state.exercises, _currentSessionLogs, state.session.id, analysis);
-                          }
-                        },
-                      ),
-                    ],
+                        KineticButton(
+                          fullWidth: false,
+                          label: 'FINALIZAR',
+                          onTap: () {
+                            HapticFeedback.heavyImpact();
+                            if (state is DayWorkoutStarted) {
+                              final analysis = _analyzePerformance(
+                                state.exercises,
+                                _currentSessionLogs,
+                                history: state.recentSessions,
+                                historyLogs: state.recentSessionsLogs,
+                              );
+                              _showSummaryModal(
+                                context,
+                                state.exercises,
+                                _currentSessionLogs,
+                                state.session.id,
+                                analysis,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
           );
         },
       ),
@@ -385,14 +473,29 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             ),
             const SizedBox(height: 12),
             ...state.exercises.map((ex) {
-              final exLastLogs = lastLogs.where((l) => l.exerciseId == ex.id).toList();
+              final exLastLogs = lastLogs
+                  .where((l) => l.exerciseId == ex.id)
+                  .toList();
               double? prevAvgWeight;
               double? prevAvgReps;
               if (exLastLogs.isNotEmpty) {
-                prevAvgWeight = exLastLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / exLastLogs.length;
-                prevAvgReps = exLastLogs.map((l) => l.actualReps.toDouble()).reduce((a, b) => a + b) / exLastLogs.length;
+                prevAvgWeight =
+                    exLastLogs
+                        .map((l) => l.actualWeight)
+                        .reduce((a, b) => a + b) /
+                    exLastLogs.length;
+                prevAvgReps =
+                    exLastLogs
+                        .map((l) => l.actualReps.toDouble())
+                        .reduce((a, b) => a + b) /
+                    exLastLogs.length;
               }
-              return _buildExercisePreviewCard(ex, state.lastPerformances[ex.id], prevAvgWeight, prevAvgReps);
+              return _buildExercisePreviewCard(
+                ex,
+                state.lastPerformances[ex.id],
+                prevAvgWeight,
+                prevAvgReps,
+              );
             }),
             if (lastSession?.coachingAnalysis?.isNotEmpty ?? false) ...[
               const SizedBox(height: 20),
@@ -406,17 +509,25 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF9800).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.45)),
+                  border: Border.all(
+                    color: const Color(0xFFFF9800).withOpacity(0.45),
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.info_outline_rounded, color: Color(0xFFFF9800), size: 18),
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      color: Color(0xFFFF9800),
+                      size: 18,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Ya tienes un entrenamiento en curso${state.anotherActiveSessionDayName != null ? ' (${state.anotherActiveSessionDayName})' : ''}. Debes finalizarlo o retomarlo antes de iniciar otro.',
-                        style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFFFF9800)),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: const Color(0xFFFF9800),
+                        ),
                       ),
                     ),
                   ],
@@ -431,12 +542,14 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                     ? null
                     : () {
                         HapticFeedback.heavyImpact();
-                        context.read<WorkoutBloc>().add(ConfirmStartWorkout(
-                          userId: state.userId,
-                          routineDayId: state.routineDayId,
-                          sessionDate: state.sessionDate,
-                          routineDayName: widget.routineDay.name,
-                        ));
+                        context.read<WorkoutBloc>().add(
+                          ConfirmStartWorkout(
+                            userId: state.userId,
+                            routineDayId: state.routineDayId,
+                            sessionDate: state.sessionDate,
+                            routineDayName: widget.routineDay.name,
+                          ),
+                        );
                       },
                 icon: Icon(
                   state.hasAnotherActiveSession
@@ -459,7 +572,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   elevation: 0,
                 ),
               ),
@@ -470,11 +585,32 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
-  Widget _buildPreviousSessionCard(WorkoutSession session, List<SetLog> logs, List<Exercise> exercises) {
-    const months = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  Widget _buildPreviousSessionCard(
+    WorkoutSession session,
+    List<SetLog> logs,
+    List<Exercise> exercises,
+  ) {
+    const months = [
+      '',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
     final d = session.sessionDate;
     final dateLabel = '${d.day} ${months[d.month]} ${d.year}';
-    final totalVolume = logs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
+    final totalVolume = logs.fold(
+      0.0,
+      (s, l) => s + (l.actualWeight * l.actualReps),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -490,24 +626,57 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.history_rounded, color: AppColors.primary, size: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.history_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('SESIÓN ANTERIOR', style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 10)),
-                    Text(dateLabel, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      'SESIÓN ANTERIOR',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      dateLabel,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
               if (session.completedAt != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                  child: Text('COMPLETADO', style: AppTextStyles.label.copyWith(color: AppColors.success, fontSize: 8, fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'COMPLETADO',
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.success,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -516,7 +685,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             children: [
               _StatPill(label: 'SERIES', value: '${logs.length}'),
               const SizedBox(width: 12),
-              _StatPill(label: 'VOLUMEN', value: '${totalVolume.toStringAsFixed(0)} kg'),
+              _StatPill(
+                label: 'VOLUMEN',
+                value: '${totalVolume.toStringAsFixed(0)} kg',
+              ),
             ],
           ),
         ],
@@ -524,9 +696,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
-  Widget _buildExercisePreviewCard(Exercise ex, SetLog? lastRecord, double? prevAvgWeight, double? prevAvgReps) {
+  Widget _buildExercisePreviewCard(
+    Exercise ex,
+    SetLog? lastRecord,
+    double? prevAvgWeight,
+    double? prevAvgReps,
+  ) {
     final hasPrev = prevAvgWeight != null && prevAvgReps != null;
-    final targetLabel = '${ex.targetSets}x${ex.targetReps}${ex.targetWeight > 0 ? " — ${ex.targetWeight.toStringAsFixed(0)} kg" : ""}';
+    final targetLabel =
+        '${ex.targetSets}x${ex.targetReps}${ex.targetWeight > 0 ? " — ${ex.targetWeight.toStringAsFixed(0)} kg" : ""}';
 
     String? deltaLabel;
     Color? deltaColor;
@@ -555,14 +733,28 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(ex.name, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  ex.name,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('OBJETIVO: $targetLabel', style: AppTextStyles.label.copyWith(color: AppColors.textSecondary, fontSize: 10)),
+                Text(
+                  'OBJETIVO: $targetLabel',
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
                 if (hasPrev) ...[
                   const SizedBox(height: 2),
                   Text(
                     'ANTERIOR: ${prevAvgWeight.toStringAsFixed(1)} kg × ${prevAvgReps.toStringAsFixed(0)} reps',
-                    style: AppTextStyles.label.copyWith(color: AppColors.primary, fontSize: 10),
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ],
@@ -571,8 +763,18 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           if (deltaLabel != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: deltaColor!.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(deltaLabel, style: AppTextStyles.label.copyWith(color: deltaColor, fontSize: 9, fontWeight: FontWeight.bold)),
+              decoration: BoxDecoration(
+                color: deltaColor!.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                deltaLabel,
+                style: AppTextStyles.label.copyWith(
+                  color: deltaColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
         ],
       ),
@@ -580,7 +782,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   Widget _buildPreviousCoachingCard(List<CoachingAnalysis> coaching) {
-    final relevant = coaching.where((c) => c.recommendation.isNotEmpty).toList();
+    final relevant = coaching
+        .where((c) => c.recommendation.isNotEmpty)
+        .toList();
     if (relevant.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -595,59 +799,104 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_outlined, color: AppColors.primary, size: 16),
+              const Icon(
+                Icons.psychology_outlined,
+                color: AppColors.primary,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 'COACHING DE LA SESIÓN ANTERIOR',
-                style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 0.8, fontSize: 10),
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                  fontSize: 10,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...relevant.map((c) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.arrow_right_rounded, color: AppColors.primary, size: 16),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.exerciseName, style: AppTextStyles.label.copyWith(fontWeight: FontWeight.bold, fontSize: 10)),
-                      Text(c.recommendation, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontStyle: FontStyle.italic, fontSize: 11)),
-                    ],
+          ...relevant.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.arrow_right_rounded,
+                    color: AppColors.primary,
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.exerciseName,
+                          style: AppTextStyles.label.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          c.recommendation,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLiveCoachingSection(List<Exercise> exercises, List<SetLog> logs) {
+  Widget _buildLiveCoachingSection(
+    List<Exercise> exercises,
+    List<SetLog> logs,
+  ) {
     final state = context.read<WorkoutBloc>().state;
-    final history = state is DayWorkoutStarted ? state.recentSessions : (state is DayInfoLoaded ? state.recentSessions : <WorkoutSession>[]);
-    final historyLogs = state is DayWorkoutStarted ? state.recentSessionsLogs : (state is DayInfoLoaded ? state.recentSessionsLogs : <String, List<SetLog>>{});
-    
+    final history = state is DayWorkoutStarted
+        ? state.recentSessions
+        : (state is DayInfoLoaded ? state.recentSessions : <WorkoutSession>[]);
+    final historyLogs = state is DayWorkoutStarted
+        ? state.recentSessionsLogs
+        : (state is DayInfoLoaded
+              ? state.recentSessionsLogs
+              : <String, List<SetLog>>{});
+
     final analysis = _analyzePerformance(
-      exercises, 
+      exercises,
       logs,
       history: history,
       historyLogs: historyLogs,
     );
-    final relevantAnalysis = analysis.where((a) => a.completedSets! > 0 && a.recommendation.isNotEmpty).toList();
-    if (relevantAnalysis.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final relevantAnalysis = analysis
+        .where((a) => a.completedSets! > 0 && a.recommendation.isNotEmpty)
+        .toList();
+    if (relevantAnalysis.isEmpty)
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     return SliverToBoxAdapter(
       child: _buildPersistedCoachingSection(relevantAnalysis),
     );
   }
 
-  Widget _buildHistoryExerciseCard(String exerciseName, List<SetLog> logs, SetLog? lastRecord, CoachingAnalysis? coaching) {
+  Widget _buildHistoryExerciseCard(
+    String exerciseName,
+    List<SetLog> logs,
+    SetLog? lastRecord,
+    CoachingAnalysis? coaching,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -663,31 +912,62 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(exerciseName, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Text(
+                  exerciseName,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 if (lastRecord != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'RÉCORD: ${lastRecord.actualWeight.toStringAsFixed(0)}kg x ${lastRecord.actualReps}',
-                      style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 10),
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
           const Divider(height: 1, color: AppColors.surfaceHighlight),
-          ...logs.map((log) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.surfaceHighlight.withOpacity(0.3))),
+          ...logs.map(
+            (log) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.surfaceHighlight.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _Circle(label: '${log.setIndex}'),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      '${log.actualWeight.toStringAsFixed(1)} kg',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${log.actualReps} reps',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(children: [
-              _Circle(label: '${log.setIndex}'),
-              const SizedBox(width: 16),
-              Expanded(child: Text('${log.actualWeight.toStringAsFixed(1)} kg', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
-              Text('${log.actualReps} reps', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-            ]),
-          )),
+          ),
           if (coaching != null) ...[
             const Divider(height: 1, color: AppColors.surfaceHighlight),
             Padding(
@@ -704,9 +984,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     final score = coaching.performanceScore ?? 1.0;
     final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
-    
-    final accentColor = isGreat 
-        ? const Color(0xFF4CAF50) 
+
+    final accentColor = isGreat
+        ? const Color(0xFF4CAF50)
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
     return Container(
@@ -766,12 +1046,18 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
 
   String _getFriendlyRecommendation(String rec) {
     switch (rec) {
-      case 'INCREASE_WEIGHT': return '🔥 ¡Increíble! Sube un poco el peso el próximo día.';
-      case 'MANTAIN_WEIGHT': return '✅ Buen trabajo. Mantén este peso para consolidar.';
-      case 'DECREASE_WEIGHT': return '⚠️ Baja un poco el peso para mejorar la técnica.';
-      case 'INCREASE_REPS': return '💪 Casi lo tienes. Intenta hacer 1-2 reps más.';
-      case 'DECREASE_SETS': return '📉 Te has pasado un poco. Baja una serie para recuperar.';
-      default: return rec;
+      case 'INCREASE_WEIGHT':
+        return '🔥 ¡Increíble! Sube un poco el peso el próximo día.';
+      case 'MANTAIN_WEIGHT':
+        return '✅ Buen trabajo. Mantén este peso para consolidar.';
+      case 'DECREASE_WEIGHT':
+        return '⚠️ Baja un poco el peso para mejorar la técnica.';
+      case 'INCREASE_REPS':
+        return '💪 Casi lo tienes. Intenta hacer 1-2 reps más.';
+      case 'DECREASE_SETS':
+        return '📉 Te has pasado un poco. Baja una serie para recuperar.';
+      default:
+        return rec;
     }
   }
 
@@ -784,13 +1070,26 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           children: [
             const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
-            Text(msg, textAlign: TextAlign.center, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+            Text(
+              msg,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => context.read<WorkoutBloc>().add(LoadDayInfo(userId: widget.userId, routineDayId: widget.routineDay.id, sessionDate: widget.sessionDate)),
+              onPressed: () => context.read<WorkoutBloc>().add(
+                LoadDayInfo(
+                  userId: widget.userId,
+                  routineDayId: widget.routineDay.id,
+                  sessionDate: widget.sessionDate,
+                ),
+              ),
               icon: const Icon(Icons.refresh),
               label: const Text('REINTENTAR'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.surface, foregroundColor: AppColors.textPrimary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.surface,
+                foregroundColor: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -798,10 +1097,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
-  void _showLastSessionDetails(WorkoutSession session, List<SetLog> logs, List<Exercise> exercises) {
+  void _showLastSessionDetails(
+    WorkoutSession session,
+    List<SetLog> logs,
+    List<Exercise> exercises,
+  ) {
     HapticFeedback.mediumImpact();
-    final dateLabel = '${session.sessionDate.day}/${session.sessionDate.month}/${session.sessionDate.year}';
-    
+    final dateLabel =
+        '${session.sessionDate.day}/${session.sessionDate.month}/${session.sessionDate.year}';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -811,21 +1115,59 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         minChildSize: 0.4,
         maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           child: Column(
             children: [
-              Container(margin: const EdgeInsets.symmetric(vertical: 12), width: 32, height: 4, decoration: BoxDecoration(color: AppColors.surfaceHighlight, borderRadius: BorderRadius.circular(2))),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceHighlight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Row(children: [
-                  const Icon(Icons.history_rounded, color: AppColors.primary, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('SESIÓN ANTERIOR', style: AppTextStyles.heading2.copyWith(fontSize: 20)),
-                    Text('Completada el $dateLabel', style: AppTextStyles.label.copyWith(color: AppColors.textSecondary)),
-                  ])),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary)),
-                ]),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.history_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SESIÓN ANTERIOR',
+                            style: AppTextStyles.heading2.copyWith(
+                              fontSize: 20,
+                            ),
+                          ),
+                          Text(
+                            'Completada el $dateLabel',
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Expanded(
                 child: ListView(
@@ -834,30 +1176,59 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   children: [
                     Builder(
                       builder: (context) {
-                        final pastTotalVolume = logs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
+                        final pastTotalVolume = logs.fold(
+                          0.0,
+                          (s, l) => s + (l.actualWeight * l.actualReps),
+                        );
                         return Container(
                           padding: const EdgeInsets.all(16),
                           margin: const EdgeInsets.only(bottom: 24),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.1),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.show_chart_rounded, color: AppColors.primary, size: 20),
+                              const Icon(
+                                Icons.show_chart_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                               const SizedBox(width: 12),
-                              Text('VOLUMEN TOTAL: ${pastTotalVolume.toStringAsFixed(0)} kg', style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                              Text(
+                                'VOLUMEN TOTAL: ${pastTotalVolume.toStringAsFixed(0)} kg',
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                             ],
                           ),
                         );
-                      }
+                      },
                     ),
                     ..._groupByExercise(logs, exercises).entries.map((e) {
-                      final coaching = session.coachingAnalysis?.firstWhereOrNull(
-                        (a) => a.exerciseName == e.key || a.exerciseId == exercises.firstWhereOrNull((ex) => ex.name == e.key)?.id
+                      final coaching = session.coachingAnalysis
+                          ?.firstWhereOrNull(
+                            (a) =>
+                                a.exerciseName == e.key ||
+                                a.exerciseId ==
+                                    exercises
+                                        .firstWhereOrNull(
+                                          (ex) => ex.name == e.key,
+                                        )
+                                        ?.id,
+                          );
+                      return _buildHistoryExerciseCard(
+                        e.key,
+                        e.value,
+                        null,
+                        coaching,
                       );
-                      return _buildHistoryExerciseCard(e.key, e.value, null, coaching);
                     }),
                   ],
                 ),
@@ -869,7 +1240,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
-  Map<String, List<SetLog>> _groupByExercise(List<SetLog> logs, List<Exercise> exercises) {
+  Map<String, List<SetLog>> _groupByExercise(
+    List<SetLog> logs,
+    List<Exercise> exercises,
+  ) {
     final exerciseMap = {for (final e in exercises) e.id: e.name};
     final grouped = <String, List<SetLog>>{};
     for (final log in logs) {
@@ -879,7 +1253,13 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     return grouped;
   }
 
-  void _showSummaryModal(BuildContext context, List<Exercise> exercises, List<SetLog> logs, String sessionId, List<CoachingAnalysis> analysis) {
+  void _showSummaryModal(
+    BuildContext context,
+    List<Exercise> exercises,
+    List<SetLog> logs,
+    String sessionId,
+    List<CoachingAnalysis> analysis,
+  ) {
     final totalTarget = widget.routineDay.targetSetsCount;
     final totalCompleted = logs.length;
     final isStrictlyCompleted = totalCompleted >= totalTarget;
@@ -887,10 +1267,16 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     // Datos de sesión anterior para la comparación
     final bloc = context.read<WorkoutBloc>();
     final currentState = bloc.state;
-    final recentSessions = currentState is DayWorkoutStarted ? currentState.recentSessions : <WorkoutSession>[];
-    final recentLogs = currentState is DayWorkoutStarted ? currentState.recentSessionsLogs : <String, List<SetLog>>{};
+    final recentSessions = currentState is DayWorkoutStarted
+        ? currentState.recentSessions
+        : <WorkoutSession>[];
+    final recentLogs = currentState is DayWorkoutStarted
+        ? currentState.recentSessionsLogs
+        : <String, List<SetLog>>{};
     final lastSession = recentSessions.firstOrNull;
-    final lastLogs = lastSession != null ? (recentLogs[lastSession.id] ?? <SetLog>[]) : <SetLog>[];
+    final lastLogs = lastSession != null
+        ? (recentLogs[lastSession.id] ?? <SetLog>[])
+        : <SetLog>[];
 
     showModalBottomSheet(
       context: context,
@@ -912,35 +1298,59 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                 child: Column(
                   children: [
-                    Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.surfaceHighlight, borderRadius: BorderRadius.circular(2))),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceHighlight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     Icon(
-                      isStrictlyCompleted ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
-                      color: isStrictlyCompleted ? AppColors.success : AppColors.primary,
+                      isStrictlyCompleted
+                          ? Icons.check_circle_rounded
+                          : Icons.pending_actions_rounded,
+                      color: isStrictlyCompleted
+                          ? AppColors.success
+                          : AppColors.primary,
                       size: 52,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      isStrictlyCompleted ? '¡RUTINA COMPLETADA!' : 'SESIÓN FINALIZADA',
+                      isStrictlyCompleted
+                          ? '¡RUTINA COMPLETADA!'
+                          : 'SESIÓN FINALIZADA',
                       style: AppTextStyles.heading1.copyWith(fontSize: 22),
                     ),
                     Text(
                       isStrictlyCompleted
                           ? 'Has cumplido con todo el volumen programado.'
                           : 'Faltan ${totalTarget - totalCompleted} series para el objetivo completo.',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _StatItem(label: 'SERIES', value: '$totalCompleted/$totalTarget'),
-                        _StatItem(label: 'VOLUMEN', value: '${_totalVolume.toStringAsFixed(0)} kg'),
+                        _StatItem(
+                          label: 'SERIES',
+                          value: '$totalCompleted/$totalTarget',
+                        ),
+                        _StatItem(
+                          label: 'VOLUMEN',
+                          value: '${_totalVolume.toStringAsFixed(0)} kg',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Divider(height: 24, color: AppColors.surfaceHighlight),
+                    const Divider(
+                      height: 24,
+                      color: AppColors.surfaceHighlight,
+                    ),
                   ],
                 ),
               ),
@@ -964,12 +1374,23 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                       ),
                       const SizedBox(height: 12),
                       ...exercises.map((ex) {
-                        final currLogs = logs.where((l) => l.exerciseId == ex.id).toList();
-                        final prevLogs = lastLogs.where((l) => l.exerciseId == ex.id).toList();
-                        return _buildExerciseComparisonRow(ex, currLogs, prevLogs);
+                        final currLogs = logs
+                            .where((l) => l.exerciseId == ex.id)
+                            .toList();
+                        final prevLogs = lastLogs
+                            .where((l) => l.exerciseId == ex.id)
+                            .toList();
+                        return _buildExerciseComparisonRow(
+                          ex,
+                          currLogs,
+                          prevLogs,
+                        );
                       }),
                       const SizedBox(height: 8),
-                      const Divider(height: 24, color: AppColors.surfaceHighlight),
+                      const Divider(
+                        height: 24,
+                        color: AppColors.surfaceHighlight,
+                      ),
                     ],
 
                     // ── Coaching ──────────────────────────────────────
@@ -984,23 +1405,40 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ...analysis.where((a) => a.recommendation.isNotEmpty).map((item) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.surfaceHighlight),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.exerciseName, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text(item.recommendation, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
-                          ],
-                        ),
-                      )),
+                      ...analysis
+                          .where((a) => a.recommendation.isNotEmpty)
+                          .map(
+                            (item) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.surfaceHighlight,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.exerciseName,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item.recommendation,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       const SizedBox(height: 16),
                     ],
 
@@ -1010,7 +1448,12 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                         Expanded(
                           child: TextButton(
                             onPressed: () => Navigator.pop(ctx),
-                            child: Text('CONTINUAR', style: AppTextStyles.label.copyWith(color: AppColors.textSecondary)),
+                            child: Text(
+                              'CONTINUAR',
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -1019,14 +1462,27 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.pop(ctx);
-                              context.read<WorkoutBloc>().add(FinishWorkoutSession(sessionId, coachingAnalysis: analysis));
+                              context.read<WorkoutBloc>().add(
+                                FinishWorkoutSession(
+                                  sessionId,
+                                  coachingAnalysis: analysis,
+                                ),
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            child: Text('FINALIZAR Y GUARDAR', style: AppTextStyles.label.copyWith(color: AppColors.background, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              'FINALIZAR Y GUARDAR',
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.background,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1041,13 +1497,27 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
-  Widget _buildExerciseComparisonRow(Exercise ex, List<SetLog> currLogs, List<SetLog> prevLogs) {
+  Widget _buildExerciseComparisonRow(
+    Exercise ex,
+    List<SetLog> currLogs,
+    List<SetLog> prevLogs,
+  ) {
     final currSets = currLogs.length;
     final prevSets = prevLogs.length;
-    final currAvgW = currSets > 0 ? currLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / currSets : 0.0;
-    final currAvgR = currSets > 0 ? currLogs.map((l) => l.actualReps.toDouble()).reduce((a, b) => a + b) / currSets : 0.0;
-    final prevAvgW = prevSets > 0 ? prevLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / prevSets : 0.0;
-    final prevAvgR = prevSets > 0 ? prevLogs.map((l) => l.actualReps.toDouble()).reduce((a, b) => a + b) / prevSets : 0.0;
+    final currAvgW = currSets > 0
+        ? currLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / currSets
+        : 0.0;
+    final currAvgR = currSets > 0
+        ? currLogs.map((l) => l.actualReps.toDouble()).reduce((a, b) => a + b) /
+              currSets
+        : 0.0;
+    final prevAvgW = prevSets > 0
+        ? prevLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / prevSets
+        : 0.0;
+    final prevAvgR = prevSets > 0
+        ? prevLogs.map((l) => l.actualReps.toDouble()).reduce((a, b) => a + b) /
+              prevSets
+        : 0.0;
 
     IconData trendIcon = Icons.remove_rounded;
     Color trendColor = AppColors.textSecondary;
@@ -1074,7 +1544,14 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         children: [
           Row(
             children: [
-              Expanded(child: Text(ex.name, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold))),
+              Expanded(
+                child: Text(
+                  ex.name,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               Icon(trendIcon, color: trendColor, size: 18),
             ],
           ),
@@ -1085,27 +1562,55 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('HOY', style: AppTextStyles.label.copyWith(fontSize: 9, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    Text(
+                      'HOY',
+                      style: AppTextStyles.label.copyWith(
+                        fontSize: 9,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                      currSets > 0 ? '$currSets series — ${currAvgW.toStringAsFixed(1)} kg × ${currAvgR.toStringAsFixed(0)}r' : 'Sin datos',
-                      style: AppTextStyles.bodySmall.copyWith(color: currSets > 0 ? AppColors.textPrimary : AppColors.textSecondary),
+                      currSets > 0
+                          ? '$currSets series — ${currAvgW.toStringAsFixed(1)} kg × ${currAvgR.toStringAsFixed(0)}r'
+                          : 'Sin datos',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: currSets > 0
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Container(width: 1, height: 32, color: AppColors.surfaceHighlight),
+              Container(
+                width: 1,
+                height: 32,
+                color: AppColors.surfaceHighlight,
+              ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('ANTERIOR', style: AppTextStyles.label.copyWith(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      Text(
+                        'ANTERIOR',
+                        style: AppTextStyles.label.copyWith(
+                          fontSize: 9,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Text(
-                        prevSets > 0 ? '$prevSets series — ${prevAvgW.toStringAsFixed(1)} kg × ${prevAvgR.toStringAsFixed(0)}r' : 'Sin datos',
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                        prevSets > 0
+                            ? '$prevSets series — ${prevAvgW.toStringAsFixed(1)} kg × ${prevAvgR.toStringAsFixed(0)}r'
+                            : 'Sin datos',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -1119,17 +1624,17 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   List<CoachingAnalysis> _analyzePerformance(
-    List<Exercise> exercises, 
+    List<Exercise> exercises,
     List<SetLog> logs, {
     List<WorkoutSession> history = const [],
     Map<String, List<SetLog>> historyLogs = const {},
   }) {
     final List<CoachingAnalysis> results = [];
-    
+
     for (final ex in exercises) {
       final exLogs = logs.where((l) => l.exerciseId == ex.id).toList();
       final completedSets = exLogs.length;
-      
+
       bool weightMet = true;
       bool repsMet = true;
       String rec = '';
@@ -1140,17 +1645,28 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       double currentAvgWeight = 0;
       double currentAvgReps = 0;
       if (completedSets > 0) {
-        currentAvgWeight = exLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / completedSets;
-        currentAvgReps = exLogs.map((l) => l.actualReps).reduce((a, b) => a + b) / completedSets;
-        
+        currentAvgWeight =
+            exLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) /
+            completedSets;
+        currentAvgReps =
+            exLogs.map((l) => l.actualReps).reduce((a, b) => a + b) /
+            completedSets;
+
         weightMet = currentAvgWeight >= ex.targetWeight;
         repsMet = currentAvgReps >= ex.targetReps;
-        
-        final weightRatio = ex.targetWeight > 0 ? currentAvgWeight / ex.targetWeight : 1.0;
-        final repsRatio = ex.targetReps > 0 ? currentAvgReps / ex.targetReps : 1.0;
-        final setsRatio = ex.targetSets > 0 ? (completedSets / ex.targetSets).clamp(0.0, 1.0) : 1.0;
-        
-        performanceScore = (weightRatio * 0.45 + repsRatio * 0.45 + setsRatio * 0.1);
+
+        final weightRatio = ex.targetWeight > 0
+            ? currentAvgWeight / ex.targetWeight
+            : 1.0;
+        final repsRatio = ex.targetReps > 0
+            ? currentAvgReps / ex.targetReps
+            : 1.0;
+        final setsRatio = ex.targetSets > 0
+            ? (completedSets / ex.targetSets).clamp(0.0, 1.0)
+            : 1.0;
+
+        performanceScore =
+            (weightRatio * 0.45 + repsRatio * 0.45 + setsRatio * 0.1);
       }
 
       // 2. Analizar Historial (Tendencias)
@@ -1160,8 +1676,12 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         final sLogs = historyLogs[session.id] ?? [];
         final exPastLogs = sLogs.where((l) => l.exerciseId == ex.id).toList();
         if (exPastLogs.isNotEmpty) {
-          final avgW = exPastLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) / exPastLogs.length;
-          final avgR = exPastLogs.map((l) => l.actualReps).reduce((a, b) => a + b) / exPastLogs.length;
+          final avgW =
+              exPastLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) /
+              exPastLogs.length;
+          final avgR =
+              exPastLogs.map((l) => l.actualReps).reduce((a, b) => a + b) /
+              exPastLogs.length;
           historyStats.add({'weight': avgW, 'reps': avgR});
         }
       }
@@ -1172,12 +1692,16 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         if (historyStats.length >= 2) {
           final last = historyStats[0]; // Sesión más reciente (1 semana atrás)
           final prev = historyStats[1]; // Penúltima sesión (2 semanas atrás)
-          
-          final isRegressing = last['reps']! < prev['reps']! && last['weight']! <= prev['weight']!;
-          final isStagnated = last['reps']! < ex.targetReps && prev['reps']! < ex.targetReps;
+
+          final isRegressing =
+              last['reps']! < prev['reps']! &&
+              last['weight']! <= prev['weight']!;
+          final isStagnated =
+              last['reps']! < ex.targetReps && prev['reps']! < ex.targetReps;
 
           if (isRegressing || (isStagnated && currentAvgReps < ex.targetReps)) {
-            rec = '📉 RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
+            rec =
+                '📉 RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
             feedback = 'WEIGHT_REDUCTION_ADVISED';
             performanceScore = performanceScore.clamp(0.0, 0.7);
           }
@@ -1186,21 +1710,27 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         // Si no hay tendencia negativa clara, aplicamos lógica estándar refinada
         if (rec.isEmpty) {
           if (completedSets < ex.targetSets) {
-            rec = 'Sigue así. Te faltan ${ex.targetSets - completedSets} series para completar el objetivo.';
+            rec =
+                'Sigue así. Te faltan ${ex.targetSets - completedSets} series para completar el objetivo.';
             feedback = 'IN_PROGRESS';
           } else if (!weightMet) {
-            rec = 'Peso por debajo del objetivo. Prioriza la técnica hoy, pero intenta subir 1-2kg la próxima sesión.';
+            rec =
+                'Peso por debajo del objetivo. Prioriza la técnica hoy, pero intenta subir 1-2kg la próxima sesión.';
             feedback = 'KEEP_CONSISTENCY';
           } else if (!repsMet) {
-            rec = 'Reps por debajo del objetivo. Si te sientes pesado, baja 2.5kg para asegurar el rango de reps.';
+            rec =
+                'Reps por debajo del objetivo. Si te sientes pesado, baja 2.5kg para asegurar el rango de reps.';
             feedback = 'MODERATE_ADJUSTMENT';
           } else {
-            if (currentAvgWeight > ex.targetWeight || currentAvgReps > ex.targetReps) {
-              rec = '🚀 ¡SUPERACIÓN! Has superado los objetivos. Sube el peso un nivel la próxima sesión sin miedo.';
+            if (currentAvgWeight > ex.targetWeight ||
+                currentAvgReps > ex.targetReps) {
+              rec =
+                  '🚀 ¡SUPERACIÓN! Has superado los objetivos. Sube el peso un nivel la próxima sesión sin miedo.';
               feedback = 'PROGRESSIVE_OVERLOAD';
               performanceScore = 1.2;
             } else {
-              rec = '🎯 OBJETIVO CUMPLIDO. Has mantenido la intensidad. Prepárate para subir carga pronto.';
+              rec =
+                  '🎯 OBJETIVO CUMPLIDO. Has mantenido la intensidad. Prepárate para subir carga pronto.';
               feedback = 'READY_TO_PROGRESS';
               performanceScore = 1.0;
             }
@@ -1212,24 +1742,28 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         feedback = 'PENDING';
       }
 
-      results.add(CoachingAnalysis(
-        exerciseId: ex.id,
-        exerciseName: ex.name,
-        completedSets: completedSets,
-        targetSets: ex.targetSets,
-        weightMet: weightMet,
-        repsMet: repsMet,
-        recommendation: rec,
-        performanceScore: performanceScore,
-        feedback: feedback,
-      ));
+      results.add(
+        CoachingAnalysis(
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          completedSets: completedSets,
+          targetSets: ex.targetSets,
+          weightMet: weightMet,
+          repsMet: repsMet,
+          recommendation: rec,
+          performanceScore: performanceScore,
+          feedback: feedback,
+        ),
+      );
     }
     return results;
   }
 
   Widget _buildTimerCircle() {
-    final progress = _totalRestSeconds > 0 ? _secondsRemaining / _totalRestSeconds : 0.0;
-    
+    final progress = _totalRestSeconds > 0
+        ? _secondsRemaining / _totalRestSeconds
+        : 0.0;
+
     return GestureDetector(
       onTap: () {
         if (_isResting) {
@@ -1255,7 +1789,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _isResting ? AppColors.primary : AppColors.surfaceHighlight,
+              color: _isResting
+                  ? AppColors.primary
+                  : AppColors.surfaceHighlight,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1289,7 +1825,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   Widget _buildPersistedCoachingSection(List<CoachingAnalysis> analysis) {
-    final relevantAnalysis = analysis.where((a) => a.recommendation.isNotEmpty).toList();
+    final relevantAnalysis = analysis
+        .where((a) => a.recommendation.isNotEmpty)
+        .toList();
     if (relevantAnalysis.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -1298,7 +1836,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1.5),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.1),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1311,7 +1852,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.psychology, color: AppColors.primary, size: 24),
+                child: const Icon(
+                  Icons.psychology,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1339,43 +1884,49 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             ],
           ),
           const SizedBox(height: 20),
-          ...relevantAnalysis.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Icon(Icons.arrow_right_rounded, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.exerciseName.toUpperCase(),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 10,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.recommendation,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+          ...relevantAnalysis.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Icon(
+                      Icons.arrow_right_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.exerciseName.toUpperCase(),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 10,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.recommendation,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
           const Divider(height: 32, color: AppColors.surfaceHighlight),
           Center(
             child: Text(
@@ -1402,9 +1953,18 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: AppTextStyles.label.copyWith(color: AppColors.textDisabled, fontSize: 10)),
+        Text(
+          label,
+          style: AppTextStyles.label.copyWith(
+            color: AppColors.textDisabled,
+            fontSize: 10,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: AppTextStyles.heading2.copyWith(color: AppColors.textPrimary)),
+        Text(
+          value,
+          style: AppTextStyles.heading2.copyWith(color: AppColors.textPrimary),
+        ),
       ],
     );
   }
@@ -1426,9 +1986,22 @@ class _StatPill extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label, style: AppTextStyles.label.copyWith(fontSize: 9, color: AppColors.textSecondary, letterSpacing: 1)),
+          Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              fontSize: 9,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text(
+            value,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -1443,11 +2016,18 @@ class _Circle extends StatelessWidget {
     return Container(
       width: 24,
       height: 24,
-      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
       child: Center(
         child: Text(
           label,
-          style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 10),
+          style: AppTextStyles.label.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w900,
+            fontSize: 10,
+          ),
         ),
       ),
     );

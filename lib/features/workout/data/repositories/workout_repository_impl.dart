@@ -24,7 +24,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   // ─── Rutinas ──────────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<Routine>>> getAssignedRoutines(String userId) async {
+  Future<Either<Failure, List<Routine>>> getAssignedRoutines(
+    String userId,
+  ) async {
     try {
       final result = await remoteDataSource.getAssignedRoutines(userId);
       return Right(result);
@@ -35,7 +37,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   // ─── Días de rutina ───────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<RoutineDay>>> getRoutineDays(String routineId) async {
+  Future<Either<Failure, List<RoutineDay>>> getRoutineDays(
+    String routineId,
+  ) async {
     try {
       final result = await remoteDataSource.getRoutineDays(routineId);
       return Right(result);
@@ -46,7 +50,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   // ─── Ejercicios del día ───────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<Exercise>>> getExercisesForDay(String routineDayId) async {
+  Future<Either<Failure, List<Exercise>>> getExercisesForDay(
+    String routineDayId,
+  ) async {
     try {
       final result = await remoteDataSource.getExercisesForDay(routineDayId);
       return Right(result);
@@ -58,9 +64,16 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   // ─── Sesiones de la semana ────────────────────────────────────────────────
   @override
   Future<Either<Failure, List<WorkoutSession>>> getWeekSessions(
-      String userId, DateTime weekStart, DateTime weekEnd) async {
+    String userId,
+    DateTime weekStart,
+    DateTime weekEnd,
+  ) async {
     try {
-      final result = await remoteDataSource.getWeekSessions(userId, weekStart, weekEnd);
+      final result = await remoteDataSource.getWeekSessions(
+        userId,
+        weekStart,
+        weekEnd,
+      );
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -70,9 +83,16 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   // ─── Buscar sesión existente (sin crear) ──────────────────────────────────
   @override
   Future<Either<Failure, WorkoutSession?>> getExistingSession(
-      String userId, String routineDayId, DateTime sessionDate) async {
+    String userId,
+    String routineDayId,
+    DateTime sessionDate,
+  ) async {
     try {
-      final result = await remoteDataSource.getExistingSession(userId, routineDayId, sessionDate);
+      final result = await remoteDataSource.getExistingSession(
+        userId,
+        routineDayId,
+        sessionDate,
+      );
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -82,15 +102,21 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   // ─── Iniciar sesión ───────────────────────────────────────────────────────
   @override
   Future<Either<Failure, WorkoutSession>> startWorkoutForDay(
-      String userId, String routineDayId, DateTime sessionDate) async {
+    String userId,
+    String routineDayId,
+    DateTime sessionDate,
+  ) async {
     try {
-      final result = await remoteDataSource.startWorkoutForDay(userId, routineDayId, sessionDate);
+      final result = await remoteDataSource.startWorkoutForDay(
+        userId,
+        routineDayId,
+        sessionDate,
+      );
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
-
 
   // ─── Guardar serie ────────────────────────────────────────────────────────
   @override
@@ -106,10 +132,28 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   // ─── Rendimiento anterior ─────────────────────────────────────────────────
   @override
-  Future<Either<Failure, SetLog?>> getLastExercisePerformance(String exerciseId) async {
+  Future<Either<Failure, SetLog?>> getLastExercisePerformance(
+    String exerciseId,
+  ) async {
     try {
-      final result = await remoteDataSource.getLastExercisePerformance(exerciseId);
+      final result = await remoteDataSource.getLastExercisePerformance(
+        exerciseId,
+      );
       return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, SetLog?>>> getLastExercisePerformances(
+    List<String> exerciseIds,
+  ) async {
+    try {
+      final result = await remoteDataSource.getLastExercisePerformances(
+        exerciseIds,
+      );
+      return Right(result.map((key, value) => MapEntry(key, value as SetLog?)));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -117,7 +161,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   // ─── Historial de sets de una sesión ──────────────────────────────────────
   @override
-  Future<Either<Failure, List<SetLog>>> getSessionSetLogs(String sessionId) async {
+  Future<Either<Failure, List<SetLog>>> getSessionSetLogs(
+    String sessionId,
+  ) async {
     try {
       final result = await remoteDataSource.getSessionSetLogs(sessionId);
       return Right(result);
@@ -126,9 +172,24 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Map<String, List<SetLog>>>> getSetLogsForSessions(
+    List<String> sessionIds,
+  ) async {
+    try {
+      final result = await remoteDataSource.getSetLogsForSessions(sessionIds);
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   // ─── Asignar rutina a usuario ─────────────────────────────────────────────
   @override
-  Future<Either<Failure, void>> assignRoutineToUser(String userId, String routineId) async {
+  Future<Either<Failure, void>> assignRoutineToUser(
+    String userId,
+    String routineId,
+  ) async {
     try {
       await remoteDataSource.assignRoutineToUser(userId, routineId);
       return const Right(null);
@@ -139,9 +200,18 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
 
   @override
   Future<Either<Failure, List<WorkoutSession>>> getRecentSessionsForDay(
-      String userId, String routineDayId, DateTime beforeDate, {int limit = 3}) async {
+    String userId,
+    String routineDayId,
+    DateTime beforeDate, {
+    int limit = 3,
+  }) async {
     try {
-      final result = await remoteDataSource.getRecentSessionsForDay(userId, routineDayId, beforeDate, limit: limit);
+      final result = await remoteDataSource.getRecentSessionsForDay(
+        userId,
+        routineDayId,
+        beforeDate,
+        limit: limit,
+      );
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -149,9 +219,15 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, void>> finishWorkoutSession(String sessionId, {List<CoachingAnalysis>? coachingAnalysis}) async {
+  Future<Either<Failure, void>> finishWorkoutSession(
+    String sessionId, {
+    List<CoachingAnalysis>? coachingAnalysis,
+  }) async {
     try {
-      await remoteDataSource.finishWorkoutSession(sessionId, coachingAnalysis: coachingAnalysis);
+      await remoteDataSource.finishWorkoutSession(
+        sessionId,
+        coachingAnalysis: coachingAnalysis,
+      );
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -175,37 +251,43 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(String userId, String exerciseId) async {
+  Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(
+    String userId,
+    String exerciseId,
+  ) async {
     try {
-      final rawData = await remoteDataSource.getExerciseLogsHistory(userId, exerciseId);
-      
+      final rawData = await remoteDataSource.getExerciseLogsHistory(
+        userId,
+        exerciseId,
+      );
+
       final Map<String, List<SetLogModel>> grouped = {};
-      
+
       for (var row in rawData) {
         final sessionData = row['workout_sessions'] as Map<String, dynamic>;
         final String sessionDateStr = sessionData['session_date'] as String;
         final parsedDate = DateTime.tryParse(sessionDateStr);
         if (parsedDate == null) continue;
-        
-        final String dateKey = "${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}";
-        
+
+        final String dateKey =
+            "${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}";
+
         if (!grouped.containsKey(dateKey)) {
           grouped[dateKey] = [];
         }
-        
+
         grouped[dateKey]!.add(SetLogModel.fromJson(row));
       }
-      
-      final List<ExerciseHistorySession> sessions = grouped.entries.map((entry) {
+
+      final List<ExerciseHistorySession> sessions = grouped.entries.map((
+        entry,
+      ) {
         final date = DateTime.parse(entry.key);
-        return ExerciseHistorySession(
-          sessionDate: date,
-          logs: entry.value,
-        );
+        return ExerciseHistorySession(sessionDate: date, logs: entry.value);
       }).toList();
-      
+
       sessions.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
-      
+
       return Right(sessions);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -267,7 +349,10 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, void>> toggleExerciseInDay(String dayId, String exerciseId) async {
+  Future<Either<Failure, void>> toggleExerciseInDay(
+    String dayId,
+    String exerciseId,
+  ) async {
     try {
       await remoteDataSource.toggleExerciseInDay(dayId, exerciseId);
       return const Right(null);
@@ -277,7 +362,10 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, void>> reorderExercisesInDay(String dayId, List<String> exerciseIds) async {
+  Future<Either<Failure, void>> reorderExercisesInDay(
+    String dayId,
+    List<String> exerciseIds,
+  ) async {
     try {
       await remoteDataSource.reorderExercisesInDay(dayId, exerciseIds);
       return const Right(null);
@@ -287,9 +375,19 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps) async {
+  Future<Either<Failure, void>> updateExerciseTarget(
+    String routineDayId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps,
+  ) async {
     try {
-      await remoteDataSource.updateExerciseTarget(routineDayId, exerciseId, targetWeight, targetReps);
+      await remoteDataSource.updateExerciseTarget(
+        routineDayId,
+        exerciseId,
+        targetWeight,
+        targetReps,
+      );
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -297,20 +395,24 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(String userId, String routineId) async {
+  Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(
+    String userId,
+    String routineId,
+  ) async {
     try {
       final rawData = await remoteDataSource.getRoutineStats(userId, routineId);
-      
+
       final List<RoutineHistorySession> stats = rawData.map((row) {
         final sessionDateStr = row['session_date'] as String;
         final date = DateTime.parse(sessionDateStr);
         final routineDayData = row['routine_days'] as Map<String, dynamic>;
-        
-        final logs = (row['set_logs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-        
+
+        final logs =
+            (row['set_logs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
         double totalVolume = 0;
         int totalReps = 0;
-        
+
         for (var log in logs) {
           final w = (log['actual_weight'] as num?)?.toDouble() ?? 0.0;
           final r = (log['actual_reps'] as int?) ?? 0;
@@ -324,7 +426,7 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
           routineDayName: routineDayData['name'].toString(),
           totalVolume: totalVolume,
           totalReps: totalReps,
-          exerciseCount: logs.length, 
+          exerciseCount: logs.length,
         );
       }).toList();
 
@@ -335,7 +437,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(String userId) async {
+  Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(
+    String userId,
+  ) async {
     try {
       final result = await remoteDataSource.getActiveSessionForUser(userId);
       return Right(result);
@@ -345,7 +449,9 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   }
 
   @override
-  Future<Either<Failure, String?>> getRoutineDayNameById(String routineDayId) async {
+  Future<Either<Failure, String?>> getRoutineDayNameById(
+    String routineDayId,
+  ) async {
     try {
       final result = await remoteDataSource.getRoutineDayNameById(routineDayId);
       return Right(result);

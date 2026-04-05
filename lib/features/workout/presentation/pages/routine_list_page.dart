@@ -34,115 +34,149 @@ class _RoutineListPageState extends State<RoutineListPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       HapticFeedback.heavyImpact();
-      context.read<WorkoutBloc>().add(AssignRoutineEvent(
-        userId: authState.user.id,
-        routineId: routineId,
-      ));
+      context.read<WorkoutBloc>().add(
+        AssignRoutineEvent(userId: authState.user.id, routineId: routineId),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: BlocConsumer<WorkoutBloc, WorkoutState>(
-        listener: (context, state) {
-          if (state is ManagementSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            // Redirigir al dashboard para ver la rutina activa
-            context.go('/dashboard');
-          } else if (state is WorkoutError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // ── App Bar Premium ──────────────────────────────────────
-              SliverAppBar(
-                expandedHeight: 120,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                iconTheme: const IconThemeData(color: Colors.white),
-                flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  title: Text(
-                    'DESCUBRIR RUTINAS', 
-                    style: AppTextStyles.heading2.copyWith(
-                      letterSpacing: 2,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  background: Container(color: AppColors.background),
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop || !mounted) return;
+        final authState = context.read<AuthBloc>().state;
+        if (authState is Authenticated) {
+          context.read<WorkoutBloc>().add(
+            FetchAssignedRoutines(authState.user.id),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: BlocConsumer<WorkoutBloc, WorkoutState>(
+          listener: (context, state) {
+            if (state is ManagementSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.success,
                 ),
-              ),
-
-              // ── Filtros ──────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _filterChip(_FilterType.all, 'TODAS'),
-                        const SizedBox(width: 8),
-                        _filterChip(_FilterType.mine, 'MIS RUTINAS'),
-                        const SizedBox(width: 8),
-                        _filterChip(_FilterType.community, 'COMUNIDAD'),
-                      ],
+              );
+              // Redirigir al dashboard para ver la rutina activa
+              context.go('/dashboard');
+            } else if (state is WorkoutError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // ── App Bar Premium ──────────────────────────────────────
+                SliverAppBar(
+                  expandedHeight: 120,
+                  pinned: true,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
                     ),
+                    title: Text(
+                      'DESCUBRIR RUTINAS',
+                      style: AppTextStyles.heading2.copyWith(
+                        letterSpacing: 2,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    background: Container(color: AppColors.background),
                   ),
                 ),
-              ),
 
-              if (state is WorkoutLoading || state is WorkoutInitial || state is SavingSetLog)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                )
-              else if (state is AllRoutinesLoaded || state is RoutinesLoaded)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  sliver: Builder(
-                    builder: (context) {
-                      final routines = (state is AllRoutinesLoaded) 
-                          ? state.routines 
-                          : (state as RoutinesLoaded).routines;
-                      
-                      final currentUserId = (context.read<AuthBloc>().state as Authenticated).user.id;
-                      final filteredRoutines = routines.where((r) {
-                        switch (_selectedFilter) {
-                          case _FilterType.all: return true;
-                          case _FilterType.mine: return r.creatorId == currentUserId;
-                          case _FilterType.community: return r.creatorId != currentUserId && r.isPublic;
+                // ── Filtros ──────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _filterChip(_FilterType.all, 'TODAS'),
+                          const SizedBox(width: 8),
+                          _filterChip(_FilterType.mine, 'MIS RUTINAS'),
+                          const SizedBox(width: 8),
+                          _filterChip(_FilterType.community, 'COMUNIDAD'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                if (state is WorkoutLoading ||
+                    state is WorkoutInitial ||
+                    state is SavingSetLog)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  )
+                else if (state is AllRoutinesLoaded || state is RoutinesLoaded)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    sliver: Builder(
+                      builder: (context) {
+                        final routines = (state is AllRoutinesLoaded)
+                            ? state.routines
+                            : (state as RoutinesLoaded).routines;
+
+                        final currentUserId =
+                            (context.read<AuthBloc>().state as Authenticated)
+                                .user
+                                .id;
+                        final filteredRoutines = routines.where((r) {
+                          switch (_selectedFilter) {
+                            case _FilterType.all:
+                              return true;
+                            case _FilterType.mine:
+                              return r.creatorId == currentUserId;
+                            case _FilterType.community:
+                              return r.creatorId != currentUserId && r.isPublic;
+                          }
+                        }).toList();
+
+                        if (filteredRoutines.isEmpty) {
+                          return const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Text(
+                                'No se encontraron rutinas en esta categoría',
+                              ),
+                            ),
+                          );
                         }
-                      }).toList();
 
-                      if (filteredRoutines.isEmpty) {
-                        return const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Text('No se encontraron rutinas en esta categoría'),
-                          ),
-                        );
-                      }
-
-                      return SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
+                        return SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final routine = filteredRoutines[index];
                             final isMine = routine.creatorId == currentUserId;
                             return Padding(
@@ -154,64 +188,73 @@ class _RoutineListPageState extends State<RoutineListPage> {
                                 isMine: isMine,
                               ),
                             );
-                          },
-                          childCount: filteredRoutines.length,
-                        ),
-                      );
-                    },
-                  ),
-                )
-              else if (state is WorkoutError)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-                        const SizedBox(height: 12),
-                        Text(state.message, style: AppTextStyles.bodyMedium),
-                      ],
+                          }, childCount: filteredRoutines.length),
+                        );
+                      },
                     ),
-                  ),
-                )
-              else if (state is ManagementSuccess || state is WorkoutFinishedSuccess || state is SetLogSuccess)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle_outline, color: AppColors.success, size: 48),
-                        SizedBox(height: 16),
-                        CircularProgressIndicator(color: AppColors.primary),
-                      ],
+                  )
+                else if (state is WorkoutError)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppColors.error,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(state.message, style: AppTextStyles.bodyMedium),
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              else
-                const SliverToBoxAdapter(child: SizedBox.shrink()),
-                
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
-            ],
-          );
-        },
-      ),
-      
-      // Botón Premium para Nueva Rutina
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          context.push('/routine-editor');
-        },
-        elevation: 0,
-        highlightElevation: 0,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
-        label: Text(
-          'CREAR PROPIA',
-          style: AppTextStyles.label.copyWith(
-            color: Colors.black, 
-            fontWeight: FontWeight.w900, 
-            letterSpacing: 1.5,
+                  )
+                else if (state is ManagementSuccess ||
+                    state is WorkoutFinishedSuccess ||
+                    state is SetLogSuccess)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: AppColors.success,
+                            size: 48,
+                          ),
+                          SizedBox(height: 16),
+                          CircularProgressIndicator(color: AppColors.primary),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  const SliverToBoxAdapter(child: SizedBox.shrink()),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
+            );
+          },
+        ),
+
+        // Botón Premium para Nueva Rutina
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            context.push('/routine-editor');
+          },
+          elevation: 0,
+          highlightElevation: 0,
+          backgroundColor: AppColors.primary,
+          icon: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
+          label: Text(
+            'CREAR PROPIA',
+            style: AppTextStyles.label.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
           ),
         ),
       ),
@@ -245,7 +288,10 @@ class _RoutineListPageState extends State<RoutineListPage> {
               ),
               if (isActive)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(6),
@@ -264,10 +310,13 @@ class _RoutineListPageState extends State<RoutineListPage> {
           const SizedBox(height: 24),
           Row(
             children: [
-              _buildInfoTag(Icons.fitness_center_rounded, '${routine.exerciseCount} EJERCICIOS'),
+              _buildInfoTag(
+                Icons.fitness_center_rounded,
+                '${routine.exerciseCount} EJERCICIOS',
+              ),
               const SizedBox(width: 12),
               _buildInfoTag(
-                isMine ? Icons.person_rounded : Icons.public_rounded, 
+                isMine ? Icons.person_rounded : Icons.public_rounded,
                 isMine ? 'MI RUTINA' : (routine.creatorName ?? 'COMUNIDAD'),
               ),
             ],
@@ -283,9 +332,9 @@ class _RoutineListPageState extends State<RoutineListPage> {
                   context.push('/routine-editor', extra: routine.id);
                 },
                 child: Text(
-                  'DETALLES', 
+                  'DETALLES',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary, 
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
                   ),
@@ -296,8 +345,13 @@ class _RoutineListPageState extends State<RoutineListPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
@@ -329,7 +383,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
           Icon(icon, color: AppColors.primary.withOpacity(0.7), size: 14),
           const SizedBox(width: 6),
           Text(
-            label.toUpperCase(), 
+            label.toUpperCase(),
             style: AppTextStyles.label.copyWith(
               color: AppColors.textSecondary,
               fontSize: 10,
@@ -349,10 +403,14 @@ class _RoutineListPageState extends State<RoutineListPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.05),
+          color: isSelected
+              ? AppColors.primary
+              : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1),
+            color: isSelected
+                ? AppColors.primary
+                : Colors.white.withOpacity(0.1),
           ),
         ),
         child: Text(

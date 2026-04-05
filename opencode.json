@@ -1,0 +1,57 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "dart-mcp-server": {
+      "type": "local",
+      "command": ["dart", "mcp-server"],
+      "enabled": true
+    },
+    "firebase-mcp-server": {
+      "type": "local",
+      "command": ["npx", "-y", "firebase-tools@latest", "mcp"],
+      "enabled": true
+    },
+    "chrome-devtools-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "enabled": false
+    },
+    "supabase-mcp-server": {
+      "type": "local",
+      "command": [
+        "npx", 
+        "-y", 
+        "@supabase/mcp-server-supabase@latest", 
+        "--access-token", 
+        "sbp_59ab4f569ef9e99b6e46cf0a2e23b5a80010be19"
+      ],
+      "enabled": true
+    },
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "environment": {
+        "CONTEXT7_API_KEY": "ctx7sk-f2943624-90c2-4a43-b764-6f6e7e3d0cee"
+      },
+      "enabled": true
+    },
+    "StitchMCP": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-remote",
+        "https://stitch.googleapis.com/mcp",
+        "--header",
+        "X-Goog-Api-Key: AQ.Ab8RN6KW7USTQJ6J2VAQ120wjhM8VJxjBESTc_kw440m2lDK1Q"
+      ],
+      "enabled": true
+    }
+  },
+  "command": {
+    "optimize-prompt": {
+      "description": "Optimiza un prompt para OpenCode (ES)",
+      "template": "Eres un optimizador de prompts para OpenCode. Reescribe el prompt del usuario para maximizar claridad, contexto util y resultados consistentes. Devuelve SOLO el prompt optimizado listo para pegar en OpenCode, en espanol y sin comentarios extra.\n\nPrompt original:\n$ARGUMENTS\n\nCriterios de optimizacion:\n- Define objetivo principal y resultado esperado en 1-2 frases.\n- Incluye contexto minimo viable (producto, dominio, restricciones, entorno).\n- Especifica alcance: que si y que no debe hacer.\n- Indica el formato exacto de salida (estructura, bullets, archivos, comandos).\n- Si hay ambiguedad, agrega una seccion de preguntas puntuales al final (max 3), etiquetada como \"Preguntas\".\n- Si faltan datos clave, agrega supuestos razonables etiquetados como \"Supuestos\".\n- Evita redundancia, tono neutro, frases cortas.\n\nPlantilla sugerida (adapta segun corresponda):\n\nObjetivo:\n<objetivo>\n\nContexto:\n<contexto>\n\nAlcance:\n- Incluye: <lista>\n- Excluye: <lista>\n\nRequisitos de salida:\n<formato exacto>\n\nCriterios de exito:\n- <criterio 1>\n- <criterio 2>\n\nPreguntas (si aplica):\n- <pregunta 1>\n\nSupuestos (si aplica):\n- <supuesto 1>"
+    }
+  }
+}

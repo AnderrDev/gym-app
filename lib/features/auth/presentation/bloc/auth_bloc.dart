@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../domain/usecases/sign_in_with_email.dart';
 import '../../domain/usecases/sign_up_with_email.dart';
 import '../../domain/usecases/sign_out.dart';
@@ -13,6 +13,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpWithEmail signUpWithEmail;
   final SignOut signOut;
   final GetCurrentUser getCurrentUser;
+  final Stream<supabase.AuthState> authStateChanges;
   late final StreamSubscription _authSubscription;
 
   AuthBloc({
@@ -20,7 +21,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.signUpWithEmail,
     required this.signOut,
     required this.getCurrentUser,
-  }) : super(AuthInitial()) {
+    Stream<supabase.AuthState>? authStateChanges,
+  }) : authStateChanges =
+           authStateChanges ??
+           supabase.Supabase.instance.client.auth.onAuthStateChange,
+       super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<AuthStateChanged>(_onAuthStateChanged);
     on<SignInRequested>(_onSignInRequested);
@@ -31,14 +36,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // initialSession se dispara siempre al iniciar la app (con o sin sesión) y
     // es el único que resuelve el estado inicial, evitando la race condition
     // donde AppStarted lee currentUser antes de que Supabase restaure storage.
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = this.authStateChanges.listen((data) {
       final event = data.event;
-      if (event == AuthChangeEvent.initialSession) {
+      if (event == supabase.AuthChangeEvent.initialSession) {
         add(AuthStateChanged(isAuthenticated: data.session != null));
-      } else if (event == AuthChangeEvent.signedIn ||
-          event == AuthChangeEvent.userUpdated) {
+      } else if (event == supabase.AuthChangeEvent.signedIn ||
+          event == supabase.AuthChangeEvent.userUpdated) {
         add(const AuthStateChanged(isAuthenticated: true));
-      } else if (event == AuthChangeEvent.signedOut) {
+      } else if (event == supabase.AuthChangeEvent.signedOut) {
         add(const AuthStateChanged(isAuthenticated: false));
       }
     });
@@ -57,16 +62,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     if (event.isAuthenticated) {
       final result = await getCurrentUser();
-      result.fold(
-        (failure) => emit(Unauthenticated()),
-        (user) {
-          if (user != null) {
-            emit(Authenticated(user));
-          } else {
-            emit(Unauthenticated());
-          }
-        },
-      );
+      result.fold((failure) => emit(Unauthenticated()), (user) {
+        if (user != null) {
+          emit(Authenticated(user));
+        } else {
+          emit(Unauthenticated());
+        }
+      });
     } else {
       emit(Unauthenticated());
     }
@@ -78,13 +80,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     final result = await signInWithEmail(event.email, event.password);
-    result.fold(
-      (failure) {
-        emit(AuthError(failure.message));
-        emit(Unauthenticated());
-      },
-      (user) => emit(Authenticated(user)),
-    );
+    result.fold((failure) {
+      emit(AuthError(failure.message));
+      emit(Unauthenticated());
+    }, (user) => emit(Authenticated(user)));
   }
 
   Future<void> _onSignUpRequested(
@@ -97,13 +96,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       event.password,
       event.fullName,
     );
-    result.fold(
-      (failure) {
-        emit(AuthError(failure.message));
-        emit(Unauthenticated());
-      },
-      (user) => emit(Authenticated(user)),
-    );
+    result.fold((failure) {
+      emit(AuthError(failure.message));
+      emit(Unauthenticated());
+    }, (user) => emit(Authenticated(user)));
   }
 
   Future<void> _onSignOutRequested(

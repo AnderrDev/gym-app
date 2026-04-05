@@ -127,7 +127,10 @@ Deno.serve(async (req: Request) => {
     try {
       const { data: coachingResult, error: coachingError } = await supabase.functions.invoke(
         "generate_coaching_v1",
-        { body: { session_id: sessionId } },
+        {
+          body: { session_id: sessionId, user_id: userId },
+          headers: token ? { "X-User-Token": token } : undefined,
+        },
       );
 
       if (!coachingError && coachingResult?.data?.analysis) {

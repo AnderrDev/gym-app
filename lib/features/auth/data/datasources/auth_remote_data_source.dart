@@ -99,7 +99,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final profileData = await client
           .from('profiles')
-          .select()
+          .select('id, full_name')
           .eq('id', userId)
           .maybeSingle();
 

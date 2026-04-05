@@ -24,6 +24,29 @@ type RoutineExerciseRow = {
   target_weight: number;
 };
 
+type CoachingInputs = {
+  session?: {
+    id: string;
+    user_id: string;
+    routine_day_id: string;
+    session_date: string;
+  } | null;
+  current_logs?: Array<{
+    exercise_id: string;
+    actual_weight: number;
+    actual_reps: number;
+    set_index: number;
+    name?: string | null;
+  }>;
+  routine_exercises?: RoutineExerciseRow[];
+  previous_logs?: Array<{
+    exercise_id: string;
+    actual_weight: number;
+    actual_reps: number;
+    set_index: number;
+  }>;
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
@@ -83,7 +106,7 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
-  let payload: { session_id?: string };
+  let payload: { session_id?: string; user_id?: string };
   try {
     payload = await req.json();
   } catch {
@@ -95,81 +118,62 @@ Deno.serve(async (req: Request) => {
     return json(400, { success: false, code: "VALIDATION_ERROR", error: { message: "session_id is required" } });
   }
 
+  if (userId === "unknown" && payload.user_id) {
+    userId = payload.user_id;
+    logInfo("USER_FROM_PAYLOAD", { user_id: userId });
+  }
+
+  if (userId === "unknown") {
+    return json(401, {
+      success: false,
+      code: "UNAUTHORIZED",
+      error: { message: "Missing user context" },
+    });
+  }
+
   logInfo("COACHING_REQUEST", { user_id: userId, session_id: sessionId });
 
-  const { data: sessionRow, error: sessionError } = await supabase
-    .from("workout_sessions")
-    .select("id,user_id,routine_day_id,session_date")
-    .eq("id", sessionId)
-    .eq("user_id", userId)
-    .limit(1)
+  const { data: rpcPayload, error: rpcError } = await supabase
+    .rpc("get_coaching_inputs_v1", {
+      p_user_id: userId,
+      p_session_id: sessionId,
+    })
     .maybeSingle();
 
-  if (sessionError) {
-    logError("SESSION_LOOKUP_ERROR", { user_id: userId, session_id: sessionId, message: sessionError.message });
-    return json(500, { success: false, code: "SESSION_LOOKUP_ERROR", error: { message: sessionError.message } });
+  if (rpcError) {
+    logError("COACHING_INPUTS_ERROR", {
+      user_id: userId,
+      session_id: sessionId,
+      message: rpcError.message,
+    });
+    return json(500, {
+      success: false,
+      code: "COACHING_INPUTS_ERROR",
+      error: { message: rpcError.message },
+    });
   }
+
+  const inputs = (rpcPayload ?? {}) as CoachingInputs;
+  const sessionRow = inputs.session ?? null;
 
   if (!sessionRow) {
     return json(404, { success: false, code: "SESSION_NOT_FOUND", error: { message: "Session not found" } });
   }
 
-  const { data: currentLogsRaw, error: currentLogsError } = await supabase
-    .from("set_logs")
-    .select("exercise_id,actual_weight,actual_reps,exercises(name)")
-    .eq("session_id", sessionId)
-    .order("set_index", { ascending: true });
+  const currentLogs = (inputs.current_logs ?? []).map((row) => ({
+    exercise_id: row.exercise_id,
+    actual_weight: row.actual_weight,
+    actual_reps: row.actual_reps,
+    exercises: { name: row.name ?? undefined },
+  })) as SetRow[];
 
-  if (currentLogsError) {
-    logError("CURRENT_LOGS_ERROR", { user_id: userId, session_id: sessionId, message: currentLogsError.message });
-    return json(500, { success: false, code: "CURRENT_LOGS_ERROR", error: { message: currentLogsError.message } });
-  }
+  const routineExercises = (inputs.routine_exercises ?? []) as RoutineExerciseRow[];
 
-  const currentLogs = (currentLogsRaw ?? []) as SetRow[];
-
-  const { data: routineExercisesRaw, error: routineExercisesError } = await supabase
-    .from("routine_exercises")
-    .select("exercise_id,target_sets,target_reps,target_weight")
-    .eq("routine_day_id", sessionRow.routine_day_id);
-
-  if (routineExercisesError) {
-    logError("ROUTINE_EXERCISES_ERROR", { user_id: userId, session_id: sessionId, message: routineExercisesError.message });
-    return json(500, { success: false, code: "ROUTINE_EXERCISES_ERROR", error: { message: routineExercisesError.message } });
-  }
-
-  const routineExercises = (routineExercisesRaw ?? []) as RoutineExerciseRow[];
-
-  const { data: previousSession, error: previousSessionError } = await supabase
-    .from("workout_sessions")
-    .select("id,session_date")
-    .eq("user_id", userId)
-    .eq("routine_day_id", sessionRow.routine_day_id)
-    .not("completed_at", "is", null)
-    .lt("session_date", sessionRow.session_date)
-    .order("session_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (previousSessionError) {
-    logError("PREVIOUS_SESSION_ERROR", { user_id: userId, session_id: sessionId, message: previousSessionError.message });
-    return json(500, { success: false, code: "PREVIOUS_SESSION_ERROR", error: { message: previousSessionError.message } });
-  }
-
-  let previousLogs: SetRow[] = [];
-  if (previousSession?.id) {
-    const { data: prevLogsRaw, error: prevLogsError } = await supabase
-      .from("set_logs")
-      .select("exercise_id,actual_weight,actual_reps")
-      .eq("session_id", previousSession.id)
-      .order("set_index", { ascending: true });
-
-    if (prevLogsError) {
-      logError("PREVIOUS_LOGS_ERROR", { user_id: userId, session_id: sessionId, message: prevLogsError.message });
-      return json(500, { success: false, code: "PREVIOUS_LOGS_ERROR", error: { message: prevLogsError.message } });
-    }
-
-    previousLogs = (prevLogsRaw ?? []) as SetRow[];
-  }
+  const previousLogs = (inputs.previous_logs ?? []).map((row) => ({
+    exercise_id: row.exercise_id,
+    actual_weight: row.actual_weight,
+    actual_reps: row.actual_reps,
+  })) as SetRow[];
 
   const analysis = routineExercises.map((target) => {
     const exerciseCurrentLogs = currentLogs.filter((l) => l.exercise_id === target.exercise_id);

@@ -40,7 +40,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final workoutBloc = context.read<WorkoutBloc>();
       // Verificar sesión activa
       workoutBloc.add(CheckActiveSession(authState.user.id));
-      
+
       final currentState = workoutBloc.state;
       if (currentState is RoutinesLoaded && currentState.routines.length == 1) {
         // Optimización: Si ya tenemos una única rutina, cargar el plan sin esperar re-fetch
@@ -54,6 +54,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _resumeActiveSession(ActiveSessionDetected session) {
+    context.read<WorkoutBloc>().add(
+      LoadDayInfo(
+        userId: session.userId,
+        routineDayId: session.routineDayId,
+        sessionDate: session.sessionDate,
+      ),
+    );
+
     final routineDay = RoutineDay(
       id: session.routineDayId,
       routineId: '',
@@ -61,22 +69,27 @@ class _DashboardPageState extends State<DashboardPage> {
       dayOfWeek: session.sessionDate.weekday,
       exercises: const [],
     );
-    context.push('/routine-day', extra: {
-      'routineDay': routineDay,
-      'userId': session.userId,
-      'sessionDate': session.sessionDate,
-    });
+    context.push(
+      '/routine-day',
+      extra: {
+        'routineDay': routineDay,
+        'userId': session.userId,
+        'sessionDate': session.sessionDate,
+      },
+    );
   }
 
   void _loadWeeklyPlan(Routine routine) {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       setState(() => _selectedRoutine = routine);
-      context.read<WorkoutBloc>().add(FetchWeeklyPlan(
-        userId: authState.user.id,
-        routineId: routine.id,
-        weekStart: _currentWeekStart,
-      ));
+      context.read<WorkoutBloc>().add(
+        FetchWeeklyPlan(
+          userId: authState.user.id,
+          routineId: routine.id,
+          weekStart: _currentWeekStart,
+        ),
+      );
     }
   }
 
@@ -117,10 +130,6 @@ class _DashboardPageState extends State<DashboardPage> {
           // Sesión activa detectada al abrir app: redirigir automáticamente una sola vez
           if (state is ActiveSessionDetected) {
             setState(() => _activeSession = state);
-            final authState = context.read<AuthBloc>().state;
-            if (authState is Authenticated) {
-              context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
-            }
             if (!_autoResumeHandled) {
               _autoResumeHandled = true;
               _resumeActiveSession(state);
@@ -134,7 +143,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
           if (state is ManagementSuccess || state is WorkoutFinishedSuccess) {
             // Mostrar mensaje de éxito si lo hay
-            final msg = (state is ManagementSuccess) ? state.message : '¡Entrenamiento completado!';
+            final msg = (state is ManagementSuccess)
+                ? state.message
+                : '¡Entrenamiento completado!';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(msg),
@@ -146,7 +157,9 @@ class _DashboardPageState extends State<DashboardPage> {
             // Importante: Si venimos de activar/crear rutina, forzar carga de rutinas asignadas
             final authState = context.read<AuthBloc>().state;
             if (authState is Authenticated) {
-               context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+              context.read<WorkoutBloc>().add(
+                FetchAssignedRoutines(authState.user.id),
+              );
             }
             setState(() => _selectedRoutine = null);
           }
@@ -167,95 +180,131 @@ class _DashboardPageState extends State<DashboardPage> {
           if (state is WorkoutInitial) {
             final authState = context.read<AuthBloc>().state;
             if (authState is Authenticated) {
-              context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+              context.read<WorkoutBloc>().add(
+                FetchAssignedRoutines(authState.user.id),
+              );
             }
           }
         },
         builder: (context, state) {
           final content = switch (state) {
-            WorkoutInitial() || WorkoutLoading() || SavingSetLog() => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
+            WorkoutInitial() ||
+            WorkoutLoading() ||
+            SavingSetLog() => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
             ActiveSessionDetected() => Center(
-                child: Text(
-                  'Sesión activa detectada, cargando tablero...',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              child: Text(
+                'Sesión activa detectada, cargando tablero...',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
+            ),
+            DayInfoLoaded() || DayWorkoutStarted() => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
             WorkoutError(message: final msg) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-                      const SizedBox(height: 12),
-                      Text(msg, textAlign: TextAlign.center,
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          final authState = context.read<AuthBloc>().state;
-                          if (authState is Authenticated) {
-                            context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
-                          }
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Reintentar'),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      msg,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.error,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ManagementSuccess() || WorkoutFinishedSuccess() || SetLogSuccess() => const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle_outline, color: AppColors.success, size: 48),
-                    SizedBox(height: 16),
-                    CircularProgressIndicator(color: AppColors.primary),
-                  ],
-                ),
-              ),
-            AllRoutinesLoaded() => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(color: AppColors.primary),
+                    ),
                     const SizedBox(height: 16),
-                    Text('Sincronizando tus rutinas...', style: AppTextStyles.bodyMedium),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final authState = context.read<AuthBloc>().state;
+                        if (authState is Authenticated) {
+                          context.read<WorkoutBloc>().add(
+                            FetchAssignedRoutines(authState.user.id),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            RoutinesLoaded(routines: final routines) => routines.isEmpty
-                ? _buildEmptyState()
-                : routines.length == 1
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const CircularProgressIndicator(color: AppColors.primary),
-                            const SizedBox(height: 16),
-                            Text('Cargando tu rutina...', style: AppTextStyles.bodyMedium),
-                          ],
-                        ),
-                      )
-                    : _buildRoutineSelector(routines),
+            ),
+            ManagementSuccess() ||
+            WorkoutFinishedSuccess() ||
+            SetLogSuccess() => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.success,
+                    size: 48,
+                  ),
+                  SizedBox(height: 16),
+                  CircularProgressIndicator(color: AppColors.primary),
+                ],
+              ),
+            ),
+            AllRoutinesLoaded() => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Sincronizando tus rutinas...',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            RoutinesLoaded(routines: final routines) =>
+              routines.isEmpty
+                  ? _buildEmptyState()
+                  : routines.length == 1
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Cargando tu rutina...',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    )
+                  : _buildRoutineSelector(routines),
             WeeklyPlanLoaded(
               days: final days,
               weekStart: final weekStart,
               insights: final insights,
               insightsError: final insightsError,
-            ) => _buildWeeklyView(days, weekStart, insights, insightsError),
+            ) =>
+              _buildWeeklyView(days, weekStart, insights, insightsError),
             // Cualquier otro estado (DayInfoLoaded, DayWorkoutStarted, etc)
             // Si estamos en el Dashboard pero el bloc tiene estado de una sesión,
             // probablemente acabamos de volver. Mostramos un spinner breve mientras recarga.
             _ => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
           };
 
           return Column(
@@ -268,22 +317,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Container(
                       width: double.infinity,
                       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.timelapse_rounded, color: AppColors.primary, size: 18),
+                          const Icon(
+                            Icons.timelapse_rounded,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Sesion en curso: ${_activeSession!.routineDayName}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           Text(
@@ -326,33 +386,49 @@ class _DashboardPageState extends State<DashboardPage> {
                   opacity: 0.1,
                   borderRadius: BorderRadius.circular(12),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.fitness_center, color: AppColors.primary),
+                      child: const Icon(
+                        Icons.fitness_center,
+                        color: AppColors.primary,
+                      ),
                     ),
                     title: Text(routine.name, style: AppTextStyles.bodyLarge),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
+                          icon: const Icon(
+                            Icons.analytics_outlined,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
                           onPressed: () {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is Authenticated) {
-                              context.push('/routine-stats', extra: {
-                                'userId': authState.user.id,
-                                'routineId': routine.id,
-                                'routineName': routine.name,
-                              });
+                              context.push(
+                                '/routine-stats',
+                                extra: {
+                                  'userId': authState.user.id,
+                                  'routineId': routine.id,
+                                  'routineName': routine.name,
+                                },
+                              );
                             }
                           },
                         ),
-                        const Icon(Icons.calendar_month, color: AppColors.primary),
+                        const Icon(
+                          Icons.calendar_month,
+                          color: AppColors.primary,
+                        ),
                       ],
                     ),
                     onTap: () => _loadWeeklyPlan(routine),
@@ -388,7 +464,9 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            border: Border(bottom: BorderSide(color: AppColors.surfaceHighlight)),
+            border: Border(
+              bottom: BorderSide(color: AppColors.surfaceHighlight),
+            ),
           ),
           child: Row(
             children: [
@@ -404,23 +482,38 @@ class _DashboardPageState extends State<DashboardPage> {
                         onTap: () {
                           final authState = context.read<AuthBloc>().state;
                           if (authState is Authenticated) {
-                            context.push('/routine-stats', extra: {
-                              'userId': authState.user.id,
-                              'routineId': _selectedRoutine!.id,
-                              'routineName': _selectedRoutine!.name,
-                            });
+                            context.push(
+                              '/routine-stats',
+                              extra: {
+                                'userId': authState.user.id,
+                                'routineId': _selectedRoutine!.id,
+                                'routineName': _selectedRoutine!.name,
+                              },
+                            );
                           }
                         },
                         borderRadius: BorderRadius.circular(4),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(_selectedRoutine!.name,
-                                  style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                              Text(
+                                _selectedRoutine!.name,
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.analytics_outlined, size: 14, color: AppColors.primary),
+                              const Icon(
+                                Icons.analytics_outlined,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
                             ],
                           ),
                         ),
@@ -433,13 +526,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (isCurrentWeek)
                       Container(
                         margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text('Esta semana',
-                            style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+                        child: Text(
+                          'Esta semana',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -481,7 +581,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildWeeklyInsightsCard(WeeklyInsights? insights, String? insightsError) {
+  Widget _buildWeeklyInsightsCard(
+    WeeklyInsights? insights,
+    String? insightsError,
+  ) {
     if (insightsError != null) {
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -493,12 +596,18 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 18),
+            const Icon(
+              Icons.info_outline,
+              color: AppColors.textSecondary,
+              size: 18,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'No se pudieron cargar insights esta semana. El plan sigue disponible.',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -510,7 +619,9 @@ class _DashboardPageState extends State<DashboardPage> {
       return const SizedBox.shrink();
     }
 
-    final trendColor = insights.volumeTrendPercent >= 0 ? AppColors.success : AppColors.error;
+    final trendColor = insights.volumeTrendPercent >= 0
+        ? AppColors.success
+        : AppColors.error;
     final trendLabel = insights.volumeTrendPercent >= 0
         ? '+${insights.volumeTrendPercent.toStringAsFixed(1)}%'
         : '${insights.volumeTrendPercent.toStringAsFixed(1)}%';
@@ -536,9 +647,15 @@ class _DashboardPageState extends State<DashboardPage> {
               spacing: 10,
               runSpacing: 8,
               children: [
-                _metricChip('Adherencia', '${insights.adherenceRate.toStringAsFixed(0)}%'),
+                _metricChip(
+                  'Adherencia',
+                  '${insights.adherenceRate.toStringAsFixed(0)}%',
+                ),
                 _metricChip('Sesiones', '${insights.completedSessions}'),
-                _metricChip('Volumen', '${insights.totalVolume.toStringAsFixed(0)} kg'),
+                _metricChip(
+                  'Volumen',
+                  '${insights.totalVolume.toStringAsFixed(0)} kg',
+                ),
                 _metricChip('Tendencia', trendLabel, valueColor: trendColor),
                 _metricChip('PRs', '${insights.personalRecords}'),
               ],
@@ -560,7 +677,10 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTextStyles.label.copyWith(color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 2),
           Text(
             value,
@@ -628,7 +748,10 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
           leading: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -650,11 +773,17 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           title: hasWorkout
               ? Text(routineDay.name, style: AppTextStyles.bodyLarge)
-              : Text('Descanso',
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+              : Text(
+                  'Descanso',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
           subtitle: hasWorkout && routineDay.exercises.isNotEmpty
-              ? Text('${routineDay.exercises.length} ejercicios',
-                  style: AppTextStyles.label)
+              ? Text(
+                  '${routineDay.exercises.length} ejercicios',
+                  style: AppTextStyles.label,
+                )
               : null,
           trailing: hasWorkout
               ? Column(
@@ -662,8 +791,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Icon(statusIcon, color: statusColor, size: 24),
                     const SizedBox(height: 2),
-                    Text(statusLabel,
-                        style: AppTextStyles.label.copyWith(color: statusColor, fontSize: 10)),
+                    Text(
+                      statusLabel,
+                      style: AppTextStyles.label.copyWith(
+                        color: statusColor,
+                        fontSize: 10,
+                      ),
+                    ),
                   ],
                 )
               : null,
@@ -671,11 +805,14 @@ class _DashboardPageState extends State<DashboardPage> {
               ? () {
                   final authState = context.read<AuthBloc>().state;
                   if (authState is Authenticated) {
-                    context.push('/routine-day', extra: {
-                      'routineDay': routineDay,
-                      'userId': authState.user.id,
-                      'sessionDate': date,
-                    });
+                    context.push(
+                      '/routine-day',
+                      extra: {
+                        'routineDay': routineDay,
+                        'userId': authState.user.id,
+                        'sessionDate': date,
+                      },
+                    );
                   }
                 }
               : null,
@@ -689,7 +826,11 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.explore_off_rounded, size: 64, color: AppColors.surfaceHighlight),
+          const Icon(
+            Icons.explore_off_rounded,
+            size: 64,
+            color: AppColors.surfaceHighlight,
+          ),
           const SizedBox(height: 16),
           Text('Sin Rutina Activa', style: AppTextStyles.heading2),
           const SizedBox(height: 8),
@@ -697,7 +838,9 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               'Para empezar a entrenar, elige una rutina del catálogo o crea la tuya propia.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -705,11 +848,20 @@ class _DashboardPageState extends State<DashboardPage> {
           ElevatedButton.icon(
             onPressed: () => context.push('/routine-list'),
             icon: const Icon(Icons.explore_rounded, color: Colors.black),
-            label: const Text('EXPLORAR CATÁLOGO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            label: const Text(
+              'EXPLORAR CATÁLOGO',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -717,7 +869,10 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: () => context.push('/routine-editor'),
             child: Text(
               'CREAR RUTINA MANUALMENTE',
-              style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -736,12 +891,27 @@ class _DashboardPageState extends State<DashboardPage> {
 
   static bool _isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   static String _formatDate(DateTime date) {
-    const months = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const months = [
+      '',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
     return '${date.day} ${months[date.month]}';
   }
 
