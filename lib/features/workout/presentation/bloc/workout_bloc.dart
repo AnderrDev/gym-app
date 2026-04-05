@@ -3,6 +3,8 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/services/active_session_service.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/routine.dart';
+import '../../domain/entities/routine_day.dart';
+import '../../domain/entities/weekly_insights.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/workout_repository.dart';
 import '../../domain/usecases/get_assigned_routines.dart';
@@ -12,6 +14,8 @@ import '../../domain/entities/workout_session.dart';
 import '../../domain/entities/set_log.dart';
 import 'workout_event.dart';
 import 'workout_state.dart';
+import '../../domain/usecases/assign_routine.dart';
+import '../../domain/usecases/get_all_routines.dart';
 
 class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
   final GetAssignedRoutines getAssignedRoutines;
@@ -19,6 +23,8 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
   final SaveSetLog saveSetLog;
   final WorkoutRepository repository;
   final ActiveSessionService activeSessionService;
+  final AssignRoutine assignRoutine;
+  final GetAllRoutines getAllRoutines;
 
   WorkoutBloc({
     required this.getAssignedRoutines,
@@ -26,9 +32,11 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     required this.saveSetLog,
     required this.repository,
     required this.activeSessionService,
+    required this.assignRoutine,
+    required this.getAllRoutines,
   }) : super(WorkoutInitial()) {
     
-    // ─── Cargar rutinas ──────────────────────────────────────
+    // ─── Cargar rutinas asignadas ─────────────────────────────
     on<FetchAssignedRoutines>((event, emit) async {
       emit(WorkoutLoading());
       try {
@@ -46,36 +54,38 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
     on<FetchWeeklyPlan>((event, emit) async {
       emit(WorkoutLoading());
       try {
-        final result = await getWeeklyPlan(
-          userId: event.userId,
-          routineId: event.routineId,
-          weekStart: event.weekStart,
-        );
+        final results = await Future.wait([
+          repository.getRoutineDays(event.routineId),
+          repository.getWeekSessions(
+            event.userId,
+            event.weekStart.subtract(Duration(days: event.weekStart.weekday - 1)),
+            event.weekStart.add(Duration(days: 7 - event.weekStart.weekday)),
+          ),
+          repository.getWeeklyInsights(
+            routineId: event.routineId,
+            weekStart: event.weekStart,
+          ),
+          repository.getRoutineById(event.routineId),
+        ]);
 
-        if (result.isLeft()) {
-          emit(WorkoutError(result.fold((failure) => failure.message, (_) => 'Error al cargar plan semanal')));
+        final daysResult = results[0] as Either<Failure, List<RoutineDay>>;
+        final sessionsResult = results[1] as Either<Failure, List<WorkoutSession>>;
+        // ignore: unused_local_variable
+        final sessions = sessionsResult.getOrElse((_) => []);
+        final insightsResult = results[2] as Either<Failure, WeeklyInsights>;
+        final routineResult = results[3] as Either<Failure, Routine>;
+
+        if (daysResult.isLeft()) {
+          emit(WorkoutError(daysResult.fold((f) => f.message, (_) => 'Error charging days')));
           return;
         }
 
-        final days = result.getOrElse((_) => []);
-        final insightsResult = await repository.getWeeklyInsights(
-          routineId: event.routineId,
-          weekStart: event.weekStart,
-        );
-
-        if (insightsResult.isRight()) {
-          emit(WeeklyPlanLoaded(
-            days,
-            event.weekStart,
-            insights: insightsResult.getOrElse((_) => throw StateError('Unreachable')),
-          ));
-        } else {
-          emit(WeeklyPlanLoaded(
-            days,
-            event.weekStart,
-            insightsError: insightsResult.fold((f) => f.message, (_) => null),
-          ));
-        }
+        emit(WeeklyPlanLoaded(
+          daysResult.getOrElse((_) => []),
+          event.weekStart,
+          routine: routineResult.getOrElse((_) => throw Exception('Routine not found')),
+          insights: insightsResult.getOrElse((_) => throw Exception('Insights error')),
+        ));
       } catch (e) {
         emit(WorkoutError('Error al cargar plan semanal: $e'));
       }
@@ -105,8 +115,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
         final perfRes = await _fetchPreloadedRecords(exercises);
 
-        // Si ya existe sesión del día (completada o no), abrirla directamente.
-        // Cuando completedAt != null la UI entra en modo solo lectura y muestra resultados.
         if (session != null) {
           final logsRes = await repository.getSessionSetLogs(session.id);
           final setLogs = logsRes.getOrElse((_) => []);
@@ -130,13 +138,12 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
             anotherActiveSessionDayName = nameRes.getOrElse((_) => null);
           }
 
-          // No hay sesión en curso: mostrar pantalla de preinicio
           emit(DayInfoLoaded(
             exercises: exercises,
             userId: event.userId,
             routineDayId: event.routineDayId,
             sessionDate: event.sessionDate,
-            existingSession: session, // null o completada de otro día
+            existingSession: session,
             recentSessions: recentSessions,
             recentSessionsLogs: recentLogs,
             hasAnotherActiveSession: hasAnotherActiveSession,
@@ -149,7 +156,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       }
     });
 
-    // ─── Confirmar inicio: ahora sí se crea la sesión ─────────
     on<ConfirmStartWorkout>((event, emit) async {
       emit(WorkoutLoading());
       try {
@@ -186,8 +192,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           final nameRes = await repository.getRoutineDayNameById(effectiveRoutineDayId);
           routineDayName = nameRes.getOrElse((_) => null) ?? routineDayName;
 
-          // Guardrail: si el backend devolvió una sesión activa de otro día,
-          // volvemos a la vista de preinicio con bloqueo explícito.
           final fallbackRecentSessions = (await repository.getRecentSessionsForDay(
             event.userId,
             event.routineDayId,
@@ -221,7 +225,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           return;
         }
 
-        // Persistir contexto para reanudación automática
         await activeSessionService.save(
           sessionId: session.id,
           routineDayId: effectiveRoutineDayId,
@@ -243,13 +246,9 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       }
     });
 
-    // ─── Verificar sesión activa al abrir app ───────────────────
     on<CheckActiveSession>((event, emit) async {
       try {
         final ctx = activeSessionService.getContext();
-
-        // Siempre validar con remoto para cubrir reinstalaciones, limpieza de cache
-        // o contexto local perdido.
         final result = await repository.getActiveSessionForUser(event.userId);
         final session = result.getOrElse((_) => null);
 
@@ -281,10 +280,9 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           sessionDate: session.sessionDate,
           routineDayName: routineDayName,
         ));
-      } catch (_) {
-        // Fallo silencioso: no bloquear al usuario
-      }
+      } catch (_) {}
     });
+
     on<AddSetLogEvent>((event, emit) async {
       final currentState = state;
       try {
@@ -312,18 +310,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       }
     });
 
-    // ─── Rendimiento anterior (Legacy, mantenido para compatibilidad) ──
-    on<FetchLastExercisePerformance>((event, emit) async {
-      try {
-        final result = await repository.getLastExercisePerformance(event.exerciseId);
-        result.fold((failure) => emit(WorkoutError(failure.message)), (lastSet) => emit(ExercisePerformanceLoaded(lastSet)));
-      } catch (e) {
-        emit(WorkoutError('Error al cargar rendimiento: $e'));
-      }
-    });
-
-    on<ResetWorkout>((event, emit) => emit(WorkoutInitial()));
-
     on<FinishWorkoutSession>((event, emit) async {
       emit(WorkoutLoading());
       try {
@@ -331,8 +317,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           event.sessionId, 
           coachingAnalysis: event.coachingAnalysis,
         );
-        // No usar fold con lambda async: el handler terminaría antes de que
-        // el Future se resuelva y emit lanzaría _AssertionError.
         if (result.isLeft()) {
           emit(WorkoutError(result.fold((f) => f.message, (_) => 'Error')));
         } else {
@@ -346,6 +330,35 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
 
     // ─── Gestión de Rutinas ──────────────────────────────────────────
 
+    on<FetchAllRoutines>((event, emit) async {
+      emit(WorkoutLoading());
+      try {
+        final result = await getAllRoutines();
+        result.fold(
+          (failure) => emit(WorkoutError(failure.message)),
+          (routines) => emit(AllRoutinesLoaded(routines)),
+        );
+      } catch (e) {
+        emit(WorkoutError('Error al cargar catálogo de rutinas: $e'));
+      }
+    });
+
+    on<AssignRoutineEvent>((event, emit) async {
+      emit(WorkoutLoading());
+      try {
+        final result = await assignRoutine(event.userId, event.routineId);
+        result.fold(
+          (failure) => emit(WorkoutError(failure.message)),
+          (_) {
+            emit(const ManagementSuccess('Rutina activada correctamente'));
+            add(FetchAssignedRoutines(event.userId));
+          },
+        );
+      } catch (e) {
+        emit(WorkoutError('Error al activar rutina: $e'));
+      }
+    });
+
     on<CreateOrUpdateRoutine>((event, emit) async {
       emit(WorkoutLoading());
       try {
@@ -353,14 +366,12 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
           id: event.id ?? '',
           name: event.name,
           exerciseCount: 0,
+          isPublic: event.isPublic,
         );
         final result = await repository.saveRoutine(routine);
         result.fold(
           (failure) => emit(WorkoutError(failure.message)),
-          (_) async {
-            // Refrescamos la lista de rutinas para el usuario actual
-            add(FetchAssignedRoutines(event.userId));
-          },
+          (_) => add(FetchAssignedRoutines(event.userId)),
         );
       } catch (e) {
         emit(WorkoutError('Error al guardar rutina: $e'));
@@ -391,7 +402,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
             add(FetchWeeklyPlan(
               userId: event.userId, 
               routineId: event.routineId, 
-              weekStart: DateTime.now(), // Refresh current week
+              weekStart: DateTime.now(),
             ));
           },
         );
@@ -406,7 +417,7 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
         final result = await repository.deleteRoutineDay(event.dayId);
         result.fold(
           (failure) => emit(WorkoutError(failure.message)),
-          (_) => null, // El UI debería manejar la navegación atrás o refresco
+          (_) => null,
         );
       } catch (e) {
         emit(WorkoutError('Error al eliminar día: $e'));
@@ -445,7 +456,6 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
       final currentState = state;
       if (currentState is DayWorkoutStarted) {
         try {
-          // 1. Actualizar localmente el estado actual
           final newExercises = currentState.exercises.map((e) {
             if (e.id == event.exerciseId) {
               return e.copyWith(
@@ -456,10 +466,8 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
             return e;
           }).toList();
 
-          // 2. Persistir en repositorio
           await repository.updateExerciseTarget(currentState.session.routineDayId, event.exerciseId, event.targetWeight, event.targetReps);
 
-          // 3. Emitir nuevo estado con los ejercicios actualizados
           emit(DayWorkoutStarted(
             currentState.session,
             newExercises,
@@ -473,9 +481,20 @@ class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
         }
       }
     });
+    
+    // Legacy support
+    on<FetchLastExercisePerformance>((event, emit) async {
+      try {
+        final result = await repository.getLastExercisePerformance(event.exerciseId);
+        result.fold((failure) => emit(WorkoutError(failure.message)), (lastSet) => emit(ExercisePerformanceLoaded(lastSet)));
+      } catch (e) {
+        emit(WorkoutError('Error al cargar rendimiento: $e'));
+      }
+    });
+
+    on<ResetWorkout>((event, emit) => emit(WorkoutInitial()));
   }
 
-  // Helper para precargar récords de todos los ejercicios del día
   Future<Map<String, SetLog?>> _fetchPreloadedRecords(List<Exercise> exercises) async {
     final Map<String, SetLog?> performances = {};
     if (exercises.isEmpty) return performances;

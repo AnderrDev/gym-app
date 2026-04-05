@@ -13,6 +13,8 @@ import 'features/workout/domain/usecases/get_session_history.dart';
 import 'features/workout/domain/usecases/save_set_log.dart';
 import 'features/workout/presentation/bloc/workout_bloc.dart';
 import 'features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
+import 'features/workout/domain/usecases/assign_routine.dart';
+import 'features/workout/domain/usecases/get_all_routines.dart';
 
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/datasources/auth_local_data_source.dart';
@@ -72,6 +74,8 @@ Future<void> init() async {
       saveSetLog: sl(),
       repository: sl(),
       activeSessionService: sl(),
+      assignRoutine: sl(),
+      getAllRoutines: sl(),
     ),
   );
 
@@ -86,6 +90,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetSessionHistory(sl()));
   sl.registerLazySingleton(() => GetLastExercisePerformance(sl()));
   sl.registerLazySingleton(() => SaveSetLog(sl()));
+  sl.registerLazySingleton(() => AssignRoutine(sl()));
+  sl.registerLazySingleton(() => GetAllRoutines(sl()));
 
   sl.registerLazySingleton<WorkoutRepository>(
     () => WorkoutRepositoryImpl(remoteDataSource: sl()),

@@ -61,21 +61,22 @@ CREATE TABLE IF NOT EXISTS public.routines (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,
   creator_id  UUID REFERENCES public.profiles(id),
-  created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  is_public   BOOLEAN DEFAULT false
 );
 
 ALTER TABLE public.routines ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "routines_select" ON public.routines FOR SELECT USING (true);
+CREATE POLICY "routines_select" ON public.routines 
+  FOR SELECT USING ((is_public = true) OR (auth.uid() = creator_id));
 CREATE POLICY "routines_insert" ON public.routines
   FOR INSERT WITH CHECK (auth.uid() = creator_id);
 
 -- ──────────────────────────────────── 4. USER_ROUTINES ──────
--- Asignación de rutina a usuario
+-- Asignación de rutina activa (1 por usuario)
 CREATE TABLE IF NOT EXISTS public.user_routines (
-  user_id     UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id     UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   routine_id  UUID REFERENCES public.routines(id) ON DELETE CASCADE,
-  assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  PRIMARY KEY (user_id, routine_id)
+  assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE public.user_routines ENABLE ROW LEVEL SECURITY;
@@ -83,6 +84,10 @@ CREATE POLICY "user_routines_select" ON public.user_routines
   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "user_routines_insert" ON public.user_routines
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_routines_update" ON public.user_routines
+  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "user_routines_delete" ON public.user_routines
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- ──────────────────────────────────── 5. ROUTINE_DAYS ───────
 -- Días de entrenamiento de una rutina (Lunes=Pecho, Martes=Espalda...)
@@ -94,7 +99,14 @@ CREATE TABLE IF NOT EXISTS public.routine_days (
 );
 
 ALTER TABLE public.routine_days ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "routine_days_select" ON public.routine_days FOR SELECT USING (true);
+CREATE POLICY "routine_days_select" ON public.routine_days 
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.routines r
+      WHERE r.id = routine_days.routine_id 
+      AND (r.is_public = true OR r.creator_id = auth.uid())
+    )
+  );
 
 -- ────────────────────────────────── 6. ROUTINE_EXERCISES ────
 -- Ejercicios configurados para cada día de rutina
@@ -110,7 +122,15 @@ CREATE TABLE IF NOT EXISTS public.routine_exercises (
 );
 
 ALTER TABLE public.routine_exercises ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "routine_exercises_select" ON public.routine_exercises FOR SELECT USING (true);
+CREATE POLICY "routine_exercises_select" ON public.routine_exercises 
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.routine_days rd
+      JOIN public.routines r ON rd.routine_id = r.id
+      WHERE rd.id = routine_exercises.routine_day_id
+      AND (r.is_public = true OR r.creator_id = auth.uid())
+    )
+  );
 
 -- ─────────────────────────────── 7. WORKOUT_SESSIONS ────────
 -- Registro de una sesión (= ejecución de un routine_day en una fecha)

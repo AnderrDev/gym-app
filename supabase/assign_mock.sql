@@ -106,8 +106,8 @@ BEGIN
   RETURNING id INTO v_press_arnold;
 
   -- ── 3. Crear la rutina ───────────────────────────────────
-  INSERT INTO public.routines (name, creator_id)
-  VALUES ('Rutina de Fuerza 4 días', v_user_id)
+  INSERT INTO public.routines (name, creator_id, is_public)
+  VALUES ('Rutina de Fuerza 4 días', v_user_id, true)
   RETURNING id INTO v_routine_id;
 
   -- ── 4. Crear los días de la rutina ──────────────────────

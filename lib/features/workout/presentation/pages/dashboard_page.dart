@@ -37,9 +37,19 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
-      // Verificar sesión activa antes de cargar rutinas
-      context.read<WorkoutBloc>().add(CheckActiveSession(authState.user.id));
-      context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+      final workoutBloc = context.read<WorkoutBloc>();
+      // Verificar sesión activa
+      workoutBloc.add(CheckActiveSession(authState.user.id));
+      
+      final currentState = workoutBloc.state;
+      if (currentState is RoutinesLoaded && currentState.routines.length == 1) {
+        // Optimización: Si ya tenemos una única rutina, cargar el plan sin esperar re-fetch
+        _selectedRoutine = currentState.routines.first;
+        _loadWeeklyPlan(_selectedRoutine!);
+      } else if (currentState is! WeeklyPlanLoaded) {
+        // Sólo cargar rutinas si no tenemos ya el plan semanal cargado
+        workoutBloc.add(FetchAssignedRoutines(authState.user.id));
+      }
     }
   }
 
@@ -122,27 +132,53 @@ class _DashboardPageState extends State<DashboardPage> {
             setState(() => _activeSession = null);
           }
 
+          if (state is ManagementSuccess || state is WorkoutFinishedSuccess) {
+            // Mostrar mensaje de éxito si lo hay
+            final msg = (state is ManagementSuccess) ? state.message : '¡Entrenamiento completado!';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(msg),
+                backgroundColor: AppColors.success,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // Importante: Si venimos de activar/crear rutina, forzar carga de rutinas asignadas
+            final authState = context.read<AuthBloc>().state;
+            if (authState is Authenticated) {
+               context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
+            }
+            setState(() => _selectedRoutine = null);
+          }
+
+          // Al recibir las rutinas asignadas, si solo hay una, disparar carga del plan semanal
+          if (state is RoutinesLoaded) {
+            if (state.routines.length == 1) {
+              _loadWeeklyPlan(state.routines.first);
+            }
+          }
+
+          // Al recibir respuesta de activación exitosa (obsolescente por el bloque de arriba pero mantenemos por seguridad)
+          if (state is ManagementSuccess) {
+            setState(() => _selectedRoutine = null);
+          }
+
           // Al volver de RoutineDayPage (ResetWorkout → WorkoutInitial): recargar datos.
-          // NO se vuelve a despachar CheckActiveSession para no caer en spinner infinito:
-          // ActiveSessionDetected no tiene builder propio y cae al spinner (_).
           if (state is WorkoutInitial) {
             final authState = context.read<AuthBloc>().state;
             if (authState is Authenticated) {
               context.read<WorkoutBloc>().add(FetchAssignedRoutines(authState.user.id));
             }
-            if (_selectedRoutine != null) {
-              _loadWeeklyPlan(_selectedRoutine!);
-            }
           }
         },
         builder: (context, state) {
           final content = switch (state) {
-            WorkoutInitial() || WorkoutLoading() => const Center(
+            WorkoutInitial() || WorkoutLoading() || SavingSetLog() => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
             ActiveSessionDetected() => Center(
                 child: Text(
-                  'Sesion activa detectada, cargando tablero...',
+                  'Sesión activa detectada, cargando tablero...',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -174,17 +210,49 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
               ),
+            ManagementSuccess() || WorkoutFinishedSuccess() || SetLogSuccess() => const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline, color: AppColors.success, size: 48),
+                    SizedBox(height: 16),
+                    CircularProgressIndicator(color: AppColors.primary),
+                  ],
+                ),
+              ),
+            AllRoutinesLoaded() => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: AppColors.primary),
+                    const SizedBox(height: 16),
+                    Text('Sincronizando tus rutinas...', style: AppTextStyles.bodyMedium),
+                  ],
+                ),
+              ),
             RoutinesLoaded(routines: final routines) => routines.isEmpty
                 ? _buildEmptyState()
-                : _buildRoutineSelector(routines),
+                : routines.length == 1
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(color: AppColors.primary),
+                            const SizedBox(height: 16),
+                            Text('Cargando tu rutina...', style: AppTextStyles.bodyMedium),
+                          ],
+                        ),
+                      )
+                    : _buildRoutineSelector(routines),
             WeeklyPlanLoaded(
               days: final days,
               weekStart: final weekStart,
               insights: final insights,
               insightsError: final insightsError,
             ) => _buildWeeklyView(days, weekStart, insights, insightsError),
-            // Cualquier otro estado: mostrar spinner
-            // El listener de arriba se encarga de disparar el reload si hay rutina
+            // Cualquier otro estado (DayInfoLoaded, DayWorkoutStarted, etc)
+            // Si estamos en el Dashboard pero el bloc tiene estado de una sesión,
+            // probablemente acabamos de volver. Mostramos un spinner breve mientras recarga.
             _ => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
@@ -202,9 +270,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
                       ),
                       child: Row(
                         children: [
@@ -262,7 +330,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.15),
+                        color: AppColors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.fitness_center, color: AppColors.primary),
@@ -367,7 +435,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         margin: const EdgeInsets.only(top: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text('Esta semana',
@@ -559,59 +627,59 @@ class _DashboardPageState extends State<DashboardPage> {
             width: isToday ? 1.5 : 0,
           ),
         ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _dayShortName(dayOfWeek),
-              style: AppTextStyles.label.copyWith(
-                color: isToday ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: FontWeight.bold,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _dayShortName(dayOfWeek),
+                style: AppTextStyles.label.copyWith(
+                  color: isToday ? AppColors.primary : AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            Text(
-              '${date.day}',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isToday ? AppColors.primary : AppColors.textPrimary,
-                fontSize: 20,
+              Text(
+                '${date.day}',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: isToday ? AppColors.primary : AppColors.textPrimary,
+                  fontSize: 20,
+                ),
               ),
-            ),
-          ],
-        ),
-        title: hasWorkout
-            ? Text(routineDay.name, style: AppTextStyles.bodyLarge)
-            : Text('Descanso',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-        subtitle: hasWorkout && routineDay.exercises.isNotEmpty
-            ? Text('${routineDay.exercises.length} ejercicios',
-                style: AppTextStyles.label)
-            : null,
-        trailing: hasWorkout
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(statusIcon, color: statusColor, size: 24),
-                  const SizedBox(height: 2),
-                  Text(statusLabel,
-                      style: AppTextStyles.label.copyWith(color: statusColor, fontSize: 10)),
-                ],
-              )
-            : null,
-        onTap: hasWorkout
-            ? () {
-                final authState = context.read<AuthBloc>().state;
-                if (authState is Authenticated) {
-                  context.push('/routine-day', extra: {
-                    'routineDay': routineDay,
-                    'userId': authState.user.id,
-                    'sessionDate': date,
-                  });
+            ],
+          ),
+          title: hasWorkout
+              ? Text(routineDay.name, style: AppTextStyles.bodyLarge)
+              : Text('Descanso',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+          subtitle: hasWorkout && routineDay.exercises.isNotEmpty
+              ? Text('${routineDay.exercises.length} ejercicios',
+                  style: AppTextStyles.label)
+              : null,
+          trailing: hasWorkout
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(statusIcon, color: statusColor, size: 24),
+                    const SizedBox(height: 2),
+                    Text(statusLabel,
+                        style: AppTextStyles.label.copyWith(color: statusColor, fontSize: 10)),
+                  ],
+                )
+              : null,
+          onTap: hasWorkout
+              ? () {
+                  final authState = context.read<AuthBloc>().state;
+                  if (authState is Authenticated) {
+                    context.push('/routine-day', extra: {
+                      'routineDay': routineDay,
+                      'userId': authState.user.id,
+                      'sessionDate': date,
+                    });
+                  }
                 }
-              }
-            : null,
-      ),
+              : null,
+        ),
       ),
     );
   }
@@ -621,20 +689,35 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.fitness_center, size: 64, color: AppColors.surfaceHighlight),
+          const Icon(Icons.explore_off_rounded, size: 64, color: AppColors.surfaceHighlight),
           const SizedBox(height: 16),
-          Text('Aún no tienes rutinas', style: AppTextStyles.heading2),
+          Text('Sin Rutina Activa', style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          Text('Crea una nueva rutina para empezar a entrenar.',
-              style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Para empezar a entrenar, elige una rutina del catálogo o crea la tuya propia.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: () => context.push('/routine-list'),
-            icon: const Icon(Icons.add, color: Colors.black),
-            label: const Text('Ir a Mis Rutinas', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.explore_rounded, color: Colors.black),
+            label: const Text('EXPLORAR CATÁLOGO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 1)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => context.push('/routine-editor'),
+            child: Text(
+              'CREAR RUTINA MANUALMENTE',
+              style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
           ),
         ],

@@ -90,4 +90,10 @@ abstract class WorkoutRepository {
   // Gestión de Rutinas
   /// Syncs pending offline data to Supabase
   Future<Either<Failure, void>> syncPendingData();
+
+  /// Gets all routines (public + private)
+  Future<Either<Failure, List<Routine>>> getAllRoutines();
+
+  /// Gets a specific routine by ID
+  Future<Either<Failure, Routine>> getRoutineById(String routineId);
 }

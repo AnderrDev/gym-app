@@ -50,21 +50,34 @@ INSERT INTO public.exercises (id, name, description, muscle_group) VALUES
   ('eeeeeeee-0000-0000-0000-000000000005', 'Sentadilla Libre', 'Barra espalda', 'Pierna'),
   ('eeeeeeee-0000-0000-0000-000000000006', 'Remo con Remo', 'Polea baja', 'Espalda');
 
--- 4. Rutina PPL
-INSERT INTO public.routines (id, name, creator_id) VALUES
-  ('22222222-0000-0000-0000-000000000001', 'Hipertrofia PPL', '11111111-0000-0000-0000-000000000001');
+-- 4. Catálogo de Rutinas Públicas (Visto por todos)
+INSERT INTO public.routines (id, name, creator_id, is_public) VALUES
+  ('22222222-0000-0000-0000-000000000001', 'Hipertrofia PPL (Public)', '11111111-0000-0000-0000-000000000001', true),
+  ('22222222-0000-0000-0000-000000000002', 'Full Body Principiantes', '11111111-0000-0000-0000-000000000001', true),
+  ('22222222-0000-0000-0000-000000000003', 'Arnold Split (Avanzado)', '11111111-0000-0000-0000-000000000001', true);
 
+-- Días para la rutina PPL
 INSERT INTO public.routine_days (id, routine_id, day_of_week, name) VALUES
   ('dddddddd-0000-0000-0000-000000000001', '22222222-0000-0000-0000-000000000001', 1, 'Empuje (Pecho/Tríceps)'),
   ('dddddddd-0000-0000-0000-000000000002', '22222222-0000-0000-0000-000000000001', 3, 'Tirón (Espalda/Bíceps)'),
   ('dddddddd-0000-0000-0000-000000000003', '22222222-0000-0000-0000-000000000001', 5, 'Pierna');
 
+-- Ejercicios para PPL
 INSERT INTO public.routine_exercises (routine_day_id, exercise_id, "order", target_sets, target_reps, target_weight) VALUES
   ('dddddddd-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', 1, 4, 10, 60),
   ('dddddddd-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000003', 2, 3, 12, 20),
   ('dddddddd-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000004', 1, 4, 8, 80),
   ('dddddddd-0000-0000-0000-000000000003', 'eeeeeeee-0000-0000-0000-000000000005', 1, 4, 10, 100);
 
+-- Días para Full Body
+INSERT INTO public.routine_days (id, routine_id, day_of_week, name) VALUES
+  ('dddddddd-0000-0000-0000-000000000004', '22222222-0000-0000-0000-000000000002', 1, 'Full Body A');
+
+INSERT INTO public.routine_exercises (routine_day_id, exercise_id, "order", target_sets, target_reps, target_weight) VALUES
+  ('dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 1, 3, 12, 40),
+  ('dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000001', 2, 3, 12, 30);
+
+-- Asignación inicial (El usuario tiene la PPL asignada por defecto)
 INSERT INTO public.user_routines (user_id, routine_id) VALUES 
   ('11111111-0000-0000-0000-000000000001', '22222222-0000-0000-0000-000000000001');
 
@@ -93,7 +106,7 @@ BEGIN
 
   -- Miércoles pasado: Incompleto (No debería decir completado)
   INSERT INTO public.workout_sessions (user_id, routine_day_id, session_date, completed_at) 
-  VALUES (uid, d_tiron, CURRENT_DATE - 5, NULL) RETURNING id INTO sid;
+  VALUES (uid, d_tiron, CURRENT_DATE - 5, NOW() - INTERVAL '5 days') RETURNING id INTO sid;
   INSERT INTO public.set_logs (session_id, exercise_id, set_index, actual_weight, actual_reps) 
   VALUES (sid, e_domis, 1, 80, 8);
 

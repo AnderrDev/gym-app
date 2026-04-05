@@ -179,13 +179,11 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     try {
       final rawData = await remoteDataSource.getExerciseLogsHistory(userId, exerciseId);
       
-      // Agrupar por session_date
       final Map<String, List<SetLogModel>> grouped = {};
       
       for (var row in rawData) {
         final sessionData = row['workout_sessions'] as Map<String, dynamic>;
         final String sessionDateStr = sessionData['session_date'] as String;
-        // Parse the session date down to just the day structure if needed, but it's usually YYYY-MM-DD
         final parsedDate = DateTime.tryParse(sessionDateStr);
         if (parsedDate == null) continue;
         
@@ -206,7 +204,6 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
         );
       }).toList();
       
-      // Sort desc by date so the newest is first
       sessions.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
       
       return Right(sessions);
@@ -224,6 +221,7 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
         id: routine.id,
         name: routine.name,
         exerciseCount: routine.exerciseCount,
+        isPublic: routine.isPublic,
       );
       await remoteDataSource.saveRoutine(model);
       return const Right(null);
@@ -308,7 +306,6 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
         final date = DateTime.parse(sessionDateStr);
         final routineDayData = row['routine_days'] as Map<String, dynamic>;
         
-        // set_logs puede ser null si se acaba de empezar y no hay sets
         final logs = (row['set_logs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
         
         double totalVolume = 0;
@@ -357,10 +354,28 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
     }
   }
 
-  // ─── Sync (no-op mientras offline está desactivado) ───────────────────────
   @override
   Future<Either<Failure, void>> syncPendingData() async {
-    // Offline desactivado temporalmente
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<Routine>>> getAllRoutines() async {
+    try {
+      final result = await remoteDataSource.getAllRoutines();
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Routine>> getRoutineById(String routineId) async {
+    try {
+      final result = await remoteDataSource.getRoutineById(routineId);
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 }

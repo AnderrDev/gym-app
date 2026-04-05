@@ -42,6 +42,8 @@ abstract class WorkoutRemoteDataSource {
   Future<void> toggleExerciseInDay(String dayId, String exerciseId);
   Future<void> reorderExercisesInDay(String dayId, List<String> exerciseIds);
   Future<void> updateExerciseTarget(String routineDayId, String exerciseId, double targetWeight, int targetReps);
+  Future<List<RoutineModel>> getAllRoutines();
+  Future<RoutineModel> getRoutineById(String routineId);
 }
 
 class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
@@ -52,7 +54,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   Future<List<RoutineModel>> getAssignedRoutines(String userId) async {
     final response = await client
         .from('user_routines')
-        .select('routine_id, routines(id, name)')
+        .select('routine_id, routines(id, name, is_public, creator_id)')
         .eq('user_id', userId);
 
     return response.map((data) {
@@ -61,6 +63,8 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         id: (routineData['id'] ?? data['routine_id']).toString(),
         name: (routineData['name'] ?? 'Rutina').toString(),
         exerciseCount: 0,
+        isPublic: routineData['is_public'] as bool? ?? false,
+        creatorId: routineData['creator_id'] as String?,
       );
     }).toList();
   }
@@ -95,14 +99,14 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     return response.map((json) {
       final exerciseData = json['exercises'] as Map<String, dynamic>;
       return ExerciseModel(
-        id: exerciseData['id'] as String,
-        routineDayId: routineDayId,
-        name: exerciseData['name'] as String,
-        targetMuscle: exerciseData['target_muscle'] as String? ?? 'Desconocido',
-        targetWeight: (json['target_weight'] as num?)?.toDouble() ?? 0.0,
-        targetReps: json['target_reps'] as int? ?? 0,
-        targetSets: json['target_sets'] as int? ?? 3,
-        restTimerSeconds: json['rest_timer_seconds'] as int? ?? 90,
+          id: exerciseData['id'] as String,
+          routineDayId: routineDayId,
+          name: exerciseData['name'] as String,
+          targetMuscle: exerciseData['target_muscle'] as String? ?? 'Desconocido',
+          targetWeight: (json['target_weight'] as num?)?.toDouble() ?? 0.0,
+          targetReps: json['target_reps'] as int? ?? 0,
+          targetSets: json['target_sets'] as int? ?? 3,
+          restTimerSeconds: json['rest_timer_seconds'] as int? ?? 90,
       );
     }).toList();
   }
@@ -227,9 +231,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
     if (response == null) return null;
     
-    // El resultado del select con join!inner suele venir con el objeto workout_sessions anidado
-    // Pero SetLogModel.fromJson espera los campos del log. 
-    // PostgREST aplana si el campo es de la misma tabla o via asterisco.
     return SetLogModel.fromJson(response);
   }
 
@@ -262,10 +263,12 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
   @override
   Future<void> assignRoutineToUser(String userId, String routineId) async {
-    await client.from('user_routines').insert({
+    // Database unique constraint will handle duplicates if we just try to insert,
+    // but better use upsert or explicit logic for the single routine rule.
+    await client.from('user_routines').upsert({
       'user_id': userId,
       'routine_id': routineId,
-    });
+    }, onConflict: 'user_id');
   }
 
   @override
@@ -308,7 +311,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     }
 
     try {
-      // Get the user's auth token with automatic refresh if needed
       final session = (await client.auth.refreshSession()).session;
       final token = session?.accessToken;
       
@@ -323,7 +325,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         'finalize_workout_session_v1',
         body: payload,
         headers: {
-          'X-User-Token': token, // Kept only for internal function legacy logic
+          'X-User-Token': token,
         },
       ).timeout(
         const Duration(seconds: 30),
@@ -338,7 +340,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       final code = data['code']?.toString();
       final success = data['success'] == true;
 
-      // Handle API errors
       if (statusCode == 404 || code == 'NOT_FOUND_OR_ALREADY_COMPLETED') {
         throw const WorkoutFunctionException(
           code: 'NOT_FOUND_OR_ALREADY_COMPLETED',
@@ -368,7 +369,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       }
       return;
     } on FunctionException catch (e) {
-      // Extract detailed information from the SDK exception
       final status = e.status;
       final errorMessage = e.details?.toString() ?? e.toString();
       
@@ -403,7 +403,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       final weekStartIso =
           '${weekStart.year.toString().padLeft(4, '0')}-${weekStart.month.toString().padLeft(2, '0')}-${weekStart.day.toString().padLeft(2, '0')}';
 
-      // Get the user's auth token with automatic refresh if needed
       final session = (await client.auth.refreshSession()).session;
       final token = session?.accessToken;
       if (token == null) {
@@ -422,7 +421,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         'get_weekly_insights_v1',
         body: payload,
         headers: {
-          'X-User-Token': token, // Kept only for internal function legacy logic
+          'X-User-Token': token,
         },
       ).timeout(
         const Duration(seconds: 30),
@@ -491,21 +490,31 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  // ─── Nuevos métodos de gestión ──────────────────────────────────────────
-
   @override
   Future<void> saveRoutine(RoutineModel routine) async {
     if (routine.id.startsWith('new_') || routine.id.isEmpty) {
-      // Create
       await client.from('routines').insert({
         'name': routine.name,
+        'is_public': routine.isPublic,
+        'creator_id': client.auth.currentUser?.id,
       });
     } else {
-      // Update
       await client.from('routines').update({
         'name': routine.name,
+        'is_public': routine.isPublic,
       }).eq('id', routine.id);
     }
+  }
+
+  @override
+  Future<RoutineModel> getRoutineById(String routineId) async {
+    final response = await client
+        .from('routines_view')
+        .select()
+        .eq('id', routineId)
+        .single();
+    
+    return RoutineModel.fromJson(response);
   }
 
   @override
@@ -536,7 +545,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
   @override
   Future<void> toggleExerciseInDay(String dayId, String exerciseId) async {
-    // Verificar si ya existe
     final existing = await client
         .from('routine_exercises')
         .select()
@@ -545,14 +553,12 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .maybeSingle();
 
     if (existing != null) {
-      // Eliminar
       await client
           .from('routine_exercises')
           .delete()
           .eq('routine_day_id', dayId)
           .eq('exercise_id', exerciseId);
     } else {
-      // Calcular el orden (max + 1)
       final lastOrder = await client
           .from('routine_exercises')
           .select('order')
@@ -563,7 +569,6 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       
       final nextOrder = (lastOrder?['order'] as int? ?? -1) + 1;
 
-      // Insertar
       await client.from('routine_exercises').insert({
         'routine_day_id': dayId,
         'exercise_id': exerciseId,
@@ -613,6 +618,19 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .order('session_date', ascending: true);
 
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  @override
+  Future<List<RoutineModel>> getAllRoutines() async {
+    final userId = client.auth.currentUser?.id;
+    
+    final response = await client
+        .from('routines_view')
+        .select('*')
+        .or('is_public.eq.true${userId != null ? ",creator_id.eq.$userId" : ""}')
+        .order('name', ascending: true);
+
+    return response.map((json) => RoutineModel.fromJson(json)).toList();
   }
 }
 

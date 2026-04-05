@@ -24,6 +24,7 @@ class RoutineEditorPage extends StatefulWidget {
 class _RoutineEditorPageState extends State<RoutineEditorPage> {
   late TextEditingController _nameController;
   bool _isInitialized = false;
+  bool _isPublic = false;
 
   @override
   void initState() {
@@ -58,7 +59,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             List<RoutineDay> days = [];
 
             if (state is WeeklyPlanLoaded && !_isInitialized) {
-              _nameController.text = "Rutina"; 
+              _nameController.text = state.routine?.name ?? "Rutina"; 
+              _isPublic = state.routine?.isPublic ?? false;
               days = state.days;
               _isInitialized = true;
             } else if (state is WeeklyPlanLoaded) {
@@ -93,6 +95,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                               userId: userId,
                               id: widget.routineId,
                               name: _nameController.text,
+                              isPublic: _isPublic,
                             ));
                             context.pop();
                           },
@@ -156,6 +159,37 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                             style: AppTextStyles.label.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        borderRadius: BorderRadius.circular(20),
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'HACER PÚBLICA',
+                            style: AppTextStyles.label.copyWith(
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.bold,
+                              color: _isPublic ? AppColors.primary : AppColors.textSecondary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Otros usuarios podrán ver y usar esta rutina',
+                            style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
+                          ),
+                          value: _isPublic,
+                          activeColor: AppColors.primary,
+                          onChanged: (val) {
+                            setState(() => _isPublic = val);
+                            HapticFeedback.selectionClick();
+                          },
+                        ),
                       ),
                     ),
                   ),

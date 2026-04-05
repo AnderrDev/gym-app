@@ -32,15 +32,17 @@ final class RoutinesLoaded extends WorkoutState {
 final class WeeklyPlanLoaded extends WorkoutState {
   final List<RoutineDay> days;       // Los 7 días con sus ejercicios y estado
   final DateTime weekStart;
+  final Routine? routine;            // Metadatos de la rutina (nombre, isPublic, etc)
   final WeeklyInsights? insights;
   final String? insightsError;
   const WeeklyPlanLoaded(
     this.days,
     this.weekStart, {
+    this.routine,
     this.insights,
     this.insightsError,
   });
-  @override List<Object?> get props => [days, weekStart, insights, insightsError];
+  @override List<Object?> get props => [days, weekStart, routine, insights, insightsError];
 }
 
 // Info del día cargada: ejercicios + sesión existente (puede ser null)
@@ -150,4 +152,11 @@ final class ManagementSuccess extends WorkoutState {
   final String message;
   const ManagementSuccess(this.message);
   @override List<Object?> get props => [message];
+}
+
+// Catálogo completo de rutinas (Propias + Públicas)
+final class AllRoutinesLoaded extends WorkoutState {
+  final List<Routine> routines;
+  const AllRoutinesLoaded(this.routines);
+  @override List<Object?> get props => [routines];
 }

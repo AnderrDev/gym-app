@@ -90,8 +90,9 @@ final class CreateOrUpdateRoutine extends WorkoutEvent {
   final String userId;
   final String? id;
   final String name;
-  const CreateOrUpdateRoutine({required this.userId, this.id, required this.name});
-  @override List<Object?> get props => [userId, id, name];
+  final bool isPublic;
+  const CreateOrUpdateRoutine({required this.userId, this.id, required this.name, this.isPublic = false});
+  @override List<Object?> get props => [userId, id, name, isPublic];
 }
 
 final class DeleteRoutine extends WorkoutEvent {
@@ -141,4 +142,17 @@ final class UpdateExerciseTarget extends WorkoutEvent {
   final int targetReps;
   const UpdateExerciseTarget({required this.exerciseId, required this.targetWeight, required this.targetReps});
   @override List<Object?> get props => [exerciseId, targetWeight, targetReps];
+}
+
+// Carga todas las rutinas disponibles (Catálogo)
+final class FetchAllRoutines extends WorkoutEvent {
+  const FetchAllRoutines();
+}
+
+// Asigna una rutina como la activa para el usuario
+final class AssignRoutineEvent extends WorkoutEvent {
+  final String userId;
+  final String routineId;
+  const AssignRoutineEvent({required this.userId, required this.routineId});
+  @override List<Object?> get props => [userId, routineId];
 }
