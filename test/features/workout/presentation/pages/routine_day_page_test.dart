@@ -217,7 +217,7 @@ void main() {
       ),
     );
     when(() => mockWorkoutBloc.stream).thenAnswer((_) => controller.stream);
-    when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+    when(() => mockGoRouter.pop<bool>(any())).thenReturn(null);
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
@@ -225,7 +225,7 @@ void main() {
     controller.add(WorkoutFinishedSuccess());
     await tester.pump();
 
-    verify(() => mockGoRouter.pop()).called(1);
+    verify(() => mockGoRouter.pop<bool>(true)).called(1);
     await controller.close();
   });
 }

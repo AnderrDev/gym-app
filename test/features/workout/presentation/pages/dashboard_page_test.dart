@@ -45,9 +45,13 @@ void main() {
     when(() => mockWorkoutBloc.state).thenReturn(WorkoutInitial());
     when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.empty());
 
-    when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+    when(() => mockGoRouter.push<bool>(any())).thenAnswer((_) async => null);
     when(
-      () => mockGoRouter.push(any(), extra: any(named: 'extra')),
+      () => mockGoRouter.push<bool>(any(), extra: any(named: 'extra')),
+    ).thenAnswer((_) async => null);
+    when(() => mockGoRouter.push<Object?>(any())).thenAnswer((_) async => null);
+    when(
+      () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
     ).thenAnswer((_) async => null);
   });
 
@@ -122,7 +126,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.list_alt));
-    verify(() => mockGoRouter.push('/routine-list')).called(1);
+    verify(() => mockGoRouter.push<bool>('/routine-list')).called(1);
   });
 
   testWidgets('debe mostrar banner de sesión activa y permitir retomar', (
@@ -150,7 +154,10 @@ void main() {
       () => mockWorkoutBloc.add(any(that: isA<LoadDayInfo>())),
     ).called(greaterThanOrEqualTo(1));
     verify(
-      () => mockGoRouter.push('/routine-day', extra: any(named: 'extra')),
+      () => mockGoRouter.push<Object?>(
+        '/routine-day',
+        extra: any(named: 'extra'),
+      ),
     ).called(greaterThanOrEqualTo(1));
   });
 }
