@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gym_flutter/features/workout/presentation/widgets/exercise_catalog_sheet.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_sheet.dart';
 
 void main() {
   Widget createWidgetUnderTest({List<String> selectedExerciseIds = const []}) {

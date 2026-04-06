@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
-import 'package:gym_flutter/features/workout/presentation/widgets/exercise_stats_bottom_sheet.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockExerciseStatsBloc extends Mock implements ExerciseStatsBloc {}
@@ -15,6 +16,7 @@ void main() {
   late MockExerciseStatsBloc mockExerciseStatsBloc;
 
   setUpAll(() {
+    initializeDateFormatting('es');
     registerFallbackValue(
       const LoadExerciseStats(userId: 'u1', exerciseId: 'e1'),
     );
@@ -106,10 +108,19 @@ void main() {
     expect(find.text('BENCH PRESS'), findsOneWidget);
     expect(find.text('PESO MÁXIMO'), findsOneWidget);
     expect(find.text('1RM ESTIMADO'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('VOLUMEN TOTAL'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('VOLUMEN TOTAL'), findsOneWidget);
 
-    // Check history item details
-    expect(find.textContaining('60kg'), findsWidgets);
-    expect(find.textContaining('10'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('HISTORIAL DETALLADO'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('HISTORIAL DETALLADO'), findsOneWidget);
+    expect(find.textContaining('60kg x 10'), findsOneWidget);
   });
 }

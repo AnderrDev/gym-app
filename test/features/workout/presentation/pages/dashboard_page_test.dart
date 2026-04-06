@@ -9,7 +9,7 @@ import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
-import 'package:gym_flutter/features/workout/presentation/pages/dashboard_page.dart';
+import 'package:gym_flutter/features/workout/presentation/dashboard/pages/dashboard_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 

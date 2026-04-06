@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/repositories/workout_repository.dart';
-import 'routine_stats_event.dart';
-import 'routine_stats_state.dart';
+import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_state.dart';
 
 class RoutineStatsBloc extends Bloc<RoutineStatsEvent, RoutineStatsState> {
   final WorkoutRepository repository;

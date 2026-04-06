@@ -1,21 +1,21 @@
 import 'package:fpdart/fpdart.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../core/services/active_session_service.dart';
-import '../../domain/entities/exercise.dart';
-import '../../domain/entities/routine.dart';
-import '../../domain/entities/routine_day.dart';
-import '../../domain/entities/weekly_insights.dart';
+import 'package:gym_flutter/core/error/failures.dart';
+import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/repositories/workout_repository.dart';
-import '../../domain/usecases/get_assigned_routines.dart';
-import '../../domain/usecases/get_weekly_plan.dart';
-import '../../domain/usecases/save_set_log.dart';
-import '../../domain/entities/workout_session.dart';
-import '../../domain/entities/set_log.dart';
-import 'workout_event.dart';
-import 'workout_state.dart';
-import '../../domain/usecases/assign_routine.dart';
-import '../../domain/usecases/get_all_routines.dart';
+import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_weekly_plan.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/save_set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
+import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/assign_routine.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
 
 class WorkoutBloc extends Bloc<WorkoutEvent, WorkoutState> {
   final GetAssignedRoutines getAssignedRoutines;

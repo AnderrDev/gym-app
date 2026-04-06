@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/routine_history_session.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 
 sealed class RoutineStatsState extends Equatable {
   const RoutineStatsState();

@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/exercise.dart';
-import '../../domain/entities/routine.dart';
-import '../../domain/entities/routine_day.dart';
-import '../../domain/entities/set_log.dart';
-import '../../domain/entities/workout_session.dart';
-import '../../domain/entities/weekly_insights.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
 sealed class WorkoutState extends Equatable {
   const WorkoutState();

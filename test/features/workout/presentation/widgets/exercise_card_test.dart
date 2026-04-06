@@ -8,7 +8,7 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
-import 'package:gym_flutter/features/workout/presentation/widgets/exercise_card.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockWorkoutBloc extends Mock implements WorkoutBloc {}

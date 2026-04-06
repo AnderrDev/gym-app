@@ -6,14 +6,14 @@ import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/workout/domain/entities/routine_day.dart';
-import '../../features/workout/presentation/pages/routine_day_page.dart';
-import '../../features/workout/presentation/pages/dashboard_page.dart';
-import '../../features/workout/presentation/pages/database_inspector_page.dart';
-import '../../features/workout/presentation/pages/routine_list_page.dart';
-import '../../features/workout/presentation/pages/routine_editor_page.dart';
-import '../../features/workout/presentation/pages/day_editor_page.dart';
-import '../../features/workout/presentation/pages/routine_stats_page.dart';
-import '../../features/workout/presentation/pages/exercise_progress_page.dart';
+import '../../features/workout/presentation/routine_day/pages/routine_day_page.dart';
+import '../../features/workout/presentation/dashboard/pages/dashboard_page.dart';
+import '../../features/workout/presentation/debug/pages/database_inspector_page.dart';
+import '../../features/workout/presentation/routine_management/pages/routine_list_page.dart';
+import '../../features/workout/presentation/routine_management/pages/routine_editor_page.dart';
+import '../../features/workout/presentation/routine_management/pages/day_editor_page.dart';
+import '../../features/workout/presentation/routine_stats/pages/routine_stats_page.dart';
+import '../../features/workout/presentation/exercise/pages/exercise_progress_page.dart';
 import 'app_routes.dart';
 
 class AppRouter {

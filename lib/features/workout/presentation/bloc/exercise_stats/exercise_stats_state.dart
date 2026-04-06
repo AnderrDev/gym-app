@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/exercise_history_session.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 
 abstract class ExerciseStatsState extends Equatable {
   const ExerciseStatsState();

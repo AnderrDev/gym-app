@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/set_log.dart';
-import '../../domain/entities/routine_day.dart';
-import '../../domain/entities/coaching_analysis.dart';
+import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 
 sealed class WorkoutEvent extends Equatable {
   const WorkoutEvent();

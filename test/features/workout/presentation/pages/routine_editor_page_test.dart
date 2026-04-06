@@ -9,7 +9,7 @@ import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
-import 'package:gym_flutter/features/workout/presentation/pages/routine_editor_page.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/pages/routine_editor_page.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -209,12 +209,12 @@ void main() {
     when(() => mockWorkoutBloc.stream).thenAnswer(
       (_) => Stream.value(const ManagementSuccess('Guardado correctamente')),
     );
-    when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+    when(() => mockGoRouter.pop<bool>(any())).thenReturn(null);
 
     await tester.pumpWidget(createWidgetUnderTest(routineId: 'r1'));
     await tester.pump(); // Listen to stream
 
     expect(find.text('Guardado correctamente'), findsOneWidget);
-    verify(() => mockGoRouter.pop()).called(1);
+    verify(() => mockGoRouter.pop<bool>(false)).called(1);
   });
 }
