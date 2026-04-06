@@ -179,3 +179,16 @@ CREATE POLICY "set_logs_insert" ON public.set_logs
       WHERE ws.id = set_logs.session_id AND ws.user_id = auth.uid()
     )
   );
+CREATE POLICY "set_logs_update" ON public.set_logs
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions ws
+      WHERE ws.id = set_logs.session_id AND ws.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions ws
+      WHERE ws.id = set_logs.session_id AND ws.user_id = auth.uid()
+    )
+  );

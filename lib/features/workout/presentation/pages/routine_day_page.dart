@@ -37,6 +37,12 @@ class RoutineDayPage extends StatefulWidget {
 class _RoutineDayPageState extends State<RoutineDayPage> {
   final List<SetLog> _currentSessionLogs = [];
 
+  void _syncCurrentLogs(List<SetLog> logs) {
+    _currentSessionLogs
+      ..clear()
+      ..addAll(logs);
+  }
+
   // ── Timer Global ──────────────────────────────────────────
   Timer? _globalRestTimer;
   int _secondsRemaining = 0;
@@ -157,8 +163,13 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               current is DayWorkoutStarted ||
               current is WorkoutFinishedSuccess;
         },
-        listenWhen: (previous, current) => current is WorkoutFinishedSuccess,
+        listenWhen: (previous, current) =>
+            current is WorkoutFinishedSuccess || current is DayWorkoutStarted,
         listener: (context, state) {
+          if (state is DayWorkoutStarted) {
+            _syncCurrentLogs(state.setLogs);
+          }
+
           if (state is WorkoutFinishedSuccess) {
             if (!mounted) {
               return;
@@ -730,7 +741,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceHighlight.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -908,7 +921,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceHighlight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1000,7 +1015,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1543,7 +1561,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceHighlight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceHighlight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
