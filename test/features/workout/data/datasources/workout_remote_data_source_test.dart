@@ -122,9 +122,18 @@ class FakePostgrestDynamicFilterBuilder extends Fake
   PostgrestFilterBuilder<dynamic> match(Map<dynamic, dynamic> query) => this;
 
   @override
-  PostgrestFilterBuilder<PostgrestList> select([String? columns]) =>
-      _select(columns);
+  PostgrestFilterBuilder<PostgrestList> select([String? columns]) {
+    if (_selectMap != null) {
+      return _selectMap!(columns);
+    }
+    return _select(columns);
+  }
+
   late PostgrestFilterBuilder<PostgrestList> Function(String?) _select;
+  PostgrestFilterBuilder<PostgrestList> Function(String?)? _selectMap;
+  void setSelectMap(
+    PostgrestFilterBuilder<PostgrestList> Function(String?) fn,
+  ) => _selectMap = fn;
 
   @override
   Future<U> then<U>(
@@ -260,7 +269,7 @@ void main() {
         () => mockFunctionsClient.invoke(
           'finalize_workout_session_v1',
           body: {'session_id': 's1'},
-          headers: {'X-User-Token': 'token'},
+          headers: {'Authorization': 'Bearer token'},
         ),
       ).called(1);
     });
@@ -310,6 +319,7 @@ void main() {
       final tLogs = [
         {
           'id': 'l1',
+          'session_id': 's1',
           'exercise_id': 'e1',
           'actual_weight': 20.0,
           'actual_reps': 12,
@@ -329,34 +339,68 @@ void main() {
   });
 
   group('saveRoutine', () {
-    test('debería insertar una nueva rutina si el id es new_', () async {
+    test('debería insertar una nueva rutina y devolverla con id real',
+        () async {
       final fakeQueryBuilder = FakeSupabaseQueryBuilder();
       final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
+      final fakeListFilterBuilder = FakePostgrestListFilterBuilder();
+      final fakeMapTransform = FakePostgrestMapTransformBuilder();
+      fakeMapTransform.setData({
+        'id': 'r_new',
+        'name': 'N',
+        'is_public': false,
+        'creator_id': 'u1',
+      });
 
       mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._insert = (vals) {
-        fakeFilterBuilder.setData([]);
-        return fakeFilterBuilder;
-      };
+      fakeQueryBuilder._insert = (vals) => fakeFilterBuilder;
+      fakeFilterBuilder.setSelectMap((_) => fakeListFilterBuilder);
+      fakeListFilterBuilder._single = () => fakeMapTransform;
 
-      await dataSource.saveRoutine(
+      final saved = await dataSource.saveRoutine(
         const RoutineModel(id: 'new_1', name: 'N', exerciseCount: 0),
       );
+      expect(saved.id, 'r_new');
+      expect(saved.name, 'N');
     });
 
-    test('debería actualizar una rutina existente', () async {
+    test('debería actualizar una rutina existente y devolverla', () async {
+      final fakeQueryBuilder = FakeSupabaseQueryBuilder();
+      final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
+      final fakeListFilterBuilder = FakePostgrestListFilterBuilder();
+      final fakeMapTransform = FakePostgrestMapTransformBuilder();
+      fakeMapTransform.setData({
+        'id': 'r1',
+        'name': 'E',
+        'is_public': true,
+        'creator_id': 'u1',
+      });
+
+      mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
+      fakeQueryBuilder._update = (vals) => fakeFilterBuilder;
+      fakeFilterBuilder.setSelectMap((_) => fakeListFilterBuilder);
+      fakeListFilterBuilder._single = () => fakeMapTransform;
+
+      final saved = await dataSource.saveRoutine(
+        const RoutineModel(id: 'r1', name: 'E', exerciseCount: 0),
+      );
+      expect(saved.id, 'r1');
+      expect(saved.isPublic, isTrue);
+    });
+  });
+
+  group('removeExerciseFromDay', () {
+    test('debería llamar a delete con dayId y exerciseId', () async {
       final fakeQueryBuilder = FakeSupabaseQueryBuilder();
       final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
 
       mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._update = (vals) {
+      fakeQueryBuilder._delete = () {
         fakeFilterBuilder.setData([]);
         return fakeFilterBuilder;
       };
 
-      await dataSource.saveRoutine(
-        const RoutineModel(id: 'r1', name: 'E', exerciseCount: 0),
-      );
+      await dataSource.removeExerciseFromDay('rd1', 'e1');
     });
   });
 
@@ -375,27 +419,4 @@ void main() {
     });
   });
 
-  group('toggleExerciseInDay', () {
-    test('debería eliminar ejercicio si ya existe en el día', () async {
-      final fakeQueryBuilder = FakeSupabaseQueryBuilder();
-      final fakeFilterBuilder = FakePostgrestListFilterBuilder();
-      final fakeNullableTransformBuilder =
-          FakePostgrestNullableMapTransformBuilder();
-      final fakeDynamicFilterBuilder = FakePostgrestDynamicFilterBuilder();
-
-      mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._select = (cols) => fakeFilterBuilder;
-      fakeFilterBuilder._maybeSingle = () {
-        fakeNullableTransformBuilder.setData({'id': 're1'});
-        return fakeNullableTransformBuilder;
-      };
-
-      fakeQueryBuilder._delete = () {
-        fakeDynamicFilterBuilder.setData([]);
-        return fakeDynamicFilterBuilder;
-      };
-
-      await dataSource.toggleExerciseInDay('rd1', 'e1');
-    });
-  });
 }

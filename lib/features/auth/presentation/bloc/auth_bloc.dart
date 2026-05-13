@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../../core/services/active_session_service.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/sign_in_with_email.dart';
 import '../../domain/usecases/sign_up_with_email.dart';
 import '../../domain/usecases/sign_out.dart';
@@ -13,46 +14,54 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpWithEmail signUpWithEmail;
   final SignOut signOut;
   final GetCurrentUser getCurrentUser;
-  final Stream<supabase.AuthState> authStateChanges;
-  late final StreamSubscription _authSubscription;
+  final Stream<bool> authStateChanges;
+
+  /// Servicio que persiste la sesión activa en SharedPreferences. Opcional
+  /// para no romper tests que construyen el bloc en aislamiento; cuando está
+  /// presente se limpia en logout para evitar sesiones fantasma.
+  final ActiveSessionService? activeSessionService;
+  late final StreamSubscription<bool> _authSubscription;
 
   AuthBloc({
     required this.signInWithEmail,
     required this.signUpWithEmail,
     required this.signOut,
     required this.getCurrentUser,
-    Stream<supabase.AuthState>? authStateChanges,
-  }) : authStateChanges =
-           authStateChanges ??
-           supabase.Supabase.instance.client.auth.onAuthStateChange,
-       super(AuthInitial()) {
+    required this.authStateChanges,
+    this.activeSessionService,
+  }) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<AuthStateChanged>(_onAuthStateChanged);
     on<SignInRequested>(_onSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
 
-    // Escuchar automáticamente los cambios de estado de sesión (Supabase)
-    // initialSession se dispara siempre al iniciar la app (con o sin sesión) y
-    // es el único que resuelve el estado inicial, evitando la race condition
-    // donde AppStarted lee currentUser antes de que Supabase restaure storage.
-    _authSubscription = this.authStateChanges.listen((data) {
-      final event = data.event;
-      if (event == supabase.AuthChangeEvent.initialSession) {
-        add(AuthStateChanged(isAuthenticated: data.session != null));
-      } else if (event == supabase.AuthChangeEvent.signedIn ||
-          event == supabase.AuthChangeEvent.userUpdated) {
-        add(const AuthStateChanged(isAuthenticated: true));
-      } else if (event == supabase.AuthChangeEvent.signedOut) {
-        add(const AuthStateChanged(isAuthenticated: false));
-      }
+    _authSubscription = authStateChanges.listen((isAuthenticated) {
+      add(AuthStateChanged(isAuthenticated: isAuthenticated));
     });
   }
 
+  /// Convenience factory: takes the [AuthRepository] and wires the
+  /// session stream from it. Useful for DI registration.
+  factory AuthBloc.fromRepository({
+    required AuthRepository authRepository,
+    required SignInWithEmail signInWithEmail,
+    required SignUpWithEmail signUpWithEmail,
+    required SignOut signOut,
+    required GetCurrentUser getCurrentUser,
+    ActiveSessionService? activeSessionService,
+  }) {
+    return AuthBloc(
+      signInWithEmail: signInWithEmail,
+      signUpWithEmail: signUpWithEmail,
+      signOut: signOut,
+      getCurrentUser: getCurrentUser,
+      authStateChanges: authRepository.authStateChanges,
+      activeSessionService: activeSessionService,
+    );
+  }
+
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    // Solo mostrar loading. El estado real lo resuelve el evento initialSession
-    // de onAuthStateChange. Llamar getCurrentUser() aquí causaba Unauthenticated
-    // prematuro porque currentUser es null antes de que Supabase restaure storage.
     if (state is! AuthLoading) {
       emit(AuthLoading());
     }
@@ -84,9 +93,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSubmitting());
     }
     final result = await signInWithEmail(event.email, event.password);
-    result.fold((failure) {
-      emit(AuthError(failure.message));
-    }, (_) => null);
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
+      (_) => _emitAuthenticatedFromCurrentUser(emit),
+    );
   }
 
   Future<void> _onSignUpRequested(
@@ -101,9 +111,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       event.password,
       event.fullName,
     );
-    result.fold((failure) {
-      emit(AuthError(failure.message));
-    }, (_) => null);
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
+      (_) => _emitAuthenticatedFromCurrentUser(emit),
+    );
+  }
+
+  Future<void> _emitAuthenticatedFromCurrentUser(
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await getCurrentUser();
+    result.fold((failure) => emit(AuthError(failure.message)), (user) {
+      if (user != null) {
+        emit(Authenticated(user));
+      } else {
+        emit(Unauthenticated());
+      }
+    });
   }
 
   Future<void> _onSignOutRequested(
@@ -114,7 +138,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSubmitting());
     }
     final result = await signOut();
-    result.fold((failure) => emit(AuthError(failure.message)), (_) => null);
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
+      (_) async {
+        // Limpiamos la sesión activa local antes de emitir Unauthenticated:
+        // evita que `ActiveSessionWatcherBloc` reanude un entrenamiento del
+        // usuario anterior al volver a entrar.
+        await activeSessionService?.clear();
+        emit(Unauthenticated());
+      },
+    );
   }
 
   @override

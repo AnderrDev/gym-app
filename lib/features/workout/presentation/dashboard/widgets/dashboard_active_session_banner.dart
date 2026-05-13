@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_state.dart';
 
 class DashboardActiveSessionBanner extends StatelessWidget {
-  final ActiveSessionDetected session;
+  final ActiveSessionInfo session;
   final VoidCallback onTap;
 
   const DashboardActiveSessionBanner({
@@ -22,7 +23,10 @@ class DashboardActiveSessionBanner extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          margin: const EdgeInsets.symmetric(
+            horizontal: Spacing.lg,
+            vertical: Spacing.sm,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.12),

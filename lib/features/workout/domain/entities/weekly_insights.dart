@@ -36,8 +36,10 @@ class WeeklyInsights extends Equatable {
       completedSessions: (json['completed_sessions'] as num?)?.toInt() ?? 0,
       adherenceRate: (json['adherence_rate'] as num?)?.toDouble() ?? 0,
       totalVolume: (json['total_volume'] as num?)?.toDouble() ?? 0,
-      previousWeekVolume: (json['previous_week_volume'] as num?)?.toDouble() ?? 0,
-      volumeTrendPercent: (json['volume_trend_percent'] as num?)?.toDouble() ?? 0,
+      previousWeekVolume:
+          (json['previous_week_volume'] as num?)?.toDouble() ?? 0,
+      volumeTrendPercent:
+          (json['volume_trend_percent'] as num?)?.toDouble() ?? 0,
       personalRecords: (json['personal_records'] as num?)?.toInt() ?? 0,
     );
   }

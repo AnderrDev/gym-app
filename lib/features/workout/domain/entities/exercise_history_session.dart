@@ -5,16 +5,15 @@ class ExerciseHistorySession extends Equatable {
   final DateTime sessionDate;
   final List<SetLog> logs;
 
-  const ExerciseHistorySession({
-    required this.sessionDate,
-    required this.logs,
-  });
+  const ExerciseHistorySession({required this.sessionDate, required this.logs});
 
   @override
   List<Object?> get props => [sessionDate, logs];
 
-  double get maxWeight => logs.fold(0.0, (max, l) => l.actualWeight > max ? l.actualWeight : max);
-  double get totalVolume => logs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
+  double get maxWeight =>
+      logs.fold(0.0, (max, l) => l.actualWeight > max ? l.actualWeight : max);
+  double get totalVolume =>
+      logs.fold(0.0, (s, l) => s + (l.actualWeight * l.actualReps));
   double get estimated1RM {
     if (logs.isEmpty) return 0.0;
     var bestSet = logs.first;

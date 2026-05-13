@@ -1,20 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:gym_flutter/core/routes/app_routes.dart';
+
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/routes/args/routing_args.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
+import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_active_session_banner.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_state_content.dart';
 
+/// Página de Dashboard.
+///
+/// Consume `DashboardBloc` para listas/plan y `ActiveSessionWatcherBloc` para
+/// el banner de "reanudar". El final de una sesión se sabe vía el resultado
+/// del `context.push(AppRoutes.routineDay)` (la página de routine_day pop-ea
+/// con `true` cuando finaliza).
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -23,159 +34,165 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  DateTime _currentWeekStart = _getWeekStart(DateTime.now());
-  Routine? _selectedRoutine;
-  ActiveSessionDetected? _activeSession;
-  bool _autoResumeHandled = false;
-  WorkoutState? _lastDashboardState;
-  bool _autoPlanRequested = false;
-  WeeklyPlanLoaded? _cachedWeeklyPlan;
-
-  static DateTime _getWeekStart(DateTime date) {
-    // Lunes de la semana actual
-    return date.subtract(Duration(days: date.weekday - 1));
+  static DateTime _weekStartOf(DateTime date) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - 1));
   }
 
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState is Authenticated) {
-      final workoutBloc = context.read<WorkoutBloc>();
-      // Verificar sesión activa
-      workoutBloc.add(CheckActiveSession(authState.user.id));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! Authenticated) return;
+      context.read<DashboardBloc>().add(
+        LoadAssignedRoutines(authState.user.id),
+      );
+      context.read<ActiveSessionWatcherBloc>().add(
+        CheckActiveSession(authState.user.id),
+      );
+    });
+  }
 
-      final currentState = workoutBloc.state;
-      if (currentState is RoutinesLoaded && currentState.routines.length == 1) {
-        // Optimización: Si ya tenemos una única rutina, cargar el plan sin esperar re-fetch
-        _selectedRoutine = currentState.routines.first;
-        _loadWeeklyPlan(_selectedRoutine!);
-      } else if (currentState is! WeeklyPlanLoaded) {
-        // Sólo cargar rutinas si no tenemos ya el plan semanal cargado
-        workoutBloc.add(FetchAssignedRoutines(authState.user.id));
-      }
+  Future<void> _resumeActiveSession(ActiveSessionInfo info) async {
+    final routineDay = RoutineDay(
+      id: info.routineDayId,
+      routineId: '',
+      name: info.routineDayName,
+      dayOfWeek: info.sessionDate.weekday,
+      exercises: const [],
+    );
+    final didFinish = await pushRoutineDay(
+      context,
+      RoutineDayArgs(
+        routineDay: routineDay,
+        userId: info.userId,
+        sessionDate: info.sessionDate,
+      ),
+    );
+    if (!mounted) return;
+    if (didFinish == true) {
+      _handleWorkoutFinished(info.userId);
     }
   }
 
-  void _resumeActiveSession(ActiveSessionDetected session) {
-    context.read<WorkoutBloc>().add(
-      LoadDayInfo(
-        userId: session.userId,
-        routineDayId: session.routineDayId,
-        sessionDate: session.sessionDate,
-      ),
-    );
-
-    final routineDay = RoutineDay(
-      id: session.routineDayId,
-      routineId: '',
-      name: session.routineDayName,
-      dayOfWeek: session.sessionDate.weekday,
-      exercises: const [],
-    );
-    context.push(
-      AppRoutes.routineDay,
-      extra: {
-        'routineDay': routineDay,
-        'userId': session.userId,
-        'sessionDate': session.sessionDate,
-      },
-    );
-  }
-
-  void _loadWeeklyPlan(Routine routine) {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is Authenticated) {
-      _autoPlanRequested = true;
-      setState(() => _selectedRoutine = routine);
-      context.read<WorkoutBloc>().add(
-        FetchWeeklyPlan(
-          userId: authState.user.id,
-          routineId: routine.id,
-          weekStart: _currentWeekStart,
+  void _handleWorkoutFinished(String userId) {
+    context.read<ActiveSessionWatcherBloc>().add(const ClearActiveSession());
+    final dashboardState = context.read<DashboardBloc>().state;
+    final routine = dashboardState.selectedRoutine;
+    final weekStart = dashboardState.weekStart;
+    if (routine != null && weekStart != null) {
+      context.read<DashboardBloc>().add(
+        LoadWeeklyPlan(
+          userId: userId,
+          routine: routine,
+          weekStart: weekStart,
         ),
       );
     }
+    AppSnackBar.success(context, '¡Entrenamiento completado!');
+  }
+
+  void _onSelectRoutine(Routine routine) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    final dashState = context.read<DashboardBloc>().state;
+    final weekStart = dashState.weekStart ?? _weekStartOf(DateTime.now());
+    context.read<DashboardBloc>().add(
+      SelectRoutine(
+        userId: authState.user.id,
+        routine: routine,
+        weekStart: weekStart,
+      ),
+    );
   }
 
   void _changeWeek(int delta) {
-    setState(() {
-      _currentWeekStart = _currentWeekStart.add(Duration(days: 7 * delta));
-    });
-    if (_selectedRoutine != null) {
-      _loadWeeklyPlan(_selectedRoutine!);
-    }
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    final dashState = context.read<DashboardBloc>().state;
+    final base = dashState.weekStart ?? _weekStartOf(DateTime.now());
+    context.read<DashboardBloc>().add(
+      ChangeWeek(
+        userId: authState.user.id,
+        weekStart: base.add(Duration(days: 7 * delta)),
+      ),
+    );
   }
 
   Future<void> _openRoutineListAndRefresh() async {
     final authState = context.read<AuthBloc>().state;
-    final workoutBloc = context.read<WorkoutBloc>();
+    final dashboardBloc = context.read<DashboardBloc>();
     final userId = authState is Authenticated ? authState.user.id : null;
-    final didChange = await context.push<bool>(AppRoutes.routineList);
+    final didChange = await pushRoutineList(context);
     if (!mounted || didChange != true || userId == null) return;
-    workoutBloc.add(FetchAssignedRoutines(userId));
+    dashboardBloc.add(LoadAssignedRoutines(userId));
   }
 
   Future<void> _openRoutineEditorAndRefresh() async {
     final authState = context.read<AuthBloc>().state;
-    final workoutBloc = context.read<WorkoutBloc>();
+    final dashboardBloc = context.read<DashboardBloc>();
     final userId = authState is Authenticated ? authState.user.id : null;
-    final routine = _selectedRoutine;
-    final didChange = await context.push<bool>(AppRoutes.routineEditor);
+    final didChange = await pushRoutineEditor(context);
     if (!mounted || didChange != true || userId == null) return;
-    if (routine != null) {
-      workoutBloc.add(
-        FetchWeeklyPlan(
+    final selected = dashboardBloc.state.selectedRoutine;
+    if (selected != null) {
+      dashboardBloc.add(
+        LoadWeeklyPlan(
           userId: userId,
-          routineId: routine.id,
-          weekStart: _currentWeekStart,
+          routine: selected,
+          weekStart:
+              dashboardBloc.state.weekStart ?? _weekStartOf(DateTime.now()),
         ),
       );
+    } else {
+      dashboardBloc.add(LoadAssignedRoutines(userId));
     }
   }
 
   void _openRoutineStats(Routine routine) {
     final authState = context.read<AuthBloc>().state;
-    if (authState is Authenticated) {
-      context.push(
-        AppRoutes.routineStats,
-        extra: {
-          'userId': authState.user.id,
-          'routineId': routine.id,
-          'routineName': routine.name,
-        },
-      );
-    }
+    if (authState is! Authenticated) return;
+    pushRoutineStats(
+      context,
+      RoutineStatsArgs(
+        userId: authState.user.id,
+        routineId: routine.id,
+        routineName: routine.name,
+      ),
+    );
   }
 
   void _openSelectedRoutineStats() {
-    final routine = _selectedRoutine;
-    if (routine != null) {
-      _openRoutineStats(routine);
-    }
+    final routine = context.read<DashboardBloc>().state.selectedRoutine;
+    if (routine != null) _openRoutineStats(routine);
   }
 
-  void _openRoutineDay(RoutineDay routineDay, DateTime date) {
+  Future<void> _openRoutineDay(RoutineDay routineDay, DateTime date) async {
     final authState = context.read<AuthBloc>().state;
-    if (authState is Authenticated) {
-      context.push(
-        AppRoutes.routineDay,
-        extra: {
-          'routineDay': routineDay,
-          'userId': authState.user.id,
-          'sessionDate': date,
-        },
-      );
+    if (authState is! Authenticated) return;
+    final didFinish = await pushRoutineDay(
+      context,
+      RoutineDayArgs(
+        routineDay: routineDay,
+        userId: authState.user.id,
+        sessionDate: date,
+      ),
+    );
+    if (!mounted) return;
+    if (didFinish == true) {
+      _handleWorkoutFinished(authState.user.id);
     }
   }
 
-  bool _isDashboardState(WorkoutState state) {
-    return state is WorkoutInitial ||
-        state is WorkoutLoading ||
-        state is WorkoutError ||
-        state is RoutinesLoaded ||
-        state is WeeklyPlanLoaded ||
-        state is ActiveSessionDetected;
+  void _retryLoadRoutines() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    context.read<DashboardBloc>().add(LoadAssignedRoutines(authState.user.id));
   }
 
   @override
@@ -192,131 +209,55 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: _openRoutineListAndRefresh,
           ),
           IconButton(
-            icon: const Icon(Icons.storage, color: AppColors.primary),
-            onPressed: () => context.push(AppRoutes.dbInspector),
-          ),
-          IconButton(
             icon: const Icon(Icons.logout, color: AppColors.primary),
             onPressed: () => context.read<AuthBloc>().add(SignOutRequested()),
           ),
         ],
       ),
-      body: BlocConsumer<WorkoutBloc, WorkoutState>(
-        listenWhen: (previous, current) =>
-            current is ActiveSessionDetected ||
-            current is WorkoutFinishedSuccess ||
-            current is RoutinesLoaded ||
-            current is WeeklyPlanLoaded,
-        listener: (context, state) {
-          // Sesión activa detectada al abrir app: redirigir automáticamente una sola vez
-          if (state is ActiveSessionDetected) {
-            if (!mounted) return;
-            setState(() => _activeSession = state);
-            if (!_autoResumeHandled) {
-              _autoResumeHandled = true;
-              _resumeActiveSession(state);
-            }
-          }
-
-          // Entrenamiento finalizado: limpiar banner de sesión activa
-          if (state is WorkoutFinishedSuccess) {
-            if (!mounted) return;
-            setState(() => _activeSession = null);
-          }
-
-          if (state is WorkoutFinishedSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('¡Entrenamiento completado!'),
-                backgroundColor: AppColors.success,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-
-          // Al recibir las rutinas asignadas, si solo hay una, disparar carga del plan semanal
-          if (state is RoutinesLoaded) {
-            if (state.routines.length == 1) {
-              final routine = state.routines.first;
-              final cachedMatches =
-                  _cachedWeeklyPlan?.routine?.id == routine.id;
-              if (_selectedRoutine?.id != routine.id) {
-                if (!mounted) return;
-                setState(() => _selectedRoutine = routine);
-              }
-              if (!cachedMatches) {
-                _autoPlanRequested = false;
-              }
-              if (!_autoPlanRequested || !cachedMatches) {
-                _loadWeeklyPlan(routine);
-              }
-            } else {
-              if (!mounted) return;
-              _autoPlanRequested = false;
-              setState(() => _selectedRoutine = null);
-            }
-          }
-
-          if (state is WeeklyPlanLoaded) {
-            _cachedWeeklyPlan = state;
-            if (_selectedRoutine?.id != state.routine?.id) {
-              if (!mounted) return;
-              setState(() => _selectedRoutine = state.routine);
-            }
-          }
-
-          if (state is WeeklyPlanLoaded) {
-            _cachedWeeklyPlan = state;
-          }
-        },
-        builder: (context, state) {
-          final shouldUseCached =
-              (state is WorkoutLoading || state is WorkoutInitial) &&
-              _lastDashboardState != null;
-          final effectiveState = shouldUseCached
-              ? _lastDashboardState!
-              : (_isDashboardState(state)
-                    ? state
-                    : (_lastDashboardState ?? state));
-          if (_isDashboardState(effectiveState) &&
-              effectiveState is! WorkoutLoading &&
-              effectiveState is! WorkoutInitial) {
-            _lastDashboardState = effectiveState;
-          }
-
-          final content = DashboardStateContent(
-            effectiveState: effectiveState,
-            selectedRoutine: _selectedRoutine,
-            cachedWeeklyPlan: _cachedWeeklyPlan,
-            onRetryFetchAssignedRoutines: () {
-              final authState = context.read<AuthBloc>().state;
-              if (authState is Authenticated) {
-                context.read<WorkoutBloc>().add(
-                  FetchAssignedRoutines(authState.user.id),
+      // Antes había un auto-resume aquí que disparaba `_resumeActiveSession`
+      // apenas el watcher detectaba una sesión activa. Esto creaba un loop
+      // si la vista activa crasheaba: cada relaunch te metía de vuelta a la
+      // pantalla rota sin oportunidad de salir. Ahora el usuario tiene que
+      // tap-ear el banner para volver al workout.
+      body: Column(
+          children: [
+            // El banner solo se rebuildea cuando cambia la sesión activa —
+            // ningún cambio del DashboardBloc lo dispara.
+            BlocSelector<
+              ActiveSessionWatcherBloc,
+              ActiveSessionWatcherState,
+              ActiveSessionInfo?
+            >(
+              selector: (state) =>
+                  state.hasActiveSession ? state.session : null,
+              builder: (context, session) {
+                if (session == null) return const SizedBox.shrink();
+                return DashboardActiveSessionBanner(
+                  session: session,
+                  onTap: () => _resumeActiveSession(session),
                 );
-              }
-            },
-            onExploreCatalog: _openRoutineListAndRefresh,
-            onCreateRoutine: _openRoutineEditorAndRefresh,
-            onSelectRoutine: _loadWeeklyPlan,
-            onOpenRoutineStats: _openRoutineStats,
-            onPreviousWeek: () => _changeWeek(-1),
-            onNextWeek: () => _changeWeek(1),
-            onOpenSelectedRoutineStats: _openSelectedRoutineStats,
-            onOpenDay: _openRoutineDay,
-          );
-
-          return Column(
-            children: [
-              if (_activeSession != null)
-                DashboardActiveSessionBanner(
-                  session: _activeSession!,
-                  onTap: () => _resumeActiveSession(_activeSession!),
-                ),
-              Expanded(child: content),
-            ],
-          );
-        },
+              },
+            ),
+            Expanded(
+              child: BlocBuilder<DashboardBloc, DashboardState>(
+                builder: (context, dashState) {
+                  return DashboardStateContent(
+                    state: dashState,
+                    onRetry: _retryLoadRoutines,
+                    onExploreCatalog: _openRoutineListAndRefresh,
+                    onCreateRoutine: _openRoutineEditorAndRefresh,
+                    onSelectRoutine: _onSelectRoutine,
+                    onOpenRoutineStats: _openRoutineStats,
+                    onPreviousWeek: () => _changeWeek(-1),
+                    onNextWeek: () => _changeWeek(1),
+                    onOpenSelectedRoutineStats: _openSelectedRoutineStats,
+                    onOpenDay: _openRoutineDay,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

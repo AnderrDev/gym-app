@@ -13,11 +13,15 @@ class RoutineDayModel extends RoutineDay {
     super.status,
   });
 
-  factory RoutineDayModel.fromJson(Map<String, dynamic> json, {List<Exercise> exercises = const []}) {
+  factory RoutineDayModel.fromJson(
+    Map<String, dynamic> json, {
+    List<Exercise> exercises = const [],
+  }) {
     final exercisesData = json['routine_exercises'] as List<dynamic>? ?? [];
-    int totalTargetSets = 0;
-    for (var ex in exercisesData) {
-      totalTargetSets += (ex['target_sets'] as int? ?? 0);
+    var totalTargetSets = 0;
+    for (final ex in exercisesData) {
+      final exMap = ex as Map<String, dynamic>;
+      totalTargetSets += (exMap['target_sets'] as int? ?? 0);
     }
 
     return RoutineDayModel(
@@ -27,16 +31,46 @@ class RoutineDayModel extends RoutineDay {
       name: json['name'] as String,
       exercises: exercises,
       targetSetsCount: totalTargetSets,
+      status: _statusFromName(json['status'] as String?),
     );
   }
 
+  /// Las columnas escribibles son `id`, `routine_id`, `day_of_week`, `name`.
+  /// Los campos derivados (`exercises`, `target_sets_count`, `status`) se
+  /// incluyen también para que el round-trip `toJson → fromJson` preserve
+  /// el estado en memoria (cache, tests, debug); el datasource ignora esas
+  /// keys al hacer insert/update.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'routine_id': routineId,
       'day_of_week': dayOfWeek,
       'name': name,
+      'target_sets_count': targetSetsCount,
+      'status': status.name,
+      'exercises': exercises
+          .map((e) => e is ExerciseModel
+              ? e.toJson()
+              : ExerciseModel(
+                  id: e.id,
+                  routineDayId: e.routineDayId,
+                  name: e.name,
+                  targetMuscle: e.targetMuscle,
+                  targetWeight: e.targetWeight,
+                  targetReps: e.targetReps,
+                  targetSets: e.targetSets,
+                  restTimerSeconds: e.restTimerSeconds,
+                ).toJson())
+          .toList(),
     };
+  }
+
+  static WorkoutDayStatus _statusFromName(String? name) {
+    if (name == null) return WorkoutDayStatus.pending;
+    for (final v in WorkoutDayStatus.values) {
+      if (v.name == name) return v;
+    }
+    return WorkoutDayStatus.pending;
   }
 
   RoutineDayModel copyWithStatus(WorkoutDayStatus newStatus) {

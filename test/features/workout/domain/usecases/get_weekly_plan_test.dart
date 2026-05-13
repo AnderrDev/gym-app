@@ -33,7 +33,7 @@ void main() {
   });
 
   test('marca inProgress cuando hay sesion abierta', () async {
-    final day = RoutineDayModel(
+    final day = const RoutineDayModel(
       id: 'd1',
       routineId: 'r1',
       dayOfWeek: 1,
@@ -74,7 +74,7 @@ void main() {
   });
 
   test('marca completed cuando la sesion cerrada cumple objetivo', () async {
-    final day = RoutineDayModel(
+    final day = const RoutineDayModel(
       id: 'd1',
       routineId: 'r1',
       dayOfWeek: 1,
@@ -117,7 +117,7 @@ void main() {
   test(
     'marca completedPartial cuando la sesion cerrada no cumple objetivo',
     () async {
-      final day = RoutineDayModel(
+      final day = const RoutineDayModel(
         id: 'd1',
         routineId: 'r1',
         dayOfWeek: 1,

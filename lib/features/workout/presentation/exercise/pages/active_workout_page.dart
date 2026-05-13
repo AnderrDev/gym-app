@@ -9,9 +9,9 @@ class ActiveWorkoutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: AppColors.background,
-      body: const Center(child: Text('Redirigiendo a RoutineDayPage...')),
+      body: Center(child: Text('Redirigiendo a RoutineDayPage...')),
     );
   }
 }

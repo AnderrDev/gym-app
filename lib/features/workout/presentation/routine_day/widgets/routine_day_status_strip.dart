@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
@@ -21,7 +22,12 @@ class RoutineDayStatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lgPlus,
+          0,
+          Spacing.lgPlus,
+          Spacing.xl,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

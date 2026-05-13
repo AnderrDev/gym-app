@@ -2,6 +2,18 @@
 
 Este documento describe las functions implementadas en la fase actual del proyecto.
 
+## Rate limiting (todas las functions)
+
+Todas las functions invocan `enforceRateLimit` (`supabase/functions/_shared/rate_limit.ts`) inmediatamente después de `requireUser`. La ventana es de 60 s por usuario y por function:
+
+| Function | Llamadas / min |
+|---|---|
+| `finalize_workout_session_v1` | 30 |
+| `generate_coaching_v1` | 30 |
+| `get_weekly_insights_v1` | 60 |
+
+Cuando el usuario supera el límite la function devuelve `429 RATE_LIMIT_EXCEEDED` con `error.reset_at` indicando cuándo termina la ventana. Si la RPC `enforce_rate_limit` falla por motivos de plataforma, se hace *fail open* (la llamada procede) y el error queda logueado como `RATE_LIMIT_RPC_ERROR`.
+
 ## 1) finalize_workout_session_v1
 
 Objetivo:

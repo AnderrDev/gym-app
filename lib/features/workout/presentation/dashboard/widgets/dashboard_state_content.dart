@@ -2,33 +2,24 @@ import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_empty_state.dart';
+import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_skeleton.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_routine_selector.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_weekly_view.dart';
 
+/// Renderiza el contenido del Dashboard según el `DashboardState`.
+///
+/// Mantiene un patrón explícito de estados (loading/failure/empty/data) sin
+/// los `WorkoutState` legacy que mezclaban subdominios.
 class DashboardStateContent extends StatelessWidget {
-  final WorkoutState effectiveState;
-  final Routine? selectedRoutine;
-  final WeeklyPlanLoaded? cachedWeeklyPlan;
-  final VoidCallback onRetryFetchAssignedRoutines;
-  final VoidCallback onExploreCatalog;
-  final VoidCallback onCreateRoutine;
-  final ValueChanged<Routine> onSelectRoutine;
-  final ValueChanged<Routine> onOpenRoutineStats;
-  final VoidCallback onPreviousWeek;
-  final VoidCallback onNextWeek;
-  final VoidCallback onOpenSelectedRoutineStats;
-  final void Function(RoutineDay routineDay, DateTime date) onOpenDay;
-
   const DashboardStateContent({
     super.key,
-    required this.effectiveState,
-    required this.selectedRoutine,
-    required this.cachedWeeklyPlan,
-    required this.onRetryFetchAssignedRoutines,
+    required this.state,
+    required this.onRetry,
     required this.onExploreCatalog,
     required this.onCreateRoutine,
     required this.onSelectRoutine,
@@ -39,140 +30,95 @@ class DashboardStateContent extends StatelessWidget {
     required this.onOpenDay,
   });
 
+  final DashboardState state;
+  final VoidCallback onRetry;
+  final VoidCallback onExploreCatalog;
+  final VoidCallback onCreateRoutine;
+  final ValueChanged<Routine> onSelectRoutine;
+  final ValueChanged<Routine> onOpenRoutineStats;
+  final VoidCallback onPreviousWeek;
+  final VoidCallback onNextWeek;
+  final VoidCallback onOpenSelectedRoutineStats;
+  final void Function(RoutineDay routineDay, DateTime date) onOpenDay;
+
   @override
   Widget build(BuildContext context) {
-    return switch (effectiveState) {
-      WorkoutInitial() || WorkoutLoading() || SavingSetLog() => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-      ActiveSessionDetected() => Center(
-        child: Text(
-          'Sesión activa detectada, cargando tablero...',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ),
-      DayInfoLoaded() || DayWorkoutStarted() => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-      WorkoutError(message: final msg) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-              const SizedBox(height: 12),
-              Text(
-                msg,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: onRetryFetchAssignedRoutines,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      ManagementSuccess() ||
-      WorkoutFinishedSuccess() ||
-      SetLogSuccess() => const Center(
+    // Plan semanal disponible: pintarlo siempre que tengamos rutina + days.
+    if (state.hasWeeklyPlan) {
+      return DashboardWeeklyView(
+        days: state.weeklyDays,
+        weekStart: state.weekStart!,
+        selectedRoutine: state.selectedRoutine,
+        insights: state.insights,
+        insightsError: state.insightsError,
+        onPreviousWeek: onPreviousWeek,
+        onNextWeek: onNextWeek,
+        onOpenSelectedRoutineStats: onOpenSelectedRoutineStats,
+        onOpenDay: onOpenDay,
+      );
+    }
+
+    switch (state.status) {
+      case DashboardStatus.initial:
+      case DashboardStatus.loadingRoutines:
+      case DashboardStatus.loadingWeeklyPlan:
+        return const DashboardSkeleton();
+      case DashboardStatus.failure:
+        return _ErrorView(
+          message: state.errorMessage ?? 'Error desconocido',
+          onRetry: onRetry,
+        );
+      case DashboardStatus.ready:
+        if (state.routines.isEmpty) {
+          return DashboardEmptyState(
+            onExploreCatalog: onExploreCatalog,
+            onCreateRoutine: onCreateRoutine,
+          );
+        }
+        if (state.routines.length == 1) {
+          // El bloc dispara LoadWeeklyPlan automáticamente; mostramos
+          // el skeleton hasta que llegue el plan.
+          return const DashboardSkeleton();
+        }
+        return DashboardRoutineSelector(
+          routines: state.routines,
+          onSelectRoutine: onSelectRoutine,
+          onOpenRoutineStats: onOpenRoutineStats,
+        );
+    }
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: AppColors.success,
-              size: 48,
-            ),
-            SizedBox(height: 16),
-            CircularProgressIndicator(color: AppColors.primary),
-          ],
-        ),
-      ),
-      AllRoutinesLoaded() => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: AppColors.primary),
-            const SizedBox(height: 16),
+            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+            const SizedBox(height: Spacing.md),
             Text(
-              'Sincronizando tus rutinas...',
-              style: AppTextStyles.bodyMedium,
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
+            const SizedBox(height: Spacing.lg),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
             ),
           ],
         ),
       ),
-      RoutinesLoaded(routines: final routines) =>
-        routines.isEmpty
-            ? DashboardEmptyState(
-                onExploreCatalog: onExploreCatalog,
-                onCreateRoutine: onCreateRoutine,
-              )
-            : routines.length == 1
-            ? (cachedWeeklyPlan != null &&
-                      cachedWeeklyPlan!.routine?.id == routines.first.id
-                  ? DashboardWeeklyView(
-                      days: cachedWeeklyPlan!.days,
-                      weekStart: cachedWeeklyPlan!.weekStart,
-                      selectedRoutine: selectedRoutine,
-                      insights: cachedWeeklyPlan!.insights,
-                      insightsError: cachedWeeklyPlan!.insightsError,
-                      onPreviousWeek: onPreviousWeek,
-                      onNextWeek: onNextWeek,
-                      onOpenSelectedRoutineStats: onOpenSelectedRoutineStats,
-                      onOpenDay: onOpenDay,
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Cargando tu rutina...',
-                            style: AppTextStyles.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ))
-            : DashboardRoutineSelector(
-                routines: routines,
-                onSelectRoutine: onSelectRoutine,
-                onOpenRoutineStats: onOpenRoutineStats,
-              ),
-      WeeklyPlanLoaded(
-        days: final days,
-        weekStart: final weekStart,
-        insights: final insights,
-        insightsError: final insightsError,
-      ) =>
-        DashboardWeeklyView(
-          days: days,
-          weekStart: weekStart,
-          selectedRoutine: selectedRoutine,
-          insights: insights,
-          insightsError: insightsError,
-          onPreviousWeek: onPreviousWeek,
-          onNextWeek: onNextWeek,
-          onOpenSelectedRoutineStats: onOpenSelectedRoutineStats,
-          onOpenDay: onOpenDay,
-        ),
-      _ => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-    };
+    );
   }
 }

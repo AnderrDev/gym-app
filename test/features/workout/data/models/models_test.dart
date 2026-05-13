@@ -31,12 +31,12 @@ void main() {
       expect(model.toJson()['day_of_week'], 1);
     });
 
-    test('ExerciseModel should map from/to JSON', () {
+    test('ExerciseModel should map from/to JSON (muscle_group canon)', () {
       final json = {
         'id': '1',
         'routine_day_id': 'rd1',
         'name': 'E1',
-        'target_muscle': 'Chest',
+        'muscle_group': 'Chest',
         'target_weight': 100.0,
         'target_reps': 10,
         'target_sets': 3,
@@ -44,8 +44,26 @@ void main() {
       };
       final model = ExerciseModel.fromJson(json);
       expect(model.id, '1');
-      expect(model.toJson()['target_reps'], 10);
+      expect(model.targetMuscle, 'Chest');
+      final out = model.toJson();
+      expect(out['target_reps'], 10);
+      expect(out['muscle_group'], 'Chest');
     });
+
+    test(
+      'ExerciseModel.fromJson ignora `target_muscle` legacy y deja '
+      'targetMuscle vacío (con warn) — el campo canónico es `muscle_group`',
+      () {
+        final json = {
+          'id': '1',
+          'routine_day_id': 'rd1',
+          'name': 'E1',
+          'target_muscle': 'LegacyMuscle',
+        };
+        final model = ExerciseModel.fromJson(json);
+        expect(model.targetMuscle, '');
+      },
+    );
 
     test('SetLogModel should map from/to JSON', () {
       final json = {

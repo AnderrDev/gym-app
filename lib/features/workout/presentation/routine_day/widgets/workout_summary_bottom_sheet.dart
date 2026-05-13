@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
@@ -46,7 +47,12 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.xl,
+                Spacing.md,
+                Spacing.xl,
+                0,
+              ),
               child: Column(
                 children: [
                   Container(
@@ -105,7 +111,12 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
             Expanded(
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.xl,
+                  0,
+                  Spacing.xl,
+                  Spacing.xxxl,
+                ),
                 children: [
                   if (lastLogs.isNotEmpty) ...[
                     Text(
@@ -153,8 +164,8 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                         .where((a) => a.recommendation.isNotEmpty)
                         .map(
                           (item) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: Spacing.sm),
+                            padding: const EdgeInsets.all(Spacing.md),
                             decoration: BoxDecoration(
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(12),
@@ -205,7 +216,9 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                           onPressed: onFinishAndSave,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: Spacing.lg,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -280,8 +293,8 @@ class _ExerciseComparisonRow extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
+      padding: const EdgeInsets.all(Spacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),

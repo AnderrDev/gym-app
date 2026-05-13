@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
-import 'package:gym_flutter/injection_container.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
-import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_charts.dart';
+import 'package:gym_flutter/injection_container.dart';
 
 class ExerciseStatsBottomSheet extends StatelessWidget {
   final String userId;
@@ -30,11 +32,8 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
     required String exerciseId,
     required String exerciseName,
   }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.8),
+    AppBottomSheet.showRaw<void>(
+      context,
       builder: (_) => ExerciseStatsBottomSheet(
         userId: userId,
         exerciseId: exerciseId,
@@ -65,7 +64,12 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.xl,
+                Spacing.xl,
+                Spacing.xl,
+                Spacing.lg,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -136,7 +140,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.query_stats_rounded,
                               color: AppColors.textDisabled,
                               size: 64,
@@ -155,27 +159,34 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
 
                     return ListView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lgPlus,
+                        0,
+                        Spacing.lgPlus,
+                        Spacing.xxxl,
+                      ),
                       children: [
                         _buildChartSection(
                           title: 'PESO MÁXIMO',
                           subtitle: 'Evolución de fuerza pura',
                           icon: Icons.fitness_center_rounded,
-                          chart: _MaxWeightChart(history: state.history),
+                          chart: ExerciseMaxWeightChart(history: state.history),
                         ),
                         const SizedBox(height: 32),
                         _buildChartSection(
                           title: '1RM ESTIMADO',
                           subtitle: 'Repetición máxima proyectada',
                           icon: Icons.trending_up_rounded,
-                          chart: _Estimated1RMChart(history: state.history),
+                          chart: ExerciseEstimated1RMChart(
+                            history: state.history,
+                          ),
                         ),
                         const SizedBox(height: 32),
                         _buildChartSection(
                           title: 'VOLUMEN TOTAL',
                           subtitle: 'Carga de trabajo por sesión',
                           icon: Icons.stacked_line_chart_rounded,
-                          chart: _VolumeChart(history: state.history),
+                          chart: ExerciseVolumeChart(history: state.history),
                         ),
                         const SizedBox(height: 40),
                         Text(
@@ -227,7 +238,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(Spacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
@@ -273,8 +284,8 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
 
   Widget _buildHistorySessionItem(ExerciseHistorySession session) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: Spacing.md),
+      padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
@@ -335,181 +346,4 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MaxWeightChart extends StatelessWidget {
-  final List<dynamic> history;
-  const _MaxWeightChart({required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    final reversed = history.reversed.toList();
-    final spots = <FlSpot>[];
-    for (int i = 0; i < reversed.length; i++) {
-      spots.add(FlSpot(i.toDouble(), reversed[i].maxWeight));
-    }
-    if (spots.length == 1) spots.add(FlSpot(1.0, reversed.first.maxWeight));
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine: (value) =>
-              FlLine(color: AppColors.surfaceHighlight, strokeWidth: 1),
-        ),
-        titlesData: _buildTitlesData(reversed),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: AppColors.primary,
-            barWidth: 4,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.2),
-                  AppColors.primary.withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Estimated1RMChart extends StatelessWidget {
-  final List<dynamic> history;
-  const _Estimated1RMChart({required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    final reversed = history.reversed.toList();
-    final spots = <FlSpot>[];
-    for (int i = 0; i < reversed.length; i++) {
-      spots.add(FlSpot(i.toDouble(), reversed[i].estimated1RM));
-    }
-    if (spots.length == 1) spots.add(FlSpot(1.0, reversed.first.estimated1RM));
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine: (value) =>
-              FlLine(color: AppColors.surfaceHighlight, strokeWidth: 1),
-        ),
-        titlesData: _buildTitlesData(reversed),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            curveSmoothness: 0.35,
-            color: const Color(0xFF00E5FF), // Cyan para 1RM
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                  const Color(0xFF00E5FF).withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VolumeChart extends StatelessWidget {
-  final List<dynamic> history;
-  const _VolumeChart({required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    final reversed = history.reversed.toList();
-    final barGroups = <BarChartGroupData>[];
-    for (int i = 0; i < reversed.length; i++) {
-      barGroups.add(
-        BarChartGroupData(
-          x: i,
-          barRods: [
-            BarChartRodData(
-              toY: reversed[i].totalVolume,
-              color: AppColors.primary.withValues(alpha: 0.8),
-              width: 12,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(4),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return BarChart(
-      BarChartData(
-        gridData: FlGridData(show: false),
-        titlesData: _buildTitlesData(reversed),
-        borderData: FlBorderData(show: false),
-        barGroups: barGroups,
-      ),
-    );
-  }
-}
-
-FlTitlesData _buildTitlesData(List<dynamic> history) {
-  return FlTitlesData(
-    leftTitles: AxisTitles(
-      sideTitles: SideTitles(
-        showTitles: true,
-        reservedSize: 40,
-        getTitlesWidget: (value, meta) => Text(
-          value.toStringAsFixed(0),
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.textDisabled,
-            fontSize: 9,
-          ),
-        ),
-      ),
-    ),
-    bottomTitles: AxisTitles(
-      sideTitles: SideTitles(
-        showTitles: true,
-        getTitlesWidget: (value, meta) {
-          final i = value.toInt();
-          if (i >= 0 && i < history.length) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                DateFormat('d/M').format(history[i].sessionDate),
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textDisabled,
-                  fontSize: 8,
-                ),
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    ),
-    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-  );
 }

@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -158,19 +159,6 @@ class WorkoutPerformanceAnalyzer {
   }
 
   static String friendlyRecommendation(String recommendation) {
-    switch (recommendation) {
-      case 'INCREASE_WEIGHT':
-        return '🔥 ¡Increíble! Sube un poco el peso el próximo día.';
-      case 'MANTAIN_WEIGHT':
-        return '✅ Buen trabajo. Mantén este peso para consolidar.';
-      case 'DECREASE_WEIGHT':
-        return '⚠️ Baja un poco el peso para mejorar la técnica.';
-      case 'INCREASE_REPS':
-        return '💪 Casi lo tienes. Intenta hacer 1-2 reps más.';
-      case 'DECREASE_SETS':
-        return '📉 Te has pasado un poco. Baja una serie para recuperar.';
-      default:
-        return recommendation;
-    }
+    return CoachingMessages.long(recommendation);
   }
 }

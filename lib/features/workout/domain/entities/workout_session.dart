@@ -24,7 +24,13 @@ class WorkoutSession extends Equatable {
 
   @override
   List<Object?> get props => [
-    id, userId, routineDayId, sessionDate, completedAt, completedSetsCount, 
-    totalTargetSets, coachingAnalysis,
+    id,
+    userId,
+    routineDayId,
+    sessionDate,
+    completedAt,
+    completedSetsCount,
+    totalTargetSets,
+    coachingAnalysis,
   ];
 }

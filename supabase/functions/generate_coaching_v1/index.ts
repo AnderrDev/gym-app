@@ -1,13 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { jsonResponse, preflight } from "../_shared/cors.ts";
+import { logError, logInfo, requireUser } from "../_shared/auth.ts";
+import { enforceRateLimit } from "../_shared/rate_limit.ts";
 
-function logInfo(code: string, details: Record<string, unknown>): void {
-  console.log(JSON.stringify({ level: "info", code, ...details }));
-}
-
-function logError(code: string, details: Record<string, unknown>): void {
-  console.error(JSON.stringify({ level: "error", code, ...details }));
-}
+const RATE_LIMIT = {
+  functionName: "generate_coaching_v1",
+  windowSeconds: 60,
+  maxCalls: 30,
+} as const;
 
 type SetRow = {
   exercise_id: string;
@@ -47,93 +47,47 @@ type CoachingInputs = {
   }>;
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-// Extract user_id from JWT without validation (already validated by client)
-function extractUserIdFromJWT(token: string): string | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const payload = JSON.parse(atob(parts[1]));
-    // Try 'sub' field (standard JWT), or 'id' field (Supabase custom)
-    return payload.sub ?? payload.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 Deno.serve(async (req: Request) => {
-  // Handle CORS pre-flight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return preflight();
 
   if (req.method !== "POST") {
-    return json(405, { success: false, code: "METHOD_NOT_ALLOWED", error: { message: "Use POST" } });
+    return jsonResponse(405, {
+      success: false,
+      code: "METHOD_NOT_ALLOWED",
+      error: { message: "Use POST" },
+    });
   }
 
-  // Try to get token from Authorization header OR from custom X-User-Token header
-  let token = req.headers.get("Authorization");
-  if (token?.startsWith("Bearer ")) {
-    token = token.substring(7);
-  } else {
-    token = req.headers.get("X-User-Token") ?? null;
-  }
+  const auth = await requireUser(req);
+  if (!auth.ok) return auth.response;
+  const { userId, admin } = auth;
 
-  let userId = "unknown";
-  if (token) {
-    const extracted = extractUserIdFromJWT(token);
-    if (extracted) {
-      userId = extracted;
-      logInfo("USER_FROM_JWT", { user_id: userId });
-    }
-  }
+  const rate = await enforceRateLimit(admin, userId, RATE_LIMIT);
+  if (!rate.ok) return rate.response;
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
-
-  let payload: { session_id?: string; user_id?: string };
+  let payload: { session_id?: string };
   try {
     payload = await req.json();
   } catch {
-    return json(400, { success: false, code: "INVALID_JSON", error: { message: "Invalid request body" } });
+    return jsonResponse(400, {
+      success: false,
+      code: "INVALID_JSON",
+      error: { message: "Invalid request body" },
+    });
   }
 
   const sessionId = payload.session_id;
   if (!sessionId) {
-    return json(400, { success: false, code: "VALIDATION_ERROR", error: { message: "session_id is required" } });
-  }
-
-  if (userId === "unknown" && payload.user_id) {
-    userId = payload.user_id;
-    logInfo("USER_FROM_PAYLOAD", { user_id: userId });
-  }
-
-  if (userId === "unknown") {
-    return json(401, {
+    return jsonResponse(400, {
       success: false,
-      code: "UNAUTHORIZED",
-      error: { message: "Missing user context" },
+      code: "VALIDATION_ERROR",
+      error: { message: "session_id is required" },
     });
   }
 
   logInfo("COACHING_REQUEST", { user_id: userId, session_id: sessionId });
 
-  const { data: rpcPayload, error: rpcError } = await supabase
+  const { data: rpcPayload, error: rpcError } = await admin
     .rpc("get_coaching_inputs_v1", {
       p_user_id: userId,
       p_session_id: sessionId,
@@ -146,7 +100,7 @@ Deno.serve(async (req: Request) => {
       session_id: sessionId,
       message: rpcError.message,
     });
-    return json(500, {
+    return jsonResponse(500, {
       success: false,
       code: "COACHING_INPUTS_ERROR",
       error: { message: rpcError.message },
@@ -157,7 +111,11 @@ Deno.serve(async (req: Request) => {
   const sessionRow = inputs.session ?? null;
 
   if (!sessionRow) {
-    return json(404, { success: false, code: "SESSION_NOT_FOUND", error: { message: "Session not found" } });
+    return jsonResponse(404, {
+      success: false,
+      code: "SESSION_NOT_FOUND",
+      error: { message: "Session not found" },
+    });
   }
 
   const currentLogs = (inputs.current_logs ?? []).map((row) => ({
@@ -245,7 +203,7 @@ Deno.serve(async (req: Request) => {
 
   logInfo("COACHING_READY", { user_id: userId, session_id: sessionId, items: analysis.length });
 
-  return json(200, {
+  return jsonResponse(200, {
     success: true,
     code: "COACHING_GENERATED",
     data: {

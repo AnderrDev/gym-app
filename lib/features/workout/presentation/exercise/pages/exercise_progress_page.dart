@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 
 class ExerciseProgressPage extends StatelessWidget {
@@ -19,7 +20,7 @@ class ExerciseProgressPage extends StatelessWidget {
     // Primera fase: reutilizamos el componente de estadísticas existente
     // para ofrecer una vista completa sin duplicar lógica ni BLoC.
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: ExerciseStatsBottomSheet(
           userId: userId,

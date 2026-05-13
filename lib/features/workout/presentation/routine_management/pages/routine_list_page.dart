@@ -1,17 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gym_flutter/core/routes/app_routes.dart';
+
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
-import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_state.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_card.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_filter_chips.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_skeleton.dart';
 
 class RoutineListPage extends StatefulWidget {
   const RoutineListPage({super.key});
@@ -20,66 +26,67 @@ class RoutineListPage extends StatefulWidget {
   State<RoutineListPage> createState() => _RoutineListPageState();
 }
 
-enum _FilterType { all, mine, community }
-
 class _RoutineListPageState extends State<RoutineListPage> {
-  _FilterType _selectedFilter = _FilterType.all;
-  List<Routine> _cachedRoutines = [];
+  RoutineListFilter _selectedFilter = RoutineListFilter.all;
 
   @override
   void initState() {
     super.initState();
-    context.read<WorkoutBloc>().add(const FetchAllRoutines());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<RoutineManagementBloc>().add(const LoadAllRoutines());
+    });
   }
 
   void _onAssignRoutine(String routineId) {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       HapticFeedback.heavyImpact();
-      context.read<WorkoutBloc>().add(
-        AssignRoutineEvent(userId: authState.user.id, routineId: routineId),
+      context.read<RoutineManagementBloc>().add(
+        AssignRoutineToUser(userId: authState.user.id, routineId: routineId),
       );
     }
+  }
+
+  void _refreshRoutines() {
+    if (!mounted) return;
+    context.read<RoutineManagementBloc>().add(const LoadAllRoutines());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: BlocConsumer<WorkoutBloc, WorkoutState>(
-        listenWhen: (previous, current) =>
-            current is ManagementSuccess || current is WorkoutError,
+      body: BlocConsumer<RoutineManagementBloc, RoutineManagementState>(
+        listenWhen: (p, c) =>
+            p.submissionStatus != c.submissionStatus &&
+            (c.submissionStatus == RoutineManagementSubmissionStatus.success ||
+                c.submissionStatus ==
+                    RoutineManagementSubmissionStatus.failure),
         listener: (context, state) {
-          if (state is ManagementSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.success,
-              ),
+          if (state.submissionStatus ==
+              RoutineManagementSubmissionStatus.success) {
+            AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
+            // Solo regresamos al dashboard tras un assign exitoso; el resto
+            // de mutaciones (delete) actualizan la lista in-situ.
+            final shouldPop =
+                state.lastAction == RoutineManagementAction.assignRoutine;
+            context.read<RoutineManagementBloc>().add(
+              const AcknowledgeFeedback(),
             );
-            // Redirigir al dashboard para ver la rutina activa
-            context.pop(true);
-          } else if (state is WorkoutError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
+            if (shouldPop) {
+              context.pop(true);
+            }
+          } else if (state.submissionStatus ==
+              RoutineManagementSubmissionStatus.failure) {
+            AppSnackBar.error(context, state.errorMessage ?? 'Error');
+            context.read<RoutineManagementBloc>().add(
+              const AcknowledgeFeedback(),
             );
           }
         },
         builder: (context, state) {
-          if (state is AllRoutinesLoaded) {
-            _cachedRoutines = state.routines;
-          } else if (state is RoutinesLoaded) {
-            _cachedRoutines = state.routines;
-          }
-
-          final routines = (state is AllRoutinesLoaded)
-              ? state.routines
-              : (state is RoutinesLoaded)
-              ? state.routines
-              : _cachedRoutines;
+          final routines = state.routines;
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -90,7 +97,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
                 pinned: true,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
-                iconTheme: const IconThemeData(color: Colors.white),
+                iconTheme: const IconThemeData(color: AppColors.textPrimary),
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -112,33 +119,18 @@ class _RoutineListPageState extends State<RoutineListPage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
+                    horizontal: Spacing.lgPlus,
+                    vertical: Spacing.sm,
                   ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _filterChip(_FilterType.all, 'TODAS'),
-                        const SizedBox(width: 8),
-                        _filterChip(_FilterType.mine, 'MIS RUTINAS'),
-                        const SizedBox(width: 8),
-                        _filterChip(_FilterType.community, 'COMUNIDAD'),
-                      ],
-                    ),
+                  child: RoutineListFilterChips(
+                    selected: _selectedFilter,
+                    onChanged: (f) => setState(() => _selectedFilter = f),
                   ),
                 ),
               ),
 
-              if ((state is WorkoutLoading ||
-                      state is WorkoutInitial ||
-                      state is SavingSetLog) &&
-                  routines.isEmpty)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  ),
-                )
+              if (state.isLoading && routines.isEmpty)
+                const SliverFillRemaining(child: RoutineListSkeleton())
               else if (routines.isNotEmpty)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(
@@ -153,11 +145,11 @@ class _RoutineListPageState extends State<RoutineListPage> {
                               .id;
                       final filteredRoutines = routines.where((r) {
                         switch (_selectedFilter) {
-                          case _FilterType.all:
+                          case RoutineListFilter.all:
                             return true;
-                          case _FilterType.mine:
+                          case RoutineListFilter.mine:
                             return r.creatorId == currentUserId;
-                          case _FilterType.community:
+                          case RoutineListFilter.community:
                             return r.creatorId != currentUserId && r.isPublic;
                         }
                       }).toList();
@@ -178,12 +170,15 @@ class _RoutineListPageState extends State<RoutineListPage> {
                           final routine = filteredRoutines[index];
                           final isMine = routine.creatorId == currentUserId;
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: _buildRoutineCard(
-                              context,
+                            padding: const EdgeInsets.only(
+                              bottom: Spacing.lgPlus,
+                            ),
+                            child: RoutineListCard(
                               routine: routine,
                               isActive: false,
                               isMine: isMine,
+                              onActivate: _onAssignRoutine,
+                              onEdited: _refreshRoutines,
                             ),
                           );
                         }, childCount: filteredRoutines.length),
@@ -191,7 +186,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
                     },
                   ),
                 )
-              else if (state is WorkoutError)
+              else if (state.status == RoutineManagementStatus.failure)
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -203,26 +198,10 @@ class _RoutineListPageState extends State<RoutineListPage> {
                           size: 48,
                         ),
                         const SizedBox(height: 12),
-                        Text(state.message, style: AppTextStyles.bodyMedium),
-                      ],
-                    ),
-                  ),
-                )
-              else if (state is ManagementSuccess ||
-                  state is WorkoutFinishedSuccess ||
-                  state is SetLogSuccess)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: AppColors.success,
-                          size: 48,
+                        Text(
+                          state.errorMessage ?? 'Error',
+                          style: AppTextStyles.bodyMedium,
                         ),
-                        SizedBox(height: 16),
-                        CircularProgressIndicator(color: AppColors.primary),
                       ],
                     ),
                   ),
@@ -238,184 +217,21 @@ class _RoutineListPageState extends State<RoutineListPage> {
 
       // Botón Premium para Nueva Rutina
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          context.push(AppRoutes.routineEditor);
+        onPressed: () async {
+          unawaited(HapticFeedback.mediumImpact());
+          final changed = await pushRoutineEditor(context);
+          if (changed == true) _refreshRoutines();
         },
         elevation: 0,
         highlightElevation: 0,
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
+        icon: const Icon(Icons.add_rounded, color: AppColors.onPrimary, size: 24),
         label: Text(
           'CREAR PROPIA',
           style: AppTextStyles.label.copyWith(
-            color: Colors.black,
+            color: AppColors.onPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoutineCard(
-    BuildContext context, {
-    required Routine routine,
-    required bool isActive,
-    required bool isMine,
-  }) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(24),
-      borderRadius: BorderRadius.circular(28),
-      borderOpacity: isActive ? 0.4 : 0.1,
-      borderColor: isActive ? AppColors.primary : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  routine.name.toUpperCase(),
-                  style: AppTextStyles.heading2.copyWith(
-                    fontSize: 16,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              if (isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'ACTIVA',
-                    style: AppTextStyles.label.copyWith(
-                      color: Colors.black,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildInfoTag(
-                Icons.fitness_center_rounded,
-                '${routine.exerciseCount} EJERCICIOS',
-              ),
-              const SizedBox(width: 12),
-              _buildInfoTag(
-                isMine ? Icons.person_rounded : Icons.public_rounded,
-                isMine ? 'MI RUTINA' : (routine.creatorName ?? 'COMUNIDAD'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  // Pasar solo el ID para que coincida con el router
-                  context.push(AppRoutes.routineEditor, extra: routine.id);
-                },
-                child: Text(
-                  'DETALLES',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () => _onAssignRoutine(routine.id),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'ACTIVAR',
-                  style: AppTextStyles.label.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoTag(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.primary.withValues(alpha: 0.7), size: 14),
-          const SizedBox(width: 6),
-          Text(
-            label.toUpperCase(),
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(_FilterType type, String label) {
-    final isSelected = _selectedFilter == type;
-    return InkWell(
-      onTap: () => setState(() => _selectedFilter = type),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.label.copyWith(
-            color: isSelected ? Colors.black : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
-            fontSize: 11,
           ),
         ),
       ),

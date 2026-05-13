@@ -1,36 +1,49 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
-import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
-import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
-import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
-import 'package:gym_flutter/features/workout/presentation/routine_day/pages/routine_day_page.dart';
-import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_state.dart';
+import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/pages/routine_day_page.dart';
+import 'package:gym_flutter/injection_container.dart' as di;
 import 'package:mocktail/mocktail.dart';
 
-class MockWorkoutBloc extends Mock implements WorkoutBloc {}
+import '../../../../helpers/mocks.dart';
+
+class MockRoutineDayBloc extends Mock implements RoutineDayBloc {}
+
+class MockActiveWorkoutBloc extends Mock implements ActiveWorkoutBloc {}
 
 class MockGoRouter extends Mock implements GoRouter {}
 
 void main() {
-  late MockWorkoutBloc mockWorkoutBloc;
+  late MockRoutineDayBloc routineDayBloc;
+  late MockActiveWorkoutBloc activeWorkoutBloc;
   late MockGoRouter mockGoRouter;
+  late StreamController<RoutineDayState> routineStreamCtrl;
+  late StreamController<ActiveWorkoutState> activeStreamCtrl;
 
-  final tDay = RoutineDay(
+  const tDay = RoutineDay(
     id: 'd1',
     routineId: 'r1',
     name: 'Pecho',
     dayOfWeek: 1,
-    exercises: const [],
+    exercises: [],
   );
 
-  final tExercise = Exercise(
+  const tExercise = Exercise(
     id: 'e1',
     routineDayId: 'd1',
     name: 'Press Banca',
@@ -45,139 +58,179 @@ void main() {
     id: 's1',
     userId: 'u1',
     routineDayId: 'd1',
-    sessionDate: DateTime(2023, 1, 1),
+    sessionDate: DateTime(2023),
   );
 
   setUpAll(() {
     registerFallbackValue(
-      LoadDayInfo(
+      LoadRoutineDay(
         userId: 'u1',
         routineDayId: 'd1',
-        sessionDate: DateTime(2023, 1, 1),
+        sessionDate: DateTime(2023),
       ),
     );
-    registerFallbackValue(const ResetWorkout());
+    registerFallbackValue(const ResetRoutineDay());
     registerFallbackValue(
-      ConfirmStartWorkout(
+      StartActiveWorkout(
         userId: 'u1',
         routineDayId: 'd1',
-        sessionDate: DateTime(2023, 1, 1),
+        sessionDate: DateTime(2023),
         routineDayName: 'Pecho',
+      ),
+    );
+    registerFallbackValue(const ResetActiveWorkout());
+    registerFallbackValue(
+      const SaveActiveSetLog(
+        SetLog(
+          sessionId: '',
+          exerciseId: '',
+          actualWeight: 0,
+          actualReps: 0,
+          setIndex: 0,
+        ),
       ),
     );
   });
 
-  setUp(() {
-    mockWorkoutBloc = MockWorkoutBloc();
-    mockGoRouter = MockGoRouter();
+  late MockNotificationService notificationService;
 
-    when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.empty());
-    when(() => mockWorkoutBloc.close()).thenAnswer((_) async {});
+  setUp(() {
+    routineDayBloc = MockRoutineDayBloc();
+    activeWorkoutBloc = MockActiveWorkoutBloc();
+    mockGoRouter = MockGoRouter();
+    routineStreamCtrl = StreamController<RoutineDayState>.broadcast();
+    activeStreamCtrl = StreamController<ActiveWorkoutState>.broadcast();
+    notificationService = MockNotificationService();
+    when(() => notificationService.requestPermission()).thenAnswer(
+      (_) async => true,
+    );
+    if (di.sl.isRegistered<NotificationService>()) {
+      di.sl.unregister<NotificationService>();
+    }
+    di.sl.registerSingleton<NotificationService>(notificationService);
+
+    when(
+      () => routineDayBloc.stream,
+    ).thenAnswer((_) => routineStreamCtrl.stream);
+    when(
+      () => activeWorkoutBloc.stream,
+    ).thenAnswer((_) => activeStreamCtrl.stream);
+    when(() => routineDayBloc.close()).thenAnswer((_) async {});
+    when(() => activeWorkoutBloc.close()).thenAnswer((_) async {});
+    when(() => mockGoRouter.pop<Object?>(any())).thenReturn(null);
+    when(() => mockGoRouter.pop<bool>(any())).thenReturn(null);
+  });
+
+  tearDown(() async {
+    await routineStreamCtrl.close();
+    await activeStreamCtrl.close();
+    await di.sl.reset();
   });
 
   Widget createWidgetUnderTest() {
     return MaterialApp(
       home: InheritedGoRouter(
         goRouter: mockGoRouter,
-        child: BlocProvider<WorkoutBloc>.value(
-          value: mockWorkoutBloc,
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<RoutineDayBloc>.value(value: routineDayBloc),
+            BlocProvider<ActiveWorkoutBloc>.value(value: activeWorkoutBloc),
+          ],
           child: RoutineDayPage(
             routineDay: tDay,
             userId: 'u1',
-            sessionDate: DateTime(2023, 1, 1),
+            sessionDate: DateTime(2023),
           ),
         ),
       ),
     );
   }
 
-  testWidgets('debe cargar info del día al iniciar', (tester) async {
-    when(() => mockWorkoutBloc.state).thenReturn(WorkoutInitial());
+  testWidgets('initState dispara LoadRoutineDay', (tester) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(const ActiveWorkoutState());
 
     await tester.pumpWidget(createWidgetUnderTest());
-
-    verify(() => mockWorkoutBloc.add(any(that: isA<LoadDayInfo>()))).called(1);
-  });
-
-  testWidgets('debe mostrar vista de pre-inicio cuando carga DayInfoLoaded', (
-    tester,
-  ) async {
-    when(() => mockWorkoutBloc.state).thenReturn(
-      DayInfoLoaded(
-        exercises: [tExercise],
-        recentSessions: const [],
-        recentSessionsLogs: const {},
-        lastPerformances: const {},
-        userId: 'u1',
-        routineDayId: 'd1',
-        sessionDate: DateTime(2023, 1, 1),
-      ),
-    );
-
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pump();
-
-    expect(find.text('INICIAR ENTRENAMIENTO'), findsOneWidget);
-    expect(find.text('Press Banca'), findsOneWidget);
-  });
-
-  testWidgets('debe disparar ConfirmStartWorkout al presionar INICIAR', (
-    tester,
-  ) async {
-    when(() => mockWorkoutBloc.state).thenReturn(
-      DayInfoLoaded(
-        exercises: [tExercise],
-        recentSessions: const [],
-        recentSessionsLogs: const {},
-        lastPerformances: const {},
-        userId: 'u1',
-        routineDayId: 'd1',
-        sessionDate: DateTime(2023, 1, 1),
-      ),
-    );
-
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pump();
-
-    await tester.tap(find.text('INICIAR ENTRENAMIENTO'));
     await tester.pump();
 
     verify(
-      () => mockWorkoutBloc.add(any(that: isA<ConfirmStartWorkout>())),
+      () => routineDayBloc.add(any(that: isA<LoadRoutineDay>())),
     ).called(1);
   });
 
-  testWidgets(
-    'debe mostrar la lista de ejercicios activos cuando carga DayWorkoutStarted',
-    (tester) async {
-      when(() => mockWorkoutBloc.state).thenReturn(
-        DayWorkoutStarted(
-          tSession,
-          [tExercise],
-          setLogs: const [],
-          lastPerformances: const {},
-          recentSessions: const [],
-          recentSessionsLogs: const {},
-        ),
-      );
+  testWidgets('estado ready prestart muestra el CTA de empezar', (
+    tester,
+  ) async {
+    when(() => routineDayBloc.state).thenReturn(
+      RoutineDayState(
+        status: RoutineDayStatus.ready,
+        userId: 'u1',
+        routineDayId: 'd1',
+        sessionDate: DateTime(2023),
+        exercises: const [tExercise],
+      ),
+    );
+    when(() => activeWorkoutBloc.state).thenReturn(const ActiveWorkoutState());
 
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pump();
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
 
-      expect(find.byType(ExerciseCard), findsOneWidget);
-      expect(find.text('FINALIZAR'), findsOneWidget);
-    },
-  );
+    expect(find.text('EMPEZAR ENTRENAMIENTO'), findsOneWidget);
+    expect(find.text('Press Banca'), findsOneWidget);
+  });
 
-  testWidgets('debe mostrar el timer al registrar una serie', (tester) async {
-    when(() => mockWorkoutBloc.state).thenReturn(
-      DayWorkoutStarted(
-        tSession,
-        [tExercise],
-        setLogs: const [],
-        lastPerformances: const {},
-        recentSessions: const [],
-        recentSessionsLogs: const {},
+  testWidgets('tap en INICIAR dispara StartActiveWorkout', (tester) async {
+    when(() => routineDayBloc.state).thenReturn(
+      RoutineDayState(
+        status: RoutineDayStatus.ready,
+        userId: 'u1',
+        routineDayId: 'd1',
+        sessionDate: DateTime(2023),
+        exercises: const [tExercise],
+      ),
+    );
+    when(() => activeWorkoutBloc.state).thenReturn(const ActiveWorkoutState());
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await tester.tap(find.text('EMPEZAR ENTRENAMIENTO'));
+    // _onStartWorkout `await`-ea NotificationService.requestPermission()
+    // antes de despachar StartActiveWorkout. Esperamos el microtask para
+    // que el dispatch ocurra antes del verify.
+    await tester.pumpAndSettle();
+
+    verify(
+      () => activeWorkoutBloc.add(any(that: isA<StartActiveWorkout>())),
+    ).called(1);
+  });
+
+  testWidgets('estado running renderiza ExerciseCard y FINALIZAR', (
+    tester,
+  ) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      ActiveWorkoutState(
+        status: ActiveWorkoutStatus.running,
+        session: tSession,
+        exercises: const [tExercise],
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    expect(find.byType(ExerciseCard), findsOneWidget);
+    expect(find.text('FINALIZAR'), findsOneWidget);
+  });
+
+  testWidgets('al guardar set arranca el timer 1:30', (tester) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      ActiveWorkoutState(
+        status: ActiveWorkoutStatus.running,
+        session: tSession,
+        exercises: const [tExercise],
       ),
     );
 
@@ -187,7 +240,6 @@ void main() {
     final exerciseCard = tester.widget<ExerciseCard>(find.byType(ExerciseCard));
     exerciseCard.onSetAdded!(
       SetLog(
-        id: '',
         sessionId: 's1',
         exerciseId: 'e1',
         setIndex: 1,
@@ -196,36 +248,35 @@ void main() {
         createdAt: DateTime.now(),
       ),
     );
-
     await tester.pump();
 
+    verify(
+      () => activeWorkoutBloc.add(any(that: isA<SaveActiveSetLog>())),
+    ).called(1);
     expect(find.text('1:30'), findsOneWidget);
   });
 
-  testWidgets('debe cerrar la página al recibir WorkoutFinishedSuccess', (
-    tester,
-  ) async {
-    final controller = StreamController<WorkoutState>.broadcast();
-    when(() => mockWorkoutBloc.state).thenReturn(
-      DayWorkoutStarted(
-        tSession,
-        [tExercise],
-        setLogs: const [],
-        lastPerformances: const {},
-        recentSessions: const [],
-        recentSessionsLogs: const {},
+  testWidgets('al pasar a status finished pop con true', (tester) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      ActiveWorkoutState(
+        status: ActiveWorkoutStatus.running,
+        session: tSession,
+        exercises: const [tExercise],
       ),
     );
-    when(() => mockWorkoutBloc.stream).thenAnswer((_) => controller.stream);
-    when(() => mockGoRouter.pop<bool>(any())).thenReturn(null);
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    controller.add(WorkoutFinishedSuccess());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      const ActiveWorkoutState(status: ActiveWorkoutStatus.finished),
+    );
+    activeStreamCtrl.add(
+      const ActiveWorkoutState(status: ActiveWorkoutStatus.finished),
+    );
     await tester.pump();
 
     verify(() => mockGoRouter.pop<bool>(true)).called(1);
-    await controller.close();
   });
 }

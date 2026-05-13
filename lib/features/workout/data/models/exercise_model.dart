@@ -1,3 +1,5 @@
+import 'package:gym_flutter/core/observability/app_logger.dart';
+
 import '../../domain/entities/exercise.dart';
 
 class ExerciseModel extends Exercise {
@@ -13,11 +15,28 @@ class ExerciseModel extends Exercise {
   });
 
   factory ExerciseModel.fromJson(Map<String, dynamic> json) {
+    // `exercises.muscle_group` es el campo canónico en la DB. El alias
+    // `target_muscle` se aceptaba como legacy y ya no existe en SQL; si
+    // aparece, logueamos un warn para detectar payloads viejos en lugar de
+    // mapearlo silenciosamente. Cuando falta, dejamos cadena vacía y un warn
+    // explícito en lugar del 'Desconocido' fantasma que ocultaba drift.
+    if (json.containsKey('target_muscle')) {
+      AppLogger.instance.warning(
+        'ExerciseModel.fromJson: payload con `target_muscle` legacy '
+        '(id=${json['id']}). Use `muscle_group`.',
+      );
+    }
+    final muscleRaw = json['muscle_group'] as String?;
+    if (muscleRaw == null || muscleRaw.isEmpty) {
+      AppLogger.instance.warning(
+        'ExerciseModel.fromJson: `muscle_group` vacío para id=${json['id']}.',
+      );
+    }
     return ExerciseModel(
       id: json['id'] as String,
       routineDayId: (json['routine_day_id'] ?? '') as String,
       name: json['name'] as String,
-      targetMuscle: json['target_muscle'] as String? ?? 'Desconocido',
+      targetMuscle: muscleRaw ?? '',
       targetWeight: (json['target_weight'] as num? ?? 0).toDouble(),
       targetReps: json['target_reps'] as int? ?? 10,
       targetSets: json['target_sets'] as int? ?? 3,
@@ -30,7 +49,7 @@ class ExerciseModel extends Exercise {
       'id': id,
       'routine_day_id': routineDayId,
       'name': name,
-      'target_muscle': targetMuscle,
+      'muscle_group': targetMuscle,
       'target_weight': targetWeight,
       'target_reps': targetReps,
       'target_sets': targetSets,

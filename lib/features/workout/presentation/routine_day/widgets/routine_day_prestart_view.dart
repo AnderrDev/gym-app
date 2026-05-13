@@ -1,17 +1,25 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
-import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_prestart_components.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_coaching_summary.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_session_recap.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_versus_card.dart';
 
+/// Vista pre-start del día: recap de la última sesión, lista de ejercicios
+/// con barras "versus history" y coaching anterior. El CTA "Empezar
+/// entrenamiento" lo provee el `bottomNavigationBar` del scaffold (sticky).
 class RoutineDayPreStartView extends StatelessWidget {
-  final DayInfoLoaded state;
-  final VoidCallback onStartWorkout;
+  final List<Exercise> exercises;
+  final List<WorkoutSession> recentSessions;
+  final Map<String, List<SetLog>> recentSessionsLogs;
+  final bool hasAnotherActiveSession;
+  final String? anotherActiveSessionDayName;
   final void Function(
     WorkoutSession session,
     List<SetLog> logs,
@@ -21,134 +29,141 @@ class RoutineDayPreStartView extends StatelessWidget {
 
   const RoutineDayPreStartView({
     super.key,
-    required this.state,
-    required this.onStartWorkout,
+    required this.exercises,
+    required this.recentSessions,
+    required this.recentSessionsLogs,
+    required this.hasAnotherActiveSession,
+    required this.anotherActiveSessionDayName,
     required this.onOpenLastSession,
   });
 
   @override
   Widget build(BuildContext context) {
-    final lastSession = state.recentSessions.firstOrNull;
-    final lastLogs = lastSession != null
-        ? (state.recentSessionsLogs[lastSession.id] ?? <SetLog>[])
-        : <SetLog>[];
+    final theme = Theme.of(context);
+    final lastSession = recentSessions.firstOrNull;
+    final hasHistory = lastSession != null;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.lg),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (lastSession != null) ...[
-            GestureDetector(
-              onTap: () =>
-                  onOpenLastSession(lastSession, lastLogs, state.exercises),
-              child: RoutineDayPreviousSessionCard(
-                session: lastSession,
-                logs: lastLogs,
-              ),
+          if (hasHistory) ...[
+            RoutineDaySessionRecap(
+              recentSessions: recentSessions,
+              recentSessionsLogs: recentSessionsLogs,
+              exercises: exercises,
+              onOpenLastSession: onOpenLastSession,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Spacing.xl),
           ],
-          Text('EJERCICIOS DEL DÍA', style: AppTextStyles.heading2),
-          const SizedBox(height: 12),
-          ...state.exercises.map((ex) {
-            final lastRecord = lastLogs
-                .where((l) => l.exerciseId == ex.id)
-                .sorted((a, b) => b.actualWeight.compareTo(a.actualWeight))
-                .firstOrNull;
-
-            final exHist = <SetLog>[];
-            for (final s in state.recentSessions) {
-              exHist.addAll(
-                (state.recentSessionsLogs[s.id] ?? const <SetLog>[]).where(
-                  (l) => l.exerciseId == ex.id,
+          Row(
+            children: [
+              Text(
+                'PLAN DE HOY',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w600,
                 ),
-              );
-            }
-            final prevAvgWeight = exHist.isNotEmpty
-                ? exHist.map((l) => l.actualWeight).reduce((a, b) => a + b) /
-                      exHist.length
-                : null;
-            final prevAvgReps = exHist.isNotEmpty
-                ? exHist.map((l) => l.actualReps).reduce((a, b) => a + b) /
-                      exHist.length
-                : null;
-
-            return RoutineDayExercisePreviewCard(
-              exercise: ex,
-              lastRecord: lastRecord,
-              prevAvgWeight: prevAvgWeight,
-              prevAvgReps: prevAvgReps,
-            );
-          }),
+              ),
+              const Spacer(),
+              Text(
+                '${exercises.length} ejercicios',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          ..._exerciseCardsWithSpacing(),
           if (lastSession?.coachingAnalysis?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 20),
-            RoutineDayPreviousCoachingCard(
+            const SizedBox(height: Spacing.lg),
+            RoutineDayCoachingSummary(
               coaching: lastSession!.coachingAnalysis!,
             ),
           ],
-          if (state.hasAnotherActiveSession) ...[
-            const SizedBox(height: 18),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF9800).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: Color(0xFFFF9800),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Ya tienes un entrenamiento en curso${state.anotherActiveSessionDayName != null ? ' (${state.anotherActiveSessionDayName})' : ''}. Debes finalizarlo o retomarlo antes de iniciar otro.',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFFFF9800),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          if (hasAnotherActiveSession) ...[
+            const SizedBox(height: Spacing.lg),
+            _ActiveSessionWarning(dayName: anotherActiveSessionDayName),
           ],
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: state.hasAnotherActiveSession ? null : onStartWorkout,
-              icon: Icon(
-                state.hasAnotherActiveSession
-                    ? Icons.lock_outline_rounded
-                    : Icons.play_arrow_rounded,
-                color: Colors.black,
-                size: 24,
-              ),
-              label: Text(
-                state.hasAnotherActiveSession
-                    ? 'TIENES UNA SESION EN CURSO'
-                    : 'INICIAR ENTRENAMIENTO',
-                style: AppTextStyles.label.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  fontSize: 14,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 0,
+        ],
+      ),
+    );
+  }
+
+  Iterable<Widget> _exerciseCardsWithSpacing() sync* {
+    for (var i = 0; i < exercises.length; i++) {
+      final ex = exercises[i];
+      final history = _exerciseHistory(ex.id);
+      yield RoutineDayVersusCard(
+        exercise: ex,
+        prevAvgWeight: history.avgWeight,
+        prevAvgReps: history.avgReps,
+      );
+      if (i < exercises.length - 1) {
+        yield const SizedBox(height: Spacing.sm);
+      }
+    }
+  }
+
+  _ExerciseHistory _exerciseHistory(String exerciseId) {
+    final logs = <SetLog>[];
+    for (final s in recentSessions) {
+      logs.addAll(
+        (recentSessionsLogs[s.id] ?? const <SetLog>[]).where(
+          (l) => l.exerciseId == exerciseId,
+        ),
+      );
+    }
+    if (logs.isEmpty) return const _ExerciseHistory.empty();
+    final avgWeight =
+        logs.map((l) => l.actualWeight).reduce((a, b) => a + b) / logs.length;
+    final avgReps =
+        logs.map((l) => l.actualReps).reduce((a, b) => a + b) / logs.length;
+    return _ExerciseHistory(avgWeight: avgWeight, avgReps: avgReps);
+  }
+}
+
+class _ExerciseHistory {
+  const _ExerciseHistory({required this.avgWeight, required this.avgReps});
+  const _ExerciseHistory.empty() : avgWeight = null, avgReps = null;
+  final double? avgWeight;
+  final double? avgReps;
+}
+
+class _ActiveSessionWarning extends StatelessWidget {
+  const _ActiveSessionWarning({required this.dayName});
+
+  final String? dayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(Radii.md),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.warning,
+            size: 18,
+          ),
+          const SizedBox(width: Spacing.sm),
+          Expanded(
+            child: Text(
+              dayName != null
+                  ? 'Ya tienes un entrenamiento en curso ($dayName). Finalízalo o retómalo antes de iniciar otro.'
+                  : 'Ya tienes un entrenamiento en curso. Finalízalo o retómalo antes de iniciar otro.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.warning,
               ),
             ),
           ),

@@ -109,3 +109,40 @@ echo "CONTRACT_OK|finalize|http=${fin_http}|success=${fin_success}|code=${fin_co
 echo "CONTRACT_OK|insights|http=${ins_http}|success=${ins_success}|code=${ins_code}"
 
 psql "host=aws-0-us-west-2.pooler.supabase.com port=6543 dbname=postgres user=postgres.${PROJECT_REF} sslmode=require" -P pager=off -Atc "select 'session_completed|'||(completed_at is not null)::text||'|coaching_not_null|'||(coaching_analysis is not null)::text from public.workout_sessions where id='10000000-0000-0000-0000-000000000005';"
+
+# ── Negative auth tests ────────────────────────────────────
+# Each must FAIL with 401. Anything else is a regression.
+
+# 1. No Authorization header → gateway must reject with 401.
+no_auth_http=$(curl -sS -o /tmp/no_auth.json -w "%{http_code}" -X POST "$FUNCTIONS_URL/get_weekly_insights_v1" \
+  -H "apikey: $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"routine_id":"10000000-0000-0000-0000-000000000001"}' || true)
+
+# 2. Forged JWT (random base64) → gateway must reject signature.
+forged_jwt='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEifQ.invalid_signature_here'
+forged_http=$(curl -sS -o /tmp/forged.json -w "%{http_code}" -X POST "$FUNCTIONS_URL/get_weekly_insights_v1" \
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $forged_jwt" \
+  -H "Content-Type: application/json" \
+  -d '{"routine_id":"10000000-0000-0000-0000-000000000001"}' || true)
+
+# 3. IDOR direct on RPC: another user's UUID with our token.
+# Esto pega contra postgrest, no contra edge function. La RPC debe
+# rechazarlo por el guard auth.uid() == p_user_id.
+victim_uuid='00000000-0000-0000-0000-0000000000aa'
+idor_payload=$(printf '{"p_user_id":"%s","p_routine_id":"10000000-0000-0000-0000-000000000001","p_week_start":"%s"}' "$victim_uuid" "$week_start")
+idor_http=$(curl -sS -o /tmp/idor.json -w "%{http_code}" -X POST "$BASE_URL/rest/v1/rpc/compute_weekly_insights_v1" \
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $access_token" \
+  -H "Content-Type: application/json" \
+  -d "$idor_payload" || true)
+
+echo "AUTH_NEG|no_auth|http=${no_auth_http}|expect=401"
+echo "AUTH_NEG|forged_jwt|http=${forged_http}|expect=401"
+echo "AUTH_NEG|idor_rpc|http=${idor_http}|expect=403_or_500"
+
+if [[ "$no_auth_http" != "401" ]]; then echo "FAIL: no_auth must return 401, got $no_auth_http"; exit 1; fi
+if [[ "$forged_http" != "401" ]]; then echo "FAIL: forged_jwt must return 401, got $forged_http"; exit 1; fi
+# IDOR returns either 403 (if RAISE EXCEPTION mapped) or 500. Anything 2xx is a critical bug.
+if [[ "$idor_http" =~ ^2 ]]; then echo "FAIL: idor_rpc must NOT succeed, got $idor_http"; exit 1; fi

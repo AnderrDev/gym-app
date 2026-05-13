@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/injection_container.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_event.dart';
@@ -40,12 +42,7 @@ class RoutineStatsPage extends StatelessWidget {
           listenWhen: (previous, current) => current is RoutineStatsError,
           listener: (context, state) {
             if (state is RoutineStatsError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppColors.error,
-                ),
-              );
+              AppSnackBar.error(context, state.message);
             }
           },
           buildWhen: (previous, current) =>
@@ -103,7 +100,7 @@ class RoutineStatsPage extends StatelessWidget {
 
   Widget _buildStatsContent(List<RoutineHistorySession> stats) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.lg),
       children: [
         _buildVolumeChart(stats),
         const SizedBox(height: 24),
@@ -119,7 +116,7 @@ class RoutineStatsPage extends StatelessWidget {
 
   Widget _buildVolumeChart(List<RoutineHistorySession> stats) {
     return GlassContainer(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Spacing.lgPlus),
       borderRadius: BorderRadius.circular(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,8 +184,8 @@ class RoutineStatsPage extends StatelessWidget {
 
   Widget _buildSessionCard(RoutineHistorySession session) {
     return GlassContainer(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: Spacing.md),
+      padding: const EdgeInsets.all(Spacing.lg),
       borderRadius: BorderRadius.circular(16),
       opacity: 0.05,
       child: Row(

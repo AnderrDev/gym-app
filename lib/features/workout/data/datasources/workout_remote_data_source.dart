@@ -1,11 +1,17 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:gym_flutter/core/error/exceptions.dart';
+import 'package:gym_flutter/core/observability/app_logger.dart';
 import '../models/routine_day_model.dart';
 import '../models/exercise_model.dart';
 import '../models/set_log_model.dart';
 import '../models/workout_session_model.dart';
 import '../models/routine_model.dart';
 import '../../domain/entities/coaching_analysis.dart';
+import '../../domain/entities/exercise_catalog_item.dart';
 import '../../domain/entities/weekly_insights.dart';
+
+export 'package:gym_flutter/core/error/exceptions.dart'
+    show WorkoutFunctionException;
 
 abstract class WorkoutRemoteDataSource {
   Future<List<RoutineModel>> getAssignedRoutines(String userId);
@@ -27,6 +33,11 @@ abstract class WorkoutRemoteDataSource {
     DateTime sessionDate,
   );
   Future<void> saveSetLog(SetLogModel setLog);
+  Future<void> deleteSetLog({
+    required String sessionId,
+    required String exerciseId,
+    required int setIndex,
+  });
   Future<SetLogModel?> getLastExercisePerformance(String exerciseId);
   Future<Map<String, SetLogModel?>> getLastExercisePerformances(
     List<String> exerciseIds,
@@ -64,21 +75,64 @@ abstract class WorkoutRemoteDataSource {
   Future<String?> getRoutineDayNameById(String routineDayId);
 
   // ─── Nuevos métodos de gestión ──────────────────────────────────────────
-  Future<void> saveRoutine(RoutineModel routine);
+  Future<RoutineModel> saveRoutine(RoutineModel routine);
   Future<void> deleteRoutine(String routineId);
-  Future<void> saveRoutineDay(RoutineDayModel day);
+  Future<RoutineDayModel> saveRoutineDay(RoutineDayModel day);
   Future<void> deleteRoutineDay(String dayId);
-  Future<void> toggleExerciseInDay(String dayId, String exerciseId);
+  Future<void> addExerciseToDay(
+    String dayId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    int restSeconds = 90,
+  });
+  Future<void> addExercisesToDay(
+    String dayId,
+    List<AddExerciseToDayItem> items,
+  );
+  Future<void> removeExerciseFromDay(String dayId, String exerciseId);
   Future<void> reorderExercisesInDay(String dayId, List<String> exerciseIds);
   Future<void> updateExerciseTarget(
     String routineDayId,
     String exerciseId,
     double targetWeight,
-    int targetReps,
-  );
-  Future<List<RoutineModel>> getAllRoutines();
+    int targetReps, {
+    int? targetSets,
+    int? restSeconds,
+  });
+  Future<List<RoutineModel>> getAllRoutines({int limit, int offset});
   Future<RoutineModel> getRoutineById(String routineId);
+  Future<List<ExerciseCatalogItem>> getExercisesCatalog({
+    String? muscleGroup,
+    String? search,
+    int limit = 200,
+  });
 }
+
+/// Payload simple para inserts masivos de ejercicios en un día.
+class AddExerciseToDayItem {
+  const AddExerciseToDayItem({
+    required this.exerciseId,
+    required this.targetSets,
+    required this.targetReps,
+    required this.targetWeight,
+    this.restSeconds = 90,
+  });
+
+  final String exerciseId;
+  final int targetSets;
+  final int targetReps;
+  final double targetWeight;
+  final int restSeconds;
+}
+
+/// Máximos defensivos para queries que sin paginación explícita escanearían
+/// toda la tabla. Si la UI necesita más resultados, debe pedir más páginas
+/// usando los parámetros opcionales del método.
+const int _kDefaultRoutineListLimit = 100;
+const int _kDefaultHistoryLimit = 365;
+const int _kMaxExerciseIdsPerRpc = 100;
 
 class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   final SupabaseClient client;
@@ -131,19 +185,34 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .eq('routine_day_id', routineDayId)
         .order('order', ascending: true);
 
-    return response.map((json) {
-      final exerciseData = json['exercises'] as Map<String, dynamic>;
-      return ExerciseModel(
-        id: exerciseData['id'] as String,
-        routineDayId: routineDayId,
-        name: exerciseData['name'] as String,
-        targetMuscle: exerciseData['muscle_group'] as String? ?? 'Desconocido',
-        targetWeight: (json['target_weight'] as num?)?.toDouble() ?? 0.0,
-        targetReps: json['target_reps'] as int? ?? 0,
-        targetSets: json['target_sets'] as int? ?? 3,
-        restTimerSeconds: json['rest_timer_seconds'] as int? ?? 90,
-      );
-    }).toList();
+    return response
+        .map((json) {
+          // El join `exercises(...)` no usa `!inner`: si el ejercicio fue
+          // borrado o cae por RLS, el campo viene null. Filtramos esa fila.
+          final exerciseData = json['exercises'] as Map<String, dynamic>?;
+          final id = exerciseData?['id'] as String?;
+          final name = exerciseData?['name'] as String?;
+          if (id == null || name == null) return null;
+          final muscle = exerciseData?['muscle_group'] as String?;
+          if (muscle == null || muscle.isEmpty) {
+            AppLogger.instance.warning(
+              'getExercisesForDay: muscle_group vacío para exercise id=$id',
+            );
+          }
+          return ExerciseModel(
+            id: id,
+            routineDayId: routineDayId,
+            name: name,
+            targetMuscle: muscle ?? '',
+            targetWeight: (json['target_weight'] as num?)?.toDouble() ?? 0.0,
+            targetReps: (json['target_reps'] as num?)?.toInt() ?? 0,
+            targetSets: (json['target_sets'] as num?)?.toInt() ?? 3,
+            restTimerSeconds:
+                (json['rest_timer_seconds'] as num?)?.toInt() ?? 90,
+          );
+        })
+        .whereType<ExerciseModel>()
+        .toList();
   }
 
   @override
@@ -242,6 +311,20 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   }
 
   @override
+  Future<void> deleteSetLog({
+    required String sessionId,
+    required String exerciseId,
+    required int setIndex,
+  }) async {
+    await client
+        .from('set_logs')
+        .delete()
+        .eq('session_id', sessionId)
+        .eq('exercise_id', exerciseId)
+        .eq('set_index', setIndex);
+  }
+
+  @override
   Future<SetLogModel?> getLastExercisePerformance(String exerciseId) async {
     final results = await getLastExercisePerformances([exerciseId]);
     return results[exerciseId];
@@ -258,10 +341,21 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
     if (userId == null || exerciseIds.isEmpty) return result;
 
+    if (exerciseIds.length > _kMaxExerciseIdsPerRpc) {
+      AppLogger.instance.warning(
+        'getLastExercisePerformances: ${exerciseIds.length} ejercicios '
+        'excede el máximo de $_kMaxExerciseIdsPerRpc; se trunca para evitar '
+        'queries gigantes.',
+      );
+    }
+    final cappedIds = exerciseIds.length > _kMaxExerciseIdsPerRpc
+        ? exerciseIds.sublist(0, _kMaxExerciseIdsPerRpc)
+        : exerciseIds;
+
     try {
-      final rpcResponse = await client.rpc(
+      final rpcResponse = await client.rpc<dynamic>(
         'get_last_exercise_performances',
-        params: {'p_user_id': userId, 'p_exercise_ids': exerciseIds},
+        params: {'p_user_id': userId, 'p_exercise_ids': cappedIds},
       );
 
       if (rpcResponse is List) {
@@ -274,7 +368,9 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         return result;
       }
     } catch (_) {
-      // Fallback to direct query
+      // Fallback acotado: la RPC es la fuente preferida; si falla, traemos
+      // suficientes filas para resolver los N ejercicios sin escanear todo
+      // el historial del usuario.
     }
 
     final response = await client
@@ -282,9 +378,10 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .select(
           'id, session_id, exercise_id, set_index, actual_weight, actual_reps, created_at, workout_sessions!inner(user_id)',
         )
-        .inFilter('exercise_id', exerciseIds)
+        .inFilter('exercise_id', cappedIds)
         .eq('workout_sessions.user_id', userId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(cappedIds.length * 5);
 
     for (final row in response) {
       final json = row;
@@ -421,7 +518,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
           .invoke(
             'finalize_workout_session_v1',
             body: payload,
-            headers: {'X-User-Token': token},
+            headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(
             const Duration(seconds: 30),
@@ -516,7 +613,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
           .invoke(
             'get_weekly_insights_v1',
             body: payload,
-            headers: {'X-User-Token': token},
+            headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(
             const Duration(seconds: 30),
@@ -592,28 +689,51 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     final response = await client
         .from('set_logs')
         .select(
-          'id, exercise_id, actual_weight, actual_reps, set_index, created_at, workout_sessions!inner(session_date)',
+          'id, session_id, exercise_id, actual_weight, actual_reps, set_index, created_at, workout_sessions!inner(session_date)',
         )
         .eq('exercise_id', exerciseId)
         .eq('workout_sessions.user_id', userId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: false)
+        .limit(_kDefaultHistoryLimit);
 
     return List<Map<String, dynamic>>.from(response);
   }
 
   @override
-  Future<void> saveRoutine(RoutineModel routine) async {
+  Future<RoutineModel> saveRoutine(RoutineModel routine) async {
     if (routine.id.startsWith('new_') || routine.id.isEmpty) {
-      await client.from('routines').insert({
-        'name': routine.name,
-        'is_public': routine.isPublic,
-        'creator_id': client.auth.currentUser?.id,
-      });
+      final inserted = await client
+          .from('routines')
+          .insert({
+            'name': routine.name,
+            'is_public': routine.isPublic,
+            'creator_id': client.auth.currentUser?.id,
+          })
+          .select('id, name, is_public, creator_id')
+          .single();
+
+      return RoutineModel(
+        id: inserted['id'] as String,
+        name: (inserted['name'] as String?) ?? routine.name,
+        exerciseCount: 0,
+        isPublic: (inserted['is_public'] as bool?) ?? routine.isPublic,
+        creatorId: inserted['creator_id'] as String?,
+      );
     } else {
-      await client
+      final updated = await client
           .from('routines')
           .update({'name': routine.name, 'is_public': routine.isPublic})
-          .eq('id', routine.id);
+          .eq('id', routine.id)
+          .select('id, name, is_public, creator_id')
+          .single();
+
+      return RoutineModel(
+        id: updated['id'] as String,
+        name: (updated['name'] as String?) ?? routine.name,
+        exerciseCount: routine.exerciseCount,
+        isPublic: (updated['is_public'] as bool?) ?? routine.isPublic,
+        creatorId: updated['creator_id'] as String?,
+      );
     }
   }
 
@@ -634,18 +754,44 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   }
 
   @override
-  Future<void> saveRoutineDay(RoutineDayModel day) async {
+  Future<RoutineDayModel> saveRoutineDay(RoutineDayModel day) async {
     if (day.id.startsWith('new_') || day.id.isEmpty) {
-      await client.from('routine_days').insert({
-        'routine_id': day.routineId,
-        'name': day.name,
-        'day_of_week': day.dayOfWeek,
-      });
+      final inserted = await client
+          .from('routine_days')
+          .insert({
+            'routine_id': day.routineId,
+            'name': day.name,
+            'day_of_week': day.dayOfWeek,
+          })
+          .select('id, routine_id, day_of_week, name')
+          .single();
+
+      return RoutineDayModel(
+        id: inserted['id'] as String,
+        routineId: (inserted['routine_id'] as String?) ?? day.routineId,
+        dayOfWeek: (inserted['day_of_week'] as int?) ?? day.dayOfWeek,
+        name: (inserted['name'] as String?) ?? day.name,
+        exercises: const [],
+        targetSetsCount: 0,
+        status: day.status,
+      );
     } else {
-      await client
+      final updated = await client
           .from('routine_days')
           .update({'name': day.name, 'day_of_week': day.dayOfWeek})
-          .eq('id', day.id);
+          .eq('id', day.id)
+          .select('id, routine_id, day_of_week, name')
+          .single();
+
+      return RoutineDayModel(
+        id: updated['id'] as String,
+        routineId: (updated['routine_id'] as String?) ?? day.routineId,
+        dayOfWeek: (updated['day_of_week'] as int?) ?? day.dayOfWeek,
+        name: (updated['name'] as String?) ?? day.name,
+        exercises: day.exercises,
+        targetSetsCount: day.targetSetsCount,
+        status: day.status,
+      );
     }
   }
 
@@ -655,37 +801,76 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   }
 
   @override
-  Future<void> toggleExerciseInDay(String dayId, String exerciseId) async {
-    final existing = await client
+  Future<void> addExerciseToDay(
+    String dayId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    int restSeconds = 90,
+  }) async {
+    final lastOrder = await client
         .from('routine_exercises')
-        .select('id')
+        .select('order')
         .eq('routine_day_id', dayId)
-        .eq('exercise_id', exerciseId)
+        .order('order', ascending: false)
+        .limit(1)
         .maybeSingle();
 
-    if (existing != null) {
-      await client
-          .from('routine_exercises')
-          .delete()
-          .eq('routine_day_id', dayId)
-          .eq('exercise_id', exerciseId);
-    } else {
-      final lastOrder = await client
-          .from('routine_exercises')
-          .select('order')
-          .eq('routine_day_id', dayId)
-          .order('order', ascending: false)
-          .limit(1)
-          .maybeSingle();
+    final nextOrder = (lastOrder?['order'] as int? ?? -1) + 1;
 
-      final nextOrder = (lastOrder?['order'] as int? ?? -1) + 1;
+    await client.from('routine_exercises').insert({
+      'routine_day_id': dayId,
+      'exercise_id': exerciseId,
+      'order': nextOrder,
+      'target_sets': targetSets,
+      'target_reps': targetReps,
+      'target_weight': targetWeight,
+      'rest_timer_seconds': restSeconds,
+    });
+  }
 
-      await client.from('routine_exercises').insert({
+  @override
+  Future<void> addExercisesToDay(
+    String dayId,
+    List<AddExerciseToDayItem> items,
+  ) async {
+    if (items.isEmpty) return;
+
+    final lastOrder = await client
+        .from('routine_exercises')
+        .select('order')
+        .eq('routine_day_id', dayId)
+        .order('order', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    var nextOrder = (lastOrder?['order'] as int? ?? -1) + 1;
+
+    final payload = items.map((item) {
+      final row = {
         'routine_day_id': dayId,
-        'exercise_id': exerciseId,
+        'exercise_id': item.exerciseId,
         'order': nextOrder,
-      });
-    }
+        'target_sets': item.targetSets,
+        'target_reps': item.targetReps,
+        'target_weight': item.targetWeight,
+        'rest_timer_seconds': item.restSeconds,
+      };
+      nextOrder++;
+      return row;
+    }).toList();
+
+    await client.from('routine_exercises').insert(payload);
+  }
+
+  @override
+  Future<void> removeExerciseFromDay(String dayId, String exerciseId) async {
+    await client
+        .from('routine_exercises')
+        .delete()
+        .eq('routine_day_id', dayId)
+        .eq('exercise_id', exerciseId);
   }
 
   @override
@@ -693,13 +878,19 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     String dayId,
     List<String> exerciseIds,
   ) async {
-    for (int i = 0; i < exerciseIds.length; i++) {
-      await client
-          .from('routine_exercises')
-          .update({'order': i})
-          .eq('routine_day_id', dayId)
-          .eq('exercise_id', exerciseIds[i]);
-    }
+    // Disparamos los UPDATE en paralelo. Antes había un `await` por fila que
+    // generaba N round-trips secuenciales — para una rutina de 8 ejercicios
+    // eso eran ~8x la latencia de un solo viaje.
+    await Future.wait(
+      List.generate(
+        exerciseIds.length,
+        (i) => client
+            .from('routine_exercises')
+            .update({'order': i})
+            .eq('routine_day_id', dayId)
+            .eq('exercise_id', exerciseIds[i]),
+      ),
+    );
   }
 
   @override
@@ -707,12 +898,59 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     String routineDayId,
     String exerciseId,
     double targetWeight,
-    int targetReps,
-  ) async {
-    await client
-        .from('routine_exercises')
-        .update({'target_weight': targetWeight, 'target_reps': targetReps})
-        .match({'routine_day_id': routineDayId, 'exercise_id': exerciseId});
+    int targetReps, {
+    int? targetSets,
+    int? restSeconds,
+  }) async {
+    final payload = <String, dynamic>{
+      'target_weight': targetWeight,
+      'target_reps': targetReps,
+    };
+    if (targetSets != null) payload['target_sets'] = targetSets;
+    if (restSeconds != null) payload['rest_timer_seconds'] = restSeconds;
+
+    await client.from('routine_exercises').update(payload).match({
+      'routine_day_id': routineDayId,
+      'exercise_id': exerciseId,
+    });
+  }
+
+  @override
+  Future<List<ExerciseCatalogItem>> getExercisesCatalog({
+    String? muscleGroup,
+    String? search,
+    int limit = 200,
+  }) async {
+    var query = client
+        .from('exercises')
+        .select('id, name, description, muscle_group');
+
+    if (muscleGroup != null && muscleGroup.isNotEmpty) {
+      query = query.eq('muscle_group', muscleGroup);
+    }
+    if (search != null && search.isNotEmpty) {
+      query = query.ilike('name', '%$search%');
+    }
+
+    final response = await query
+        .order('name', ascending: true)
+        .limit(limit);
+
+    return (response as List<dynamic>)
+        .map((row) {
+          final json = row as Map<String, dynamic>;
+          final id = json['id'] as String?;
+          final name = json['name'] as String?;
+          if (id == null || name == null) return null;
+          return ExerciseCatalogItem(
+            id: id,
+            name: name,
+            muscleGroup: (json['muscle_group'] as String?) ?? '',
+            description: json['description'] as String?,
+          );
+        })
+        .whereType<ExerciseCatalogItem>()
+        .toList();
   }
 
   @override
@@ -737,7 +975,10 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   }
 
   @override
-  Future<List<RoutineModel>> getAllRoutines() async {
+  Future<List<RoutineModel>> getAllRoutines({
+    int limit = _kDefaultRoutineListLimit,
+    int offset = 0,
+  }) async {
     final userId = client.auth.currentUser?.id;
 
     final response = await client
@@ -746,20 +987,9 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         .or(
           'is_public.eq.true${userId != null ? ",creator_id.eq.$userId" : ""}',
         )
-        .order('name', ascending: true);
+        .order('name', ascending: true)
+        .range(offset, offset + limit - 1);
 
     return response.map((json) => RoutineModel.fromJson(json)).toList();
   }
-}
-
-class WorkoutFunctionException implements Exception {
-  final String code;
-  final String userMessage;
-  const WorkoutFunctionException({
-    required this.code,
-    required this.userMessage,
-  });
-
-  @override
-  String toString() => userMessage;
 }

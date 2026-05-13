@@ -24,7 +24,9 @@ void main() {
 
   setUp(() {
     mockExerciseStatsBloc = MockExerciseStatsBloc();
-    when(() => mockExerciseStatsBloc.stream).thenAnswer((_) => Stream.empty());
+    when(
+      () => mockExerciseStatsBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
     when(() => mockExerciseStatsBloc.close()).thenAnswer((_) async {});
   });
 

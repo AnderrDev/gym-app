@@ -9,6 +9,7 @@ POST JSON:
 ## Seguridad
 - JWT requerido (`verify_jwt=true`).
 - Solo genera coaching para sesiones del usuario autenticado.
+- Rate limit: 30 llamadas/min por usuario. Excedido → `429 RATE_LIMIT_EXCEEDED`.
 
 ## Output
 `data.analysis` (array) con campos:

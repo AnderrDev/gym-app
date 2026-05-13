@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
@@ -46,7 +47,7 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
+              margin: const EdgeInsets.symmetric(vertical: Spacing.md),
               width: 32,
               height: 4,
               decoration: BoxDecoration(
@@ -55,7 +56,12 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.lgPlus,
+                Spacing.sm,
+                Spacing.lgPlus,
+                Spacing.lgPlus,
+              ),
               child: Row(
                 children: [
                   const Icon(
@@ -94,11 +100,16 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
             Expanded(
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.lgPlus,
+                  0,
+                  Spacing.lgPlus,
+                  Spacing.xxxl,
+                ),
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.all(Spacing.lg),
+                    margin: const EdgeInsets.only(bottom: Spacing.xl),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
@@ -167,7 +178,7 @@ class _HistoryExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: Spacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -179,7 +190,7 @@ class _HistoryExerciseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Spacing.lg),
             child: Text(
               exerciseName,
               style: AppTextStyles.bodyLarge.copyWith(
@@ -225,7 +236,7 @@ class _HistoryExerciseCard extends StatelessWidget {
           if (coaching != null) ...[
             const Divider(height: 1, color: AppColors.surfaceHighlight),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(Spacing.md),
               child: _CoachingAdvice(coaching: coaching!),
             ),
           ],
@@ -247,11 +258,11 @@ class _CoachingAdvice extends StatelessWidget {
     final isGreat = score >= 1.0;
 
     final accentColor = isGreat
-        ? const Color(0xFF4CAF50)
+        ? AppColors.success
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(Spacing.md),
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
@@ -280,7 +291,7 @@ class _CoachingAdvice extends StatelessWidget {
           const SizedBox(height: 10),
           if (coaching.recommendation.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: Spacing.sm),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.background.withValues(alpha: 0.4),

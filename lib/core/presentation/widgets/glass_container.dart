@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/theme/app_colors.dart';
+
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final double blur;
@@ -16,7 +18,7 @@ class GlassContainer extends StatelessWidget {
     super.key,
     required this.child,
     this.blur = 20.0,
-    this.opacity = 0.15, 
+    this.opacity = 0.15,
     this.borderRadius,
     this.padding,
     this.margin,
@@ -28,10 +30,9 @@ class GlassContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultBorderRadius = borderRadius ?? BorderRadius.circular(16);
 
-    return margin != null ? Padding(
-      padding: margin!,
-      child: _buildGlass(defaultBorderRadius),
-    ) : _buildGlass(defaultBorderRadius);
+    return margin != null
+        ? Padding(padding: margin!, child: _buildGlass(defaultBorderRadius))
+        : _buildGlass(defaultBorderRadius);
   }
 
   Widget _buildGlass(BorderRadius radius) {
@@ -42,10 +43,14 @@ class GlassContainer extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: opacity),
+            // `textPrimary` invierte automaticamente entre light/dark, asi el
+            // tinte del glass siempre contrasta con el fondo de la app.
+            color: AppColors.textPrimary.withValues(alpha: opacity),
             borderRadius: radius,
             border: Border.all(
-              color: (borderColor ?? Colors.white).withValues(alpha: borderOpacity),
+              color: (borderColor ?? AppColors.textPrimary).withValues(
+                alpha: borderOpacity,
+              ),
               width: 1.0,
             ),
           ),

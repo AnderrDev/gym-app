@@ -1,4 +1,9 @@
 .agents/
+
+# Secrets — credenciales locales no van al repo
+.env
+.env.local
+
 # Miscellaneous
 *.class
 *.log

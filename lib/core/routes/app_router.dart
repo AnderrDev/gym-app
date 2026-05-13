@@ -5,25 +5,45 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/workout/domain/entities/routine_day.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
+import '../../features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
+import '../../features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import '../../features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
+import '../../features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import '../../features/workout/presentation/routine_day/pages/routine_day_page.dart';
 import '../../features/workout/presentation/dashboard/pages/dashboard_page.dart';
-import '../../features/workout/presentation/debug/pages/database_inspector_page.dart';
+import '../../injection_container.dart';
 import '../../features/workout/presentation/routine_management/pages/routine_list_page.dart';
 import '../../features/workout/presentation/routine_management/pages/routine_editor_page.dart';
 import '../../features/workout/presentation/routine_management/pages/day_editor_page.dart';
 import '../../features/workout/presentation/routine_stats/pages/routine_stats_page.dart';
 import '../../features/workout/presentation/exercise/pages/exercise_progress_page.dart';
 import 'app_routes.dart';
+import 'args/routing_args.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
 
+  /// Listenable que reacciona a cambios del [AuthBloc] para que GoRouter
+  /// re-evalúe `redirect`. Lo guardamos como campo para poder llamar
+  /// `dispose()` desde el `StatefulWidget` que crea este `AppRouter` —
+  /// antes se construía inline y nunca se cancelaba la suscripción.
+  late final GoRouterRefreshStream _refreshListenable =
+      GoRouterRefreshStream(authBloc.stream);
+
   AppRouter(this.authBloc);
+
+  /// Cancela la suscripción interna al `authBloc.stream`. Llamar desde
+  /// `dispose()` del widget que crea este router.
+  void dispose() {
+    _refreshListenable.dispose();
+  }
 
   late final GoRouter router = GoRouter(
     initialLocation: AppRoutes.login,
-    refreshListenable: GoRouterRefreshStream(authBloc.stream),
+    refreshListenable: _refreshListenable,
     redirect: (context, state) {
       final bool isAuthenticated = authBloc.state is Authenticated;
       final bool isAuthRoute =
@@ -59,83 +79,138 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.dashboard,
-        builder: (context, state) => const DashboardPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.dbInspector,
-        builder: (context, state) => const DatabaseInspectorPage(),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider<DashboardBloc>(create: (_) => sl<DashboardBloc>()),
+            BlocProvider<ActiveSessionWatcherBloc>(
+              create: (_) => sl<ActiveSessionWatcherBloc>(),
+            ),
+          ],
+          child: const DashboardPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.routineList,
-        builder: (context, state) => const RoutineListPage(),
+        builder: (context, state) => BlocProvider<RoutineManagementBloc>(
+          create: (_) => sl<RoutineManagementBloc>(),
+          child: const RoutineListPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.routineEditor,
         builder: (context, state) {
           final routineId = state.extra as String?;
-          return RoutineEditorPage(routineId: routineId);
+          return BlocProvider<RoutineManagementBloc>(
+            create: (_) => sl<RoutineManagementBloc>(),
+            child: RoutineEditorPage(routineId: routineId),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.dayEditor,
         builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
-          final day = extras['day'] as RoutineDay;
-          final routineId = extras['routineId'] as String;
-          return DayEditorPage(day: day, routineId: routineId);
+          final args = state.extra;
+          if (args is! DayEditorArgs) return _invalidArgs(AppRoutes.dayEditor);
+          return BlocProvider<RoutineManagementBloc>(
+            create: (_) => sl<RoutineManagementBloc>(),
+            child: DayEditorPage(day: args.day, routineId: args.routineId),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.routineDay,
         builder: (context, state) {
-          try {
-            final extras = state.extra as Map;
-            final routineDay = extras['routineDay'] as RoutineDay;
-            final userId = extras['userId'] as String;
-            final sessionDate = extras['sessionDate'] as DateTime;
-            return RoutineDayPage(
-              routineDay: routineDay,
-              userId: userId,
-              sessionDate: sessionDate,
-            );
-          } catch (e) {
-            return Scaffold(body: Center(child: Text('Error: $e')));
-          }
+          final args = state.extra;
+          if (args is! RoutineDayArgs) return _invalidArgs(AppRoutes.routineDay);
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<RoutineDayBloc>(create: (_) => sl<RoutineDayBloc>()),
+              BlocProvider<ActiveWorkoutBloc>(
+                create: (_) => sl<ActiveWorkoutBloc>(),
+              ),
+            ],
+            child: RoutineDayPage(
+              routineDay: args.routineDay,
+              userId: args.userId,
+              sessionDate: args.sessionDate,
+            ),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.routineStats,
         builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
+          final args = state.extra;
+          if (args is! RoutineStatsArgs) {
+            return _invalidArgs(AppRoutes.routineStats);
+          }
           return RoutineStatsPage(
-            userId: extras['userId'] as String,
-            routineId: extras['routineId'] as String,
-            routineName: extras['routineName'] as String,
+            userId: args.userId,
+            routineId: args.routineId,
+            routineName: args.routineName,
           );
         },
       ),
       GoRoute(
         path: AppRoutes.exerciseProgress,
         builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
+          final args = state.extra;
+          if (args is! ExerciseProgressArgs) {
+            return _invalidArgs(AppRoutes.exerciseProgress);
+          }
           return ExerciseProgressPage(
-            userId: extras['userId'] as String,
-            exerciseId: extras['exerciseId'] as String,
-            exerciseName: extras['exerciseName'] as String,
+            userId: args.userId,
+            exerciseId: args.exerciseId,
+            exerciseName: args.exerciseName,
           );
         },
       ),
     ],
   );
+
+  /// Pantalla de fallback cuando un deep link / navegación llega sin los args
+  /// tipados esperados. Antes esto crasheaba con un cast (`state.extra! as
+  /// Foo`); ahora mostramos un mensaje y un botón a la home en lugar de
+  /// tumbar la app.
+  static Widget _invalidArgs(String route) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ruta inválida')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Faltan datos para abrir $route.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Builder(
+                builder: (context) => FilledButton(
+                  onPressed: () => context.go(AppRoutes.dashboard),
+                  child: const Text('Ir al dashboard'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-// Convert AuthBloc stream to Listenable so GoRouter can refresh
+/// Convierte un `Stream` (típicamente `authBloc.stream`) en `Listenable`
+/// para que GoRouter dispare `redirect` en cada cambio.
+///
+/// Nota: el bloc stream YA es broadcast — no se vuelve a llamar
+/// `asBroadcastStream()` aquí porque eso crea un wrapper nuevo en cada
+/// instanciación, dejando suscripciones huérfanas al stream original cada
+/// vez que se reconstruye este listenable.
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
+    _subscription = stream.listen((dynamic _) => notifyListeners());
   }
 
   late final StreamSubscription<dynamic> _subscription;

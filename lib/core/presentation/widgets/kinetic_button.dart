@@ -35,9 +35,10 @@ class _KineticButtonState extends State<KineticButton>
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -89,12 +90,16 @@ class _KineticButtonState extends State<KineticButton>
             ],
           ),
           child: widget.isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ? const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.onPrimary,
+                      ),
+                    ),
                   ),
                 )
               : Row(
@@ -102,13 +107,13 @@ class _KineticButtonState extends State<KineticButton>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.black, size: 20),
+                      Icon(widget.icon, color: AppColors.onPrimary, size: 20),
                       const SizedBox(width: 12),
                     ],
                     Text(
                       widget.label.toUpperCase(),
                       style: AppTextStyles.heading2.copyWith(
-                        color: Colors.black,
+                        color: AppColors.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,

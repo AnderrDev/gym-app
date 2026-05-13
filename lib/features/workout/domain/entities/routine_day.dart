@@ -5,7 +5,7 @@ class RoutineDay extends Equatable {
   final String id;
   final String routineId;
   final int dayOfWeek; // 1=Lunes, 7=Domingo
-  final String name;   // "Pecho y Tríceps"
+  final String name; // "Pecho y Tríceps"
   final List<Exercise> exercises;
   final int targetSetsCount;
   final WorkoutDayStatus status;
@@ -46,18 +46,35 @@ class RoutineDay extends Equatable {
   }
 
   String get dayNameFull {
-    const days = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const days = [
+      '',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
     return days[dayOfWeek];
   }
 
   @override
-  List<Object?> get props => [id, routineId, dayOfWeek, name, exercises, targetSetsCount, status];
+  List<Object?> get props => [
+    id,
+    routineId,
+    dayOfWeek,
+    name,
+    exercises,
+    targetSetsCount,
+    status,
+  ];
 }
 
 enum WorkoutDayStatus {
-  completed,   // Sesión finalizada esta semana ✅
+  completed, // Sesión finalizada esta semana ✅
   completedPartial, // Sesión finalizada sin completar todas las series ⚠️
-  inProgress,  // Sesión iniciada pero no terminada ⏱️
-  pending,     // No hay sesión aún ⬜
-  rest,        // No hay entrenamiento este día
+  inProgress, // Sesión iniciada pero no terminada ⏱️
+  pending, // No hay sesión aún ⬜
+  rest, // No hay entrenamiento este día
 }

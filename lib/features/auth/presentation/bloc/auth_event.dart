@@ -11,9 +11,9 @@ final class AppStarted extends AuthEvent {}
 
 final class AuthStateChanged extends AuthEvent {
   final bool isAuthenticated;
-  
+
   const AuthStateChanged({required this.isAuthenticated});
-  
+
   @override
   List<Object> get props => [isAuthenticated];
 }
