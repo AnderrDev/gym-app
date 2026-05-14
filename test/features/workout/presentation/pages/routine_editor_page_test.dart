@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,4 +134,65 @@ void main() {
 
     verify(() => bloc.add(any(that: isA<SaveDay>()))).called(1);
   });
+
+  testWidgets(
+    'rutina nueva + AÑADIR DÍA → SaveRoutine; al recibir success encadena SaveDay',
+    (tester) async {
+      // En la rutina nueva no hay routineId, así que el tap a AÑADIR DÍA
+      // debe primero disparar SaveRoutine. Cuando el bloc emite success con
+      // editingRoutine seteada, el listener tiene que disparar SaveDay con
+      // el id real — sin que el usuario tenga que tocar de nuevo.
+      final stateCtrl =
+          StreamController<RoutineManagementState>.broadcast();
+      addTearDown(stateCtrl.close);
+
+      when(() => bloc.stream).thenAnswer((_) => stateCtrl.stream);
+
+      // Estado 1: vacío, sin routine guardada todavía.
+      when(() => bloc.state).thenReturn(
+        const RoutineManagementState(status: RoutineManagementStatus.ready),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      // Tipeamos un nombre para que el handler no aborte con "Pon un nombre".
+      await tester.enterText(find.byType(TextField), 'Mi rutina');
+      await tester.pump();
+
+      await tester.tap(find.text('AÑADIR DÍA'));
+      await tester.pump();
+
+      // Primer dispatch: el SaveRoutine inicial.
+      verify(() => bloc.add(any(that: isA<SaveRoutine>()))).called(1);
+      verifyNever(() => bloc.add(any(that: isA<SaveDay>())));
+
+      // Estado 2: el bloc resolvió el save y emite success con la rutina
+      // creada. El listener debería reaccionar con un SaveDay.
+      const savedRoutine = Routine(
+        id: 'r-new',
+        name: 'Mi rutina',
+        exerciseCount: 0,
+      );
+      final successState = RoutineManagementState(
+        status: RoutineManagementStatus.ready,
+        submissionStatus: RoutineManagementSubmissionStatus.success,
+        lastAction: RoutineManagementAction.saveRoutine,
+        editingRoutine: savedRoutine,
+        feedbackMessage: 'OK',
+      );
+      when(() => bloc.state).thenReturn(successState);
+      stateCtrl.add(successState);
+      await tester.pump();
+
+      // Segundo dispatch: el SaveDay encadenado.
+      final captured = verify(() => bloc.add(captureAny(that: isA<SaveDay>())))
+          .captured;
+      expect(captured.length, 1);
+      final saveDay = captured.first as SaveDay;
+      expect(saveDay.routineId, 'r-new');
+      expect(saveDay.day.routineId, 'r-new');
+      expect(saveDay.day.id, isEmpty); // día nuevo, sin id todavía
+    },
+  );
 }
