@@ -7,11 +7,13 @@ import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_charts.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
 import 'package:gym_flutter/injection_container.dart';
 
 class ExerciseStatsBottomSheet extends StatelessWidget {
@@ -109,11 +111,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
               child: BlocBuilder<ExerciseStatsBloc, ExerciseStatsState>(
                 builder: (context, state) {
                   if (state is ExerciseStatsLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                      ),
-                    );
+                    return const Center(child: BarbellLoader.large());
                   } else if (state is ExerciseStatsError) {
                     return Center(
                       child: Column(
@@ -168,24 +166,43 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                       children: [
                         _buildChartSection(
                           title: 'PESO MÁXIMO',
-                          subtitle: 'Evolución de fuerza pura',
+                          subtitle: 'El peso más alto que cargaste en una serie',
                           icon: Icons.fitness_center_rounded,
+                          unit: 'kg',
+                          series: ExerciseStatsSeries.from(
+                            state.history,
+                            (s) => s.maxWeight,
+                          ),
+                          formatter: (v) => v.toStringAsFixed(0),
                           chart: ExerciseMaxWeightChart(history: state.history),
                         ),
                         const SizedBox(height: 32),
                         _buildChartSection(
                           title: '1RM ESTIMADO',
-                          subtitle: 'Repetición máxima proyectada',
+                          subtitle: 'Tu máxima en 1 rep, proyectada',
                           icon: Icons.trending_up_rounded,
+                          unit: 'kg',
+                          series: ExerciseStatsSeries.from(
+                            state.history,
+                            (s) => s.estimated1RM,
+                          ),
+                          formatter: (v) =>
+                              v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1),
                           chart: ExerciseEstimated1RMChart(
                             history: state.history,
                           ),
                         ),
                         const SizedBox(height: 32),
                         _buildChartSection(
-                          title: 'VOLUMEN TOTAL',
-                          subtitle: 'Carga de trabajo por sesión',
+                          title: 'CARGA MOVIDA',
+                          subtitle: 'Suma de peso × reps en la sesión',
                           icon: Icons.stacked_line_chart_rounded,
+                          unit: 'kg·reps',
+                          series: ExerciseStatsSeries.from(
+                            state.history,
+                            (s) => s.totalVolume,
+                          ),
+                          formatter: (v) => v.toStringAsFixed(0),
                           chart: ExerciseVolumeChart(history: state.history),
                         ),
                         const SizedBox(height: 40),
@@ -230,6 +247,9 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
     required String title,
     required String subtitle,
     required IconData icon,
+    required String unit,
+    required ExerciseStatsSeries series,
+    required String Function(double) formatter,
     required Widget chart,
   }) {
     return Column(
@@ -246,28 +266,38 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
               child: Icon(icon, color: AppColors.primary, size: 20),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.label.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textDisabled,
-                    fontSize: 10,
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textDisabled,
+                      fontSize: 10,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        StatStripe(
+          actualLabel: formatter(series.actual),
+          recordLabel: formatter(series.record),
+          delta: series.delta,
+          unit: unit,
+          recordReached: series.actualIsRecord,
+        ),
+        const SizedBox(height: 12),
         Container(
           height: 220,
           padding: const EdgeInsets.fromLTRB(10, 16, 20, 10),

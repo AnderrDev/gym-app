@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/injection_container.dart' as di;
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
@@ -77,6 +80,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       secondsRemaining: seconds,
       totalRestSeconds: seconds,
     );
+    unawaited(
+      di.sl<ActiveWorkoutNotifier>().onRestStarted(
+        duration: Duration(seconds: seconds),
+      ),
+    );
     _globalRestTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final current = _restTimer.value;
       if (current.secondsRemaining > 0) {
@@ -88,15 +96,36 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         );
         if (next > 0 && next <= 3) HapticFeedback.lightImpact();
       } else {
-        _stopTimer();
+        // Fin NATURAL del descanso. Multi-canal de feedback, evitando
+        // duplicados: si la Live Activity está activa, su `AlertConfig`
+        // ya muestra banner+sonido en iOS → omitimos el push del sistema.
+        // En Android (sin LA) sí firamos el push tradicional.
+        if (!di.sl<LiveActivitiesBridge>().isAvailable) {
+          unawaited(di.sl<NotificationService>().showRestEnded());
+        }
+        HapticFeedback.vibrate();
+        _stopTimer(naturalEnd: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡A entrenar! Próxima serie te espera'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     });
   }
 
-  void _stopTimer() {
+  void _stopTimer({bool naturalEnd = false}) {
     _globalRestTimer?.cancel();
     _restTimer.value = const RestTimerSnapshot.idle();
     HapticFeedback.heavyImpact();
+    unawaited(
+      di.sl<ActiveWorkoutNotifier>().onRestEnded(naturalEnd: naturalEnd),
+    );
   }
 
   /// Ajusta el descanso en curso. Si quedaría <= 0, lo detiene.
@@ -108,16 +137,25 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       _stopTimer();
       return;
     }
-    // El total también se mueve para que la barra de progreso siga
-    // representando "lo que falta" de manera coherente.
-    final newTotal = (current.totalRestSeconds + delta).clamp(
-      newRemaining,
-      9999,
-    );
+    // `totalRestSeconds` es el denominador de la progress bar. Antes lo
+    // movíamos junto con `delta` y la ratio quedaba ~constante (la barra
+    // no se actualizaba visualmente). Ahora mantenemos el total como el
+    // máximo histórico — si el usuario suma más allá del peak, lo
+    // expandimos para que el bar muestre 100% (lleno) momentáneamente.
+    final newTotal = newRemaining > current.totalRestSeconds
+        ? newRemaining
+        : current.totalRestSeconds;
     _restTimer.value = RestTimerSnapshot(
       isResting: true,
       secondsRemaining: newRemaining,
       totalRestSeconds: newTotal,
+    );
+    // Re-sincronizamos el countdown nativo con el nuevo remaining para que el
+    // chronometer del lock screen muestre el ajuste.
+    unawaited(
+      di.sl<ActiveWorkoutNotifier>().onRestStarted(
+        duration: Duration(seconds: newRemaining),
+      ),
     );
   }
 

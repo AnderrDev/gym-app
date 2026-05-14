@@ -57,6 +57,24 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
   }
 
   @override
+  void didUpdateWidget(covariant RoutineDayActiveFocusView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si el padre rebuilde con una lista de ejercicios distinta (p.ej. el
+    // bloc emite una nueva sesión) y nuestro índice ya no es válido, lo
+    // clampeamos antes del próximo build para evitar RangeError en
+    // `_ExerciseStepper` (que indexa `exercises[currentIndex]`).
+    final exCount = widget.exercises.length;
+    if (exCount == 0) {
+      _currentIndex = 0;
+    } else if (_currentIndex >= exCount) {
+      _currentIndex = exCount - 1;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentIndex);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -184,6 +202,13 @@ class _ExerciseStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Guard defensivo: si el padre rebuildea con menos ejercicios mientras
+    // el stepper aún está pintado con el índice viejo, indexar fuera de
+    // rango aborta el frame entero y, en iOS device real, puede tirar la
+    // app. Mejor un stepper vacío que un crash.
+    if (exercises.isEmpty || currentIndex < 0 || currentIndex >= exercises.length) {
+      return const SizedBox.shrink();
+    }
     final current = exercises[currentIndex];
     return Container(
       padding: const EdgeInsets.fromLTRB(

@@ -7,10 +7,12 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/injection_container.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_state.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 
 class RoutineStatsPage extends StatelessWidget {
@@ -51,9 +53,7 @@ class RoutineStatsPage extends StatelessWidget {
               current is RoutineStatsError,
           builder: (context, state) {
             if (state is RoutineStatsLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
+              return const Center(child: BarbellLoader.large());
             }
             if (state is RoutineStatsError) {
               return Center(
@@ -115,6 +115,21 @@ class RoutineStatsPage extends StatelessWidget {
   }
 
   Widget _buildVolumeChart(List<RoutineHistorySession> stats) {
+    // stats viene en orden descendente; trabajamos cronológico para el chart.
+    final chronological = stats.reversed.toList();
+    final values = chronological.map((s) => s.totalVolume).toList();
+    final actual = values.last;
+    final record = values.reduce((a, b) => a > b ? a : b);
+    final delta = values.length < 2 ? null : actual - values[values.length - 2];
+    final actualIsRecord = actual >= record;
+    final pr = _computePrIndices(values);
+    final yMin = values.reduce((a, b) => a < b ? a : b);
+    final yMax = values.reduce((a, b) => a > b ? a : b);
+    final yRange = (yMax - yMin).abs();
+    final yPad = yRange == 0 ? (yMax == 0 ? 1.0 : yMax * 0.1) : yRange * 0.15;
+
+    String fmt(double v) => v.toStringAsFixed(0);
+
     return GlassContainer(
       padding: const EdgeInsets.all(Spacing.lgPlus),
       borderRadius: BorderRadius.circular(24),
@@ -125,52 +140,178 @@ class RoutineStatsPage extends StatelessWidget {
             children: [
               const Icon(Icons.show_chart, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text(
-                'VOLUMEN TOTAL (kg)',
-                style: AppTextStyles.label.copyWith(
-                  fontWeight: FontWeight.w900,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CARGA MOVIDA',
+                      style: AppTextStyles.label.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    Text(
+                      'Suma de peso × reps de cada sesión',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textDisabled,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          StatStripe(
+            actualLabel: fmt(actual),
+            recordLabel: fmt(record),
+            delta: delta,
+            unit: 'kg·reps',
+            recordReached: actualIsRecord,
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             height: 200,
             child: LineChart(
               LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(
+                minY: yMin - yPad,
+                maxY: yMax + yPad,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: yRange == 0 ? null : yRange / 3,
+                  getDrawingHorizontalLine: (_) => const FlLine(
+                    color: AppColors.surfaceHighlight,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      getTitlesWidget: (value, meta) {
+                        if (value == meta.min || value == meta.max) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            fmt(value),
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 9,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 22,
-                      interval: 1,
+                      reservedSize: 24,
+                      getTitlesWidget: (value, meta) {
+                        final i = value.toInt();
+                        if (i < 0 || i >= chronological.length) {
+                          return const SizedBox();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            DateFormat(
+                              'd/M',
+                            ).format(chronological[i].sessionDate),
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 9,
+                            ),
+                          ),
+                        );
+                      },
                     ),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
+                lineTouchData: LineTouchData(
+                  handleBuiltInTouches: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => AppColors.surface,
+                    tooltipBorderRadius: const BorderRadius.all(
+                      Radius.circular(8),
+                    ),
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    getTooltipItems: (spots) {
+                      return spots.map((s) {
+                        final i = s.x.toInt();
+                        if (i < 0 || i >= chronological.length) return null;
+                        final date = DateFormat(
+                          'd MMM',
+                          'es',
+                        ).format(chronological[i].sessionDate);
+                        return LineTooltipItem(
+                          '${fmt(s.y)} kg·reps',
+                          AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '\n$date',
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: stats.asMap().entries.map((e) {
-                      return FlSpot(e.key.toDouble(), e.value.totalVolume);
-                    }).toList(),
+                    spots: [
+                      for (var i = 0; i < values.length; i++)
+                        FlSpot(i.toDouble(), values[i]),
+                    ],
                     isCurved: true,
+                    curveSmoothness: 0.3,
                     color: AppColors.primary,
-                    barWidth: 4,
+                    barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: true),
+                    dotData: FlDotData(
+                      show: true,
+                      checkToShowDot: (spot, _) => pr.contains(spot.x.toInt()),
+                      getDotPainter: (spot, xPercentage, bar, index) =>
+                          FlDotCirclePainter(
+                            radius: 4,
+                            color: AppColors.warning,
+                            strokeWidth: 2,
+                            strokeColor: AppColors.background,
+                          ),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.2),
+                          AppColors.primary.withValues(alpha: 0),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -180,6 +321,16 @@ class RoutineStatsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Set<int> _computePrIndices(List<double> values) {
+    final prs = <int>{};
+    var runningMax = double.negativeInfinity;
+    for (var i = 0; i < values.length; i++) {
+      if (i > 0 && values[i] > runningMax) prs.add(i);
+      if (values[i] > runningMax) runningMax = values[i];
+    }
+    return prs;
   }
 
   Widget _buildSessionCard(RoutineHistorySession session) {

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
+import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -158,9 +159,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     if (current is RoutineDayLoadingPhase) {
       return const [
         SliverFillRemaining(
-          child: Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
+          child: Center(child: BarbellLoader.large()),
         ),
       ];
     }

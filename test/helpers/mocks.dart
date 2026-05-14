@@ -1,6 +1,7 @@
 import 'package:mocktail/mocktail.dart';
 
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
@@ -18,6 +19,8 @@ class MockWorkoutRemoteDataSource extends Mock
 class MockActiveSessionService extends Mock implements ActiveSessionService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
+
+class MockLiveActivitiesBridge extends Mock implements LiveActivitiesBridge {}
 
 class MockActiveWorkoutNotifier extends Mock implements ActiveWorkoutNotifier {}
 

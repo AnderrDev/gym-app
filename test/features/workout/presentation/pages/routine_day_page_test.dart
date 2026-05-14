@@ -14,6 +14,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/ac
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_state.dart';
+import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/pages/routine_day_page.dart';
@@ -79,6 +80,10 @@ void main() {
       ),
     );
     registerFallbackValue(const ResetActiveWorkout());
+    // Necesario para los `any(named: 'duration')` del mock de
+    // ActiveWorkoutNotifier — sin él, mocktail tira `Bad state`
+    // cuando este test corre después de otros en el batch.
+    registerFallbackValue(Duration.zero);
     registerFallbackValue(
       const SaveActiveSetLog(
         SetLog(
@@ -90,9 +95,11 @@ void main() {
         ),
       ),
     );
+    registerFallbackValue(Duration.zero);
   });
 
   late MockNotificationService notificationService;
+  late MockActiveWorkoutNotifier activeWorkoutNotifier;
 
   setUp(() {
     routineDayBloc = MockRoutineDayBloc();
@@ -101,13 +108,26 @@ void main() {
     routineStreamCtrl = StreamController<RoutineDayState>.broadcast();
     activeStreamCtrl = StreamController<ActiveWorkoutState>.broadcast();
     notificationService = MockNotificationService();
+    activeWorkoutNotifier = MockActiveWorkoutNotifier();
     when(() => notificationService.requestPermission()).thenAnswer(
       (_) async => true,
     );
+    when(
+      () => activeWorkoutNotifier.onRestStarted(
+        duration: any(named: 'duration'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => activeWorkoutNotifier.onRestEnded(),
+    ).thenAnswer((_) async {});
     if (di.sl.isRegistered<NotificationService>()) {
       di.sl.unregister<NotificationService>();
     }
+    if (di.sl.isRegistered<ActiveWorkoutNotifier>()) {
+      di.sl.unregister<ActiveWorkoutNotifier>();
+    }
     di.sl.registerSingleton<NotificationService>(notificationService);
+    di.sl.registerSingleton<ActiveWorkoutNotifier>(activeWorkoutNotifier);
 
     when(
       () => routineDayBloc.stream,
