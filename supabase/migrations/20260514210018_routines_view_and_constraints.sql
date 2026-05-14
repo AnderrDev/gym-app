@@ -1,6 +1,10 @@
 -- View routines_view: rutinas con conteo de ejercicios y nombre del creador.
--- Idempotente: la UI consume `from('routines_view')` desde antes de esta migración.
-CREATE OR REPLACE VIEW public.routines_view AS
+-- DROP + CREATE porque la versión previa (migración 20260405033537) traía
+-- `created_at` y `CREATE OR REPLACE VIEW` no permite eliminar columnas.
+-- Verificado: el cliente solo selecciona id/name/exercise_count/is_public/creator_id/creator_name.
+DROP VIEW IF EXISTS public.routines_view;
+
+CREATE VIEW public.routines_view AS
 SELECT
   r.id,
   r.name,
