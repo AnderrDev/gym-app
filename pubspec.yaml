@@ -51,6 +51,7 @@ dependencies:
   shimmer: ^3.0.0
   flutter_dotenv: ^5.2.1
   flutter_local_notifications: ^18.0.1
+  live_activities: ^2.4.7
 
 dev_dependencies:
   flutter_test:

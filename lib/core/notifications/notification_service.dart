@@ -20,9 +20,19 @@ class NotificationService {
   static const _activeChannelDesc =
       'Notificación persistente mientras tenés un entrenamiento en curso';
 
+  /// Canal separado para la alerta de "fin del descanso". `Importance.high`
+  /// para que suene y vibre, channel propio para que el usuario lo pueda
+  /// configurar (silenciar la sesión activa sin perder la alerta de fin
+  /// de descanso, por ejemplo).
+  static const _restEndChannelId = 'rest_end';
+  static const _restEndChannelName = 'Fin del descanso';
+  static const _restEndChannelDesc =
+      'Sonido + vibración cuando termina el descanso entre series';
+
   /// ID fijo para la única noti de sesión activa. Reusarla permite que
   /// `show()` actúe como update sin duplicar entradas.
   static const int activeWorkoutNotificationId = 1001;
+  static const int restEndNotificationId = 1002;
 
   bool _initialized = false;
 
@@ -58,6 +68,18 @@ class NotificationService {
         importance: Importance.low,
         playSound: false,
         enableVibration: false,
+      ),
+    );
+    await androidPlugin?.createNotificationChannel(
+      AndroidNotificationChannel(
+        _restEndChannelId,
+        _restEndChannelName,
+        description: _restEndChannelDesc,
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        // Pattern corta-pausa-corta: 250ms vibra, 100ms silencio, 250ms vibra.
+        vibrationPattern: Int64List.fromList([0, 250, 100, 250]),
       ),
     );
 
@@ -98,13 +120,24 @@ class NotificationService {
 
   /// Muestra (o actualiza) la noti persistente de sesión activa.
   /// Reusa el mismo id para que sea un update silencioso, no una alerta nueva.
+  ///
+  /// [chronoAnchor] activa el chronometer nativo de Android:
+  /// - count-up (default): `chronoAnchor` es el momento de inicio; el sistema
+  ///   cuenta hacia adelante. Para la vista de sesión activa.
+  /// - count-down ([countdown] = true): `chronoAnchor` es el target en el
+  ///   futuro (ej. fin del descanso); el sistema cuenta hacia atrás.
+  ///
+  /// En iOS no hay equivalente nativo pre-Live-Activities, así que el body
+  /// queda estático en ambos modos.
   Future<void> showActiveWorkout({
     required String title,
     required String body,
+    DateTime? chronoAnchor,
+    bool countdown = false,
   }) async {
     if (!_isSupported) return;
     try {
-      const androidDetails = AndroidNotificationDetails(
+      final androidDetails = AndroidNotificationDetails(
         _activeChannelId,
         _activeChannelName,
         channelDescription: _activeChannelDesc,
@@ -113,7 +146,10 @@ class NotificationService {
         ongoing: true,
         autoCancel: false,
         onlyAlertOnce: true,
-        showWhen: false,
+        showWhen: chronoAnchor != null,
+        when: chronoAnchor?.millisecondsSinceEpoch,
+        usesChronometer: chronoAnchor != null,
+        chronometerCountDown: countdown,
         playSound: false,
         enableVibration: false,
       );
@@ -127,7 +163,7 @@ class NotificationService {
         activeWorkoutNotificationId,
         title,
         body,
-        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
       );
     } catch (e) {
       AppLogger.instance.warning('NotificationService.showActiveWorkout: $e');
@@ -140,6 +176,42 @@ class NotificationService {
       await _plugin.cancel(activeWorkoutNotificationId);
     } catch (e) {
       AppLogger.instance.warning('NotificationService.cancelActiveWorkout: $e');
+    }
+  }
+
+  /// Alerta one-shot al terminar el descanso: sonido + vibración + mensaje.
+  /// Usa el channel `_restEndChannelId` (Importance.high) y respeta el modo
+  /// silencio del dispositivo (no usa `criticalAlert`).
+  Future<void> showRestEnded() async {
+    if (!_isSupported) return;
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _restEndChannelId,
+        _restEndChannelName,
+        channelDescription: _restEndChannelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 250, 100, 250]),
+        autoCancel: true,
+        ongoing: false,
+        ticker: '¡A entrenar!',
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: false,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
+      await _plugin.show(
+        restEndNotificationId,
+        '¡A entrenar!',
+        'Próxima serie te espera',
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
+      );
+    } catch (e) {
+      AppLogger.instance.warning('NotificationService.showRestEnded: $e');
     }
   }
 }

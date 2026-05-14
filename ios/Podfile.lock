@@ -2,9 +2,15 @@ PODS:
   - app_links (6.4.1):
     - Flutter
   - Flutter (1.0.0)
+  - flutter_app_group_directory (0.0.1):
+    - Flutter
   - flutter_local_notifications (0.0.1):
     - Flutter
   - integration_test (0.0.1):
+    - Flutter
+  - live_activities (0.0.1):
+    - Flutter
+  - permission_handler_apple (9.3.0):
     - Flutter
   - share_plus (0.0.1):
     - Flutter
@@ -17,8 +23,11 @@ PODS:
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
   - Flutter (from `Flutter`)
+  - flutter_app_group_directory (from `.symlinks/plugins/flutter_app_group_directory/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - live_activities (from `.symlinks/plugins/live_activities/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -28,10 +37,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/app_links/ios"
   Flutter:
     :path: Flutter
+  flutter_app_group_directory:
+    :path: ".symlinks/plugins/flutter_app_group_directory/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
+  live_activities:
+    :path: ".symlinks/plugins/live_activities/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
@@ -42,12 +57,15 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   app_links: 3dbc685f76b1693c66a6d9dd1e9ab6f73d97dc0a
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_app_group_directory: 55b5362007d1c0cb45dc1dd1e94f67d615f45a6b
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  live_activities: 4dfa736d0736e1c77866a2f9c056a76513cc9e7b
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
-PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+PODFILE CHECKSUM: 52f71baf575c45aca1353f9be4422f9079a25000
 
 COCOAPODS: 1.16.2
