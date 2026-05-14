@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/notifications/active_workout_notifier.dart';
+import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/active_session_service.dart';
 import 'core/utils/clock.dart';
@@ -39,6 +40,7 @@ import 'features/auth/data/datasources/auth_local_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/get_current_user.dart';
+import 'features/auth/domain/usecases/request_password_reset.dart';
 import 'features/auth/domain/usecases/sign_in_with_email.dart';
 import 'features/auth/domain/usecases/sign_out.dart';
 import 'features/auth/domain/usecases/sign_up_with_email.dart';
@@ -63,6 +65,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignUpWithEmail(sl()));
   sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
+  sl.registerLazySingleton(() => RequestPasswordReset(sl()));
 
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
@@ -100,6 +103,7 @@ Future<void> init() async {
     () => RoutineManagementBloc(
       assignRoutine: sl(),
       getAllRoutines: sl(),
+      getAssignedRoutines: sl(),
       getWeeklyPlan: sl(),
       getRoutineById: sl(),
       saveRoutine: sl(),
@@ -159,7 +163,12 @@ Future<void> init() async {
   // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
   sl.registerLazySingleton(() => FlutterLocalNotificationsPlugin());
   sl.registerLazySingleton(() => NotificationService(sl()));
+  sl.registerLazySingleton(() => LiveActivitiesBridge());
   sl.registerLazySingleton(
-    () => ActiveWorkoutNotifier(notifications: sl(), sessionService: sl()),
+    () => ActiveWorkoutNotifier(
+      notifications: sl(),
+      liveActivities: sl(),
+      sessionService: sl(),
+    ),
   );
 }

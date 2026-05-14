@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 
 /// Overlay de loading bloqueante. Sustituye los `CircularProgressIndicator`
 /// directamente colgados en mitad de la pantalla cuando el usuario disparó
@@ -50,7 +51,7 @@ class _LoaderDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: AppColors.primary),
+            const BarbellLoader.medium(),
             if (message != null) ...[
               const SizedBox(height: Spacing.md),
               Text(message!, style: Theme.of(context).textTheme.bodyMedium),

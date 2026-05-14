@@ -107,24 +107,33 @@ class _AppShellViewState extends State<_AppShellView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          BlocSelector<
-            ActiveSessionWatcherBloc,
-            ActiveSessionWatcherState,
-            ActiveSessionInfo?
-          >(
-            selector: (state) => state.hasActiveSession ? state.session : null,
-            builder: (context, session) {
-              if (session == null) return const SizedBox.shrink();
-              return DashboardActiveSessionBanner(
-                session: session,
-                onTap: () => _resumeActiveSession(session),
-              );
-            },
-          ),
-          Expanded(child: widget.navigationShell),
-        ],
+      // SafeArea envolviendo el shell ENTERO consume el inset del status
+      // bar / Dynamic Island UNA SOLA VEZ. Sin esto, el AppBar del Scaffold
+      // interno (DashboardPage, RoutinesPage, etc.) re-paddingea por la
+      // status bar encima de la SafeArea, generando un gap visual gigante
+      // entre el banner y el título.
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            BlocSelector<
+              ActiveSessionWatcherBloc,
+              ActiveSessionWatcherState,
+              ActiveSessionInfo?
+            >(
+              selector: (state) =>
+                  state.hasActiveSession ? state.session : null,
+              builder: (context, session) {
+                if (session == null) return const SizedBox.shrink();
+                return DashboardActiveSessionBanner(
+                  session: session,
+                  onTap: () => _resumeActiveSession(session),
+                );
+              },
+            ),
+            Expanded(child: widget.navigationShell),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(

@@ -41,4 +41,27 @@ class AppColors {
   // — Glass surfaces (auth pages, hero cards) — tinte oscuro sobre claro
   static const Color glassFill = Color(0x0F000000); // ~6% black
   static const Color glassBorder = Color(0x1F000000); // ~12% black
+
+  // — Accent palette (identidad por rutina/día). Distintos a `primary` para
+  // que cada rutina/día tenga su propio color reconocible. Mantener saturada
+  // pero legible sobre fondo blanco.
+  static const Color accentLime = Color(0xFF8BC34A);
+  static const Color accentCoral = Color(0xFFFF6B6B);
+  static const Color accentViolet = Color(0xFF9B5DE5);
+  static const Color accentAmber = Color(0xFFFFB454);
+  static const Color accentCyan = Color(0xFF4ECDC4);
+  static const Color accentRose = Color(0xFFF15BB5);
+  static const Color accentBlue = Color(0xFF82A5FF);
+
+  /// Paleta de acentos en orden estable. Consumir vía índice (mod len) para
+  /// derivar colores deterministas por nombre/índice.
+  static const List<Color> accentPalette = [
+    accentLime,
+    accentCoral,
+    accentViolet,
+    accentAmber,
+    accentCyan,
+    accentRose,
+    accentBlue,
+  ];
 }

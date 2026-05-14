@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:gym_flutter/core/config/supabase_config.dart';
 import 'package:gym_flutter/core/error/error_reporter.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/observability/app_bloc_observer.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
@@ -62,10 +63,12 @@ void main() {
       return;
     }
 
-    // Notificaciones: init del plugin + re-posteo si había una sesión activa
-    // persistida (recovery tras app killed).
+    // Notificaciones: init del plugin local + Live Activities (iOS 16.1+) +
+    // re-posteo si había una sesión activa persistida (recovery tras app
+    // killed).
     try {
       await di.sl<NotificationService>().init();
+      await di.sl<LiveActivitiesBridge>().init();
       await di.sl<ActiveWorkoutNotifier>().bootstrapFromPersistedSession();
     } catch (e, st) {
       ErrorReporter.report(e, st, context: 'notifications_init');
