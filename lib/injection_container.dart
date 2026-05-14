@@ -17,6 +17,7 @@ import 'features/workout/presentation/bloc/active_session_watcher/active_session
 import 'features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import 'features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
 import 'features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
+import 'features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import 'features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import 'features/workout/domain/usecases/add_exercise_to_day.dart';
@@ -117,6 +118,10 @@ Future<void> init() async {
   sl.registerFactory(
     () =>
         ActiveSessionWatcherBloc(repository: sl(), activeSessionService: sl()),
+  );
+
+  sl.registerFactory(
+    () => ProgressBloc(getAssignedRoutines: sl(), repository: sl()),
   );
 
   sl.registerLazySingleton(() => GetAssignedRoutines(sl()));

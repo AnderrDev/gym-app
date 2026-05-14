@@ -10,6 +10,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import '../../features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import '../../features/workout/presentation/bloc/progress/progress_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import '../../features/workout/presentation/dashboard/pages/dashboard_page.dart';
@@ -143,7 +144,10 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.progress,
-                builder: (context, state) => const ProgressPage(),
+                builder: (context, state) => BlocProvider<ProgressBloc>(
+                  create: (_) => sl<ProgressBloc>(),
+                  child: const ProgressPage(),
+                ),
               ),
             ],
           ),
