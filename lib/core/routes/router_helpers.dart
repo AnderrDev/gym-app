@@ -12,10 +12,21 @@ void goToLogin(BuildContext context) => context.go(AppRoutes.login);
 
 void goToRegister(BuildContext context) => context.go(AppRoutes.register);
 
+// ── Bottom-nav branches (shell tabs) ──────────────────────────────────────
+//
+// Cuando una pantalla dentro del shell quiere cambiar de tab, debe usar uno
+// de estos helpers — NO `push` (porque eso superpone una ruta fullscreen
+// sobre la actual y oculta la NavigationBar).
+
 void goToDashboard(BuildContext context) => context.go(AppRoutes.dashboard);
 
-Future<bool?> pushRoutineList(BuildContext context) =>
-    context.push<bool>(AppRoutes.routineList);
+void goToRoutines(BuildContext context) => context.go(AppRoutes.routines);
+
+void goToProgress(BuildContext context) => context.go(AppRoutes.progress);
+
+void goToProfile(BuildContext context) => context.go(AppRoutes.profile);
+
+// ── Fullscreen pushes (NO viven dentro del shell) ─────────────────────────
 
 Future<bool?> pushRoutineEditor(BuildContext context, {String? routineId}) =>
     context.push<bool>(AppRoutes.routineEditor, extra: routineId);

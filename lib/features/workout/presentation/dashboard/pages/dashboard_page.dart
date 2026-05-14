@@ -7,25 +7,23 @@ import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_event.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_state.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_active_session_banner.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_state_content.dart';
 
-/// Página de Dashboard.
+/// Página de Dashboard ("HOY") — primer branch del shell con NavigationBar.
 ///
-/// Consume `DashboardBloc` para listas/plan y `ActiveSessionWatcherBloc` para
-/// el banner de "reanudar". El final de una sesión se sabe vía el resultado
-/// del `context.push(AppRoutes.routineDay)` (la página de routine_day pop-ea
-/// con `true` cuando finaliza).
+/// El banner de "sesión activa" y la AppBar action de cerrar sesión vivían
+/// acá originalmente; ahora viven en el shell / en la pestaña PERFIL. Esto
+/// permite que cualquier branch muestre el banner y elimina los 2
+/// `IconButton` de la AppBar (lista + logout) que ya no tienen lugar con
+/// la NavigationBar inferior.
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -52,35 +50,12 @@ class _DashboardPageState extends State<DashboardPage> {
       context.read<DashboardBloc>().add(
         LoadAssignedRoutines(authState.user.id),
       );
-      context.read<ActiveSessionWatcherBloc>().add(
-        CheckActiveSession(authState.user.id),
-      );
     });
   }
 
-  Future<void> _resumeActiveSession(ActiveSessionInfo info) async {
-    final routineDay = RoutineDay(
-      id: info.routineDayId,
-      routineId: '',
-      name: info.routineDayName,
-      dayOfWeek: info.sessionDate.weekday,
-      exercises: const [],
-    );
-    final didFinish = await pushRoutineDay(
-      context,
-      RoutineDayArgs(
-        routineDay: routineDay,
-        userId: info.userId,
-        sessionDate: info.sessionDate,
-      ),
-    );
-    if (!mounted) return;
-    if (didFinish == true) {
-      _handleWorkoutFinished(info.userId);
-    }
-  }
-
   void _handleWorkoutFinished(String userId) {
+    // El watcher vive en el shell, así que lo buscamos arriba en el árbol
+    // (sigue siendo accesible vía `BlocProvider` ancestral).
     context.read<ActiveSessionWatcherBloc>().add(const ClearActiveSession());
     final dashboardState = context.read<DashboardBloc>().state;
     final routine = dashboardState.selectedRoutine;
@@ -122,15 +97,6 @@ class _DashboardPageState extends State<DashboardPage> {
         weekStart: base.add(Duration(days: 7 * delta)),
       ),
     );
-  }
-
-  Future<void> _openRoutineListAndRefresh() async {
-    final authState = context.read<AuthBloc>().state;
-    final dashboardBloc = context.read<DashboardBloc>();
-    final userId = authState is Authenticated ? authState.user.id : null;
-    final didChange = await pushRoutineList(context);
-    if (!mounted || didChange != true || userId == null) return;
-    dashboardBloc.add(LoadAssignedRoutines(userId));
   }
 
   Future<void> _openRoutineEditorAndRefresh() async {
@@ -203,61 +169,24 @@ class _DashboardPageState extends State<DashboardPage> {
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text('Smart Gym Tracker', style: AppTextStyles.heading2),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.list_alt, color: AppColors.primary),
-            onPressed: _openRoutineListAndRefresh,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.primary),
-            onPressed: () => context.read<AuthBloc>().add(SignOutRequested()),
-          ),
-        ],
       ),
-      // Antes había un auto-resume aquí que disparaba `_resumeActiveSession`
-      // apenas el watcher detectaba una sesión activa. Esto creaba un loop
-      // si la vista activa crasheaba: cada relaunch te metía de vuelta a la
-      // pantalla rota sin oportunidad de salir. Ahora el usuario tiene que
-      // tap-ear el banner para volver al workout.
-      body: Column(
-          children: [
-            // El banner solo se rebuildea cuando cambia la sesión activa —
-            // ningún cambio del DashboardBloc lo dispara.
-            BlocSelector<
-              ActiveSessionWatcherBloc,
-              ActiveSessionWatcherState,
-              ActiveSessionInfo?
-            >(
-              selector: (state) =>
-                  state.hasActiveSession ? state.session : null,
-              builder: (context, session) {
-                if (session == null) return const SizedBox.shrink();
-                return DashboardActiveSessionBanner(
-                  session: session,
-                  onTap: () => _resumeActiveSession(session),
-                );
-              },
-            ),
-            Expanded(
-              child: BlocBuilder<DashboardBloc, DashboardState>(
-                builder: (context, dashState) {
-                  return DashboardStateContent(
-                    state: dashState,
-                    onRetry: _retryLoadRoutines,
-                    onExploreCatalog: _openRoutineListAndRefresh,
-                    onCreateRoutine: _openRoutineEditorAndRefresh,
-                    onSelectRoutine: _onSelectRoutine,
-                    onOpenRoutineStats: _openRoutineStats,
-                    onPreviousWeek: () => _changeWeek(-1),
-                    onNextWeek: () => _changeWeek(1),
-                    onOpenSelectedRoutineStats: _openSelectedRoutineStats,
-                    onOpenDay: _openRoutineDay,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      body: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, dashState) {
+          return DashboardStateContent(
+            state: dashState,
+            onRetry: _retryLoadRoutines,
+            // El catálogo de rutinas ahora vive en la pestaña RUTINAS — el
+            // CTA del empty state cambia de tab en vez de pushar una ruta.
+            onExploreCatalog: () => goToRoutines(context),
+            onCreateRoutine: _openRoutineEditorAndRefresh,
+            onSelectRoutine: _onSelectRoutine,
+            onOpenRoutineStats: _openRoutineStats,
+            onPreviousWeek: () => _changeWeek(-1),
+            onNextWeek: () => _changeWeek(1),
+            onOpenSelectedRoutineStats: _openSelectedRoutineStats,
+            onOpenDay: _openRoutineDay,
+          );
+        },
       ),
     );
   }

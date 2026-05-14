@@ -1,26 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import '../../features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
-import '../../features/workout/presentation/routine_day/pages/routine_day_page.dart';
 import '../../features/workout/presentation/dashboard/pages/dashboard_page.dart';
-import '../../injection_container.dart';
-import '../../features/workout/presentation/routine_management/pages/routine_list_page.dart';
-import '../../features/workout/presentation/routine_management/pages/routine_editor_page.dart';
-import '../../features/workout/presentation/routine_management/pages/day_editor_page.dart';
-import '../../features/workout/presentation/routine_stats/pages/routine_stats_page.dart';
 import '../../features/workout/presentation/exercise/pages/exercise_progress_page.dart';
+import '../../features/workout/presentation/progress/pages/progress_page.dart';
+import '../../features/workout/presentation/routine_day/pages/routine_day_page.dart';
+import '../../features/workout/presentation/routine_management/pages/day_editor_page.dart';
+import '../../features/workout/presentation/routine_management/pages/routine_editor_page.dart';
+import '../../features/workout/presentation/routine_management/pages/routine_list_page.dart';
+import '../../features/workout/presentation/routine_stats/pages/routine_stats_page.dart';
+import '../../injection_container.dart';
 import 'app_routes.dart';
+import 'app_shell_page.dart';
 import 'args/routing_args.dart';
 
 class AppRouter {
@@ -33,6 +35,24 @@ class AppRouter {
   late final GoRouterRefreshStream _refreshListenable =
       GoRouterRefreshStream(authBloc.stream);
 
+  // Keys separadas para el root (auth pages) y para cada branch del shell:
+  // así `StatefulShellRoute.indexedStack` preserva el stack de cada tab.
+  static final _rootNavigatorKey = GlobalKey<NavigatorState>(
+    debugLabel: 'root',
+  );
+  static final _shellDashboardKey = GlobalKey<NavigatorState>(
+    debugLabel: 'shell-dashboard',
+  );
+  static final _shellRoutinesKey = GlobalKey<NavigatorState>(
+    debugLabel: 'shell-routines',
+  );
+  static final _shellProgressKey = GlobalKey<NavigatorState>(
+    debugLabel: 'shell-progress',
+  );
+  static final _shellProfileKey = GlobalKey<NavigatorState>(
+    debugLabel: 'shell-profile',
+  );
+
   AppRouter(this.authBloc);
 
   /// Cancela la suscripción interna al `authBloc.stream`. Llamar desde
@@ -42,6 +62,7 @@ class AppRouter {
   }
 
   late final GoRouter router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.login,
     refreshListenable: _refreshListenable,
     redirect: (context, state) {
@@ -69,6 +90,7 @@ class AppRouter {
       return null;
     },
     routes: [
+      // ── Auth (root, sin shell) ─────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
@@ -77,26 +99,70 @@ class AppRouter {
         path: AppRoutes.register,
         builder: (context, state) => const RegisterPage(),
       ),
-      GoRoute(
-        path: AppRoutes.dashboard,
-        builder: (context, state) => MultiBlocProvider(
-          providers: [
-            BlocProvider<DashboardBloc>(create: (_) => sl<DashboardBloc>()),
-            BlocProvider<ActiveSessionWatcherBloc>(
-              create: (_) => sl<ActiveSessionWatcherBloc>(),
-            ),
-          ],
-          child: const DashboardPage(),
-        ),
+
+      // ── Shell con bottom navigation persistente ────────────────────────
+      //
+      // Cada branch tiene su propio Navigator (preserva el back-stack al
+      // cambiar de tab). Las rutas que viven FUERA del shell (routine-day,
+      // routine-editor, etc.) se declaran abajo como `GoRoute` top-level y
+      // se abren con `context.push` — superponen la NavigationBar.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShellPage(navigationShell: navigationShell),
+        branches: [
+          // Branch 1 — HOY (dashboard)
+          StatefulShellBranch(
+            navigatorKey: _shellDashboardKey,
+            routes: [
+              GoRoute(
+                path: AppRoutes.dashboard,
+                builder: (context, state) => BlocProvider<DashboardBloc>(
+                  create: (_) => sl<DashboardBloc>(),
+                  child: const DashboardPage(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 2 — RUTINAS
+          StatefulShellBranch(
+            navigatorKey: _shellRoutinesKey,
+            routes: [
+              GoRoute(
+                path: AppRoutes.routines,
+                builder: (context, state) =>
+                    BlocProvider<RoutineManagementBloc>(
+                      create: (_) => sl<RoutineManagementBloc>(),
+                      child: const RoutineListPage(),
+                    ),
+              ),
+            ],
+          ),
+          // Branch 3 — PROGRESO
+          StatefulShellBranch(
+            navigatorKey: _shellProgressKey,
+            routes: [
+              GoRoute(
+                path: AppRoutes.progress,
+                builder: (context, state) => const ProgressPage(),
+              ),
+            ],
+          ),
+          // Branch 4 — PERFIL (stub)
+          StatefulShellBranch(
+            navigatorKey: _shellProfileKey,
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfilePage(),
+              ),
+            ],
+          ),
+        ],
       ),
+
+      // ── Fullscreen routes (push, ocultan NavigationBar) ────────────────
       GoRoute(
-        path: AppRoutes.routineList,
-        builder: (context, state) => BlocProvider<RoutineManagementBloc>(
-          create: (_) => sl<RoutineManagementBloc>(),
-          child: const RoutineListPage(),
-        ),
-      ),
-      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.routineEditor,
         builder: (context, state) {
           final routineId = state.extra as String?;
@@ -107,6 +173,7 @@ class AppRouter {
         },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.dayEditor,
         builder: (context, state) {
           final args = state.extra;
@@ -118,6 +185,7 @@ class AppRouter {
         },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.routineDay,
         builder: (context, state) {
           final args = state.extra;
@@ -138,6 +206,7 @@ class AppRouter {
         },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.routineStats,
         builder: (context, state) {
           final args = state.extra;
@@ -152,6 +221,7 @@ class AppRouter {
         },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.exerciseProgress,
         builder: (context, state) {
           final args = state.extra;

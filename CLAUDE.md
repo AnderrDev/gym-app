@@ -61,6 +61,10 @@ Two top-level providers wired in `main.dart`: `AuthBloc` (lifetime-bound to the 
 
 All paths are constants on `AppRoutes` (`lib/core/routes/app_routes.dart`). `AppRouter` (`lib/core/routes/app_router.dart`) registers them with `go_router` and decodes `state.extra` as either a raw `String?` (routine id) or a `Map<String, dynamic>` for screens that need multiple typed params (e.g. `routineDay`, `routineStats`, `exerciseProgress`). When adding a route, update `AppRoutes`, not string literals.
 
+The router uses `StatefulShellRoute.indexedStack` to drive a persistent bottom `NavigationBar`. Four branches are mounted inside the shell (`AppShellPage` in `lib/core/routes/app_shell_page.dart`): `/dashboard` (HOY), `/routines` (RUTINAS), `/progress` (PROGRESO), `/profile` (PERFIL). Each branch keeps its own `Navigator` and state via `IndexedStack`. **Routes that should hide the bottom bar** (active workout, editors, stats deep-dives) are declared as top-level `GoRoute`s with `parentNavigatorKey: _rootNavigatorKey` — that pushes them fullscreen above the shell. Currently outside the shell: `/routine-day`, `/routine-editor`, `/day-editor`, `/routine-stats`, `/exercise-progress`. When adding a new destination decide deliberately: tab vs. fullscreen.
+
+The `ActiveSessionWatcherBloc` provider lives in the shell (`AppShellPage`), not in `/dashboard`. The "resume in-progress workout" banner is therefore visible across all tabs. Don't move that provider back into a single page. Helpers in `router_helpers.dart` favor `context.go(...)` for tab switches (`goToRoutines`, `goToProgress`, `goToProfile`) and `context.push(...)` for fullscreen pushes — don't push to a tab path or you'll stack the shell on itself.
+
 ### Backend split (data path)
 
 - Direct Supabase tables — read/written via PostgREST in `workout_remote_data_source.dart` and `auth_remote_data_source.dart`.

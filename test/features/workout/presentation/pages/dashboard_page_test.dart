@@ -64,6 +64,11 @@ void main() {
   });
 
   Widget createWidgetUnderTest() {
+    // Nota: el banner de sesión activa y el `ActiveSessionWatcherBloc` ahora
+    // viven en el `AppShellPage`, no en el dashboard. Igual seguimos
+    // proveyendo el watcher acá porque `DashboardPage._handleWorkoutFinished`
+    // lo consume vía `context.read` cuando el push de routine-day finaliza
+    // — en producción ese provider es ancestral (lo pone el shell).
     return MaterialApp(
       home: InheritedGoRouter(
         goRouter: mockGoRouter,
@@ -129,49 +134,23 @@ void main() {
     expect(find.byType(DashboardWeeklyView), findsOneWidget);
   });
 
-  testWidgets('toca el icono de lista → push a /routine-list', (tester) async {
-    when(
-      () => mockDashboardBloc.state,
-    ).thenReturn(const DashboardState(status: DashboardStatus.ready));
-    when(
-      () => mockDashboardBloc.stream,
-    ).thenAnswer((_) => const Stream.empty());
+  testWidgets(
+    'AppBar del dashboard NO contiene icons de lista ni logout '
+    '(ahora viven en el shell / pestaña perfil)',
+    (tester) async {
+      when(
+        () => mockDashboardBloc.state,
+      ).thenReturn(const DashboardState(status: DashboardStatus.ready));
+      when(
+        () => mockDashboardBloc.stream,
+      ).thenAnswer((_) => const Stream.empty());
 
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pump();
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.list_alt));
-    verify(() => mockGoRouter.push<bool>('/routine-list')).called(1);
-  });
-
-  testWidgets('banner de sesión activa aparece cuando watcher emite detected', (
-    tester,
-  ) async {
-    final session = ActiveSessionInfo(
-      sessionId: 's1',
-      userId: 'user123',
-      routineDayId: 'd1',
-      routineDayName: 'Active Day',
-      sessionDate: DateTime.now(),
-    );
-
-    when(
-      () => mockDashboardBloc.state,
-    ).thenReturn(const DashboardState(status: DashboardStatus.ready));
-    when(
-      () => mockDashboardBloc.stream,
-    ).thenAnswer((_) => const Stream.empty());
-    when(() => mockWatcherBloc.state).thenReturn(
-      ActiveSessionWatcherState(
-        status: ActiveSessionWatcherStatus.detected,
-        session: session,
-      ),
-    );
-
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pump();
-
-    expect(find.textContaining('Active Day'), findsOneWidget);
-    expect(find.text('Retomar'), findsOneWidget);
-  });
+      // La AppBar ya no tiene acciones: ni `list_alt` (catálogo) ni `logout`.
+      expect(find.byIcon(Icons.list_alt), findsNothing);
+      expect(find.byIcon(Icons.logout), findsNothing);
+    },
+  );
 }
