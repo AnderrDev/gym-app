@@ -97,12 +97,17 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest(routineId: 'r1'));
     await tester.pump();
 
-    expect(find.text('MY ROUTINE'), findsWidgets);
+    // El nombre ahora se muestra en el TextField sin uppercase forzado.
+    expect(find.text('My Routine'), findsWidgets);
   });
 
-  testWidgets('GUARDAR dispara SaveRoutine', (tester) async {
+  testWidgets('GUARDAR dispara SaveRoutine cuando hay cambios', (tester) async {
+    // El botón GUARDAR se habilita solo cuando isDirty=true.
     when(() => bloc.state).thenReturn(
-      const RoutineManagementState(status: RoutineManagementStatus.ready),
+      const RoutineManagementState(
+        status: RoutineManagementStatus.ready,
+        isDirty: true,
+      ),
     );
 
     await tester.pumpWidget(createWidgetUnderTest());

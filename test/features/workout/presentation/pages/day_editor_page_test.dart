@@ -103,11 +103,13 @@ void main() {
     await tester.pump();
 
     expect(find.text('PRESS BANCA'), findsOneWidget);
-    expect(find.textContaining('PECHO Y TRICEPS'), findsOneWidget);
+    // El nombre del día ahora vive en un TextField (sin uppercase).
+    expect(find.text('Pecho y Triceps'), findsOneWidget);
   });
 
-  testWidgets('GUARDAR dispara SaveDay', (tester) async {
-    when(() => bloc.state).thenReturn(const RoutineManagementState());
+  testWidgets('GUARDAR dispara SaveDay cuando hay cambios', (tester) async {
+    // El botón GUARDAR ahora se habilita solo cuando isDirty=true.
+    when(() => bloc.state).thenReturn(const RoutineManagementState(isDirty: true));
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
@@ -118,7 +120,7 @@ void main() {
     verify(() => bloc.add(any(that: isA<SaveDay>()))).called(1);
   });
 
-  testWidgets('sin ejercicios muestra mensaje vacío', (tester) async {
+  testWidgets('sin ejercicios muestra empty state con CTA', (tester) async {
     const emptyDay = RoutineDay(
       id: 'd1',
       routineId: 'r1',
@@ -144,6 +146,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('para añadir ejercicios'), findsOneWidget);
+    expect(find.text('Sin ejercicios'), findsOneWidget);
+    expect(find.text('BUSCAR EJERCICIOS'), findsOneWidget);
   });
 }

@@ -5,13 +5,16 @@ import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 
-/// Card de rutina en el listado/catálogo. Muestra nombre, badges y CTA
-/// "ACTIVAR". Tap en "DETALLES" abre el editor.
+/// Card de rutina en el listado. Diseño "split":
+/// - Banda lateral de color (hash del nombre) como identidad visual.
+/// - Bloque central con nombre, stats y atribución.
+/// - Footer con CTA secundaria (DETALLES) y CTA primaria contextual
+///   (ACTIVAR / ACTIVA según `isActive`).
 class RoutineListCard extends StatelessWidget {
   const RoutineListCard({
     super.key,
@@ -27,116 +30,220 @@ class RoutineListCard extends StatelessWidget {
   final bool isMine;
   final ValueChanged<String> onActivate;
 
-  /// Se invoca cuando el editor de rutina pop-ea con cambios (`true`), para
-  /// que el contenedor pueda refrescar el catálogo.
+  /// Callback cuando el editor pop-ea con cambios.
   final VoidCallback? onEdited;
+
+  Future<void> _openDetails(BuildContext context) async {
+    unawaited(HapticFeedback.selectionClick());
+    final changed = await pushRoutineEditor(context, routineId: routine.id);
+    if (changed == true) onEdited?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(Spacing.xl),
-      borderRadius: BorderRadius.circular(28),
-      borderOpacity: isActive ? 0.4 : 0.1,
-      borderColor: isActive ? AppColors.primary : AppColors.divider,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  routine.name.toUpperCase(),
-                  style: AppTextStyles.heading2.copyWith(
-                    fontSize: 16,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              if (isActive)
+    final accent = RoutineColor.accentFor(routine.name);
+    final borderColor = isActive
+        ? accent.withValues(alpha: 0.6)
+        : AppColors.divider.withValues(alpha: 0.4);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openDetails(context),
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor, width: isActive ? 1.6 : 1),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Banda de identidad
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  width: 6,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'ACTIVA',
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.onPrimary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                    color: accent,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      bottomLeft: Radius.circular(24),
                     ),
                   ),
                 ),
-            ],
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Spacing.lgPlus,
+                      Spacing.lg,
+                      Spacing.lgPlus,
+                      Spacing.md,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Header(
+                          name: routine.name,
+                          isActive: isActive,
+                          accent: accent,
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        _StatsRow(
+                          routine: routine,
+                          isMine: isMine,
+                          accent: accent,
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        _Footer(
+                          isActive: isActive,
+                          accent: accent,
+                          onActivate: () => onActivate(routine.id),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: Spacing.xl),
-          Row(
-            children: [
-              _RoutineInfoTag(
-                icon: Icons.fitness_center_rounded,
-                label: '${routine.exerciseCount} EJERCICIOS',
-              ),
-              const SizedBox(width: Spacing.md),
-              Flexible(
-                child: _RoutineInfoTag(
-                  icon: isMine ? Icons.person_rounded : Icons.public_rounded,
-                  label: isMine
-                      ? 'MI RUTINA'
-                      : (routine.creatorName ?? 'COMUNIDAD'),
-                ),
-              ),
-            ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.name,
+    required this.isActive,
+    required this.accent,
+  });
+
+  final String name;
+  final bool isActive;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            name.toUpperCase(),
+            style: AppTextStyles.heading2.copyWith(
+              fontSize: 16,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: Spacing.xl),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              InkWell(
-                onTap: () async {
-                  unawaited(HapticFeedback.selectionClick());
-                  final changed = await pushRoutineEditor(
-                    context,
-                    routineId: routine.id,
-                  );
-                  if (changed == true) onEdited?.call();
-                },
-                child: Text(
-                  'DETALLES',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
+        ),
+        if (isActive)
+          Container(
+            margin: const EdgeInsets.only(left: Spacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'ACTIVA',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.background,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
               ),
-              ElevatedButton(
-                onPressed: () => onActivate(routine.id),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.lgPlus,
-                    vertical: Spacing.sm,
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'ACTIVAR',
-                  style: AppTextStyles.label.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-              ),
-            ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({
+    required this.routine,
+    required this.isMine,
+    required this.accent,
+  });
+
+  final Routine routine;
+  final bool isMine;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final author = isMine
+        ? 'Mi rutina'
+        : (routine.creatorName?.isNotEmpty == true
+            ? routine.creatorName!
+            : 'Comunidad');
+    return Wrap(
+      spacing: Spacing.sm,
+      runSpacing: Spacing.xs,
+      children: [
+        _StatChip(
+          icon: Icons.fitness_center_rounded,
+          label: '${routine.exerciseCount} ejercicios',
+          accent: accent,
+        ),
+        _StatChip(
+          icon: isMine ? Icons.person_rounded : Icons.public_rounded,
+          label: author,
+          accent: accent,
+        ),
+        if (routine.isPublic && !isMine)
+          _StatChip(
+            icon: Icons.share_rounded,
+            label: 'Pública',
+            accent: accent,
+          ),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: accent),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              color: AppColors.textPrimary.withValues(alpha: 0.85),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -144,42 +251,54 @@ class RoutineListCard extends StatelessWidget {
   }
 }
 
-class _RoutineInfoTag extends StatelessWidget {
-  const _RoutineInfoTag({required this.icon, required this.label});
+class _Footer extends StatelessWidget {
+  const _Footer({
+    required this.isActive,
+    required this.accent,
+    required this.onActivate,
+  });
 
-  final IconData icon;
-  final String label;
+  final bool isActive;
+  final Color accent;
+  final VoidCallback onActivate;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.glassFill,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.primary.withValues(alpha: 0.7), size: 14),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
+    final bg = isActive ? accent.withValues(alpha: 0.15) : accent;
+    final fg = isActive ? accent : AppColors.background;
+    final label = isActive ? 'ACTIVADA' : 'ACTIVAR';
+    final icon = isActive
+        ? Icons.check_circle_rounded
+        : Icons.play_arrow_rounded;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton.icon(
+          onPressed: isActive ? null : onActivate,
+          icon: Icon(icon, color: fg, size: 18),
+          label: Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              fontSize: 12,
             ),
           ),
-        ],
-      ),
+          style: TextButton.styleFrom(
+            backgroundColor: bg,
+            disabledBackgroundColor: bg,
+            disabledForegroundColor: fg,
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.lg,
+              vertical: Spacing.sm,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

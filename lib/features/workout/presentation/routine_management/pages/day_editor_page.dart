@@ -10,6 +10,8 @@ import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -20,7 +22,9 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_managemen
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_state.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_sheet.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/edit_exercise_target_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/exercise_row_card.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/section_header.dart';
 
 class DayEditorPage extends StatefulWidget {
   final String routineId;
@@ -68,7 +72,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
                   state.exerciseCatalog.isEmpty) {
                 return const SizedBox(
                   height: 200,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: BarbellLoader.large()),
                 );
               }
               return ExerciseCatalogSheet(
@@ -101,32 +105,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
     unawaited(HapticFeedback.mediumImpact());
   }
 
-  Future<bool> _confirmDiscard() async {
-    final res = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('¿Descartar cambios?'),
-        content: const Text(
-          'Tienes cambios sin guardar. Si sales ahora se perderán.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCELAR'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'DESCARTAR',
-              style: AppTextStyles.label.copyWith(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-    return res ?? false;
-  }
+  Future<bool> _confirmDiscard() => DiscardChangesDialog.show(context);
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +157,9 @@ class _DayEditorPageState extends State<DayEditorPage> {
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
-                  expandedHeight: 140,
                   pinned: true,
-                  backgroundColor: Colors.transparent,
+                  titleSpacing: 0,
+                  backgroundColor: AppColors.background,
                   elevation: 0,
                   leading: IconButton(
                     icon: const Icon(
@@ -199,6 +178,12 @@ class _DayEditorPageState extends State<DayEditorPage> {
                       if (shouldPop) navigator.pop(isDirty);
                     },
                   ),
+                  title: Text(
+                    'Editar día',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   actions: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -206,26 +191,36 @@ class _DayEditorPageState extends State<DayEditorPage> {
                         vertical: 8,
                       ),
                       child: TextButton(
-                        onPressed: () {
-                          final authState = context.read<AuthBloc>().state;
-                          final userId = (authState is Authenticated)
-                              ? authState.user.id
-                              : '';
-
-                          context.read<RoutineManagementBloc>().add(
-                            SaveDay(
-                              userId: userId,
-                              routineId: widget.routineId,
-                              day: currentDay.copyWith(
-                                name: _nameController.text,
-                              ),
-                            ),
-                          );
-                        },
+                        onPressed: isDirty
+                            ? () {
+                                final authState =
+                                    context.read<AuthBloc>().state;
+                                final userId = (authState is Authenticated)
+                                    ? authState.user.id
+                                    : '';
+                                context.read<RoutineManagementBloc>().add(
+                                  SaveDay(
+                                    userId: userId,
+                                    routineId: widget.routineId,
+                                    day: currentDay.copyWith(
+                                      name: _nameController.text,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          disabledForegroundColor:
+                              AppColors.textSecondary.withValues(alpha: 0.4),
+                        ),
                         child: Text(
                           'GUARDAR',
                           style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
+                            color: isDirty
+                                ? AppColors.primary
+                                : AppColors.textSecondary
+                                    .withValues(alpha: 0.5),
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.5,
                           ),
@@ -234,77 +229,63 @@ class _DayEditorPageState extends State<DayEditorPage> {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    title: Text(
-                      _nameController.text.toUpperCase(),
-                      style: AppTextStyles.heading2.copyWith(
-                        fontSize: 16,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    background: Container(
-                      padding: const EdgeInsets.fromLTRB(24, 60, 24, 0),
-                      color: AppColors.background,
-                      child: TextField(
-                        controller: _nameController,
-                        onChanged: (v) {
-                          setState(() {});
-                          context
-                              .read<RoutineManagementBloc>()
-                              .add(const MarkRoutineDirty());
-                        },
-                        style: AppTextStyles.heading1.copyWith(
-                          fontSize: 24,
-                          letterSpacing: -0.5,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'NOMBRE DEL DÍA',
-                          hintStyle: AppTextStyles.heading1.copyWith(
-                            color: AppColors.textDisabled,
-                            fontSize: 24,
-                            letterSpacing: -0.5,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
 
+                // Bloque del nombre del día: input grande, sin chrome extra.
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      Spacing.lgPlus,
-                      Spacing.xl,
-                      Spacing.lgPlus,
+                      Spacing.lg,
+                      Spacing.sm,
+                      Spacing.lg,
                       Spacing.lg,
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'EJERCICIOS ASIGNADOS',
+                          'NOMBRE DEL DÍA',
                           style: AppTextStyles.label.copyWith(
-                            letterSpacing: 1.2,
                             color: AppColors.textSecondary,
+                            letterSpacing: 1.2,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const Spacer(),
-                        const Icon(
-                          Icons.info_outline,
-                          size: 14,
-                          color: AppColors.textDisabled,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Arrastra para reordenar',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.textDisabled,
-                            fontSize: 10,
+                        const SizedBox(height: Spacing.xs),
+                        TextField(
+                          controller: _nameController,
+                          onChanged: (_) {
+                            context
+                                .read<RoutineManagementBloc>()
+                                .add(const MarkRoutineDirty());
+                          },
+                          style: AppTextStyles.heading1.copyWith(
+                            fontSize: 22,
+                            letterSpacing: -0.4,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Pull Day · Espalda/Bíceps',
+                            hintStyle: AppTextStyles.heading1.copyWith(
+                              color: AppColors.textDisabled,
+                              fontSize: 22,
+                              letterSpacing: -0.4,
+                            ),
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 6),
+                            border: InputBorder.none,
+                            enabledBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.divider,
+                              ),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -312,14 +293,45 @@ class _DayEditorPageState extends State<DayEditorPage> {
                   ),
                 ),
 
-                if (exercises.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        'Dale a "+" para añadir ejercicios',
-                        style: TextStyle(color: AppColors.textDisabled),
+                // Resumen del día: grupos musculares trabajados (derivado
+                // de los exercises ya cargados). Si está vacío no rendereamos.
+                if (exercises.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _DaySummary(exercises: exercises),
+                  ),
+
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Spacing.lgPlus,
+                      Spacing.md,
+                      Spacing.lgPlus,
+                      Spacing.sm,
+                    ),
+                    child: SectionHeader(
+                      label: 'Ejercicios',
+                      trailing: Text(
+                        '${exercises.length}',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
                       ),
+                      hint: exercises.length >= 2
+                          ? 'Mantén para reordenar · toca para editar'
+                          : (exercises.isNotEmpty
+                              ? 'Toca para editar objetivos'
+                              : null),
+                    ),
+                  ),
+                ),
+
+                if (exercises.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyExercises(
+                      onTap: () => _showExerciseCatalog(exercises),
                     ),
                   )
                 else
@@ -399,6 +411,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
     return ExerciseRowCard(
       exercise: exercise,
       index: index,
+      onTap: () => _openEditTargetSheet(exercise, currentDay),
       onRemove: () {
         final authState = context.read<AuthBloc>().state;
         final userId = (authState is Authenticated) ? authState.user.id : '';
@@ -411,6 +424,217 @@ class _DayEditorPageState extends State<DayEditorPage> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openEditTargetSheet(
+    Exercise exercise,
+    RoutineDay currentDay,
+  ) async {
+    final authState = context.read<AuthBloc>().state;
+    final userId = (authState is Authenticated) ? authState.user.id : '';
+    final bloc = context.read<RoutineManagementBloc>();
+    unawaited(HapticFeedback.selectionClick());
+    final result = await AppBottomSheet.show<EditExerciseTargetResult>(
+      context,
+      title: 'Editar objetivos',
+      child: EditExerciseTargetSheet(exercise: exercise),
+    );
+    if (result == null) return;
+    bloc.add(
+      UpdateExerciseTargetEvent(
+        userId: userId,
+        routineId: widget.routineId,
+        dayId: currentDay.id,
+        exerciseId: exercise.id,
+        targetWeight: result.targetWeight,
+        targetReps: result.targetReps,
+        targetSets: result.targetSets,
+        restSeconds: result.restSeconds,
+      ),
+    );
+  }
+}
+
+/// Resumen visual del día: chip de músculos trabajados (derivado de los
+/// `targetMuscle` únicos de los ejercicios del día) y conteo total de sets.
+class _DaySummary extends StatelessWidget {
+  const _DaySummary({required this.exercises});
+
+  final List<Exercise> exercises;
+
+  @override
+  Widget build(BuildContext context) {
+    final muscles = exercises
+        .map((e) => e.targetMuscle)
+        .where((m) => m.isNotEmpty)
+        .toSet()
+        .toList();
+    final totalSets =
+        exercises.fold<int>(0, (acc, e) => acc + e.targetSets);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lgPlus,
+        0,
+        Spacing.lgPlus,
+        Spacing.sm,
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lg,
+          Spacing.md,
+          Spacing.lg,
+          Spacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _SummaryStat(
+                  icon: Icons.fitness_center_rounded,
+                  label: '${exercises.length} ejercicios',
+                ),
+                const SizedBox(width: Spacing.lg),
+                _SummaryStat(
+                  icon: Icons.repeat_rounded,
+                  label: '$totalSets sets',
+                ),
+              ],
+            ),
+            if (muscles.isNotEmpty) ...[
+              const SizedBox(height: Spacing.sm),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: muscles
+                    .map(
+                      (m) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          m.toUpperCase(),
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryStat extends StatelessWidget {
+  const _SummaryStat({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: AppColors.primary, size: 14),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: AppTextStyles.label.copyWith(
+            color: AppColors.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyExercises extends StatelessWidget {
+  const _EmptyExercises({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.xxl),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: const Icon(
+              Icons.fitness_center_rounded,
+              color: AppColors.primary,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: Spacing.lg),
+          Text(
+            'Sin ejercicios',
+            style: AppTextStyles.heading2.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'Añadí ejercicios desde el catálogo para empezar a armar este día.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: Spacing.lg),
+          OutlinedButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.search_rounded, size: 18),
+            label: Text(
+              'BUSCAR EJERCICIOS',
+              style: AppTextStyles.label.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.5),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.lg,
+                vertical: Spacing.md,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

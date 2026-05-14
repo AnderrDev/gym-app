@@ -24,6 +24,7 @@ enum RoutineManagementAction {
   addExercises,
   removeExercise,
   reorderExercises,
+  updateExerciseTarget,
 }
 
 /// Estado del subdominio "gestión de rutinas". Cubre tres escenarios:
@@ -36,6 +37,7 @@ class RoutineManagementState extends Equatable {
     this.submissionStatus = RoutineManagementSubmissionStatus.idle,
     this.lastAction = RoutineManagementAction.none,
     this.routines = const [],
+    this.activeRoutineId,
     this.editingRoutine,
     this.editingDays = const [],
     this.exerciseCatalog = const [],
@@ -49,6 +51,11 @@ class RoutineManagementState extends Equatable {
   final RoutineManagementSubmissionStatus submissionStatus;
   final RoutineManagementAction lastAction;
   final List<Routine> routines;
+
+  /// Id de la rutina actualmente asignada al usuario (única por la constraint
+  /// `user_routines.user_id`). `null` si todavía no se cargó o el usuario no
+  /// tiene rutina activa.
+  final String? activeRoutineId;
   final Routine? editingRoutine;
   final List<RoutineDay> editingDays;
   final List<ExerciseCatalogItem> exerciseCatalog;
@@ -66,6 +73,8 @@ class RoutineManagementState extends Equatable {
     RoutineManagementSubmissionStatus? submissionStatus,
     RoutineManagementAction? lastAction,
     List<Routine>? routines,
+    String? activeRoutineId,
+    bool clearActiveRoutineId = false,
     Routine? editingRoutine,
     bool clearEditingRoutine = false,
     List<RoutineDay>? editingDays,
@@ -84,6 +93,9 @@ class RoutineManagementState extends Equatable {
       submissionStatus: submissionStatus ?? this.submissionStatus,
       lastAction: lastAction ?? this.lastAction,
       routines: routines ?? this.routines,
+      activeRoutineId: clearActiveRoutineId
+          ? null
+          : (activeRoutineId ?? this.activeRoutineId),
       editingRoutine: clearEditingRoutine
           ? null
           : (editingRoutine ?? this.editingRoutine),
@@ -106,6 +118,7 @@ class RoutineManagementState extends Equatable {
     submissionStatus,
     lastAction,
     routines,
+    activeRoutineId,
     editingRoutine,
     editingDays,
     exerciseCatalog,

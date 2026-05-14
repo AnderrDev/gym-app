@@ -12,6 +12,7 @@ import 'package:gym_flutter/features/workout/domain/usecases/delete_routine.dart
 import 'package:gym_flutter/features/workout/domain/usecases/delete_routine_day.dart'
     as uc_del_day;
 import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_routine_by_id.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_weekly_plan.dart';
@@ -38,6 +39,7 @@ class RoutineManagementBloc
   RoutineManagementBloc({
     required this.assignRoutine,
     required this.getAllRoutines,
+    required this.getAssignedRoutines,
     required this.getWeeklyPlan,
     required this.getRoutineById,
     required this.saveRoutine,
@@ -63,6 +65,7 @@ class RoutineManagementBloc
     on<AddExercisesToDayEvent>(_onAddExercisesToDay);
     on<RemoveExerciseFromDayEvent>(_onRemoveExerciseFromDay);
     on<ReorderExercises>(_onReorderExercises);
+    on<UpdateExerciseTargetEvent>(_onUpdateExerciseTarget);
     on<MarkRoutineDirty>(_onMarkDirty);
     on<ClearEditingContext>(_onClearEditingContext);
     on<AcknowledgeFeedback>(_onAcknowledgeFeedback);
@@ -70,6 +73,7 @@ class RoutineManagementBloc
 
   final AssignRoutine assignRoutine;
   final GetAllRoutines getAllRoutines;
+  final GetAssignedRoutines getAssignedRoutines;
   final GetWeeklyPlan getWeeklyPlan;
   final GetRoutineById getRoutineById;
   final uc_save_routine.SaveRoutine saveRoutine;
@@ -93,20 +97,39 @@ class RoutineManagementBloc
         clearErrorMessage: true,
       ),
     );
-    final result = await getAllRoutines();
-    result.fold(
+    // Catálogo + assigned en paralelo. La asignada es opcional (depende del
+    // userId); si falla, no rompemos el listado — simplemente no pintamos
+    // badge "ACTIVA".
+    final routinesFuture = getAllRoutines();
+    final assignedFuture = event.userId != null
+        ? getAssignedRoutines(event.userId!)
+        : null;
+    final routinesResult = await routinesFuture;
+    final assignedResult = assignedFuture == null
+        ? null
+        : await assignedFuture;
+
+    routinesResult.fold(
       (failure) => emit(
         state.copyWith(
           status: RoutineManagementStatus.failure,
           errorMessage: failure.message,
         ),
       ),
-      (routines) => emit(
-        state.copyWith(
-          status: RoutineManagementStatus.ready,
-          routines: routines,
-        ),
-      ),
+      (routines) {
+        final activeId = assignedResult?.fold<String?>(
+          (_) => null,
+          (assigned) => assigned.isNotEmpty ? assigned.first.id : null,
+        );
+        emit(
+          state.copyWith(
+            status: RoutineManagementStatus.ready,
+            routines: routines,
+            activeRoutineId: activeId,
+            clearActiveRoutineId: activeId == null,
+          ),
+        );
+      },
     );
   }
 
@@ -174,6 +197,7 @@ class RoutineManagementBloc
           submissionStatus: RoutineManagementSubmissionStatus.success,
           lastAction: RoutineManagementAction.assignRoutine,
           feedbackMessage: 'Rutina activada correctamente',
+          activeRoutineId: event.routineId,
         ),
       ),
     );
@@ -491,6 +515,46 @@ class RoutineManagementBloc
           isDirty: true,
         ),
       ),
+    );
+  }
+
+  Future<void> _onUpdateExerciseTarget(
+    UpdateExerciseTargetEvent event,
+    Emitter<RoutineManagementState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        submissionStatus: RoutineManagementSubmissionStatus.submitting,
+        clearErrorMessage: true,
+      ),
+    );
+    final result = await updateExerciseTarget(
+      event.dayId,
+      event.exerciseId,
+      event.targetWeight,
+      event.targetReps,
+      targetSets: event.targetSets,
+      restSeconds: event.restSeconds,
+    );
+    await result.fold(
+      (failure) async => emit(
+        state.copyWith(
+          submissionStatus: RoutineManagementSubmissionStatus.failure,
+          lastAction: RoutineManagementAction.updateExerciseTarget,
+          errorMessage: failure.message,
+        ),
+      ),
+      (_) async {
+        await _reloadEditingDays(event.userId, event.routineId, emit);
+        emit(
+          state.copyWith(
+            submissionStatus: RoutineManagementSubmissionStatus.success,
+            lastAction: RoutineManagementAction.updateExerciseTarget,
+            feedbackMessage: 'Ejercicio actualizado',
+            isDirty: true,
+          ),
+        );
+      },
     );
   }
 

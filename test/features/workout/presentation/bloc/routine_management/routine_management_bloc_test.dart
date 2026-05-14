@@ -16,6 +16,7 @@ import 'package:gym_flutter/features/workout/domain/usecases/delete_routine.dart
 import 'package:gym_flutter/features/workout/domain/usecases/delete_routine_day.dart'
     as uc_del_day;
 import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_routine_by_id.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_weekly_plan.dart';
@@ -36,6 +37,8 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_managemen
 class _MockAssignRoutine extends Mock implements AssignRoutine {}
 
 class _MockGetAllRoutines extends Mock implements GetAllRoutines {}
+
+class _MockGetAssignedRoutines extends Mock implements GetAssignedRoutines {}
 
 class _MockGetWeeklyPlan extends Mock implements GetWeeklyPlan {}
 
@@ -68,6 +71,7 @@ class _MockGetExercisesCatalog extends Mock implements GetExercisesCatalog {}
 void main() {
   late _MockAssignRoutine assignRoutine;
   late _MockGetAllRoutines getAllRoutines;
+  late _MockGetAssignedRoutines getAssignedRoutines;
   late _MockGetWeeklyPlan getWeeklyPlan;
   late _MockGetRoutineById getRoutineById;
   late _MockSaveRoutine saveRoutine;
@@ -101,6 +105,7 @@ void main() {
   setUp(() {
     assignRoutine = _MockAssignRoutine();
     getAllRoutines = _MockGetAllRoutines();
+    getAssignedRoutines = _MockGetAssignedRoutines();
     getWeeklyPlan = _MockGetWeeklyPlan();
     getRoutineById = _MockGetRoutineById();
     saveRoutine = _MockSaveRoutine();
@@ -118,6 +123,7 @@ void main() {
   RoutineManagementBloc buildBloc() => RoutineManagementBloc(
     assignRoutine: assignRoutine,
     getAllRoutines: getAllRoutines,
+    getAssignedRoutines: getAssignedRoutines,
     getWeeklyPlan: getWeeklyPlan,
     getRoutineById: getRoutineById,
     saveRoutine: saveRoutine,
@@ -394,6 +400,104 @@ void main() {
           RoutineManagementSubmissionStatus.success,
         );
         expect(b.state.isDirty, isTrue);
+      },
+    );
+  });
+
+  group('UpdateExerciseTargetEvent', () {
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'éxito → success + isDirty + reload de días',
+      build: () {
+        when(
+          () => updateExerciseTarget(
+            any(),
+            any(),
+            any(),
+            any(),
+            targetSets: any(named: 'targetSets'),
+            restSeconds: any(named: 'restSeconds'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
+        when(
+          () => getWeeklyPlan(
+            userId: any(named: 'userId'),
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenAnswer((_) async => const Right(<RoutineDay>[]));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const UpdateExerciseTargetEvent(
+          userId: 'u1',
+          routineId: 'r1',
+          dayId: 'd1',
+          exerciseId: 'e1',
+          targetWeight: 80,
+          targetReps: 10,
+          targetSets: 4,
+          restSeconds: 90,
+        ),
+      ),
+      verify: (b) {
+        expect(
+          b.state.submissionStatus,
+          RoutineManagementSubmissionStatus.success,
+        );
+        expect(b.state.lastAction,
+            RoutineManagementAction.updateExerciseTarget);
+        expect(b.state.isDirty, isTrue);
+        verify(
+          () => updateExerciseTarget(
+            'd1',
+            'e1',
+            80,
+            10,
+            targetSets: 4,
+            restSeconds: 90,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'failure → submissionStatus.failure con errorMessage, sin reload',
+      build: () {
+        when(
+          () => updateExerciseTarget(
+            any(),
+            any(),
+            any(),
+            any(),
+            targetSets: any(named: 'targetSets'),
+            restSeconds: any(named: 'restSeconds'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('boom')));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const UpdateExerciseTargetEvent(
+          userId: 'u1',
+          routineId: 'r1',
+          dayId: 'd1',
+          exerciseId: 'e1',
+          targetWeight: 80,
+          targetReps: 10,
+        ),
+      ),
+      verify: (b) {
+        expect(
+          b.state.submissionStatus,
+          RoutineManagementSubmissionStatus.failure,
+        );
+        expect(b.state.errorMessage, 'boom');
+        verifyNever(
+          () => getWeeklyPlan(
+            userId: any(named: 'userId'),
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        );
       },
     );
   });

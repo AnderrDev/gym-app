@@ -11,8 +11,17 @@ abstract class RoutineManagementEvent extends Equatable {
 }
 
 /// Catálogo: carga todas las rutinas (propias + públicas).
+///
+/// Si se pasa `userId`, también resuelve la rutina actualmente asignada al
+/// usuario y la deja en `state.activeRoutineId` para que la UI pueda pintar
+/// el badge ACTIVA en la card correspondiente.
 class LoadAllRoutines extends RoutineManagementEvent {
-  const LoadAllRoutines();
+  const LoadAllRoutines({this.userId});
+
+  final String? userId;
+
+  @override
+  List<Object?> get props => [userId];
 }
 
 /// Carga el detalle de una rutina (metadatos + plan semanal) para editar.
@@ -178,6 +187,43 @@ class RemoveExerciseFromDayEvent extends RoutineManagementEvent {
 
   @override
   List<Object?> get props => [userId, routineId, dayId, exerciseId];
+}
+
+/// Actualiza los targets (series/reps/peso/descanso) de un ejercicio dentro
+/// de un día. Solo necesita los campos que cambian — `null` deja el valor
+/// existente intacto en el repositorio.
+class UpdateExerciseTargetEvent extends RoutineManagementEvent {
+  const UpdateExerciseTargetEvent({
+    required this.userId,
+    required this.routineId,
+    required this.dayId,
+    required this.exerciseId,
+    required this.targetWeight,
+    required this.targetReps,
+    this.targetSets,
+    this.restSeconds,
+  });
+
+  final String userId;
+  final String routineId;
+  final String dayId;
+  final String exerciseId;
+  final double targetWeight;
+  final int targetReps;
+  final int? targetSets;
+  final int? restSeconds;
+
+  @override
+  List<Object?> get props => [
+    userId,
+    routineId,
+    dayId,
+    exerciseId,
+    targetWeight,
+    targetReps,
+    targetSets,
+    restSeconds,
+  ];
 }
 
 /// Reordena los ejercicios de un día.
