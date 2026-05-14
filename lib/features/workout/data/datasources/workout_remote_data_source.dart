@@ -159,15 +159,33 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
 
   @override
   Future<List<RoutineDayModel>> getRoutineDays(String routineId) async {
+    // Pedimos `exercises(name)` en el join para que `RoutineDayCard` pueda
+    // pintar un preview de los primeros nombres sin un round-trip por día.
+    // `routine_exercises("order")` ordena el preview por la misma posición
+    // que ve el usuario en el day editor.
     final response = await client
         .from('routine_days')
         .select(
-          'id, routine_id, day_of_week, name, routine_exercises(target_sets)',
+          'id, routine_id, day_of_week, name, '
+          'routine_exercises(target_sets, "order", exercises(name))',
         )
         .eq('routine_id', routineId)
         .order('day_of_week', ascending: true);
 
-    return response.map((json) => RoutineDayModel.fromJson(json)).toList();
+    return response.map((json) {
+      // El select de PostgREST no garantiza el orden del array embebido, así
+      // que lo ordenamos manualmente por `"order"` antes de pasarlo a
+      // `fromJson` (que extrae los nombres en el orden recibido).
+      final embedded = json['routine_exercises'] as List<dynamic>?;
+      if (embedded != null) {
+        embedded.sort((a, b) {
+          final ao = (a as Map<String, dynamic>)['order'] as int? ?? 0;
+          final bo = (b as Map<String, dynamic>)['order'] as int? ?? 0;
+          return ao.compareTo(bo);
+        });
+      }
+      return RoutineDayModel.fromJson(json);
+    }).toList();
   }
 
   @override

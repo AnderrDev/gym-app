@@ -11,6 +11,7 @@ class RoutineDayModel extends RoutineDay {
     super.exercises,
     super.targetSetsCount,
     super.status,
+    super.exerciseNamesPreview,
   });
 
   factory RoutineDayModel.fromJson(
@@ -19,9 +20,15 @@ class RoutineDayModel extends RoutineDay {
   }) {
     final exercisesData = json['routine_exercises'] as List<dynamic>? ?? [];
     var totalTargetSets = 0;
+    final names = <String>[];
     for (final ex in exercisesData) {
       final exMap = ex as Map<String, dynamic>;
       totalTargetSets += (exMap['target_sets'] as int? ?? 0);
+      // Nombre del ejercicio si el join lo trae (consumer-dependent: getRoutineDays
+      // pide `exercises(name)` para preview, pero no todos los queries lo hacen).
+      final exerciseJoin = exMap['exercises'] as Map<String, dynamic>?;
+      final name = exerciseJoin?['name'] as String?;
+      if (name != null && name.isNotEmpty) names.add(name);
     }
 
     return RoutineDayModel(
@@ -32,6 +39,7 @@ class RoutineDayModel extends RoutineDay {
       exercises: exercises,
       targetSetsCount: totalTargetSets,
       status: _statusFromName(json['status'] as String?),
+      exerciseNamesPreview: List.unmodifiable(names),
     );
   }
 

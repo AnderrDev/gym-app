@@ -39,6 +39,13 @@ class RoutineDayCard extends StatelessWidget {
     return 'D${index + 1}';
   }
 
+  /// Preview compacto: primeros 3 nombres separados por `·` y "+N" cuando hay
+  /// más. Pensado para una sola línea con ellipsis si igual no entra.
+  static String _buildPreview(List<String> names) {
+    if (names.length <= 3) return names.join(' · ');
+    return '${names.take(3).join(' · ')} · +${names.length - 3}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final exerciseCount = day.exercises.length;

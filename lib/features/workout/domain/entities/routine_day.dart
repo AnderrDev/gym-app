@@ -10,6 +10,13 @@ class RoutineDay extends Equatable {
   final int targetSetsCount;
   final WorkoutDayStatus status;
 
+  /// Nombres de los ejercicios del día, en orden, sin metadata adicional.
+  /// Lo popula `getRoutineDays` para que `RoutineDayCard` pueda pintar un
+  /// preview ("Press banca · Press militar · …") sin tener que cargar el
+  /// día completo. Vacío cuando el day se construyó desde un contexto que
+  /// no necesita preview.
+  final List<String> exerciseNamesPreview;
+
   const RoutineDay({
     required this.id,
     required this.routineId,
@@ -18,6 +25,7 @@ class RoutineDay extends Equatable {
     this.exercises = const [],
     this.targetSetsCount = 0,
     this.status = WorkoutDayStatus.pending,
+    this.exerciseNamesPreview = const [],
   });
 
   RoutineDay copyWith({
@@ -28,6 +36,7 @@ class RoutineDay extends Equatable {
     List<Exercise>? exercises,
     int? targetSetsCount,
     WorkoutDayStatus? status,
+    List<String>? exerciseNamesPreview,
   }) {
     return RoutineDay(
       id: id ?? this.id,
@@ -37,6 +46,8 @@ class RoutineDay extends Equatable {
       exercises: exercises ?? this.exercises,
       targetSetsCount: targetSetsCount ?? this.targetSetsCount,
       status: status ?? this.status,
+      exerciseNamesPreview:
+          exerciseNamesPreview ?? this.exerciseNamesPreview,
     );
   }
 
@@ -68,6 +79,7 @@ class RoutineDay extends Equatable {
     exercises,
     targetSetsCount,
     status,
+    exerciseNamesPreview,
   ];
 }
 
