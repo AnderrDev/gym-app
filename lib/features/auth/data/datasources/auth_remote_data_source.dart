@@ -14,6 +14,7 @@ abstract class AuthRemoteDataSource {
   );
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
+  Future<void> sendPasswordResetEmail(String email);
 
   /// Domain-level stream: `true` when an authenticated session is active.
   /// Filters Supabase events down to the ones that affect auth state
@@ -159,6 +160,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'getUserProfile fallback (sin full_name) para $userId: $e',
       );
       return UserModel(id: userId, email: email);
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await client.auth.resetPasswordForEmail(email);
+    } on supabase.AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      throw ServerException('resetPassword failed: $e');
     }
   }
 }

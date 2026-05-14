@@ -20,6 +20,7 @@ import 'package:gym_flutter/features/auth/presentation/bloc/register_form/regist
 import 'package:gym_flutter/features/auth/presentation/bloc/register_form/register_form_state.dart';
 import 'package:gym_flutter/features/auth/presentation/widgets/auth_aura_background.dart';
 import 'package:gym_flutter/features/auth/presentation/widgets/auth_stagger_entrance.dart';
+import 'package:gym_flutter/features/auth/presentation/widgets/password_strength_meter.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -160,20 +161,30 @@ class _RegisterView extends StatelessWidget {
                         child: BlocBuilder<RegisterFormBloc, RegisterFormState>(
                           buildWhen: (p, c) => p.password != c.password,
                           builder: (context, state) {
-                            return AppFormField(
-                              label: 'Contraseña',
-                              value: state.password.value,
-                              onChanged: (v) => context
-                                  .read<RegisterFormBloc>()
-                                  .add(RegisterPasswordChanged(v)),
-                              errorText: state.password.isPure
-                                  ? null
-                                  : state.password.error?.message,
-                              obscureText: true,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.newPassword],
-                              prefixIcon: Icons.lock_outline_rounded,
-                              onSubmitted: (_) => _onSubmit(context),
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                AppFormField(
+                                  label: 'Contraseña',
+                                  value: state.password.value,
+                                  onChanged: (v) => context
+                                      .read<RegisterFormBloc>()
+                                      .add(RegisterPasswordChanged(v)),
+                                  errorText: state.password.isPure
+                                      ? null
+                                      : state.password.error?.message,
+                                  obscureText: true,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [
+                                    AutofillHints.newPassword,
+                                  ],
+                                  prefixIcon: Icons.lock_outline_rounded,
+                                  onSubmitted: (_) => _onSubmit(context),
+                                ),
+                                PasswordStrengthMeter(
+                                  password: state.password.value,
+                                ),
+                              ],
                             );
                           },
                         ),

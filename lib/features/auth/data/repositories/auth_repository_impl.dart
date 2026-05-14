@@ -92,4 +92,18 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(cachedUser);
     }
   }
+
+  @override
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email) async {
+    try {
+      await remoteDataSource.sendPasswordResetEmail(email);
+      return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message ?? 'Error al solicitar reset'));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

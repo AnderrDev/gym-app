@@ -21,6 +21,7 @@ import 'package:gym_flutter/features/auth/presentation/bloc/login_form/login_for
 import 'package:gym_flutter/features/auth/presentation/bloc/login_form/login_form_state.dart';
 import 'package:gym_flutter/features/auth/presentation/widgets/auth_aura_background.dart';
 import 'package:gym_flutter/features/auth/presentation/widgets/auth_stagger_entrance.dart';
+import 'package:gym_flutter/features/auth/presentation/widgets/forgot_password_sheet.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -154,7 +155,43 @@ class _LoginView extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(height: Spacing.xxxl),
+                      const SizedBox(height: Spacing.sm),
+                      AuthStaggerEntrance(
+                        delay: const Duration(milliseconds: 360),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              final email = context
+                                  .read<LoginFormBloc>()
+                                  .state
+                                  .email
+                                  .value;
+                              ForgotPasswordSheet.show(
+                                context,
+                                initialEmail: email,
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              minimumSize: const Size(0, 28),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              '¿Olvidaste tu contraseña?',
+                              style: textTheme.labelMedium?.copyWith(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.85),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: Spacing.lg),
                       AuthStaggerEntrance(
                         delay: const Duration(milliseconds: 400),
                         child: BlocBuilder<AuthBloc, AuthState>(
