@@ -1,13 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fpdart/fpdart.dart';
 
-import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/_active_workout_loader.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_state.dart';
 
@@ -49,19 +47,15 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       ),
     );
     try {
-      final sessionResult = await repository.startWorkoutForDay(
+      final session = (await repository.startWorkoutForDay(
         event.userId,
         event.routineDayId,
         event.sessionDate,
-      );
-      final session = sessionResult.getOrElse(
-        (_) => throw Exception('No se pudo iniciar la sesión'),
-      );
+      )).getOrElse((_) => throw Exception('No se pudo iniciar la sesión'));
 
       // El backend puede devolver una sesión existente cuyo `routineDayId`
-      // difiera del solicitado (caso de sesión activa pendiente). En ese
-      // caso emitimos `failure` con un mensaje claro — la página decide
-      // si redirigir.
+      // difiera del solicitado (sesión activa pendiente). Emitimos `failure`
+      // con un mensaje claro — la página decide si redirigir.
       if (session.routineDayId != event.routineDayId) {
         emit(
           state.copyWith(
@@ -73,35 +67,11 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         return;
       }
 
-      final results = await Future.wait([
-        repository.getExercisesForDay(session.routineDayId),
-        repository.getRecentSessionsForDay(
-          event.userId,
-          session.routineDayId,
-          session.sessionDate,
-          limit: 3,
-        ),
-        repository.getSessionSetLogs(session.id),
-      ]);
-
-      final exercises = (results[0] as Either<Failure, List<Exercise>>)
-          .getOrElse((_) => const []);
-      final recentSessions =
-          (results[1] as Either<Failure, List<WorkoutSession>>).getOrElse(
-            (_) => const [],
-          );
-      final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse(
-        (_) => const [],
+      final ctx = await loadActiveWorkoutContext(
+        repository,
+        event.userId,
+        session,
       );
-
-      final recentLogsRes = await repository.getSetLogsForSessions(
-        recentSessions.map((s) => s.id).toList(),
-      );
-      final recentLogs = recentLogsRes.getOrElse(
-        (_) => <String, List<SetLog>>{},
-      );
-
-      final lastPerformances = await _fetchLastPerformances(exercises);
 
       await activeSessionService.save(
         sessionId: session.id,
@@ -110,22 +80,21 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         sessionDate: session.sessionDate,
         routineDayName: event.routineDayName,
       );
-
       await notifier.onStarted(
         dayName: event.routineDayName,
         sessionStartedAt: DateTime.now(),
-        totalSets: _totalTargetSetsFor(exercises),
+        totalSets: _totalTargetSetsFor(ctx.exercises),
       );
 
       emit(
         state.copyWith(
           status: ActiveWorkoutStatus.running,
           session: session,
-          exercises: exercises,
-          setLogs: setLogs,
-          lastPerformances: lastPerformances,
-          recentSessions: recentSessions,
-          recentSessionsLogs: recentLogs,
+          exercises: ctx.exercises,
+          setLogs: ctx.setLogs,
+          lastPerformances: ctx.lastPerformances,
+          recentSessions: ctx.recentSessions,
+          recentSessionsLogs: ctx.recentSessionsLogs,
         ),
       );
     } catch (e) {
@@ -149,10 +118,14 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       ),
     );
     try {
-      final logsRes = await repository.getSessionSetLogs(event.session.id);
-      final setLogs = logsRes.getOrElse((_) => const []);
+      final setLogs = (await repository.getSessionSetLogs(event.session.id))
+          .getOrElse((_) => const []);
+      // El evento `ResumeActiveWorkout` no trae el routineDayName explícito;
+      // cae sobre el contexto persistido como fallback.
+      final dayName =
+          activeSessionService.getContext()?.routineDayName ?? 'Entrenamiento';
       await notifier.onStarted(
-        dayName: _resumedDayName(event),
+        dayName: dayName,
         sessionStartedAt: DateTime.now(),
         totalSets: _totalTargetSetsFor(event.exercises),
       );
@@ -178,12 +151,6 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         ),
       );
     }
-  }
-
-  String _resumedDayName(ResumeActiveWorkout event) {
-    // El evento `ResumeActiveWorkout` no trae el routineDayName explícito;
-    // cae sobre el contexto persistido como fallback.
-    return activeSessionService.getContext()?.routineDayName ?? 'Entrenamiento';
   }
 
   Future<void> _onSaveSet(
@@ -238,9 +205,8 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     }
     final newLogs = state.setLogs
         .where(
-          (l) =>
-              !(l.exerciseId == event.exerciseId &&
-                  l.setIndex == event.setIndex),
+          (l) => !(l.exerciseId == event.exerciseId &&
+              l.setIndex == event.setIndex),
         )
         .toList();
     emit(state.copyWith(setLogs: newLogs));
@@ -315,20 +281,5 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         ),
       );
     }
-  }
-
-  Future<Map<String, SetLog?>> _fetchLastPerformances(
-    List<Exercise> exercises,
-  ) async {
-    if (exercises.isEmpty) return const {};
-    final ids = exercises.map((e) => e.id).toList();
-    final result = await repository.getLastExercisePerformances(ids);
-    final perf = Map<String, SetLog?>.from(
-      result.getOrElse((_) => const <String, SetLog?>{}),
-    );
-    for (final id in ids) {
-      perf.putIfAbsent(id, () => null);
-    }
-    return perf;
   }
 }

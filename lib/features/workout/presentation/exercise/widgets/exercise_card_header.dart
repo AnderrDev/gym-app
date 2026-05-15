@@ -97,7 +97,7 @@ class ExerciseCardHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    allDone ? Icons.check_circle : Icons.fitness_center,
+                    allDone ? Icons.check_circle_rounded : Icons.local_fire_department_rounded,
                     size: 20,
                     color: allDone ? AppColors.success : AppColors.primary,
                   ),
@@ -148,7 +148,7 @@ class ExerciseCardHeader extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.history,
+                                  Icons.history_rounded,
                                   size: 12,
                                   color: AppColors.primary.withValues(
                                     alpha: 0.7,
@@ -183,7 +183,7 @@ class ExerciseCardHeader extends StatelessWidget {
                 const SizedBox(width: 4),
                 if (showExpandChevron)
                   Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                     color: AppColors.textSecondary,
                   ),
                 PopupMenuButton<_HeaderMenuAction>(
@@ -210,7 +210,7 @@ class ExerciseCardHeader extends StatelessWidget {
                         key: ValueKey('menu_target'),
                         value: _HeaderMenuAction.target,
                         child: _HeaderMenuTile(
-                          icon: Icons.settings_remote,
+                          icon: Icons.settings_remote_rounded,
                           label: 'Cambiar objetivo',
                         ),
                       ),
@@ -218,7 +218,7 @@ class ExerciseCardHeader extends StatelessWidget {
                       key: ValueKey('menu_insights'),
                       value: _HeaderMenuAction.insights,
                       child: _HeaderMenuTile(
-                        icon: Icons.insights,
+                        icon: Icons.insights_rounded,
                         label: 'Insights',
                       ),
                     ),

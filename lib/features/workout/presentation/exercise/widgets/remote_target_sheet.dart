@@ -128,7 +128,7 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
               textInputAction: TextInputAction.next,
-              prefixIcon: Icons.fitness_center_rounded,
+              prefixIcon: Icons.local_fire_department_rounded,
             ),
             const SizedBox(height: Spacing.lg),
             AppFormField(

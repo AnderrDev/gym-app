@@ -5,6 +5,7 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_tile.dart';
 
 /// Bottom sheet de selección de ejercicios desde el catálogo real (Supabase).
 ///
@@ -94,10 +95,20 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
                       );
                       final isSelected =
                           isAlreadyInDay || _selectedIds.contains(exercise.id);
-                      return _buildExerciseTile(
-                        exercise,
-                        isSelected,
-                        isAlreadyInDay,
+                      return ExerciseCatalogTile(
+                        exercise: exercise,
+                        isSelected: isSelected,
+                        isAlreadyInDay: isAlreadyInDay,
+                        onTap: () {
+                          setState(() {
+                            if (_selectedIds.contains(exercise.id)) {
+                              _selectedIds.remove(exercise.id);
+                            } else {
+                              _selectedIds.add(exercise.id);
+                            }
+                          });
+                          HapticFeedback.lightImpact();
+                        },
                       );
                     },
                   ),
@@ -158,7 +169,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           onChanged: (v) => setState(() => _searchQuery = v),
           style: AppTextStyles.bodyLarge,
           decoration: const InputDecoration(
-            icon: Icon(Icons.search, color: AppColors.textDisabled, size: 20),
+            icon: Icon(Icons.search_rounded, color: AppColors.textDisabled, size: 20),
             hintText: 'Press banca, sentadilla...',
             hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 14),
             border: InputBorder.none,
@@ -213,87 +224,12 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
     );
   }
 
-  Widget _buildExerciseTile(
-    ExerciseCatalogItem exercise,
-    bool isSelected,
-    bool isAlreadyInDay,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: Spacing.sm),
-      decoration: BoxDecoration(
-        color: isAlreadyInDay
-            ? AppColors.textDisabled.withValues(alpha: 0.1)
-            : (isSelected
-                  ? AppColors.primary.withValues(alpha: 0.05)
-                  : Colors.transparent),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        enabled: !isAlreadyInDay,
-        onTap: isAlreadyInDay
-            ? null
-            : () {
-                setState(() {
-                  if (_selectedIds.contains(exercise.id)) {
-                    _selectedIds.remove(exercise.id);
-                  } else {
-                    _selectedIds.add(exercise.id);
-                  }
-                });
-                HapticFeedback.lightImpact();
-              },
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isAlreadyInDay
-                ? AppColors.surfaceHighlight
-                : (isSelected ? AppColors.primary : AppColors.surface),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isAlreadyInDay
-                ? Icons.lock_outline
-                : (isSelected ? Icons.check : Icons.fitness_center_outlined),
-            color: isSelected && !isAlreadyInDay
-                ? AppColors.onPrimary
-                : AppColors.textDisabled,
-            size: 18,
-          ),
-        ),
-        title: Text(
-          exercise.name,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: isAlreadyInDay
-                ? AppColors.textDisabled
-                : (isSelected ? AppColors.primary : AppColors.textPrimary),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: Text(
-          isAlreadyInDay ? 'Ya en tu rutina' : exercise.muscleGroup,
-          style: AppTextStyles.label.copyWith(color: AppColors.textDisabled),
-        ),
-        trailing: isAlreadyInDay
-            ? null
-            : (isSelected
-                  ? const Icon(
-                      Icons.check_circle,
-                      color: AppColors.primary,
-                      size: 20,
-                    )
-                  : null),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.search_off, size: 48, color: AppColors.textDisabled),
+          const Icon(Icons.search_off_rounded, size: 48, color: AppColors.textDisabled),
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty

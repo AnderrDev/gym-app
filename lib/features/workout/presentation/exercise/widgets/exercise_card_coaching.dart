@@ -26,16 +26,16 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
         ? AppColors.success
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
-    IconData trendIcon = Icons.psychology;
+    IconData trendIcon = Icons.psychology_rounded;
     switch (coaching.recommendation) {
       case CoachingRecommendation.increaseWeight:
-        trendIcon = Icons.trending_up;
+        trendIcon = Icons.trending_up_rounded;
         break;
       case CoachingRecommendation.decreaseWeight:
-        trendIcon = Icons.trending_down;
+        trendIcon = Icons.trending_down_rounded;
         break;
       case CoachingRecommendation.maintain:
-        trendIcon = Icons.trending_flat;
+        trendIcon = Icons.trending_flat_rounded;
         break;
     }
 
@@ -113,7 +113,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.lightbulb_outline, size: 14, color: accentColor),
+            Icon(Icons.lightbulb_outline_rounded, size: 14, color: accentColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -129,7 +129,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
               ),
             ),
             const Icon(
-              Icons.chevron_right,
+              Icons.chevron_right_rounded,
               size: 14,
               color: AppColors.textDisabled,
             ),
@@ -154,7 +154,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.psychology_outlined, size: 16, color: accentColor),
+          Icon(Icons.psychology_rounded, size: 16, color: accentColor),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -187,7 +187,7 @@ class ExerciseCardLiveAdvice extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.flash_on, color: AppColors.primary, size: 18),
+          const Icon(Icons.flash_on_rounded, color: AppColors.primary, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

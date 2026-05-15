@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
@@ -8,12 +7,14 @@ import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
-import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
+import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_history_session_item.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_chart_section.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_charts.dart';
-import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_series.dart';
 import 'package:gym_flutter/injection_container.dart';
 
 class ExerciseStatsBottomSheet extends StatelessWidget {
@@ -56,15 +57,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.4),
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceHighlight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const BottomSheetHandle(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 Spacing.xl,
@@ -118,7 +111,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(
-                            Icons.error_outline,
+                            Icons.error_outline_rounded,
                             color: AppColors.error,
                             size: 48,
                           ),
@@ -164,10 +157,10 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         Spacing.xxxl,
                       ),
                       children: [
-                        _buildChartSection(
+                        ExerciseStatsChartSection(
                           title: 'PESO MÁXIMO',
                           subtitle: 'El peso más alto que cargaste en una serie',
-                          icon: Icons.fitness_center_rounded,
+                          icon: Icons.local_fire_department_rounded,
                           unit: 'kg',
                           series: ExerciseStatsSeries.from(
                             state.history,
@@ -177,7 +170,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                           chart: ExerciseMaxWeightChart(history: state.history),
                         ),
                         const SizedBox(height: 32),
-                        _buildChartSection(
+                        ExerciseStatsChartSection(
                           title: '1RM ESTIMADO',
                           subtitle: 'Tu máxima en 1 rep, proyectada',
                           icon: Icons.trending_up_rounded,
@@ -193,7 +186,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        _buildChartSection(
+                        ExerciseStatsChartSection(
                           title: 'CARGA MOVIDA',
                           subtitle: 'Suma de peso × reps en la sesión',
                           icon: Icons.stacked_line_chart_rounded,
@@ -216,7 +209,8 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         ...state.history.map(
-                          (session) => _buildHistorySessionItem(session),
+                          (session) =>
+                              ExerciseHistorySessionItem(session: session),
                         ),
                       ],
                     );
@@ -241,139 +235,5 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
         child: content,
       );
     }
-  }
-
-  Widget _buildChartSection({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String unit,
-    required ExerciseStatsSeries series,
-    required String Function(double) formatter,
-    required Widget chart,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(Spacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.label.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textDisabled,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        StatStripe(
-          actualLabel: formatter(series.actual),
-          recordLabel: formatter(series.record),
-          delta: series.delta,
-          unit: unit,
-          recordReached: series.actualIsRecord,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          height: 220,
-          padding: const EdgeInsets.fromLTRB(10, 16, 20, 10),
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.surfaceHighlight),
-          ),
-          child: chart,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistorySessionItem(ExerciseHistorySession session) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: Spacing.md),
-      padding: const EdgeInsets.all(Spacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceHighlight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                DateFormat(
-                  'EEEE, d MMMM yyyy',
-                  'es',
-                ).format(session.sessionDate).toUpperCase(),
-                style: AppTextStyles.label.copyWith(
-                  fontSize: 10,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${session.totalVolume.toStringAsFixed(0)} kg Vol.',
-                style: AppTextStyles.label.copyWith(
-                  fontSize: 10,
-                  color: AppColors.textDisabled,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: session.logs
-                .map(
-                  (log) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceHighlight,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${log.actualWeight.toStringAsFixed(0)}kg x ${log.actualReps}',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-      ),
-    );
   }
 }
