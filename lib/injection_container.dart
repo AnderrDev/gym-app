@@ -8,7 +8,10 @@ import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/active_session_service.dart';
 import 'core/utils/clock.dart';
+import 'features/workout/data/datasources/exercise_catalog_remote_data_source.dart';
+import 'features/workout/data/datasources/routine_management_remote_data_source.dart';
 import 'features/workout/data/datasources/workout_remote_data_source.dart';
+import 'features/workout/data/datasources/workout_session_remote_data_source.dart';
 import 'features/workout/data/repositories/workout_repository_impl.dart';
 import 'features/workout/domain/repositories/workout_repository.dart';
 import 'features/workout/domain/usecases/get_assigned_routines.dart';
@@ -149,8 +152,24 @@ Future<void> init() async {
     () => WorkoutRepositoryImpl(remoteDataSource: sl()),
   );
 
+  // Colaboradores internos del fachada `WorkoutRemoteDataSource`. Se registran
+  // separados para poder reutilizarlos en tests o futuras refactorizaciones.
+  sl.registerLazySingleton<WorkoutSessionRemoteDataSource>(
+    () => WorkoutSessionRemoteDataSource(client: sl()),
+  );
+  sl.registerLazySingleton<RoutineManagementRemoteDataSource>(
+    () => RoutineManagementRemoteDataSource(client: sl()),
+  );
+  sl.registerLazySingleton<ExerciseCatalogRemoteDataSource>(
+    () => ExerciseCatalogRemoteDataSource(client: sl()),
+  );
+
   sl.registerLazySingleton<WorkoutRemoteDataSource>(
-    () => WorkoutRemoteDataSourceImpl(client: sl()),
+    () => WorkoutRemoteDataSourceImpl.fromParts(
+      sessions: sl(),
+      routines: sl(),
+      catalog: sl(),
+    ),
   );
 
   // ── EXTERNAL ──────────────────────────────────────────────────────────────
