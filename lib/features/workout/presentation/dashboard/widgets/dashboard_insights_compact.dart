@@ -5,9 +5,10 @@ import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
-/// Métricas semanales compactas. Una fila scrollable horizontal con chips
-/// densas (adherencia, tendencia, PRs, sesiones, volumen total). Si no hay
-/// insights y hay error muestra una microalerta inline.
+/// Métricas semanales compactas. Fila scrollable horizontal con chips
+/// densas (adherencia, tendencia, PRs, sesiones, volumen total). Cuando
+/// no hay insights pero sí error muestra una microalerta inline,
+/// discreta para no romper jerarquía con la lista de días.
 class DashboardInsightsCompact extends StatelessWidget {
   const DashboardInsightsCompact({
     super.key,
@@ -28,17 +29,20 @@ class DashboardInsightsCompact extends StatelessWidget {
 
     final trendUp = i.volumeTrendPercent >= 0;
     final trendColor = trendUp ? AppColors.success : AppColors.error;
-    final trendIcon = trendUp ? Icons.trending_up : Icons.trending_down;
+    final trendIcon = trendUp
+        ? Icons.trending_up_rounded
+        : Icons.trending_down_rounded;
     final trendLabel = trendUp
         ? '+${i.volumeTrendPercent.toStringAsFixed(1)}%'
         : '${i.volumeTrendPercent.toStringAsFixed(1)}%';
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           _Metric(
-            icon: Icons.flag_circle,
+            icon: Icons.flag_circle_rounded,
             label: 'Adherencia',
             value: '${i.adherenceRate.toStringAsFixed(0)}%',
             color: AppColors.primary,
@@ -52,21 +56,21 @@ class DashboardInsightsCompact extends StatelessWidget {
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
-            icon: Icons.emoji_events,
+            icon: Icons.emoji_events_rounded,
             label: 'PRs',
             value: '${i.personalRecords}',
             color: AppColors.warning,
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
-            icon: Icons.event_available,
+            icon: Icons.event_available_rounded,
             label: 'Sesiones',
             value: '${i.completedSessions}/${i.plannedDays}',
             color: AppColors.info,
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
-            icon: Icons.fitness_center,
+            icon: Icons.local_fire_department_rounded,
             label: 'Total',
             value: '${i.totalVolume.toStringAsFixed(0)} kg',
             color: AppColors.textPrimary,
@@ -99,13 +103,22 @@ class _Metric extends StatelessWidget {
         vertical: Spacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(Radii.md),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(Radii.lg),
         border: Border.all(color: AppColors.divider),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
           const SizedBox(width: Spacing.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,15 +128,15 @@ class _Metric extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.4,
                 ),
               ),
               const SizedBox(height: 1),
               Text(
                 value,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -146,14 +159,14 @@ class _ErrorChip extends StatelessWidget {
         vertical: Spacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(Radii.md),
         border: Border.all(color: AppColors.divider),
       ),
       child: Row(
         children: [
           const Icon(
-            Icons.info_outline,
+            Icons.info_outline_rounded,
             size: 16,
             color: AppColors.textSecondary,
           ),

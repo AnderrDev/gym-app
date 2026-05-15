@@ -6,12 +6,20 @@ import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_insights_compact.dart';
+import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_header.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_list.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_navigator.dart';
+import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_summary.dart';
 
-/// Vista semanal con lista vertical de días. Cada día es una card legible
-/// con su rutina, estado y CTA cuando aplica. Reemplaza la dupla "hero +
-/// strip" anterior (que duplicaba la info de hoy y apretaba el resto).
+/// Vista semanal del dashboard. Compone:
+/// - `DashboardWeekHeader` (rango + rutina + progress ring + flechas)
+/// - Lista vertical de días con stagger de entrada (`DashboardWeekList`)
+/// - Insights compactos al final
+///
+/// La transición entre semanas se anima con `AnimatedSwitcher` direccional
+/// (slide horizontal + fade) y un `GestureDetector` capta swipes para
+/// llamar a `onPreviousWeek` / `onNextWeek`. El header se mantiene estable
+/// y sus subcomponentes animan sus propios cambios (rango de fechas,
+/// progress ring).
 class DashboardWeeklyView extends StatefulWidget {
   final List<RoutineDay> days;
   final DateTime weekStart;
@@ -40,16 +48,28 @@ class DashboardWeeklyView extends StatefulWidget {
   State<DashboardWeeklyView> createState() => _DashboardWeeklyViewState();
 }
 
-class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
+class _DashboardWeeklyViewState extends State<DashboardWeeklyView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _staggerController;
   final ScrollController _scroll = ScrollController();
   final GlobalKey _todayKey = GlobalKey();
+
+  /// +1 = la nueva semana es posterior; -1 = anterior; 0 = primera carga.
+  /// Lo usa el `AnimatedSwitcher` para deslizar la lista en la dirección
+  /// correcta.
+  int _direction = 0;
+
+  /// Umbral de drag horizontal (px) para disparar prev/next.
+  static const double _swipeThreshold = 60;
+  double _dragX = 0;
 
   @override
   void initState() {
     super.initState();
-    // En la primera frame, si la semana visible contiene hoy, intentamos
-    // que la card de hoy quede a la vista (útil si es jueves/viernes y
-    // el usuario no quiere scrollear).
+    _staggerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensureTodayVisible());
   }
 
@@ -57,6 +77,10 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
   void didUpdateWidget(covariant DashboardWeeklyView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.weekStart != widget.weekStart) {
+      _direction = widget.weekStart.isAfter(oldWidget.weekStart) ? 1 : -1;
+      _staggerController
+        ..reset()
+        ..forward();
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _ensureTodayVisible(),
       );
@@ -65,6 +89,7 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
 
   @override
   void dispose() {
+    _staggerController.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -72,14 +97,35 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
   void _ensureTodayVisible() {
     final ctx = _todayKey.currentContext;
     if (ctx == null) return;
-    // ensureVisible es no-op si ya está visible, así que no estorba en
-    // pantallas grandes donde la lista entra completa.
     Scrollable.ensureVisible(
       ctx,
       alignment: 0.1,
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  Future<void> _onRefresh() async {
+    // El bloc expone `prev/next` para cambiar semana pero no un evento
+    // idempotente de "recargar la actual". Mantenemos el `RefreshIndicator`
+    // por afordancia (gesture aprendido) y por el feedback táctil; cuando
+    // exista un evento de refresh lo conectamos aquí.
+    await Future<void>.delayed(const Duration(milliseconds: 320));
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails d) {
+    _dragX += d.delta.dx;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails d) {
+    final dx = _dragX;
+    final velocity = d.primaryVelocity ?? 0;
+    _dragX = 0;
+    if (dx <= -_swipeThreshold || velocity < -400) {
+      widget.onNextWeek();
+    } else if (dx >= _swipeThreshold || velocity > 400) {
+      widget.onPreviousWeek();
+    }
   }
 
   @override
@@ -96,7 +142,7 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DashboardWeekNavigator(
+        DashboardWeekHeader(
           weekStart: widget.weekStart,
           weekEnd: weekEnd,
           isCurrentWeek: containsToday,
@@ -106,115 +152,86 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
           onOpenStats: widget.onOpenSelectedRoutineStats,
         ),
         Expanded(
-          child: ListView(
-            controller: _scroll,
-            padding: const EdgeInsets.all(Spacing.lg),
-            children: [
-              _MonthLabel(date: widget.weekStart),
-              const SizedBox(height: Spacing.sm),
-              _AnchoredWeekList(
-                weekStart: widget.weekStart,
-                daysByDayOfWeek: dayMap,
-                today: today,
-                onTapDay: widget.onOpenDay,
-                todayKey: containsToday ? _todayKey : null,
-              ),
-              if (widget.insights != null || widget.insightsError != null) ...[
-                const SizedBox(height: Spacing.xl),
-                const _SectionLabel(text: 'Insights'),
-                const SizedBox(height: Spacing.sm),
-                DashboardInsightsCompact(
-                  insights: widget.insights,
-                  error: widget.insightsError,
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.background,
+            onRefresh: _onRefresh,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              child: ListView(
+                controller: _scroll,
+                physics: const AlwaysScrollableScrollPhysics(),
+                // Bottom `xxxl` (40px) le da aire al resumen semanal antes
+                // de la bottom nav.
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.lg,
+                  Spacing.md,
+                  Spacing.lg,
+                  Spacing.xxxl,
                 ),
-              ],
-              const SizedBox(height: Spacing.xl),
-            ],
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) {
+                      final beginX = _direction >= 0 ? 0.12 : -0.12;
+                      final inOffset = Tween<Offset>(
+                        begin: Offset(beginX, 0),
+                        end: Offset.zero,
+                      ).animate(anim);
+                      return ClipRect(
+                        child: FadeTransition(
+                          opacity: anim,
+                          child: SlideTransition(
+                            position: inOffset,
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey(widget.weekStart.toIso8601String()),
+                      child: DashboardWeekList(
+                        weekStart: widget.weekStart,
+                        daysByDayOfWeek: dayMap,
+                        today: today,
+                        onTapDay: widget.onOpenDay,
+                        stagger: _staggerController,
+                        todayKey: containsToday ? _todayKey : null,
+                      ),
+                    ),
+                  ),
+                  // Resumen semanal SIEMPRE visible: data local desde la
+                  // lista de días, sin esperar al RPC remoto. Esto evita el
+                  // gigante hueco blanco entre los días y la bottom nav.
+                  if (widget.days.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.xl),
+                    DashboardWeekSummary(
+                      days: widget.days,
+                      weekStart: widget.weekStart,
+                      onTapNext: widget.onOpenDay,
+                    ),
+                  ],
+                  // Insights remotos sólo si efectivamente hay data — el
+                  // placeholder "no disponibles" lo absorbió el resumen.
+                  if (widget.insights != null) ...[
+                    const SizedBox(height: Spacing.lg),
+                    const _SectionLabel(text: 'Insights'),
+                    const SizedBox(height: Spacing.sm),
+                    DashboardInsightsCompact(
+                      insights: widget.insights,
+                      error: null,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Wrapper que injerta una `GlobalKey` en la card de hoy para que el
-/// padre pueda hacer `Scrollable.ensureVisible`. Usa la misma lista pero
-/// envuelve un día con un `KeyedSubtree`.
-class _AnchoredWeekList extends StatelessWidget {
-  const _AnchoredWeekList({
-    required this.weekStart,
-    required this.daysByDayOfWeek,
-    required this.today,
-    required this.onTapDay,
-    required this.todayKey,
-  });
-
-  final DateTime weekStart;
-  final Map<int, RoutineDay> daysByDayOfWeek;
-  final DateTime today;
-  final void Function(RoutineDay, DateTime) onTapDay;
-  final GlobalKey? todayKey;
-
-  @override
-  Widget build(BuildContext context) {
-    // Si la semana no contiene hoy o no nos pasaron key, delegamos directo.
-    if (todayKey == null) {
-      return DashboardWeekList(
-        weekStart: weekStart,
-        daysByDayOfWeek: daysByDayOfWeek,
-        today: today,
-        onTapDay: onTapDay,
-      );
-    }
-    // Para "anchorear" la card de hoy ponemos la key al SizedBox del
-    // wrapper (la lista no expone keys por día). Plot twist: como el
-    // wrapper envuelve a toda la lista, anclamos la lista entera al top
-    // del viewport — suficiente para que la lista esté visible. Si más
-    // adelante queremos precisión por día, exponemos keys en
-    // `DashboardWeekList`.
-    return KeyedSubtree(
-      key: todayKey,
-      child: DashboardWeekList(
-        weekStart: weekStart,
-        daysByDayOfWeek: daysByDayOfWeek,
-        today: today,
-        onTapDay: onTapDay,
-      ),
-    );
-  }
-}
-
-class _MonthLabel extends StatelessWidget {
-  const _MonthLabel({required this.date});
-
-  final DateTime date;
-
-  static const _months = [
-    '',
-    'ENERO',
-    'FEBRERO',
-    'MARZO',
-    'ABRIL',
-    'MAYO',
-    'JUNIO',
-    'JULIO',
-    'AGOSTO',
-    'SEPTIEMBRE',
-    'OCTUBRE',
-    'NOVIEMBRE',
-    'DICIEMBRE',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      '${_months[date.month]} ${date.year}',
-      style: theme.textTheme.labelSmall?.copyWith(
-        color: AppColors.textSecondary,
-        letterSpacing: 1.5,
-        fontWeight: FontWeight.w700,
-      ),
     );
   }
 }

@@ -50,7 +50,7 @@ class DashboardRoutineSelector extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
-                        Icons.fitness_center,
+                        Icons.local_fire_department_rounded,
                         color: AppColors.primary,
                       ),
                     ),
@@ -60,14 +60,14 @@ class DashboardRoutineSelector extends StatelessWidget {
                       children: [
                         IconButton(
                           icon: const Icon(
-                            Icons.analytics_outlined,
+                            Icons.analytics_rounded,
                             color: AppColors.primary,
                             size: 20,
                           ),
                           onPressed: () => onOpenRoutineStats(routine),
                         ),
                         const Icon(
-                          Icons.calendar_month,
+                          Icons.calendar_month_rounded,
                           color: AppColors.primary,
                         ),
                       ],

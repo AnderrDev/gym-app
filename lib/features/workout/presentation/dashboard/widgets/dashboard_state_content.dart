@@ -103,7 +103,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
             const SizedBox(height: Spacing.md),
             Text(
               message,
@@ -113,7 +113,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: const Text('Reintentar'),
             ),
           ],
