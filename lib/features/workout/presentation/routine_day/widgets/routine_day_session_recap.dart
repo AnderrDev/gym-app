@@ -92,7 +92,7 @@ class RoutineDaySessionRecap extends StatelessWidget {
             ],
             const SizedBox(width: Spacing.sm),
             const Icon(
-              Icons.chevron_right,
+              Icons.chevron_right_rounded,
               color: AppColors.textSecondary,
               size: 20,
             ),
@@ -152,7 +152,7 @@ class _DeltaPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isUp ? Icons.trending_up : Icons.trending_down,
+            isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
             color: color,
             size: 14,
           ),

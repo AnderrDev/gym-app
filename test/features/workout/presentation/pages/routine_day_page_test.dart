@@ -15,6 +15,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routi
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_state.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/pages/routine_day_page.dart';
@@ -100,6 +101,7 @@ void main() {
 
   late MockNotificationService notificationService;
   late MockActiveWorkoutNotifier activeWorkoutNotifier;
+  late MockLiveActivitiesBridge liveActivitiesBridge;
 
   setUp(() {
     routineDayBloc = MockRoutineDayBloc();
@@ -109,6 +111,8 @@ void main() {
     activeStreamCtrl = StreamController<ActiveWorkoutState>.broadcast();
     notificationService = MockNotificationService();
     activeWorkoutNotifier = MockActiveWorkoutNotifier();
+    liveActivitiesBridge = MockLiveActivitiesBridge();
+    when(() => liveActivitiesBridge.isAvailable).thenReturn(false);
     when(() => notificationService.requestPermission()).thenAnswer(
       (_) async => true,
     );
@@ -126,8 +130,12 @@ void main() {
     if (di.sl.isRegistered<ActiveWorkoutNotifier>()) {
       di.sl.unregister<ActiveWorkoutNotifier>();
     }
+    if (di.sl.isRegistered<LiveActivitiesBridge>()) {
+      di.sl.unregister<LiveActivitiesBridge>();
+    }
     di.sl.registerSingleton<NotificationService>(notificationService);
     di.sl.registerSingleton<ActiveWorkoutNotifier>(activeWorkoutNotifier);
+    di.sl.registerSingleton<LiveActivitiesBridge>(liveActivitiesBridge);
 
     when(
       () => routineDayBloc.stream,

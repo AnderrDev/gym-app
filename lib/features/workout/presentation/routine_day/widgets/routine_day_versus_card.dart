@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_versus_card_parts.dart';
 
 /// Card "versus history" por ejercicio. Renderiza una barra horizontal que
 /// compara el peso objetivo con el promedio del último entrenamiento, con
@@ -62,7 +63,7 @@ class RoutineDayVersusCard extends StatelessWidget {
               prevWeight: prevAvgWeight,
             )
           else
-            _NoTargetWeightRow(
+            VersusNoTargetWeightRow(
               targetReps: exercise.targetReps,
               prevReps: prevAvgReps,
             ),
@@ -154,7 +155,7 @@ class _WeightVersusBar extends StatelessWidget {
                 ),
               )
             else
-              _DeltaTag(delta: delta, isUp: isUp, isDown: isDown),
+              VersusDeltaTag(delta: delta, isUp: isUp, isDown: isDown),
           ],
         ),
         const SizedBox(height: Spacing.sm),
@@ -218,91 +219,6 @@ class _WeightVersusBar extends StatelessWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _DeltaTag extends StatelessWidget {
-  const _DeltaTag({
-    required this.delta,
-    required this.isUp,
-    required this.isDown,
-  });
-
-  final double delta;
-  final bool isUp;
-  final bool isDown;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = isDown
-        ? AppColors.error
-        : (isUp ? AppColors.primary : AppColors.success);
-    final sign = isUp
-        ? '+'
-        : (isDown ? '' : '=');
-    final label = isUp || isDown
-        ? '$sign${delta.toStringAsFixed(1)} kg'
-        : 'Igualar';
-    final icon = isUp
-        ? Icons.arrow_upward
-        : (isDown ? Icons.arrow_downward : Icons.check);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 14),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _NoTargetWeightRow extends StatelessWidget {
-  const _NoTargetWeightRow({required this.targetReps, required this.prevReps});
-
-  final int targetReps;
-  final double? prevReps;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasPrev = prevReps != null;
-    return Row(
-      children: [
-        Text(
-          'OBJETIVO $targetReps reps',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
-            letterSpacing: 0.8,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Spacer(),
-        if (hasPrev)
-          Text(
-            'Última ${prevReps!.toStringAsFixed(0)} reps',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.primary,
-            ),
-          )
-        else
-          Text(
-            'Sin historial',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.textDisabled,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
       ],
     );
   }

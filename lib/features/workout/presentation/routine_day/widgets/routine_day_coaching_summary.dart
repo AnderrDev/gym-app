@@ -33,7 +33,7 @@ class RoutineDayCoachingSummary extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.psychology_outlined,
+                Icons.psychology_rounded,
                 color: AppColors.primary,
                 size: 16,
               ),

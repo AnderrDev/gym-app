@@ -61,7 +61,7 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.psychology,
+                    Icons.psychology_rounded,
                     color: AppColors.primary,
                     size: 24,
                   ),

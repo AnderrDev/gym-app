@@ -10,7 +10,6 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
-import 'package:gym_flutter/injection_container.dart' as di;
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -22,12 +21,14 @@ import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/ac
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_state.dart';
-import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/utils/rest_timer_controller.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/utils/routine_day_phase_resolver.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_phase.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_view_scaffold.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_history_bottom_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_bottom_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/workout_performance_analyzer.dart';
+import 'package:gym_flutter/injection_container.dart' as di;
 
 class RoutineDayPage extends StatefulWidget {
   const RoutineDayPage({
@@ -46,14 +47,17 @@ class RoutineDayPage extends StatefulWidget {
 }
 
 class _RoutineDayPageState extends State<RoutineDayPage> {
-  Timer? _globalRestTimer;
-  final ValueNotifier<RestTimerSnapshot> _restTimer = ValueNotifier(
-    const RestTimerSnapshot.idle(),
-  );
+  late final RestTimerController _restController;
 
   @override
   void initState() {
     super.initState();
+    _restController = RestTimerController(
+      notifier: di.sl<ActiveWorkoutNotifier>(),
+      liveActivities: di.sl<LiveActivitiesBridge>(),
+      notifications: di.sl<NotificationService>(),
+      onNaturalEnd: _onRestNaturalEnd,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<RoutineDayBloc>().add(
@@ -68,170 +72,28 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
 
   @override
   void dispose() {
-    _globalRestTimer?.cancel();
-    _restTimer.dispose();
+    _restController.dispose();
     super.dispose();
   }
 
-  void _startRestTimer(int seconds) {
-    _globalRestTimer?.cancel();
-    _restTimer.value = RestTimerSnapshot(
-      isResting: true,
-      secondsRemaining: seconds,
-      totalRestSeconds: seconds,
-    );
-    unawaited(
-      di.sl<ActiveWorkoutNotifier>().onRestStarted(
-        duration: Duration(seconds: seconds),
+  void _onRestNaturalEnd() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('¡A entrenar! Próxima serie te espera'),
+        backgroundColor: AppColors.success,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
       ),
     );
-    _globalRestTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final current = _restTimer.value;
-      if (current.secondsRemaining > 0) {
-        final next = current.secondsRemaining - 1;
-        _restTimer.value = RestTimerSnapshot(
-          isResting: true,
-          secondsRemaining: next,
-          totalRestSeconds: current.totalRestSeconds,
-        );
-        if (next > 0 && next <= 3) HapticFeedback.lightImpact();
-      } else {
-        // Fin NATURAL del descanso. Multi-canal de feedback, evitando
-        // duplicados: si la Live Activity está activa, su `AlertConfig`
-        // ya muestra banner+sonido en iOS → omitimos el push del sistema.
-        // En Android (sin LA) sí firamos el push tradicional.
-        if (!di.sl<LiveActivitiesBridge>().isAvailable) {
-          unawaited(di.sl<NotificationService>().showRestEnded());
-        }
-        HapticFeedback.vibrate();
-        _stopTimer(naturalEnd: true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡A entrenar! Próxima serie te espera'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    });
-  }
-
-  void _stopTimer({bool naturalEnd = false}) {
-    _globalRestTimer?.cancel();
-    _restTimer.value = const RestTimerSnapshot.idle();
-    HapticFeedback.heavyImpact();
-    unawaited(
-      di.sl<ActiveWorkoutNotifier>().onRestEnded(naturalEnd: naturalEnd),
-    );
-  }
-
-  /// Ajusta el descanso en curso. Si quedaría <= 0, lo detiene.
-  void _adjustRestSeconds(int delta) {
-    final current = _restTimer.value;
-    if (!current.isResting) return;
-    final newRemaining = current.secondsRemaining + delta;
-    if (newRemaining <= 0) {
-      _stopTimer();
-      return;
-    }
-    // `totalRestSeconds` es el denominador de la progress bar. Antes lo
-    // movíamos junto con `delta` y la ratio quedaba ~constante (la barra
-    // no se actualizaba visualmente). Ahora mantenemos el total como el
-    // máximo histórico — si el usuario suma más allá del peak, lo
-    // expandimos para que el bar muestre 100% (lleno) momentáneamente.
-    final newTotal = newRemaining > current.totalRestSeconds
-        ? newRemaining
-        : current.totalRestSeconds;
-    _restTimer.value = RestTimerSnapshot(
-      isResting: true,
-      secondsRemaining: newRemaining,
-      totalRestSeconds: newTotal,
-    );
-    // Re-sincronizamos el countdown nativo con el nuevo remaining para que el
-    // chronometer del lock screen muestre el ajuste.
-    unawaited(
-      di.sl<ActiveWorkoutNotifier>().onRestStarted(
-        duration: Duration(seconds: newRemaining),
-      ),
-    );
-  }
-
-  String get _dateLabel {
-    const months = [
-      '',
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-    return '${widget.sessionDate.day} '
-        '${months[widget.sessionDate.month]} ${widget.sessionDate.year}';
-  }
-
-  RoutineDayPhase _composePhase(
-    RoutineDayState routine,
-    ActiveWorkoutState active,
-  ) {
-    if (active.status == ActiveWorkoutStatus.failure) {
-      return RoutineDayErrorPhase(
-        active.errorMessage ?? 'Error al iniciar la sesión',
-      );
-    }
-    if (active.isStarting || active.isFinishing) {
-      return const RoutineDayLoadingPhase();
-    }
-    if (active.isRunning && active.session != null) {
-      return RoutineDayActivePhase(
-        session: active.session!,
-        exercises: active.exercises,
-        setLogs: active.setLogs,
-        lastPerformances: active.lastPerformances,
-        recentSessions: active.recentSessions,
-        recentSessionsLogs: active.recentSessionsLogs,
-      );
-    }
-
-    switch (routine.status) {
-      case RoutineDayStatus.initial:
-      case RoutineDayStatus.loading:
-        return const RoutineDayLoadingPhase();
-      case RoutineDayStatus.failure:
-        return RoutineDayErrorPhase(
-          routine.errorMessage ?? 'Error desconocido',
-        );
-      case RoutineDayStatus.ready:
-        return RoutineDayPrestartPhase(
-          exercises: routine.exercises,
-          recentSessions: routine.recentSessions,
-          recentSessionsLogs: routine.recentSessionsLogs,
-          lastPerformances: routine.lastPerformances,
-          hasAnotherActiveSession: routine.hasAnotherActiveSession,
-          anotherActiveSessionDayName: routine.anotherActiveSessionDayName,
-          userId: routine.userId ?? widget.userId,
-          routineDayId: routine.routineDayId ?? widget.routineDay.id,
-          sessionDate: routine.sessionDate ?? widget.sessionDate,
-        );
-    }
   }
 
   Future<void> _onStartWorkout() async {
     final routineState = context.read<RoutineDayBloc>().state;
     if (routineState.status != RoutineDayStatus.ready) return;
     unawaited(HapticFeedback.heavyImpact());
-    // Pedimos permiso de notis al primer arranque de un workout — contexto
-    // claro de por qué lo necesitamos (cronómetro en lock screen). Si el
-    // usuario lo deniega seguimos igual, sólo nos perdemos la noti.
+    // Pedimos permiso de notis al primer arranque — contexto claro (cronómetro
+    // en lock screen). Si se deniega seguimos, sólo nos perdemos la noti.
     await di.sl<NotificationService>().requestPermission();
     if (!mounted) return;
     context.read<ActiveWorkoutBloc>().add(
@@ -246,7 +108,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
 
   void _onSetAdded(SetLog log) {
     context.read<ActiveWorkoutBloc>().add(SaveActiveSetLog(log));
-    _startRestTimer(90);
+    _restController.start(90);
   }
 
   void _onSetRemoved(String exerciseId, int setIndex) {
@@ -259,8 +121,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         setIndex: setIndex,
       ),
     );
-    // No iniciamos descanso al desmarcar — el usuario está corrigiendo, no
-    // terminando una serie.
+    // No iniciamos descanso al desmarcar — el usuario está corrigiendo.
   }
 
   void _onShowLastSessionDetails(
@@ -367,10 +228,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           builder: (context, activeState) {
             return BlocBuilder<RoutineDayBloc, RoutineDayState>(
               buildWhen: (previous, current) {
-                // Cuando el ActiveWorkoutBloc domina la fase (running,
-                // starting, finishing, failure), `_composePhase` ignora el
-                // routineState. Cualquier cambio remoto del RoutineDayBloc
-                // durante el workout no debe rebuildear el scaffold.
+                // Cuando ActiveWorkoutBloc domina la fase (running, starting,
+                // finishing, failure), `_composePhase` ignora el routineState.
+                // Cualquier cambio remoto durante el workout no debe rebuildear.
                 if (activeState.status == ActiveWorkoutStatus.running ||
                     activeState.isStarting ||
                     activeState.isFinishing ||
@@ -380,10 +240,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 return previous != current;
               },
               builder: (context, routineState) {
-                final phase = _composePhase(routineState, activeState);
+                final phase = resolveRoutineDayPhase(
+                  routine: routineState,
+                  active: activeState,
+                  fallbackUserId: widget.userId,
+                  fallbackRoutineDayId: widget.routineDay.id,
+                  fallbackSessionDate: widget.sessionDate,
+                );
                 final session = activeState.session;
                 final isCompleted = session?.completedAt != null;
-                final effectiveReadOnly = isCompleted;
                 final totalVolume = activeState.setLogs.fold<double>(
                   0,
                   (sum, l) => sum + (l.actualWeight * l.actualReps),
@@ -392,15 +257,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 return RoutineDayViewScaffold(
                   phase: phase,
                   routineDay: widget.routineDay,
-                  dateLabel: _dateLabel,
-                  effectiveReadOnly: effectiveReadOnly,
+                  dateLabel: formatRoutineDayDateLabel(widget.sessionDate),
+                  effectiveReadOnly: isCompleted,
                   isCompleted: isCompleted,
                   currentSessionLogs: activeState.setLogs,
                   totalVolume: totalVolume,
-                  restTimer: _restTimer,
+                  restTimer: _restController.snapshot,
                   onClose: () => context.pop(),
-                  onSkipRest: _stopTimer,
-                  onAdjustRest: _adjustRestSeconds,
+                  onSkipRest: _restController.stop,
+                  onAdjustRest: _restController.adjust,
                   onStartWorkout: _onStartWorkout,
                   onSetAdded: _onSetAdded,
                   onSetRemoved: _onSetRemoved,
