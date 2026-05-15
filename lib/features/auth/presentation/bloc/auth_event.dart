@@ -40,3 +40,15 @@ final class SignUpRequested extends AuthEvent {
 }
 
 final class SignOutRequested extends AuthEvent {}
+
+/// Notifica que el profile del user fue editado (típicamente desde la
+/// pestaña PERFIL). Permite refrescar el `User` global sin re-pedir el
+/// `getCurrentUser` al backend.
+final class UserProfileUpdated extends AuthEvent {
+  final String? fullName;
+
+  const UserProfileUpdated({this.fullName});
+
+  @override
+  List<Object> get props => [fullName ?? ''];
+}
