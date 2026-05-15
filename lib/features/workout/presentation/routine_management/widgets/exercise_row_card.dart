@@ -130,11 +130,11 @@ class ExerciseRowCard extends StatelessWidget {
                                   '${exercise.targetSets}×${exercise.targetReps}',
                             ),
                             _StatTag(
-                              icon: Icons.fitness_center_rounded,
+                              icon: Icons.local_fire_department_rounded,
                               label: _formatWeight(exercise.targetWeight),
                             ),
                             _StatTag(
-                              icon: Icons.timer_outlined,
+                              icon: Icons.timer_rounded,
                               label: _formatRest(exercise.restTimerSeconds),
                             ),
                           ],

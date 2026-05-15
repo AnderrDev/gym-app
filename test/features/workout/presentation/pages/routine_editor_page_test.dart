@@ -174,7 +174,7 @@ void main() {
         name: 'Mi rutina',
         exerciseCount: 0,
       );
-      final successState = RoutineManagementState(
+      const successState = RoutineManagementState(
         status: RoutineManagementStatus.ready,
         submissionStatus: RoutineManagementSubmissionStatus.success,
         lastAction: RoutineManagementAction.saveRoutine,

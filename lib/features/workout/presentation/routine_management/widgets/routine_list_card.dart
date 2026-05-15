@@ -9,6 +9,7 @@ import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_card_actions.dart';
 
 /// Card de rutina en el listado. Diseño "split":
 /// - Banda lateral de color (hash del nombre) como identidad visual.
@@ -95,7 +96,7 @@ class RoutineListCard extends StatelessWidget {
                           accent: accent,
                         ),
                         const SizedBox(height: Spacing.md),
-                        _Footer(
+                        RoutineCardActions(
                           isActive: isActive,
                           accent: accent,
                           onActivate: () => onActivate(routine.id),
@@ -190,7 +191,7 @@ class _StatsRow extends StatelessWidget {
       runSpacing: Spacing.xs,
       children: [
         _StatChip(
-          icon: Icons.fitness_center_rounded,
+          icon: Icons.local_fire_department_rounded,
           label: '${routine.exerciseCount} ejercicios',
           accent: accent,
         ),
@@ -247,58 +248,6 @@ class _StatChip extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Footer extends StatelessWidget {
-  const _Footer({
-    required this.isActive,
-    required this.accent,
-    required this.onActivate,
-  });
-
-  final bool isActive;
-  final Color accent;
-  final VoidCallback onActivate;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = isActive ? accent.withValues(alpha: 0.15) : accent;
-    final fg = isActive ? accent : AppColors.background;
-    final label = isActive ? 'ACTIVADA' : 'ACTIVAR';
-    final icon = isActive
-        ? Icons.check_circle_rounded
-        : Icons.play_arrow_rounded;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        TextButton.icon(
-          onPressed: isActive ? null : onActivate,
-          icon: Icon(icon, color: fg, size: 18),
-          label: Text(
-            label,
-            style: AppTextStyles.label.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-              fontSize: 12,
-            ),
-          ),
-          style: TextButton.styleFrom(
-            backgroundColor: bg,
-            disabledBackgroundColor: bg,
-            disabledForegroundColor: fg,
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.lg,
-              vertical: Spacing.sm,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

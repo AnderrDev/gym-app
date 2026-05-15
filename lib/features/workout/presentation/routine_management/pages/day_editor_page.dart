@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,21 +6,20 @@ import 'package:go_router/go_router.dart';
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
-import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
-import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_state.dart';
-import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_sheet.dart';
-import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/edit_exercise_target_sheet.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_editor_app_bar.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_editor_dialogs.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_editor_empty_state.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_name_input.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_summary.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/exercise_row_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/section_header.dart';
 
@@ -51,590 +48,244 @@ class _DayEditorPageState extends State<DayEditorPage> {
     super.dispose();
   }
 
-  Future<void> _showExerciseCatalog(List<Exercise> currentExercises) async {
-    final authState = context.read<AuthBloc>().state;
-    final userId = (authState is Authenticated) ? authState.user.id : '';
-    final bloc = context.read<RoutineManagementBloc>();
-    unawaited(HapticFeedback.mediumImpact());
+  Future<bool> _confirmDiscard() => DiscardChangesDialog.show(context);
 
-    // Cargar el catálogo si aún no está listo.
-    if (bloc.state.catalogStatus != ExerciseCatalogStatus.ready) {
-      bloc.add(const LoadExerciseCatalog());
-    }
-
-    final result = await AppBottomSheet.showRaw<List<ExerciseCatalogItem>>(
-      context,
-      builder: (_) =>
-          BlocBuilder<RoutineManagementBloc, RoutineManagementState>(
-            bloc: bloc,
-            builder: (_, state) {
-              if (state.catalogStatus == ExerciseCatalogStatus.loading &&
-                  state.exerciseCatalog.isEmpty) {
-                return const SizedBox(
-                  height: 200,
-                  child: Center(child: BarbellLoader.large()),
-                );
-              }
-              return ExerciseCatalogSheet(
-                catalog: state.exerciseCatalog,
-                alreadySelectedIds:
-                    currentExercises.map((e) => e.id).toSet(),
-              );
-            },
-          ),
-    );
-
-    if (!mounted || result == null || result.isEmpty) return;
-
-    final dayId = widget.day.id;
-    if (dayId.isEmpty) {
-      AppSnackBar.error(context, 'Guarda el día primero');
-      return;
-    }
-
-    bloc.add(
-      AddExercisesToDayEvent(
-        userId: userId,
-        routineId: widget.routineId,
-        dayId: dayId,
-        items: result
-            .map((e) => AddExerciseToDayPayload(exerciseId: e.id))
-            .toList(),
-      ),
-    );
-    unawaited(HapticFeedback.mediumImpact());
+  String get _userId {
+    final s = context.read<AuthBloc>().state;
+    return s is Authenticated ? s.user.id : '';
   }
 
-  Future<bool> _confirmDiscard() => DiscardChangesDialog.show(context);
+  void _onSubmissionFeedback(
+    BuildContext context,
+    RoutineManagementState state,
+  ) {
+    if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
+      AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
+    } else if (state.submissionStatus ==
+        RoutineManagementSubmissionStatus.failure) {
+      AppSnackBar.error(context, 'Error: ${state.errorMessage ?? ''}');
+    }
+    context.read<RoutineManagementBloc>().add(const AcknowledgeFeedback());
+  }
+
+  bool _isSubmissionTerminal(
+    RoutineManagementState prev,
+    RoutineManagementState curr,
+  ) =>
+      prev.submissionStatus != curr.submissionStatus &&
+      (curr.submissionStatus == RoutineManagementSubmissionStatus.success ||
+          curr.submissionStatus == RoutineManagementSubmissionStatus.failure);
+
+  RoutineDay _resolveCurrentDay(RoutineManagementState state) {
+    if (state.editingDays.isEmpty) return widget.day;
+    return state.editingDays.firstWhere(
+      (d) => d.id == widget.day.id,
+      orElse: () => widget.day,
+    );
+  }
+
+  Future<void> _onPopInvoked(bool didPop, bool isDirty) async {
+    if (didPop) return;
+    final navigator = GoRouter.of(context);
+    final shouldPop = await _confirmDiscard();
+    if (!mounted) return;
+    if (shouldPop) navigator.pop(isDirty);
+  }
+
+  Future<void> _onBackPressed(bool isDirty) async {
+    if (!isDirty) {
+      context.pop(isDirty);
+      return;
+    }
+    final navigator = GoRouter.of(context);
+    final shouldPop = await _confirmDiscard();
+    if (!mounted) return;
+    if (shouldPop) navigator.pop(isDirty);
+  }
+
+  void _onReorder(
+    List<Exercise> exercises,
+    RoutineDay currentDay,
+    int oldIndex,
+    int newIndex,
+  ) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final newExercises = List<Exercise>.from(exercises);
+    final item = newExercises.removeAt(oldIndex);
+    newExercises.insert(newIndex, item);
+    context.read<RoutineManagementBloc>().add(
+      ReorderExercises(
+        userId: _userId,
+        routineId: widget.routineId,
+        dayId: currentDay.id,
+        exerciseIds: newExercises.map((e) => e.id).toList(),
+      ),
+    );
+    HapticFeedback.lightImpact();
+  }
+
+  void _onSavePressed(RoutineDay currentDay) {
+    context.read<RoutineManagementBloc>().add(
+      SaveDay(
+        userId: _userId,
+        routineId: widget.routineId,
+        day: currentDay.copyWith(name: _nameController.text),
+      ),
+    );
+  }
+
+  void _onRemoveExercise(Exercise exercise, RoutineDay currentDay) {
+    context.read<RoutineManagementBloc>().add(
+      RemoveExerciseFromDayEvent(
+        userId: _userId,
+        routineId: widget.routineId,
+        dayId: currentDay.id,
+        exerciseId: exercise.id,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<RoutineManagementBloc, RoutineManagementState>(
-      listenWhen: (p, c) =>
-          p.submissionStatus != c.submissionStatus &&
-          (c.submissionStatus == RoutineManagementSubmissionStatus.success ||
-              c.submissionStatus == RoutineManagementSubmissionStatus.failure),
-      listener: (context, state) {
-        if (state.submissionStatus ==
-            RoutineManagementSubmissionStatus.success) {
-          AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
-          context.read<RoutineManagementBloc>().add(
-            const AcknowledgeFeedback(),
-          );
-        } else if (state.submissionStatus ==
-            RoutineManagementSubmissionStatus.failure) {
-          AppSnackBar.error(context, 'Error: ${state.errorMessage ?? ''}');
-          context.read<RoutineManagementBloc>().add(
-            const AcknowledgeFeedback(),
-          );
-        }
-      },
+      listenWhen: _isSubmissionTerminal,
+      listener: _onSubmissionFeedback,
       builder: (context, state) {
-        final currentDay = state.editingDays.isNotEmpty
-            ? state.editingDays.firstWhere(
-                (d) => d.id == widget.day.id,
-                orElse: () => widget.day,
-              )
-            : widget.day;
-
+        final currentDay = _resolveCurrentDay(state);
         final exercises = currentDay.exercises;
         final isDirty = state.isDirty;
-
         return PopScope(
           canPop: !isDirty,
-          onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            final navigator = GoRouter.of(context);
-            final shouldPop = await _confirmDiscard();
-            if (!mounted) return;
-            if (shouldPop) {
-              navigator.pop(isDirty);
-            }
-          },
+          onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop, isDirty),
           child: Scaffold(
             backgroundColor: AppColors.background,
             body: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  titleSpacing: 0,
-                  backgroundColor: AppColors.background,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
-                    onPressed: () async {
-                      if (!isDirty) {
-                        context.pop(isDirty);
-                        return;
-                      }
-                      final navigator = GoRouter.of(context);
-                      final shouldPop = await _confirmDiscard();
-                      if (!mounted) return;
-                      if (shouldPop) navigator.pop(isDirty);
-                    },
-                  ),
-                  title: Text(
-                    'Editar día',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  actions: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                      child: TextButton(
-                        onPressed: isDirty
-                            ? () {
-                                final authState =
-                                    context.read<AuthBloc>().state;
-                                final userId = (authState is Authenticated)
-                                    ? authState.user.id
-                                    : '';
-                                context.read<RoutineManagementBloc>().add(
-                                  SaveDay(
-                                    userId: userId,
-                                    routineId: widget.routineId,
-                                    day: currentDay.copyWith(
-                                      name: _nameController.text,
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          disabledForegroundColor:
-                              AppColors.textSecondary.withValues(alpha: 0.4),
-                        ),
-                        child: Text(
-                          'GUARDAR',
-                          style: AppTextStyles.label.copyWith(
-                            color: isDirty
-                                ? AppColors.primary
-                                : AppColors.textSecondary
-                                    .withValues(alpha: 0.5),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
+                DayEditorAppBar(
+                  isDirty: isDirty,
+                  onBack: () => _onBackPressed(isDirty),
+                  onSave: () => _onSavePressed(currentDay),
                 ),
-
-                // Bloque del nombre del día: input grande, sin chrome extra.
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Spacing.lg,
-                      Spacing.sm,
-                      Spacing.lg,
-                      Spacing.lg,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'NOMBRE DEL DÍA',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.textSecondary,
-                            letterSpacing: 1.2,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        TextField(
-                          controller: _nameController,
-                          onChanged: (_) {
-                            context
-                                .read<RoutineManagementBloc>()
-                                .add(const MarkRoutineDirty());
-                          },
-                          style: AppTextStyles.heading1.copyWith(
-                            fontSize: 22,
-                            letterSpacing: -0.4,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Pull Day · Espalda/Bíceps',
-                            hintStyle: AppTextStyles.heading1.copyWith(
-                              color: AppColors.textDisabled,
-                              fontSize: 22,
-                              letterSpacing: -0.4,
-                            ),
-                            isDense: true,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 6),
-                            border: InputBorder.none,
-                            enabledBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                color: AppColors.divider,
-                              ),
-                            ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                color: AppColors.primary,
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: DayNameInput(
+                    controller: _nameController,
+                    onChanged: (_) => context
+                        .read<RoutineManagementBloc>()
+                        .add(const MarkRoutineDirty()),
                   ),
                 ),
-
-                // Resumen del día: grupos musculares trabajados (derivado
-                // de los exercises ya cargados). Si está vacío no rendereamos.
                 if (exercises.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _DaySummary(exercises: exercises),
-                  ),
-
+                  SliverToBoxAdapter(child: DaySummary(exercises: exercises)),
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Spacing.lgPlus,
-                      Spacing.md,
-                      Spacing.lgPlus,
-                      Spacing.sm,
-                    ),
-                    child: SectionHeader(
-                      label: 'Ejercicios',
-                      trailing: Text(
-                        '${exercises.length}',
-                        style: AppTextStyles.label.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                        ),
-                      ),
-                      hint: exercises.length >= 2
-                          ? 'Mantén para reordenar · toca para editar'
-                          : (exercises.isNotEmpty
-                              ? 'Toca para editar objetivos'
-                              : null),
-                    ),
-                  ),
+                  child: _buildExercisesSectionHeader(exercises),
                 ),
-
-                if (exercises.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _EmptyExercises(
-                      onTap: () => _showExerciseCatalog(exercises),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: Spacing.lg),
-                    sliver: SliverReorderableList(
-                      itemCount: exercises.length,
-                      onReorder: (oldIndex, newIndex) {
-                        if (newIndex > oldIndex) newIndex -= 1;
-                        final newExercises = List<Exercise>.from(exercises);
-                        final item = newExercises.removeAt(oldIndex);
-                        newExercises.insert(newIndex, item);
-
-                        final authState = context.read<AuthBloc>().state;
-                        final userId = (authState is Authenticated)
-                            ? authState.user.id
-                            : '';
-
-                        context.read<RoutineManagementBloc>().add(
-                          ReorderExercises(
-                            userId: userId,
-                            routineId: widget.routineId,
-                            dayId: currentDay.id,
-                            exerciseIds:
-                                newExercises.map((e) => e.id).toList(),
-                          ),
-                        );
-                        HapticFeedback.lightImpact();
-                      },
-                      itemBuilder: (context, index) {
-                        final exercise = exercises[index];
-                        return ReorderableDelayedDragStartListener(
-                          key: ValueKey('ex_${exercise.id}_$index'),
-                          index: index,
-                          child:
-                              _buildExerciseRow(index, exercise, currentDay),
-                        );
-                      },
-                    ),
-                  ),
-
+                _buildExercisesSliver(exercises, currentDay),
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
-
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => _showExerciseCatalog(exercises),
-              elevation: 0,
-              highlightElevation: 0,
-              backgroundColor: AppColors.primary,
-              icon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.onPrimary,
-                size: 22,
-              ),
-              label: Text(
-                'CATÁLOGO',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.onPrimary,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
+            floatingActionButton: _buildCatalogFab(currentDay, exercises),
           ),
         );
       },
     );
   }
 
-  Widget _buildExerciseRow(
-    int index,
-    Exercise exercise,
-    RoutineDay currentDay,
-  ) {
-    return ExerciseRowCard(
-      exercise: exercise,
-      index: index,
-      onTap: () => _openEditTargetSheet(exercise, currentDay),
-      onRemove: () {
-        final authState = context.read<AuthBloc>().state;
-        final userId = (authState is Authenticated) ? authState.user.id : '';
-        context.read<RoutineManagementBloc>().add(
-          RemoveExerciseFromDayEvent(
-            userId: userId,
-            routineId: widget.routineId,
-            dayId: currentDay.id,
-            exerciseId: exercise.id,
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openEditTargetSheet(
-    Exercise exercise,
-    RoutineDay currentDay,
-  ) async {
-    final authState = context.read<AuthBloc>().state;
-    final userId = (authState is Authenticated) ? authState.user.id : '';
-    final bloc = context.read<RoutineManagementBloc>();
-    unawaited(HapticFeedback.selectionClick());
-    final result = await AppBottomSheet.show<EditExerciseTargetResult>(
-      context,
-      title: 'Editar objetivos',
-      child: EditExerciseTargetSheet(exercise: exercise),
-    );
-    if (result == null) return;
-    bloc.add(
-      UpdateExerciseTargetEvent(
-        userId: userId,
-        routineId: widget.routineId,
-        dayId: currentDay.id,
-        exerciseId: exercise.id,
-        targetWeight: result.targetWeight,
-        targetReps: result.targetReps,
-        targetSets: result.targetSets,
-        restSeconds: result.restSeconds,
-      ),
-    );
-  }
-}
-
-/// Resumen visual del día: chip de músculos trabajados (derivado de los
-/// `targetMuscle` únicos de los ejercicios del día) y conteo total de sets.
-class _DaySummary extends StatelessWidget {
-  const _DaySummary({required this.exercises});
-
-  final List<Exercise> exercises;
-
-  @override
-  Widget build(BuildContext context) {
-    final muscles = exercises
-        .map((e) => e.targetMuscle)
-        .where((m) => m.isNotEmpty)
-        .toSet()
-        .toList();
-    final totalSets =
-        exercises.fold<int>(0, (acc, e) => acc + e.targetSets);
+  Widget _buildExercisesSectionHeader(List<Exercise> exercises) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         Spacing.lgPlus,
-        0,
+        Spacing.md,
         Spacing.lgPlus,
         Spacing.sm,
       ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          Spacing.lg,
-          Spacing.md,
-          Spacing.lg,
-          Spacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _SummaryStat(
-                  icon: Icons.fitness_center_rounded,
-                  label: '${exercises.length} ejercicios',
-                ),
-                const SizedBox(width: Spacing.lg),
-                _SummaryStat(
-                  icon: Icons.repeat_rounded,
-                  label: '$totalSets sets',
-                ),
-              ],
-            ),
-            if (muscles.isNotEmpty) ...[
-              const SizedBox(height: Spacing.sm),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: muscles
-                    .map(
-                      (m) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          m.toUpperCase(),
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryStat extends StatelessWidget {
-  const _SummaryStat({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: AppColors.primary, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          label,
+      child: SectionHeader(
+        label: 'Ejercicios',
+        trailing: Text(
+          '${exercises.length}',
           style: AppTextStyles.label.copyWith(
-            color: AppColors.textPrimary,
+            color: AppColors.primary,
+            fontWeight: FontWeight.w900,
             fontSize: 12,
-            fontWeight: FontWeight.w700,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _EmptyExercises extends StatelessWidget {
-  const _EmptyExercises({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Spacing.xxl),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Icon(
-              Icons.fitness_center_rounded,
-              color: AppColors.primary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: Spacing.lg),
-          Text(
-            'Sin ejercicios',
-            style: AppTextStyles.heading2.copyWith(fontSize: 18),
-          ),
-          const SizedBox(height: Spacing.sm),
-          Text(
-            'Añadí ejercicios desde el catálogo para empezar a armar este día.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: Spacing.lg),
-          OutlinedButton.icon(
-            onPressed: onTap,
-            icon: const Icon(Icons.search_rounded, size: 18),
-            label: Text(
-              'BUSCAR EJERCICIOS',
-              style: AppTextStyles.label.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: BorderSide(
-                color: AppColors.primary.withValues(alpha: 0.5),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.lg,
-                vertical: Spacing.md,
-              ),
-            ),
-          ),
-        ],
+        hint: exercises.length >= 2
+            ? 'Mantén para reordenar · toca para editar'
+            : (exercises.isNotEmpty ? 'Toca para editar objetivos' : null),
       ),
     );
   }
+
+  Widget _buildExercisesSliver(
+    List<Exercise> exercises,
+    RoutineDay currentDay,
+  ) {
+    if (exercises.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: DayEditorEmptyState(
+          onTap: () => DayEditorDialogs.showExerciseCatalog(
+            context,
+            routineId: widget.routineId,
+            day: currentDay,
+            currentExercises: exercises,
+          ),
+        ),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      sliver: SliverReorderableList(
+        itemCount: exercises.length,
+        onReorder: (oldIdx, newIdx) =>
+            _onReorder(exercises, currentDay, oldIdx, newIdx),
+        itemBuilder: (context, index) {
+          final ex = exercises[index];
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey('ex_${ex.id}_$index'),
+            index: index,
+            child: ExerciseRowCard(
+              exercise: ex,
+              index: index,
+              onTap: () => DayEditorDialogs.openEditTargetSheet(
+                context,
+                routineId: widget.routineId,
+                day: currentDay,
+                exercise: ex,
+              ),
+              onRemove: () => _onRemoveExercise(ex, currentDay),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCatalogFab(RoutineDay currentDay, List<Exercise> exercises) {
+    return FloatingActionButton.extended(
+      onPressed: () => DayEditorDialogs.showExerciseCatalog(
+        context,
+        routineId: widget.routineId,
+        day: currentDay,
+        currentExercises: exercises,
+      ),
+      elevation: 0,
+      highlightElevation: 0,
+      backgroundColor: AppColors.primary,
+      icon: const Icon(
+        Icons.search_rounded,
+        color: AppColors.onPrimary,
+        size: 22,
+      ),
+      label: Text(
+        'CATÁLOGO',
+        style: AppTextStyles.label.copyWith(
+          color: AppColors.onPrimary,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
 }
