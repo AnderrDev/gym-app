@@ -35,6 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignInRequested>(_onSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<UserProfileUpdated>(_onUserProfileUpdated);
 
     _authSubscription = authStateChanges.listen((isAuthenticated) {
       add(AuthStateChanged(isAuthenticated: isAuthenticated));
@@ -128,6 +129,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(Unauthenticated());
       }
     });
+  }
+
+  void _onUserProfileUpdated(
+    UserProfileUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    final current = state;
+    if (current is! Authenticated) return;
+    final newUser = current.user.copyWith(fullName: event.fullName);
+    emit(Authenticated(newUser));
   }
 
   Future<void> _onSignOutRequested(
