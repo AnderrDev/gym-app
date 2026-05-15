@@ -121,8 +121,8 @@ class _AppFormFieldState extends State<AppFormField> {
                     onPressed: _toggleObscured,
                     icon: Icon(
                       _obscured
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                          ? Icons.visibility_rounded
+                          : Icons.visibility_off_rounded,
                       size: 18,
                     ),
                   )

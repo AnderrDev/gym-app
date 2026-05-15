@@ -163,26 +163,26 @@ class _AppShellViewState extends State<_AppShellView> {
           // para hover/long-press en web/desktop sin perder el label corto.
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.today_outlined),
-              selectedIcon: Icon(Icons.today),
+              icon: Icon(Icons.today_rounded),
+              selectedIcon: Icon(Icons.today_rounded),
               label: 'HOY',
               tooltip: 'Pestaña HOY — resumen del día',
             ),
             NavigationDestination(
-              icon: Icon(Icons.fitness_center_outlined),
-              selectedIcon: Icon(Icons.fitness_center),
+              icon: Icon(Icons.local_fire_department_rounded),
+              selectedIcon: Icon(Icons.local_fire_department_rounded),
               label: 'RUTINAS',
               tooltip: 'Pestaña RUTINAS — gestionar rutinas',
             ),
             NavigationDestination(
-              icon: Icon(Icons.insights_outlined),
-              selectedIcon: Icon(Icons.insights),
+              icon: Icon(Icons.insights_rounded),
+              selectedIcon: Icon(Icons.insights_rounded),
               label: 'PROGRESO',
               tooltip: 'Pestaña PROGRESO — métricas e historial',
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
               label: 'PERFIL',
               tooltip: 'Pestaña PERFIL — cuenta y ajustes',
             ),

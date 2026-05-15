@@ -8,16 +8,16 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
-import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
-import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_state.dart';
+import 'package:gym_flutter/features/workout/presentation/progress/widgets/progress_routine_tile.dart';
+import 'package:gym_flutter/features/workout/presentation/progress/widgets/weekly_insights_card.dart';
 
 /// Hub `/progress` (pestaña PROGRESO del shell).
 ///
@@ -146,7 +146,7 @@ class _ProgressErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
-              Icons.error_outline,
+              Icons.error_outline_rounded,
               color: AppColors.error,
               size: 48,
             ),
@@ -159,7 +159,7 @@ class _ProgressErrorView extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: Text(
                 'REINTENTAR',
                 style: AppTextStyles.label.copyWith(
@@ -206,7 +206,7 @@ class _ProgressReadyView extends StatelessWidget {
         const SizedBox(height: Spacing.xs),
         const _SectionTitle(text: 'ESTA SEMANA'),
         const SizedBox(height: Spacing.sm),
-        _WeeklyInsightsCard(
+        WeeklyInsightsCard(
           insights: state.insights,
           error: state.insightsError,
         ),
@@ -214,12 +214,12 @@ class _ProgressReadyView extends StatelessWidget {
         const _SectionTitle(text: 'TUS RUTINAS'),
         const SizedBox(height: Spacing.sm),
         if (state.routines.isEmpty)
-          _EmptyRoutines(onGoToRoutines: onGoToRoutines)
+          ProgressEmptyRoutines(onGoToRoutines: onGoToRoutines)
         else
           ...state.routines.map(
             (r) => Padding(
               padding: const EdgeInsets.only(bottom: Spacing.sm),
-              child: _RoutineTile(
+              child: ProgressRoutineTile(
                 routine: r,
                 onTap: () => onOpenRoutine(r),
               ),
@@ -267,278 +267,3 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _WeeklyInsightsCard extends StatelessWidget {
-  const _WeeklyInsightsCard({required this.insights, required this.error});
-
-  final WeeklyInsights? insights;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final decoration = BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(Radii.md),
-      border: Border.all(color: AppColors.divider),
-    );
-
-    if (error != null) {
-      return Container(
-        padding: const EdgeInsets.all(Spacing.lg),
-        decoration: decoration,
-        child: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: Spacing.sm),
-            Expanded(
-              child: Text(
-                'No pudimos cargar los insights de esta semana.',
-                style: AppTextStyles.bodySmall,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final i = insights;
-    if (i == null) {
-      return Container(
-        padding: const EdgeInsets.all(Spacing.lg),
-        decoration: decoration,
-        child: Row(
-          children: [
-            const Icon(
-              Icons.bar_chart_outlined,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: Spacing.sm),
-            Expanded(
-              child: Text(
-                'Sin datos esta semana',
-                style: AppTextStyles.bodySmall,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(Spacing.lg),
-      decoration: decoration,
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: Spacing.md,
-        mainAxisSpacing: Spacing.md,
-        childAspectRatio: 2.1,
-        children: [
-          _MetricCell(
-            icon: Icons.fitness_center,
-            label: 'VOLUMEN',
-            value: '${i.totalVolume.toStringAsFixed(0)} kg',
-            valueColor: AppColors.textPrimary,
-          ),
-          _MetricCell(
-            icon: Icons.event_available,
-            label: 'SESIONES',
-            value: '${i.completedSessions}/${i.plannedDays}',
-            valueColor: AppColors.primary,
-          ),
-          _MetricCell(
-            icon: Icons.flag_circle,
-            label: 'ADHERENCIA',
-            value: '${i.adherenceRate.toStringAsFixed(0)}%',
-            valueColor: AppColors.success,
-          ),
-          _MetricCell(
-            icon: i.volumeTrendPercent >= 0
-                ? Icons.trending_up
-                : Icons.trending_down,
-            label: 'TENDENCIA',
-            value: '${i.volumeTrendPercent >= 0 ? '+' : ''}'
-                '${i.volumeTrendPercent.toStringAsFixed(1)}%',
-            valueColor: i.volumeTrendPercent >= 0
-                ? AppColors.success
-                : AppColors.error,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricCell extends StatelessWidget {
-  const _MetricCell({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: AppColors.primary, size: 20),
-            const SizedBox(width: Spacing.xs),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1,
-                  fontSize: 11,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: Spacing.xs),
-        Text(
-          value,
-          style: AppTextStyles.heading2.copyWith(
-            color: valueColor,
-            fontWeight: FontWeight.w700,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}
-
-class _RoutineTile extends StatelessWidget {
-  const _RoutineTile({required this.routine, required this.onTap});
-
-  final Routine routine;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(Radii.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.md),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.lg,
-            vertical: Spacing.md,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.md),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.show_chart_rounded,
-                size: 20,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: Spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      routine.name,
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ver progreso',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyRoutines extends StatelessWidget {
-  const _EmptyRoutines({required this.onGoToRoutines});
-
-  final VoidCallback onGoToRoutines;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(Spacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.fitness_center_outlined,
-            size: 40,
-            color: AppColors.textSecondary,
-          ),
-          const SizedBox(height: Spacing.md),
-          Text(
-            'Sin rutinas asignadas',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: Spacing.xs),
-          Text(
-            'Explorá el catálogo desde la pestaña Rutinas.',
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: Spacing.lg),
-          OutlinedButton(
-            onPressed: onGoToRoutines,
-            child: Text(
-              'IR A RUTINAS',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.primary,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

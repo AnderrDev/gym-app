@@ -139,7 +139,7 @@ class _BootstrapErrorApp extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
-                  Icons.error_outline,
+                  Icons.error_outline_rounded,
                   color: AppColors.error,
                   size: 48,
                 ),

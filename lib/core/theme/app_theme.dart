@@ -286,15 +286,12 @@ class _AppMotion extends ThemeExtension<_AppMotion> {
   final Duration medium;
 
   @override
-  ThemeExtension<_AppMotion> copyWith({Duration? fast, Duration? medium}) {
-    return _AppMotion(fast: fast ?? this.fast, medium: medium ?? this.medium);
-  }
+  ThemeExtension<_AppMotion> copyWith({Duration? fast, Duration? medium}) =>
+      _AppMotion(fast: fast ?? this.fast, medium: medium ?? this.medium);
 
   @override
   ThemeExtension<_AppMotion> lerp(
     covariant ThemeExtension<_AppMotion>? other,
     double t,
-  ) {
-    return this;
-  }
+  ) => this;
 }
