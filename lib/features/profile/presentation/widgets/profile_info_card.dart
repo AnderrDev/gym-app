@@ -59,7 +59,8 @@ class ProfileInfoCard extends StatelessWidget {
 }
 
 /// Fila con icono + label + value (+ tag opcional al final). Pensada para
-/// listas de información read-only.
+/// listas de información read-only. Si [onTap] se setea, la row se vuelve
+/// interactiva (InkWell + chevron) y el tag se silencia para no competir.
 class ProfileInfoRow extends StatelessWidget {
   const ProfileInfoRow({
     super.key,
@@ -67,16 +68,18 @@ class ProfileInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.trailingTag,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final String? trailingTag;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -109,7 +112,7 @@ class ProfileInfoRow extends StatelessWidget {
               ],
             ),
           ),
-          if (trailingTag != null) ...[
+          if (trailingTag != null && onTap == null) ...[
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -128,8 +131,23 @@ class ProfileInfoRow extends StatelessWidget {
               ),
             ),
           ],
+          if (onTap != null) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
+            ),
+          ],
         ],
       ),
+    );
+
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Radii.md),
+      child: content,
     );
   }
 }

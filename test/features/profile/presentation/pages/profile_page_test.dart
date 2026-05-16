@@ -70,6 +70,11 @@ void main() {
       expect(find.text('Unidades'), findsOneWidget);
       expect(find.text('Kilogramos (kg)'), findsOneWidget);
 
+      // Sólo las rows de preferencias siguen con el tag "PRÓXIMAMENTE".
+      // La row de "Nombre" ahora es editable (tap → sheet) y muestra chevron.
+      expect(find.text('PRÓXIMAMENTE'), findsNWidgets(2));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
       // CTA sign-out
       expect(find.text('CERRAR SESIÓN'), findsOneWidget);
     },

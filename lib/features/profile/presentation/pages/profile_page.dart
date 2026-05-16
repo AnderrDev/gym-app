@@ -4,23 +4,39 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
+import 'package:gym_flutter/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:gym_flutter/features/profile/presentation/widgets/profile_edit_name_sheet.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_info_card.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_sign_out_button.dart';
+import 'package:gym_flutter/injection_container.dart';
 
-/// Pestaña "PERFIL" — read-only MVP.
+/// Pestaña "PERFIL".
 ///
-/// Renderiza la info disponible del usuario autenticado (consumiendo
-/// directamente `AuthBloc`) más un CTA de cierre de sesión. Cualquier
-/// capacidad de edición (nombre, avatar, preferencias) construirá su propia
-/// feature `profile/` con bloc + repo cuando llegue el momento; hoy sería
-/// abstracción prematura.
+/// Renderiza info del user autenticado (consumiendo `AuthBloc`) y permite
+/// editar el `full_name` vía `ProfileBloc` + bottom sheet. El resto de
+/// preferencias (idioma, unidades, theme) sigue como placeholder hasta que
+/// cada feature aterrice.
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => sl<ProfileBloc>(),
+      child: const _ProfileView(),
+    );
+  }
+}
+
+class _ProfileView extends StatelessWidget {
+  const _ProfileView();
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +58,6 @@ class ProfilePage extends StatelessWidget {
           if (state is Authenticated) {
             return _ProfileContent(user: state.user);
           }
-          // Unauthenticated / AuthError: el router redirige a /login;
-          // devolvemos un widget vacío como defensa.
           return const SizedBox.shrink();
         },
       ),
@@ -55,6 +69,24 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({required this.user});
 
   final User user;
+
+  void _onEditName(BuildContext context) {
+    final profileBloc = context.read<ProfileBloc>();
+    final authBloc = context.read<AuthBloc>();
+    AppBottomSheet.showRaw<void>(
+      context,
+      builder: (sheetCtx) => BlocProvider.value(
+        value: profileBloc,
+        child: ProfileEditNameSheet(
+          userId: user.id,
+          initialValue: user.fullName,
+          onSaved: (fullName) {
+            authBloc.add(UserProfileUpdated(fullName: fullName));
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +107,8 @@ class _ProfileContent extends StatelessWidget {
             ProfileInfoRow(
               icon: Icons.person_outline_rounded,
               label: 'Nombre',
-              value: user.fullName ?? '—',
-              trailingTag: 'PRÓXIMAMENTE',
+              value: user.fullName?.isNotEmpty == true ? user.fullName! : '—',
+              onTap: () => _onEditName(context),
             ),
             ProfileInfoRow(
               icon: Icons.alternate_email_rounded,

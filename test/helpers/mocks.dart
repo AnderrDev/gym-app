@@ -6,10 +6,13 @@ import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
+import 'package:gym_flutter/features/profile/domain/repositories/profile_repository.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
+
+class MockProfileRepository extends Mock implements ProfileRepository {}
 
 class MockWorkoutRepository extends Mock implements WorkoutRepository {}
 
