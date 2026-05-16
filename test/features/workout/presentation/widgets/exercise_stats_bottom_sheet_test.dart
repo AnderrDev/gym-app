@@ -66,7 +66,7 @@ void main() {
     await tester.pump();
 
     expect(find.text(tMessage), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
   });
 
   testWidgets('debe mostrar estado vacío cuando no hay historial', (
