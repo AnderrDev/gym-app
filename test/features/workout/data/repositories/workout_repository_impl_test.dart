@@ -39,6 +39,20 @@ void main() {
         dayOfWeek: 1,
       ),
     );
+    registerFallbackValue(
+      WeeklyInsights(
+        weekStart: DateTime(2026, 1, 1),
+        weekEnd: DateTime(2026, 1, 7),
+        plannedDays: 0,
+        completedDays: 0,
+        completedSessions: 0,
+        adherenceRate: 0,
+        totalVolume: 0,
+        previousWeekVolume: 0,
+        volumeTrendPercent: 0,
+        personalRecords: 0,
+      ),
+    );
   });
 
   setUp(() {
@@ -54,6 +68,15 @@ void main() {
         .thenAnswer((_) async {});
     when(() => mockLocalDataSource.cacheLastPerformances(any(), any()))
         .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.cacheAssignedRoutines(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.cacheWeekSessions(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.cacheWeeklyInsights(
+          userId: any(named: 'userId'),
+          routineId: any(named: 'routineId'),
+          insights: any(named: 'insights'),
+        )).thenAnswer((_) async {});
     when(() => mockLocalDataSource.getRoutineDays(any()))
         .thenAnswer((_) async => const []);
     when(() => mockLocalDataSource.getExercisesForDay(any()))
@@ -61,6 +84,12 @@ void main() {
     when(() =>
             mockLocalDataSource.getLastPerformancesForExercises(any(), any()))
         .thenAnswer((_) async => const {});
+    when(() => mockLocalDataSource.getAssignedRoutines(any()))
+        .thenAnswer((_) async => null);
+    when(() => mockLocalDataSource.getWeekSessions(any(), any(), any()))
+        .thenAnswer((_) async => const []);
+    when(() => mockLocalDataSource.getWeeklyInsights(any(), any(), any()))
+        .thenAnswer((_) async => null);
     repository = WorkoutRepositoryImpl(
       remoteDataSource: mockRemoteDataSource,
       localDataSource: mockLocalDataSource,

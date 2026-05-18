@@ -1,11 +1,13 @@
 import 'package:drift/drift.dart';
 
 import 'package:gym_flutter/core/database/local_database.dart';
+import 'package:gym_flutter/core/database/tables/cached_assigned_routines_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_last_performances_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_days_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_set_logs_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_weekly_insights_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_workout_sessions_table.dart';
 import 'package:gym_flutter/core/database/tables/pending_mutations_table.dart';
 
@@ -27,6 +29,8 @@ part 'workout_cache_dao.g.dart';
     CachedWorkoutSessions,
     CachedSetLogs,
     PendingMutations,
+    CachedAssignedRoutines,
+    CachedWeeklyInsights,
   ],
 )
 class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
@@ -220,5 +224,117 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
       row,
       mode: InsertMode.insertOrReplace,
     );
+  }
+
+  // ─── Phase 4: cached_assigned_routines ─────────────────────────────────
+
+  /// Devuelve la caché de rutinas asignadas del usuario, más recientes
+  /// primero (ordenadas por `fetchedAt` descendente — empata el
+  /// orden esperado por la UI tras un refresco remoto).
+  Future<List<CachedAssignedRoutineRow>> readAssignedRoutines(String userId) {
+    final query = select(cachedAssignedRoutines)
+      ..where((t) => t.userId.equals(userId))
+      ..orderBy([(t) => OrderingTerm.desc(t.fetchedAt)]);
+    return query.get();
+  }
+
+  /// Reemplaza atómicamente las rutinas cacheadas del usuario por las que
+  /// llegan del remote. Si la lista entrante es vacía se vacía la caché de
+  /// ese usuario (no se borra la de otros usuarios).
+  Future<void> replaceAssignedRoutines(
+    String userId,
+    List<CachedAssignedRoutinesCompanion> rows,
+  ) {
+    return transaction(() async {
+      await (delete(cachedAssignedRoutines)
+            ..where((t) => t.userId.equals(userId)))
+          .go();
+      if (rows.isEmpty) return;
+      await batch((b) {
+        b.insertAll(cachedAssignedRoutines, rows);
+      });
+    });
+  }
+
+  // ─── Phase 4: cached_weekly_insights ───────────────────────────────────
+
+  /// Lee un snapshot cacheado por la PK compuesta. `null` si nunca se
+  /// hidrató para ese (usuario, rutina, semana).
+  Future<CachedWeeklyInsightRow?> readWeeklyInsight(
+    String userId,
+    String routineId,
+    String weekStart,
+  ) {
+    final query = select(cachedWeeklyInsights)
+      ..where(
+        (t) =>
+            t.userId.equals(userId) &
+            t.routineId.equals(routineId) &
+            t.weekStart.equals(weekStart),
+      )
+      ..limit(1);
+    return query.getSingleOrNull();
+  }
+
+  /// Upsert por PK compuesta `(userId, routineId, weekStart)`. El caller
+  /// construye el companion completo (payloadJson serializado fuera).
+  Future<void> upsertWeeklyInsight(CachedWeeklyInsightsCompanion row) {
+    return into(cachedWeeklyInsights).insert(
+      row,
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  // ─── Phase 4: cached_workout_sessions (read-side de la semana) ─────────
+
+  /// Devuelve las sesiones cacheadas del usuario dentro del rango
+  /// `[weekStartIso, weekEndIso]` (ambos inclusivos, ISO `yyyy-MM-dd`).
+  /// Comparación string-based — segura porque el formato lo decidimos
+  /// nosotros y es lex-orderable.
+  Future<List<CachedWorkoutSessionRow>> readWeekSessions(
+    String userId,
+    String weekStartIso,
+    String weekEndIso,
+  ) {
+    final query = select(cachedWorkoutSessions)
+      ..where(
+        (t) =>
+            t.userId.equals(userId) &
+            t.sessionDate.isBiggerOrEqualValue(weekStartIso) &
+            t.sessionDate.isSmallerOrEqualValue(weekEndIso),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.sessionDate)]);
+    return query.get();
+  }
+
+  /// Upserta filas que vienen del remote (estado `synced`). Para evitar
+  /// colisiones write-side respeta cualquier fila local cuyo `sync_status`
+  /// esté en `pending | syncing | error` (esas las gestiona el SyncWorker).
+  /// El resto se reemplaza con la fila remota.
+  Future<void> upsertSyncedSessions(
+    List<CachedWorkoutSessionsCompanion> rows,
+  ) {
+    if (rows.isEmpty) return Future.value();
+    return transaction(() async {
+      for (final row in rows) {
+        if (!row.id.present) continue;
+        final id = row.id.value;
+        final existing = await (select(cachedWorkoutSessions)
+              ..where((t) => t.id.equals(id))
+              ..limit(1))
+            .getSingleOrNull();
+        if (existing != null) {
+          const protected = {'pending', 'syncing', 'error'};
+          if (protected.contains(existing.syncStatus)) {
+            // No tocar — el writer local manda.
+            continue;
+          }
+        }
+        await into(cachedWorkoutSessions).insert(
+          row.copyWith(syncStatus: const Value('synced')),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
   }
 }

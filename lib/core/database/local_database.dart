@@ -3,11 +3,13 @@ import 'package:drift/drift.dart';
 import 'package:gym_flutter/core/database/connection/open_connection.dart';
 import 'package:gym_flutter/core/database/migrations/migration_strategy.dart';
 import 'package:gym_flutter/core/database/tables/app_meta_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_assigned_routines_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_last_performances_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_days_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_set_logs_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_weekly_insights_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_workout_sessions_table.dart';
 import 'package:gym_flutter/core/database/tables/pending_mutations_table.dart';
 
@@ -22,6 +24,10 @@ part 'local_database.g.dart';
 ///   las sesiones del usuario (con `sync_status`).
 /// - [`PendingMutations`]: outbox FIFO que el SyncWorker drena con backoff.
 ///
+/// Phase 4 (SWR polish) añade:
+/// - [`CachedAssignedRoutines`]: lista de rutinas asignadas al usuario.
+/// - [`CachedWeeklyInsights`]: snapshots de la dashboard por (rutina, semana).
+///
 /// Cada fase actualiza [`schemaVersion`] y registra la migración en
 /// [`buildMigrationStrategy`].
 @DriftDatabase(
@@ -34,6 +40,8 @@ part 'local_database.g.dart';
     CachedWorkoutSessions,
     CachedSetLogs,
     PendingMutations,
+    CachedAssignedRoutines,
+    CachedWeeklyInsights,
   ],
 )
 class LocalDatabase extends _$LocalDatabase {
@@ -47,7 +55,7 @@ class LocalDatabase extends _$LocalDatabase {
   factory LocalDatabase.forTesting(QueryExecutor e) => LocalDatabase._(e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => buildMigrationStrategy(this);

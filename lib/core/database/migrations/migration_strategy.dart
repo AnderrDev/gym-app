@@ -11,6 +11,7 @@ import 'package:gym_flutter/core/database/local_database.dart';
 /// - `onUpgrade`:
 ///   - v1 → v2: tablas read-only del día activo (Phase 1).
 ///   - v2 → v3: tablas write-side + outbox (Phase 2).
+///   - v3 → v4: tablas SWR para rutinas asignadas + weekly insights (Phase 4).
 /// - `beforeOpen`: habilita foreign keys (PRAGMA `foreign_keys = ON`) en cada
 ///   apertura. SQLite las desactiva por defecto y queremos integridad
 ///   referencial efectiva cuando lleguen tablas relacionales.
@@ -36,6 +37,9 @@ MigrationStrategy buildMigrationStrategy(LocalDatabase db) {
       // Índices Phase 2.
       await _createPhase2Indexes(db);
 
+      // Índices Phase 4.
+      await _createPhase4Indexes(db);
+
       final now = DateTime.now().toUtc().millisecondsSinceEpoch;
       await db
           .into(db.appMeta)
@@ -51,7 +55,7 @@ MigrationStrategy buildMigrationStrategy(LocalDatabase db) {
           .insert(
             AppMetaCompanion.insert(
               key: 'schema_version',
-              value: '3',
+              value: '4',
               updatedAt: now,
             ),
           );
@@ -102,6 +106,21 @@ MigrationStrategy buildMigrationStrategy(LocalDatabase db) {
           [now, now],
         );
       }
+
+      if (from < 4) {
+        await m.createTable(db.cachedAssignedRoutines);
+        await m.createTable(db.cachedWeeklyInsights);
+
+        await _createPhase4Indexes(db);
+
+        final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+        await db.customStatement(
+          'INSERT INTO app_meta (key, value, updated_at) '
+          "VALUES ('schema_version', '4', ?) "
+          "ON CONFLICT(key) DO UPDATE SET value='4', updated_at=?",
+          [now, now],
+        );
+      }
     },
     beforeOpen: (OpeningDetails details) async {
       await db.customStatement('PRAGMA foreign_keys = ON');
@@ -128,5 +147,14 @@ Future<void> _createPhase2Indexes(LocalDatabase db) async {
   await db.customStatement(
     'CREATE INDEX IF NOT EXISTS idx_pm_ready '
     'ON pending_mutations(next_attempt_at, id)',
+  );
+}
+
+/// Crea los índices auxiliares de Phase 4 (SWR para rutinas + insights).
+/// `idx_car_user` cubre la consulta "rutinas del usuario más recientes".
+Future<void> _createPhase4Indexes(LocalDatabase db) async {
+  await db.customStatement(
+    'CREATE INDEX IF NOT EXISTS idx_car_user '
+    'ON cached_assigned_routines(user_id, fetched_at)',
   );
 }

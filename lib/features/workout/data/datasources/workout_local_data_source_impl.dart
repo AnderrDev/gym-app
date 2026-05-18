@@ -7,8 +7,10 @@ import 'package:gym_flutter/core/database/local_database.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 
 /// Implementación de [`WorkoutLocalDataSource`] sobre [`WorkoutCacheDao`].
@@ -256,6 +258,144 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     return _dao.watchSession(id).map(
           (row) => row == null ? null : _mapSession(row),
         );
+  }
+
+  // ─── Phase 4 SWR polish ────────────────────────────────────────────────
+
+  @override
+  Future<List<Routine>?> getAssignedRoutines(String userId) async {
+    final rows = await _dao.readAssignedRoutines(userId);
+    if (rows.isEmpty) {
+      // Para distinguir "nunca cacheado" vs "cacheado como vacío", el
+      // repositorio hace su propia decisión usando un flag separado. Aquí
+      // devolvemos `null` cuando no hay filas — y el repo lo trata como
+      // "no usar cache". Si fuera necesario diferenciar más adelante,
+      // bastaría una marca en `app_meta`.
+      return null;
+    }
+    return rows
+        .map(
+          (r) => Routine(
+            id: r.routineId,
+            name: r.routineName,
+            exerciseCount: r.exerciseCount,
+            isPublic: r.isPublic,
+            creatorId: r.creatorId,
+            creatorName: r.creatorName,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> cacheAssignedRoutines(
+    String userId,
+    List<Routine> routines,
+  ) async {
+    final now = _nowMs;
+    final rows = routines
+        .map(
+          (r) => CachedAssignedRoutinesCompanion.insert(
+            userId: userId,
+            routineId: r.id,
+            routineName: r.name,
+            isPublic: Value(r.isPublic),
+            creatorId: Value(r.creatorId),
+            creatorName: Value(r.creatorName),
+            exerciseCount: Value(r.exerciseCount),
+            fetchedAt: now,
+          ),
+        )
+        .toList(growable: false);
+    await _dao.replaceAssignedRoutines(userId, rows);
+  }
+
+  @override
+  Future<WeeklyInsights?> getWeeklyInsights(
+    String userId,
+    String routineId,
+    DateTime weekStart,
+  ) async {
+    final row = await _dao.readWeeklyInsight(
+      userId,
+      routineId,
+      _isoDate(weekStart.toUtc()),
+    );
+    if (row == null) return null;
+    final decoded = jsonDecode(row.payloadJson);
+    if (decoded is! Map<String, dynamic>) return null;
+    return WeeklyInsights.fromJson(decoded);
+  }
+
+  @override
+  Future<void> cacheWeeklyInsights({
+    required String userId,
+    required String routineId,
+    required WeeklyInsights insights,
+  }) {
+    final now = _nowMs;
+    return _dao.upsertWeeklyInsight(
+      CachedWeeklyInsightsCompanion.insert(
+        userId: userId,
+        routineId: routineId,
+        weekStart: _isoDate(insights.weekStart.toUtc()),
+        payloadJson: jsonEncode(insights.toJson()),
+        fetchedAt: now,
+      ),
+    );
+  }
+
+  @override
+  Future<List<WorkoutSession>> getWeekSessions(
+    String userId,
+    DateTime weekStart,
+    DateTime weekEnd,
+  ) async {
+    final rows = await _dao.readWeekSessions(
+      userId,
+      _isoDate(weekStart.toUtc()),
+      _isoDate(weekEnd.toUtc()),
+    );
+    return rows.map(_mapSession).toList(growable: false);
+  }
+
+  @override
+  Future<void> cacheWeekSessions(
+    String userId,
+    List<WorkoutSession> sessions,
+  ) async {
+    if (sessions.isEmpty) return;
+    final now = _nowMs;
+    final rows = sessions
+        .map(
+          (s) {
+            final coachingJson = (s.coachingAnalysis == null ||
+                    s.coachingAnalysis!.isEmpty)
+                ? null
+                : jsonEncode(
+                    s.coachingAnalysis!.map((c) => c.toJson()).toList(),
+                  );
+            return CachedWorkoutSessionsCompanion.insert(
+              id: s.id,
+              userId: s.userId,
+              routineDayId: s.routineDayId,
+              sessionDate: _isoDate(s.sessionDate),
+              startedAt: now,
+              completedAt: Value(
+                s.completedAt?.toUtc().millisecondsSinceEpoch,
+              ),
+              totalTargetSets: Value(s.totalTargetSets),
+              completedSetsCount: Value(s.completedSetsCount),
+              coachingAnalysisJson: Value(coachingJson),
+              // Marcado como `synced` porque viene del remote; el DAO
+              // se encarga de respetar filas pending/syncing/error.
+              syncStatus: const Value('synced'),
+              fetchedAt: now,
+            );
+          },
+        )
+        .toList(growable: false);
+    await _dao.upsertSyncedSessions(rows);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────

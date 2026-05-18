@@ -29,10 +29,10 @@ void main() {
       expect(pinged.isUtc, isTrue);
     });
 
-    test('schemaVersion == 3 tras Phase 2', () {
+    test('schemaVersion == 4 tras Phase 4', () {
       final db = openInMemoryDb();
       addTearDown(() async => db.close());
-      expect(db.schemaVersion, 3);
+      expect(db.schemaVersion, 4);
     });
 
     test('round-trip insert/select sobre app_meta', () async {

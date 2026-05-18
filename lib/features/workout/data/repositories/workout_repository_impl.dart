@@ -136,9 +136,82 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     return cached;
   }
 
+  /// Variante de SWR pensada para superficies de la dashboard que prefieren
+  /// pintar un estado vacío (`offlineFallback`) antes que romper el render
+  /// cuando no hay red. La diferencia con [`_swrList`]:
+  ///
+  /// - En **modo online**, los fallos de negocio (PGRST116, auth, validation,
+  ///   conflict, etc.) siguen propagándose — el caller mapea con
+  ///   `mapToFailure` y se traducen al `Failure` correcto. Sólo los fallos
+  ///   **network-like** caen al cache; si tampoco hay cache, *re-throw* el
+  ///   error original.
+  /// - En **modo offline**, devuelve cache si existe, sino `offlineFallback`
+  ///   silenciosamente — la app no debería romperse por estar desconectada.
+  ///
+  /// Si [`localDataSource`] es null y estamos offline, devolvemos
+  /// `offlineFallback` directamente.
+  Future<T> _swrNullable<T>({
+    required Future<T> Function() fetchRemote,
+    required Future<void> Function(T value) writeCache,
+    required Future<T?> Function() readCache,
+    required T offlineFallback,
+    required String label,
+  }) async {
+    if (_isOnline) {
+      try {
+        final fresh = await fetchRemote();
+        if (localDataSource != null) {
+          try {
+            await writeCache(fresh);
+          } catch (e) {
+            AppLogger.instance
+                .warning('workout_cache.write_failed[$label]: $e');
+          }
+        }
+        return fresh;
+      } catch (e) {
+        final isNetwork = e is core_ex.NetworkException ||
+            (e is Exception && _isNetworkLike(e));
+        if (!isNetwork) {
+          // Negocio (NotFound/Auth/...). Propagamos para preservar
+          // semántica del Failure mapping.
+          rethrow;
+        }
+        AppLogger.instance.warning(
+          'workout_cache.remote_failed[$label] → fallback cache/offline: $e',
+        );
+        if (localDataSource == null) return offlineFallback;
+        final cached = await readCache();
+        return cached ?? offlineFallback;
+      }
+    }
+
+    if (localDataSource == null) return offlineFallback;
+    final cached = await readCache();
+    return cached ?? offlineFallback;
+  }
+
   @override
   Future<Either<Failure, List<Routine>>> getAssignedRoutines(String userId) =>
-      guard(() => remoteDataSource.getAssignedRoutines(userId));
+      guard(
+        () => _swrNullable<List<Routine>>(
+          label: 'assignedRoutines',
+          fetchRemote: () async {
+            final fresh =
+                await remoteDataSource.getAssignedRoutines(userId);
+            return List<Routine>.from(fresh);
+          },
+          writeCache: (routines) async {
+            if (localDataSource == null) return;
+            await localDataSource!.cacheAssignedRoutines(userId, routines);
+          },
+          readCache: () async {
+            if (localDataSource == null) return null;
+            return localDataSource!.getAssignedRoutines(userId);
+          },
+          offlineFallback: const <Routine>[],
+        ),
+      );
 
   @override
   Future<Either<Failure, List<RoutineDay>>> getRoutineDays(String routineId) =>
@@ -183,7 +256,30 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     DateTime weekEnd,
   ) =>
       guard(
-        () => remoteDataSource.getWeekSessions(userId, weekStart, weekEnd),
+        () => _swrNullable<List<WorkoutSession>>(
+          label: 'weekSessions',
+          fetchRemote: () async {
+            final fresh = await remoteDataSource.getWeekSessions(
+              userId,
+              weekStart,
+              weekEnd,
+            );
+            return List<WorkoutSession>.from(fresh);
+          },
+          writeCache: (sessions) async {
+            if (localDataSource == null) return;
+            await localDataSource!.cacheWeekSessions(userId, sessions);
+          },
+          readCache: () async {
+            if (localDataSource == null) return null;
+            return localDataSource!.getWeekSessions(
+              userId,
+              weekStart,
+              weekEnd,
+            );
+          },
+          offlineFallback: const <WorkoutSession>[],
+        ),
       );
 
   @override
@@ -370,12 +466,49 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     required String routineId,
     required DateTime weekStart,
   }) =>
-      guard(
-        () => remoteDataSource.getWeeklyInsights(
-          routineId: routineId,
+      guard(() async {
+        final userId = _currentUserId();
+        // El cache va por (userId, routineId, weekStart). Si no hay user
+        // resoluble (tests sin Supabase singleton) saltamos cache —
+        // remote-only con offlineFallback como red de seguridad.
+        final canCache = userId != null && localDataSource != null;
+        final fallback = WeeklyInsights(
           weekStart: weekStart,
-        ),
-      );
+          weekEnd: weekStart.add(const Duration(days: 6)),
+          plannedDays: 0,
+          completedDays: 0,
+          completedSessions: 0,
+          adherenceRate: 0,
+          totalVolume: 0,
+          previousWeekVolume: 0,
+          volumeTrendPercent: 0,
+          personalRecords: 0,
+        );
+        return _swrNullable<WeeklyInsights>(
+          label: 'weeklyInsights',
+          fetchRemote: () => remoteDataSource.getWeeklyInsights(
+            routineId: routineId,
+            weekStart: weekStart,
+          ),
+          writeCache: (insights) async {
+            if (!canCache) return;
+            await localDataSource!.cacheWeeklyInsights(
+              userId: userId,
+              routineId: routineId,
+              insights: insights,
+            );
+          },
+          readCache: () async {
+            if (!canCache) return null;
+            return localDataSource!.getWeeklyInsights(
+              userId,
+              routineId,
+              weekStart,
+            );
+          },
+          offlineFallback: fallback,
+        );
+      });
 
   @override
   Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(

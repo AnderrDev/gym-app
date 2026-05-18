@@ -4120,6 +4120,923 @@ class PendingMutationsCompanion extends UpdateCompanion<PendingMutationRow> {
   }
 }
 
+class $CachedAssignedRoutinesTable extends CachedAssignedRoutines
+    with TableInfo<$CachedAssignedRoutinesTable, CachedAssignedRoutineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedAssignedRoutinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _routineIdMeta = const VerificationMeta(
+    'routineId',
+  );
+  @override
+  late final GeneratedColumn<String> routineId = GeneratedColumn<String>(
+    'routine_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _routineNameMeta = const VerificationMeta(
+    'routineName',
+  );
+  @override
+  late final GeneratedColumn<String> routineName = GeneratedColumn<String>(
+    'routine_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isPublicMeta = const VerificationMeta(
+    'isPublic',
+  );
+  @override
+  late final GeneratedColumn<bool> isPublic = GeneratedColumn<bool>(
+    'is_public',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_public" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _creatorIdMeta = const VerificationMeta(
+    'creatorId',
+  );
+  @override
+  late final GeneratedColumn<String> creatorId = GeneratedColumn<String>(
+    'creator_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creatorNameMeta = const VerificationMeta(
+    'creatorName',
+  );
+  @override
+  late final GeneratedColumn<String> creatorName = GeneratedColumn<String>(
+    'creator_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exerciseCountMeta = const VerificationMeta(
+    'exerciseCount',
+  );
+  @override
+  late final GeneratedColumn<int> exerciseCount = GeneratedColumn<int>(
+    'exercise_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<int> fetchedAt = GeneratedColumn<int>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    userId,
+    routineId,
+    routineName,
+    isPublic,
+    creatorId,
+    creatorName,
+    exerciseCount,
+    fetchedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_assigned_routines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedAssignedRoutineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('routine_id')) {
+      context.handle(
+        _routineIdMeta,
+        routineId.isAcceptableOrUnknown(data['routine_id']!, _routineIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_routineIdMeta);
+    }
+    if (data.containsKey('routine_name')) {
+      context.handle(
+        _routineNameMeta,
+        routineName.isAcceptableOrUnknown(
+          data['routine_name']!,
+          _routineNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_routineNameMeta);
+    }
+    if (data.containsKey('is_public')) {
+      context.handle(
+        _isPublicMeta,
+        isPublic.isAcceptableOrUnknown(data['is_public']!, _isPublicMeta),
+      );
+    }
+    if (data.containsKey('creator_id')) {
+      context.handle(
+        _creatorIdMeta,
+        creatorId.isAcceptableOrUnknown(data['creator_id']!, _creatorIdMeta),
+      );
+    }
+    if (data.containsKey('creator_name')) {
+      context.handle(
+        _creatorNameMeta,
+        creatorName.isAcceptableOrUnknown(
+          data['creator_name']!,
+          _creatorNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exercise_count')) {
+      context.handle(
+        _exerciseCountMeta,
+        exerciseCount.isAcceptableOrUnknown(
+          data['exercise_count']!,
+          _exerciseCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId, routineId};
+  @override
+  CachedAssignedRoutineRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedAssignedRoutineRow(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      routineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}routine_id'],
+      )!,
+      routineName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}routine_name'],
+      )!,
+      isPublic: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_public'],
+      )!,
+      creatorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creator_id'],
+      ),
+      creatorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creator_name'],
+      ),
+      exerciseCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}exercise_count'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedAssignedRoutinesTable createAlias(String alias) {
+    return $CachedAssignedRoutinesTable(attachedDatabase, alias);
+  }
+}
+
+class CachedAssignedRoutineRow extends DataClass
+    implements Insertable<CachedAssignedRoutineRow> {
+  final String userId;
+  final String routineId;
+  final String routineName;
+  final bool isPublic;
+  final String? creatorId;
+  final String? creatorName;
+  final int exerciseCount;
+
+  /// Epoch ms (UTC) del último write desde remote. Usado para invalidar / TTL.
+  final int fetchedAt;
+  const CachedAssignedRoutineRow({
+    required this.userId,
+    required this.routineId,
+    required this.routineName,
+    required this.isPublic,
+    this.creatorId,
+    this.creatorName,
+    required this.exerciseCount,
+    required this.fetchedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['routine_id'] = Variable<String>(routineId);
+    map['routine_name'] = Variable<String>(routineName);
+    map['is_public'] = Variable<bool>(isPublic);
+    if (!nullToAbsent || creatorId != null) {
+      map['creator_id'] = Variable<String>(creatorId);
+    }
+    if (!nullToAbsent || creatorName != null) {
+      map['creator_name'] = Variable<String>(creatorName);
+    }
+    map['exercise_count'] = Variable<int>(exerciseCount);
+    map['fetched_at'] = Variable<int>(fetchedAt);
+    return map;
+  }
+
+  CachedAssignedRoutinesCompanion toCompanion(bool nullToAbsent) {
+    return CachedAssignedRoutinesCompanion(
+      userId: Value(userId),
+      routineId: Value(routineId),
+      routineName: Value(routineName),
+      isPublic: Value(isPublic),
+      creatorId: creatorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatorId),
+      creatorName: creatorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatorName),
+      exerciseCount: Value(exerciseCount),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory CachedAssignedRoutineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedAssignedRoutineRow(
+      userId: serializer.fromJson<String>(json['userId']),
+      routineId: serializer.fromJson<String>(json['routineId']),
+      routineName: serializer.fromJson<String>(json['routineName']),
+      isPublic: serializer.fromJson<bool>(json['isPublic']),
+      creatorId: serializer.fromJson<String?>(json['creatorId']),
+      creatorName: serializer.fromJson<String?>(json['creatorName']),
+      exerciseCount: serializer.fromJson<int>(json['exerciseCount']),
+      fetchedAt: serializer.fromJson<int>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'routineId': serializer.toJson<String>(routineId),
+      'routineName': serializer.toJson<String>(routineName),
+      'isPublic': serializer.toJson<bool>(isPublic),
+      'creatorId': serializer.toJson<String?>(creatorId),
+      'creatorName': serializer.toJson<String?>(creatorName),
+      'exerciseCount': serializer.toJson<int>(exerciseCount),
+      'fetchedAt': serializer.toJson<int>(fetchedAt),
+    };
+  }
+
+  CachedAssignedRoutineRow copyWith({
+    String? userId,
+    String? routineId,
+    String? routineName,
+    bool? isPublic,
+    Value<String?> creatorId = const Value.absent(),
+    Value<String?> creatorName = const Value.absent(),
+    int? exerciseCount,
+    int? fetchedAt,
+  }) => CachedAssignedRoutineRow(
+    userId: userId ?? this.userId,
+    routineId: routineId ?? this.routineId,
+    routineName: routineName ?? this.routineName,
+    isPublic: isPublic ?? this.isPublic,
+    creatorId: creatorId.present ? creatorId.value : this.creatorId,
+    creatorName: creatorName.present ? creatorName.value : this.creatorName,
+    exerciseCount: exerciseCount ?? this.exerciseCount,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+  );
+  CachedAssignedRoutineRow copyWithCompanion(
+    CachedAssignedRoutinesCompanion data,
+  ) {
+    return CachedAssignedRoutineRow(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      routineId: data.routineId.present ? data.routineId.value : this.routineId,
+      routineName: data.routineName.present
+          ? data.routineName.value
+          : this.routineName,
+      isPublic: data.isPublic.present ? data.isPublic.value : this.isPublic,
+      creatorId: data.creatorId.present ? data.creatorId.value : this.creatorId,
+      creatorName: data.creatorName.present
+          ? data.creatorName.value
+          : this.creatorName,
+      exerciseCount: data.exerciseCount.present
+          ? data.exerciseCount.value
+          : this.exerciseCount,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedAssignedRoutineRow(')
+          ..write('userId: $userId, ')
+          ..write('routineId: $routineId, ')
+          ..write('routineName: $routineName, ')
+          ..write('isPublic: $isPublic, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('creatorName: $creatorName, ')
+          ..write('exerciseCount: $exerciseCount, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    userId,
+    routineId,
+    routineName,
+    isPublic,
+    creatorId,
+    creatorName,
+    exerciseCount,
+    fetchedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedAssignedRoutineRow &&
+          other.userId == this.userId &&
+          other.routineId == this.routineId &&
+          other.routineName == this.routineName &&
+          other.isPublic == this.isPublic &&
+          other.creatorId == this.creatorId &&
+          other.creatorName == this.creatorName &&
+          other.exerciseCount == this.exerciseCount &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class CachedAssignedRoutinesCompanion
+    extends UpdateCompanion<CachedAssignedRoutineRow> {
+  final Value<String> userId;
+  final Value<String> routineId;
+  final Value<String> routineName;
+  final Value<bool> isPublic;
+  final Value<String?> creatorId;
+  final Value<String?> creatorName;
+  final Value<int> exerciseCount;
+  final Value<int> fetchedAt;
+  final Value<int> rowid;
+  const CachedAssignedRoutinesCompanion({
+    this.userId = const Value.absent(),
+    this.routineId = const Value.absent(),
+    this.routineName = const Value.absent(),
+    this.isPublic = const Value.absent(),
+    this.creatorId = const Value.absent(),
+    this.creatorName = const Value.absent(),
+    this.exerciseCount = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedAssignedRoutinesCompanion.insert({
+    required String userId,
+    required String routineId,
+    required String routineName,
+    this.isPublic = const Value.absent(),
+    this.creatorId = const Value.absent(),
+    this.creatorName = const Value.absent(),
+    this.exerciseCount = const Value.absent(),
+    required int fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       routineId = Value(routineId),
+       routineName = Value(routineName),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<CachedAssignedRoutineRow> custom({
+    Expression<String>? userId,
+    Expression<String>? routineId,
+    Expression<String>? routineName,
+    Expression<bool>? isPublic,
+    Expression<String>? creatorId,
+    Expression<String>? creatorName,
+    Expression<int>? exerciseCount,
+    Expression<int>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (routineId != null) 'routine_id': routineId,
+      if (routineName != null) 'routine_name': routineName,
+      if (isPublic != null) 'is_public': isPublic,
+      if (creatorId != null) 'creator_id': creatorId,
+      if (creatorName != null) 'creator_name': creatorName,
+      if (exerciseCount != null) 'exercise_count': exerciseCount,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedAssignedRoutinesCompanion copyWith({
+    Value<String>? userId,
+    Value<String>? routineId,
+    Value<String>? routineName,
+    Value<bool>? isPublic,
+    Value<String?>? creatorId,
+    Value<String?>? creatorName,
+    Value<int>? exerciseCount,
+    Value<int>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return CachedAssignedRoutinesCompanion(
+      userId: userId ?? this.userId,
+      routineId: routineId ?? this.routineId,
+      routineName: routineName ?? this.routineName,
+      isPublic: isPublic ?? this.isPublic,
+      creatorId: creatorId ?? this.creatorId,
+      creatorName: creatorName ?? this.creatorName,
+      exerciseCount: exerciseCount ?? this.exerciseCount,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (routineId.present) {
+      map['routine_id'] = Variable<String>(routineId.value);
+    }
+    if (routineName.present) {
+      map['routine_name'] = Variable<String>(routineName.value);
+    }
+    if (isPublic.present) {
+      map['is_public'] = Variable<bool>(isPublic.value);
+    }
+    if (creatorId.present) {
+      map['creator_id'] = Variable<String>(creatorId.value);
+    }
+    if (creatorName.present) {
+      map['creator_name'] = Variable<String>(creatorName.value);
+    }
+    if (exerciseCount.present) {
+      map['exercise_count'] = Variable<int>(exerciseCount.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<int>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedAssignedRoutinesCompanion(')
+          ..write('userId: $userId, ')
+          ..write('routineId: $routineId, ')
+          ..write('routineName: $routineName, ')
+          ..write('isPublic: $isPublic, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('creatorName: $creatorName, ')
+          ..write('exerciseCount: $exerciseCount, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CachedWeeklyInsightsTable extends CachedWeeklyInsights
+    with TableInfo<$CachedWeeklyInsightsTable, CachedWeeklyInsightRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedWeeklyInsightsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _routineIdMeta = const VerificationMeta(
+    'routineId',
+  );
+  @override
+  late final GeneratedColumn<String> routineId = GeneratedColumn<String>(
+    'routine_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _weekStartMeta = const VerificationMeta(
+    'weekStart',
+  );
+  @override
+  late final GeneratedColumn<String> weekStart = GeneratedColumn<String>(
+    'week_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<int> fetchedAt = GeneratedColumn<int>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    userId,
+    routineId,
+    weekStart,
+    payloadJson,
+    fetchedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_weekly_insights';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedWeeklyInsightRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('routine_id')) {
+      context.handle(
+        _routineIdMeta,
+        routineId.isAcceptableOrUnknown(data['routine_id']!, _routineIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_routineIdMeta);
+    }
+    if (data.containsKey('week_start')) {
+      context.handle(
+        _weekStartMeta,
+        weekStart.isAcceptableOrUnknown(data['week_start']!, _weekStartMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_weekStartMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId, routineId, weekStart};
+  @override
+  CachedWeeklyInsightRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedWeeklyInsightRow(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      routineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}routine_id'],
+      )!,
+      weekStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}week_start'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedWeeklyInsightsTable createAlias(String alias) {
+    return $CachedWeeklyInsightsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedWeeklyInsightRow extends DataClass
+    implements Insertable<CachedWeeklyInsightRow> {
+  final String userId;
+  final String routineId;
+
+  /// ISO `yyyy-MM-dd`.
+  final String weekStart;
+  final String payloadJson;
+
+  /// Epoch ms (UTC) del último write desde remote.
+  final int fetchedAt;
+  const CachedWeeklyInsightRow({
+    required this.userId,
+    required this.routineId,
+    required this.weekStart,
+    required this.payloadJson,
+    required this.fetchedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['routine_id'] = Variable<String>(routineId);
+    map['week_start'] = Variable<String>(weekStart);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['fetched_at'] = Variable<int>(fetchedAt);
+    return map;
+  }
+
+  CachedWeeklyInsightsCompanion toCompanion(bool nullToAbsent) {
+    return CachedWeeklyInsightsCompanion(
+      userId: Value(userId),
+      routineId: Value(routineId),
+      weekStart: Value(weekStart),
+      payloadJson: Value(payloadJson),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory CachedWeeklyInsightRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedWeeklyInsightRow(
+      userId: serializer.fromJson<String>(json['userId']),
+      routineId: serializer.fromJson<String>(json['routineId']),
+      weekStart: serializer.fromJson<String>(json['weekStart']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      fetchedAt: serializer.fromJson<int>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'routineId': serializer.toJson<String>(routineId),
+      'weekStart': serializer.toJson<String>(weekStart),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'fetchedAt': serializer.toJson<int>(fetchedAt),
+    };
+  }
+
+  CachedWeeklyInsightRow copyWith({
+    String? userId,
+    String? routineId,
+    String? weekStart,
+    String? payloadJson,
+    int? fetchedAt,
+  }) => CachedWeeklyInsightRow(
+    userId: userId ?? this.userId,
+    routineId: routineId ?? this.routineId,
+    weekStart: weekStart ?? this.weekStart,
+    payloadJson: payloadJson ?? this.payloadJson,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+  );
+  CachedWeeklyInsightRow copyWithCompanion(CachedWeeklyInsightsCompanion data) {
+    return CachedWeeklyInsightRow(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      routineId: data.routineId.present ? data.routineId.value : this.routineId,
+      weekStart: data.weekStart.present ? data.weekStart.value : this.weekStart,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedWeeklyInsightRow(')
+          ..write('userId: $userId, ')
+          ..write('routineId: $routineId, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(userId, routineId, weekStart, payloadJson, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedWeeklyInsightRow &&
+          other.userId == this.userId &&
+          other.routineId == this.routineId &&
+          other.weekStart == this.weekStart &&
+          other.payloadJson == this.payloadJson &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class CachedWeeklyInsightsCompanion
+    extends UpdateCompanion<CachedWeeklyInsightRow> {
+  final Value<String> userId;
+  final Value<String> routineId;
+  final Value<String> weekStart;
+  final Value<String> payloadJson;
+  final Value<int> fetchedAt;
+  final Value<int> rowid;
+  const CachedWeeklyInsightsCompanion({
+    this.userId = const Value.absent(),
+    this.routineId = const Value.absent(),
+    this.weekStart = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedWeeklyInsightsCompanion.insert({
+    required String userId,
+    required String routineId,
+    required String weekStart,
+    required String payloadJson,
+    required int fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       routineId = Value(routineId),
+       weekStart = Value(weekStart),
+       payloadJson = Value(payloadJson),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<CachedWeeklyInsightRow> custom({
+    Expression<String>? userId,
+    Expression<String>? routineId,
+    Expression<String>? weekStart,
+    Expression<String>? payloadJson,
+    Expression<int>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (routineId != null) 'routine_id': routineId,
+      if (weekStart != null) 'week_start': weekStart,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedWeeklyInsightsCompanion copyWith({
+    Value<String>? userId,
+    Value<String>? routineId,
+    Value<String>? weekStart,
+    Value<String>? payloadJson,
+    Value<int>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return CachedWeeklyInsightsCompanion(
+      userId: userId ?? this.userId,
+      routineId: routineId ?? this.routineId,
+      weekStart: weekStart ?? this.weekStart,
+      payloadJson: payloadJson ?? this.payloadJson,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (routineId.present) {
+      map['routine_id'] = Variable<String>(routineId.value);
+    }
+    if (weekStart.present) {
+      map['week_start'] = Variable<String>(weekStart.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<int>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedWeeklyInsightsCompanion(')
+          ..write('userId: $userId, ')
+          ..write('routineId: $routineId, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
@@ -4139,6 +5056,10 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $PendingMutationsTable pendingMutations = $PendingMutationsTable(
     this,
   );
+  late final $CachedAssignedRoutinesTable cachedAssignedRoutines =
+      $CachedAssignedRoutinesTable(this);
+  late final $CachedWeeklyInsightsTable cachedWeeklyInsights =
+      $CachedWeeklyInsightsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4152,6 +5073,8 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
     cachedWorkoutSessions,
     cachedSetLogs,
     pendingMutations,
+    cachedAssignedRoutines,
+    cachedWeeklyInsights,
   ];
 }
 
@@ -6293,6 +7216,506 @@ typedef $$PendingMutationsTableProcessedTableManager =
       PendingMutationRow,
       PrefetchHooks Function()
     >;
+typedef $$CachedAssignedRoutinesTableCreateCompanionBuilder =
+    CachedAssignedRoutinesCompanion Function({
+      required String userId,
+      required String routineId,
+      required String routineName,
+      Value<bool> isPublic,
+      Value<String?> creatorId,
+      Value<String?> creatorName,
+      Value<int> exerciseCount,
+      required int fetchedAt,
+      Value<int> rowid,
+    });
+typedef $$CachedAssignedRoutinesTableUpdateCompanionBuilder =
+    CachedAssignedRoutinesCompanion Function({
+      Value<String> userId,
+      Value<String> routineId,
+      Value<String> routineName,
+      Value<bool> isPublic,
+      Value<String?> creatorId,
+      Value<String?> creatorName,
+      Value<int> exerciseCount,
+      Value<int> fetchedAt,
+      Value<int> rowid,
+    });
+
+class $$CachedAssignedRoutinesTableFilterComposer
+    extends Composer<_$LocalDatabase, $CachedAssignedRoutinesTable> {
+  $$CachedAssignedRoutinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get routineId => $composableBuilder(
+    column: $table.routineId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get routineName => $composableBuilder(
+    column: $table.routineName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPublic => $composableBuilder(
+    column: $table.isPublic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatorName => $composableBuilder(
+    column: $table.creatorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get exerciseCount => $composableBuilder(
+    column: $table.exerciseCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedAssignedRoutinesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $CachedAssignedRoutinesTable> {
+  $$CachedAssignedRoutinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get routineId => $composableBuilder(
+    column: $table.routineId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get routineName => $composableBuilder(
+    column: $table.routineName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPublic => $composableBuilder(
+    column: $table.isPublic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatorName => $composableBuilder(
+    column: $table.creatorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get exerciseCount => $composableBuilder(
+    column: $table.exerciseCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedAssignedRoutinesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $CachedAssignedRoutinesTable> {
+  $$CachedAssignedRoutinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get routineId =>
+      $composableBuilder(column: $table.routineId, builder: (column) => column);
+
+  GeneratedColumn<String> get routineName => $composableBuilder(
+    column: $table.routineName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPublic =>
+      $composableBuilder(column: $table.isPublic, builder: (column) => column);
+
+  GeneratedColumn<String> get creatorId =>
+      $composableBuilder(column: $table.creatorId, builder: (column) => column);
+
+  GeneratedColumn<String> get creatorName => $composableBuilder(
+    column: $table.creatorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get exerciseCount => $composableBuilder(
+    column: $table.exerciseCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$CachedAssignedRoutinesTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $CachedAssignedRoutinesTable,
+          CachedAssignedRoutineRow,
+          $$CachedAssignedRoutinesTableFilterComposer,
+          $$CachedAssignedRoutinesTableOrderingComposer,
+          $$CachedAssignedRoutinesTableAnnotationComposer,
+          $$CachedAssignedRoutinesTableCreateCompanionBuilder,
+          $$CachedAssignedRoutinesTableUpdateCompanionBuilder,
+          (
+            CachedAssignedRoutineRow,
+            BaseReferences<
+              _$LocalDatabase,
+              $CachedAssignedRoutinesTable,
+              CachedAssignedRoutineRow
+            >,
+          ),
+          CachedAssignedRoutineRow,
+          PrefetchHooks Function()
+        > {
+  $$CachedAssignedRoutinesTableTableManager(
+    _$LocalDatabase db,
+    $CachedAssignedRoutinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedAssignedRoutinesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CachedAssignedRoutinesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CachedAssignedRoutinesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String> routineId = const Value.absent(),
+                Value<String> routineName = const Value.absent(),
+                Value<bool> isPublic = const Value.absent(),
+                Value<String?> creatorId = const Value.absent(),
+                Value<String?> creatorName = const Value.absent(),
+                Value<int> exerciseCount = const Value.absent(),
+                Value<int> fetchedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedAssignedRoutinesCompanion(
+                userId: userId,
+                routineId: routineId,
+                routineName: routineName,
+                isPublic: isPublic,
+                creatorId: creatorId,
+                creatorName: creatorName,
+                exerciseCount: exerciseCount,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                required String routineId,
+                required String routineName,
+                Value<bool> isPublic = const Value.absent(),
+                Value<String?> creatorId = const Value.absent(),
+                Value<String?> creatorName = const Value.absent(),
+                Value<int> exerciseCount = const Value.absent(),
+                required int fetchedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CachedAssignedRoutinesCompanion.insert(
+                userId: userId,
+                routineId: routineId,
+                routineName: routineName,
+                isPublic: isPublic,
+                creatorId: creatorId,
+                creatorName: creatorName,
+                exerciseCount: exerciseCount,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedAssignedRoutinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $CachedAssignedRoutinesTable,
+      CachedAssignedRoutineRow,
+      $$CachedAssignedRoutinesTableFilterComposer,
+      $$CachedAssignedRoutinesTableOrderingComposer,
+      $$CachedAssignedRoutinesTableAnnotationComposer,
+      $$CachedAssignedRoutinesTableCreateCompanionBuilder,
+      $$CachedAssignedRoutinesTableUpdateCompanionBuilder,
+      (
+        CachedAssignedRoutineRow,
+        BaseReferences<
+          _$LocalDatabase,
+          $CachedAssignedRoutinesTable,
+          CachedAssignedRoutineRow
+        >,
+      ),
+      CachedAssignedRoutineRow,
+      PrefetchHooks Function()
+    >;
+typedef $$CachedWeeklyInsightsTableCreateCompanionBuilder =
+    CachedWeeklyInsightsCompanion Function({
+      required String userId,
+      required String routineId,
+      required String weekStart,
+      required String payloadJson,
+      required int fetchedAt,
+      Value<int> rowid,
+    });
+typedef $$CachedWeeklyInsightsTableUpdateCompanionBuilder =
+    CachedWeeklyInsightsCompanion Function({
+      Value<String> userId,
+      Value<String> routineId,
+      Value<String> weekStart,
+      Value<String> payloadJson,
+      Value<int> fetchedAt,
+      Value<int> rowid,
+    });
+
+class $$CachedWeeklyInsightsTableFilterComposer
+    extends Composer<_$LocalDatabase, $CachedWeeklyInsightsTable> {
+  $$CachedWeeklyInsightsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get routineId => $composableBuilder(
+    column: $table.routineId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedWeeklyInsightsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $CachedWeeklyInsightsTable> {
+  $$CachedWeeklyInsightsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get routineId => $composableBuilder(
+    column: $table.routineId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedWeeklyInsightsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $CachedWeeklyInsightsTable> {
+  $$CachedWeeklyInsightsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get routineId =>
+      $composableBuilder(column: $table.routineId, builder: (column) => column);
+
+  GeneratedColumn<String> get weekStart =>
+      $composableBuilder(column: $table.weekStart, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$CachedWeeklyInsightsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $CachedWeeklyInsightsTable,
+          CachedWeeklyInsightRow,
+          $$CachedWeeklyInsightsTableFilterComposer,
+          $$CachedWeeklyInsightsTableOrderingComposer,
+          $$CachedWeeklyInsightsTableAnnotationComposer,
+          $$CachedWeeklyInsightsTableCreateCompanionBuilder,
+          $$CachedWeeklyInsightsTableUpdateCompanionBuilder,
+          (
+            CachedWeeklyInsightRow,
+            BaseReferences<
+              _$LocalDatabase,
+              $CachedWeeklyInsightsTable,
+              CachedWeeklyInsightRow
+            >,
+          ),
+          CachedWeeklyInsightRow,
+          PrefetchHooks Function()
+        > {
+  $$CachedWeeklyInsightsTableTableManager(
+    _$LocalDatabase db,
+    $CachedWeeklyInsightsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedWeeklyInsightsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedWeeklyInsightsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CachedWeeklyInsightsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String> routineId = const Value.absent(),
+                Value<String> weekStart = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<int> fetchedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedWeeklyInsightsCompanion(
+                userId: userId,
+                routineId: routineId,
+                weekStart: weekStart,
+                payloadJson: payloadJson,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                required String routineId,
+                required String weekStart,
+                required String payloadJson,
+                required int fetchedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CachedWeeklyInsightsCompanion.insert(
+                userId: userId,
+                routineId: routineId,
+                weekStart: weekStart,
+                payloadJson: payloadJson,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedWeeklyInsightsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $CachedWeeklyInsightsTable,
+      CachedWeeklyInsightRow,
+      $$CachedWeeklyInsightsTableFilterComposer,
+      $$CachedWeeklyInsightsTableOrderingComposer,
+      $$CachedWeeklyInsightsTableAnnotationComposer,
+      $$CachedWeeklyInsightsTableCreateCompanionBuilder,
+      $$CachedWeeklyInsightsTableUpdateCompanionBuilder,
+      (
+        CachedWeeklyInsightRow,
+        BaseReferences<
+          _$LocalDatabase,
+          $CachedWeeklyInsightsTable,
+          CachedWeeklyInsightRow
+        >,
+      ),
+      CachedWeeklyInsightRow,
+      PrefetchHooks Function()
+    >;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
@@ -6319,4 +7742,11 @@ class $LocalDatabaseManager {
       $$CachedSetLogsTableTableManager(_db, _db.cachedSetLogs);
   $$PendingMutationsTableTableManager get pendingMutations =>
       $$PendingMutationsTableTableManager(_db, _db.pendingMutations);
+  $$CachedAssignedRoutinesTableTableManager get cachedAssignedRoutines =>
+      $$CachedAssignedRoutinesTableTableManager(
+        _db,
+        _db.cachedAssignedRoutines,
+      );
+  $$CachedWeeklyInsightsTableTableManager get cachedWeeklyInsights =>
+      $$CachedWeeklyInsightsTableTableManager(_db, _db.cachedWeeklyInsights);
 }

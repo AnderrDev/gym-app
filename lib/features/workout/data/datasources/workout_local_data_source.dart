@@ -1,7 +1,9 @@
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 
 /// Contrato de la caché local que sirve al repositorio.
@@ -74,4 +76,45 @@ abstract class WorkoutLocalDataSource {
   /// Stream que emite la fila local cada vez que cambia. La UI puede
   /// reaccionar al drain del worker (p.ej. coaching aplicado).
   Stream<WorkoutSession?> watchSession(String id);
+
+  // ─── Reads (Phase 4 SWR polish) ────────────────────────────────────────
+
+  /// Rutinas asignadas al usuario en caché. `null` si nunca se cacheó
+  /// (cache miss "no entry"); lista vacía si está cacheado como "sin
+  /// rutinas asignadas".
+  Future<List<Routine>?> getAssignedRoutines(String userId);
+
+  /// Snapshot cacheado de `WeeklyInsights` por (usuario, rutina, semana).
+  /// `null` si no hay entrada. `weekStart` se trunca al día UTC.
+  Future<WeeklyInsights?> getWeeklyInsights(
+    String userId,
+    String routineId,
+    DateTime weekStart,
+  );
+
+  /// Sesiones cacheadas del usuario dentro del rango `[weekStart, weekEnd]`
+  /// (ambos inclusivos). Lista vacía si no hay nada en cache.
+  Future<List<WorkoutSession>> getWeekSessions(
+    String userId,
+    DateTime weekStart,
+    DateTime weekEnd,
+  );
+
+  // ─── Writes (Phase 4 SWR polish) ───────────────────────────────────────
+
+  /// Reemplaza la lista cacheada de rutinas asignadas para el usuario.
+  Future<void> cacheAssignedRoutines(String userId, List<Routine> routines);
+
+  /// Upserta el snapshot de `WeeklyInsights` cacheado. `weekStart` se
+  /// trunca al día UTC para no fragmentar la PK por horas/tz.
+  Future<void> cacheWeeklyInsights({
+    required String userId,
+    required String routineId,
+    required WeeklyInsights insights,
+  });
+
+  /// Persiste las sesiones de la semana devueltas por el remote. Respeta
+  /// cualquier fila local con `sync_status` no-`synced` (pendiente de
+  /// drain) — esos los gestiona el SyncWorker.
+  Future<void> cacheWeekSessions(String userId, List<WorkoutSession> sessions);
 }
