@@ -3,17 +3,33 @@ import 'package:drift/drift.dart';
 import 'package:gym_flutter/core/database/connection/open_connection.dart';
 import 'package:gym_flutter/core/database/migrations/migration_strategy.dart';
 import 'package:gym_flutter/core/database/tables/app_meta_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_exercises_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_last_performances_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_routine_days_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_routine_exercises_table.dart';
 
 part 'local_database.g.dart';
 
 /// Base de datos local de la app (SQLite, vía drift).
 ///
-/// Phase 0 sólo expone la tabla [`AppMeta`] como bookkeeping del esquema. Las
-/// fases siguientes añadirán tablas espejo de Supabase (rutinas, ejercicios,
-/// sesiones, set logs, sync queue, etc.). Cada fase actualiza
-/// [`schemaVersion`] y registra la migración en
+/// Phase 0 introdujo [`AppMeta`] como bookkeeping del esquema. Phase 1 añade
+/// el espejo read-only del día activo:
+/// - [`CachedRoutineDays`]
+/// - [`CachedRoutineExercises`]
+/// - [`CachedExercises`]
+/// - [`CachedLastPerformances`]
+///
+/// Cada fase actualiza [`schemaVersion`] y registra la migración en
 /// [`buildMigrationStrategy`].
-@DriftDatabase(tables: [AppMeta])
+@DriftDatabase(
+  tables: [
+    AppMeta,
+    CachedRoutineDays,
+    CachedRoutineExercises,
+    CachedExercises,
+    CachedLastPerformances,
+  ],
+)
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase._(super.e);
 
@@ -25,7 +41,7 @@ class LocalDatabase extends _$LocalDatabase {
   factory LocalDatabase.forTesting(QueryExecutor e) => LocalDatabase._(e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => buildMigrationStrategy(this);

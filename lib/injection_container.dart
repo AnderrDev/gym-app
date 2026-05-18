@@ -6,9 +6,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:gym_flutter/core/database/dao/workout_cache_dao.dart';
 import 'package:gym_flutter/core/database/local_database.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
+import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
+import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source_impl.dart';
 
 import 'core/notifications/active_workout_notifier.dart';
 import 'core/notifications/live_activities_bridge.dart';
@@ -169,7 +172,13 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetExercisesCatalog(sl()));
 
   sl.registerLazySingleton<WorkoutRepository>(
-    () => WorkoutRepositoryImpl(remoteDataSource: sl()),
+    () => WorkoutRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl.isRegistered<WorkoutLocalDataSource>()
+          ? sl<WorkoutLocalDataSource>()
+          : null,
+      connectivity: sl<ConnectivityService>(),
+    ),
   );
 
   // Colaboradores internos del fachada `WorkoutRemoteDataSource`. Se registran
@@ -203,7 +212,14 @@ Future<void> init() async {
     final localDb = LocalDatabase.open();
     await localDb.ping();
     sl.registerLazySingleton<LocalDatabase>(() => localDb);
-    AppLogger.instance.info('local_db ready (schema v1)');
+
+    sl.registerLazySingleton<WorkoutCacheDao>(
+      () => WorkoutCacheDao(sl<LocalDatabase>()),
+    );
+    sl.registerLazySingleton<WorkoutLocalDataSource>(
+      () => WorkoutLocalDataSourceImpl(sl<WorkoutCacheDao>()),
+    );
+    AppLogger.instance.info('local_db ready (schema v2)');
   } else {
     // Phase W enables web persistence. For now, do not register.
   }

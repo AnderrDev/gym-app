@@ -5,7 +5,7 @@ import '../../helpers/database_test_helper.dart';
 void main() {
   group('buildMigrationStrategy.onCreate', () {
     test(
-      'siembra schema_initialized_at y schema_version=1 en app_meta',
+      'siembra schema_initialized_at y schema_version=2 en app_meta',
       () async {
         final db = openInMemoryDb();
         addTearDown(() async => db.close());
@@ -26,7 +26,7 @@ void main() {
           isTrue,
           reason: 'Falta la fila schema_version',
         );
-        expect(byKey['schema_version']!.value, '1');
+        expect(byKey['schema_version']!.value, '2');
 
         // schema_initialized_at debe parsear como int (epoch ms).
         expect(

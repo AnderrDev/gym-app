@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/core/error/exceptions.dart' as core_ex;
 import 'package:gym_flutter/core/error/failures.dart';
-import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
 import 'package:gym_flutter/features/workout/data/models/exercise_model.dart';
@@ -13,12 +12,13 @@ import 'package:gym_flutter/features/workout/data/repositories/workout_repositor
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-class MockWorkoutRemoteDataSource extends Mock
-    implements WorkoutRemoteDataSource {}
+import '../../../../helpers/mocks.dart';
 
 void main() {
   late WorkoutRepositoryImpl repository;
   late MockWorkoutRemoteDataSource mockRemoteDataSource;
+  late MockWorkoutLocalDataSource mockLocalDataSource;
+  late MockConnectivityService mockConnectivity;
 
   const tUserId = 'u1';
   const tRoutineId = 'r1';
@@ -43,7 +43,30 @@ void main() {
 
   setUp(() {
     mockRemoteDataSource = MockWorkoutRemoteDataSource();
-    repository = WorkoutRepositoryImpl(remoteDataSource: mockRemoteDataSource);
+    mockLocalDataSource = MockWorkoutLocalDataSource();
+    mockConnectivity = MockConnectivityService();
+    when(() => mockConnectivity.isOnline).thenReturn(true);
+    // Stubs por defecto: cache vacío. Los tests SWR específicos los
+    // sobrescriben cuando necesitan otro comportamiento.
+    when(() => mockLocalDataSource.cacheRoutineDays(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.cacheExercisesForDay(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.cacheLastPerformances(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockLocalDataSource.getRoutineDays(any()))
+        .thenAnswer((_) async => const []);
+    when(() => mockLocalDataSource.getExercisesForDay(any()))
+        .thenAnswer((_) async => const []);
+    when(() =>
+            mockLocalDataSource.getLastPerformancesForExercises(any(), any()))
+        .thenAnswer((_) async => const {});
+    repository = WorkoutRepositoryImpl(
+      remoteDataSource: mockRemoteDataSource,
+      localDataSource: mockLocalDataSource,
+      connectivity: mockConnectivity,
+      currentUserIdResolver: () => tUserId,
+    );
   });
 
   group('getAssignedRoutines', () {

@@ -9,6 +9,7 @@ import 'package:gym_flutter/core/sync/connectivity_service.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
 import 'package:gym_flutter/features/profile/domain/repositories/profile_repository.dart';
+import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 
@@ -20,6 +21,9 @@ class MockWorkoutRepository extends Mock implements WorkoutRepository {}
 
 class MockWorkoutRemoteDataSource extends Mock
     implements WorkoutRemoteDataSource {}
+
+class MockWorkoutLocalDataSource extends Mock
+    implements WorkoutLocalDataSource {}
 
 class MockActiveSessionService extends Mock implements ActiveSessionService {}
 
