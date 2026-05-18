@@ -5,25 +5,35 @@ import 'package:gym_flutter/core/database/tables/cached_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_last_performances_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_days_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_exercises_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_set_logs_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_workout_sessions_table.dart';
+import 'package:gym_flutter/core/database/tables/pending_mutations_table.dart';
 
 part 'workout_cache_dao.g.dart';
 
-/// DAO de las 4 tablas-espejo introducidas en Phase 1. Reads idempotentes y
-/// writes envueltos en transacciones para que un fallo a mitad no deje el
-/// cache parcialmente actualizado.
+/// DAO de las tablas de caché del workout. Phase 1 sólo expone reads/writes
+/// de tablas read-only (días, ejercicios, last performances). Phase 2 añade
+/// el espejo write-side (`cached_workout_sessions`, `cached_set_logs`) que
+/// recibe escrituras locales primero y deja la sincronización al SyncWorker.
+///
+/// Las operaciones write multi-row se envuelven en transacciones para que
+/// un fallo a mitad no deje el cache parcialmente actualizado.
 @DriftAccessor(
   tables: [
     CachedRoutineDays,
     CachedRoutineExercises,
     CachedExercises,
     CachedLastPerformances,
+    CachedWorkoutSessions,
+    CachedSetLogs,
+    PendingMutations,
   ],
 )
 class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     with _$WorkoutCacheDaoMixin {
   WorkoutCacheDao(super.db);
 
-  // ─── Reads ──────────────────────────────────────────────────────────────
+  // ─── Reads (Phase 1) ────────────────────────────────────────────────────
 
   Future<List<CachedRoutineDayRow>> readRoutineDays(String routineId) {
     final query = select(cachedRoutineDays)
@@ -75,7 +85,7 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     return {for (final r in rows) r.exerciseId: r};
   }
 
-  // ─── Writes ─────────────────────────────────────────────────────────────
+  // ─── Writes (Phase 1) ───────────────────────────────────────────────────
 
   /// Reemplaza atómicamente todas las filas de `cached_routine_days` para una
   /// rutina dada por las que llegan del remote. Si la lista entrante es vacía
@@ -140,5 +150,75 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
         }
       });
     });
+  }
+
+  // ─── Phase 2: cached_workout_sessions ───────────────────────────────────
+
+  /// Inserta o reemplaza una sesión cacheada. El caller (datasource local)
+  /// se encarga de construir el companion completo — aquí solo persistimos.
+  Future<void> saveCachedSession(CachedWorkoutSessionsCompanion row) {
+    return into(cachedWorkoutSessions).insert(
+      row,
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  /// Marca una sesión como completada en local. No toca el resto de la
+  /// fila — quien aplique coaching debe usar [`applyCoachingForSession`]
+  /// por separado.
+  Future<void> markSessionCompleted(String id, int completedAtMs) {
+    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id)))
+        .write(
+      CachedWorkoutSessionsCompanion(
+        completedAt: Value(completedAtMs),
+        fetchedAt: Value(completedAtMs),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
+
+  /// Persiste el JSON serializado del coaching tras finalizar la sesión.
+  Future<void> applyCoachingForSession(String id, String coachingJson) {
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id)))
+        .write(
+      CachedWorkoutSessionsCompanion(
+        coachingAnalysisJson: Value(coachingJson),
+        fetchedAt: Value(now),
+      ),
+    );
+  }
+
+  /// Última sesión "abierta" (completed_at IS NULL) del usuario, ordenada
+  /// por `started_at` descendente. Soporta el fallback offline de
+  /// `getActiveSessionForUser`.
+  Future<CachedWorkoutSessionRow?> readOpenSessionForUser(String userId) {
+    final query = select(cachedWorkoutSessions)
+      ..where((t) => t.userId.equals(userId) & t.completedAt.isNull())
+      ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
+      ..limit(1);
+    return query.getSingleOrNull();
+  }
+
+  /// Observa una sesión por id. Útil para que la UI reaccione en tiempo
+  /// real a la actualización de `completedAt` o del coaching tras un
+  /// drain exitoso.
+  Stream<CachedWorkoutSessionRow?> watchSession(String id) {
+    final query = select(cachedWorkoutSessions)
+      ..where((t) => t.id.equals(id))
+      ..limit(1);
+    return query.watchSingleOrNull();
+  }
+
+  // ─── Phase 2: cached_set_logs ───────────────────────────────────────────
+
+  /// Upsert por PK compuesta `(sessionId, exerciseId, setIndex)`. Mismo
+  /// criterio que la unique constraint del backend, así el SyncWorker
+  /// puede empujar varias veces sin duplicar.
+  Future<void> upsertCachedSetLog(CachedSetLogsCompanion row) {
+    return into(cachedSetLogs).insert(
+      row,
+      mode: InsertMode.insertOrReplace,
+    );
   }
 }

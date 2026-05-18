@@ -3,28 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/database_test_helper.dart';
 
 void main() {
-  group('schema v2 (Phase 1)', () {
+  group('schema v3 (Phase 2)', () {
     test(
-        'una BD fresca con schemaVersion=2 crea las 4 tablas de caché y sus '
-        'índices', () async {
+        'una BD fresca con schemaVersion=3 crea las 3 tablas write-side + '
+        'sus índices', () async {
       final db = openInMemoryDb();
       addTearDown(() async => db.close());
 
-      // Forzar onCreate.
       await db.ping();
 
       final tables = await db.customSelect(
         "SELECT name FROM sqlite_master WHERE type='table' "
-        "AND name LIKE 'cached_%' ORDER BY name",
+        "AND name IN ('cached_workout_sessions', 'cached_set_logs', "
+        "'pending_mutations') ORDER BY name",
       ).get();
       final tableNames = tables.map((r) => r.read<String>('name')).toList();
       expect(
         tableNames,
         containsAll([
-          'cached_exercises',
-          'cached_last_performances',
-          'cached_routine_days',
-          'cached_routine_exercises',
+          'cached_set_logs',
+          'cached_workout_sessions',
+          'pending_mutations',
         ]),
       );
 
@@ -36,15 +35,15 @@ void main() {
       expect(
         indexNames,
         containsAll([
-          'idx_cached_routine_days_routine',
-          'idx_cre_day_position',
-          'idx_cre_exercise',
+          'idx_csl_session',
+          'idx_cws_user_date',
+          'idx_cws_user_open',
+          'idx_pm_ready',
         ]),
       );
     });
 
-    test('app_meta.schema_version queda en "3" tras onCreate (Phase 2)',
-        () async {
+    test('app_meta.schema_version queda en "3" tras onCreate', () async {
       final db = openInMemoryDb();
       addTearDown(() async => db.close());
       await db.ping();
@@ -55,10 +54,25 @@ void main() {
       expect(row.value, '3');
     });
 
-    test('schemaVersion == 3 tras Phase 2', () {
+    test('schemaVersion == 3 en Phase 2', () {
       final db = openInMemoryDb();
       addTearDown(() async => db.close());
       expect(db.schemaVersion, 3);
+    });
+
+    test('PK compuesta de cached_set_logs respeta (session,exercise,setIndex)',
+        () async {
+      final db = openInMemoryDb();
+      addTearDown(() async => db.close());
+      await db.ping();
+
+      // Sanity check: el schema declara la PK compuesta correcta.
+      final info = await db.customSelect(
+        "SELECT name FROM pragma_table_info('cached_set_logs') "
+        'WHERE pk > 0 ORDER BY pk',
+      ).get();
+      final pkCols = info.map((r) => r.read<String>('name')).toList();
+      expect(pkCols, ['session_id', 'exercise_id', 'set_index']);
     });
   });
 }

@@ -7,17 +7,20 @@ import 'package:gym_flutter/core/database/tables/cached_exercises_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_last_performances_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_days_table.dart';
 import 'package:gym_flutter/core/database/tables/cached_routine_exercises_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_set_logs_table.dart';
+import 'package:gym_flutter/core/database/tables/cached_workout_sessions_table.dart';
+import 'package:gym_flutter/core/database/tables/pending_mutations_table.dart';
 
 part 'local_database.g.dart';
 
 /// Base de datos local de la app (SQLite, vía drift).
 ///
-/// Phase 0 introdujo [`AppMeta`] como bookkeeping del esquema. Phase 1 añade
-/// el espejo read-only del día activo:
-/// - [`CachedRoutineDays`]
-/// - [`CachedRoutineExercises`]
-/// - [`CachedExercises`]
-/// - [`CachedLastPerformances`]
+/// Phase 0 introdujo [`AppMeta`] como bookkeeping del esquema. Phase 1
+/// añadió el espejo read-only del día activo. Phase 2 incorpora el
+/// write-path local-first:
+/// - [`CachedWorkoutSessions`] / [`CachedSetLogs`]: espejo escribible de
+///   las sesiones del usuario (con `sync_status`).
+/// - [`PendingMutations`]: outbox FIFO que el SyncWorker drena con backoff.
 ///
 /// Cada fase actualiza [`schemaVersion`] y registra la migración en
 /// [`buildMigrationStrategy`].
@@ -28,6 +31,9 @@ part 'local_database.g.dart';
     CachedRoutineExercises,
     CachedExercises,
     CachedLastPerformances,
+    CachedWorkoutSessions,
+    CachedSetLogs,
+    PendingMutations,
   ],
 )
 class LocalDatabase extends _$LocalDatabase {
@@ -41,7 +47,7 @@ class LocalDatabase extends _$LocalDatabase {
   factory LocalDatabase.forTesting(QueryExecutor e) => LocalDatabase._(e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => buildMigrationStrategy(this);

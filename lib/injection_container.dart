@@ -10,6 +10,11 @@ import 'package:gym_flutter/core/database/dao/workout_cache_dao.dart';
 import 'package:gym_flutter/core/database/local_database.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
+import 'package:gym_flutter/core/sync/outbox_repository.dart';
+import 'package:gym_flutter/core/sync/outbox_repository_impl.dart';
+import 'package:gym_flutter/core/sync/presentation/sync_status_bloc.dart';
+import 'package:gym_flutter/core/sync/sync_worker.dart';
+import 'package:gym_flutter/core/sync/sync_worker_impl.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source_impl.dart';
 
@@ -178,8 +183,28 @@ Future<void> init() async {
           ? sl<WorkoutLocalDataSource>()
           : null,
       connectivity: sl<ConnectivityService>(),
+      outbox: sl.isRegistered<OutboxRepository>()
+          ? sl<OutboxRepository>()
+          : null,
+      syncWorker:
+          sl.isRegistered<SyncWorker>() ? sl<SyncWorker>() : null,
+      uuid: sl<Uuid>(),
+      localDatabase: sl.isRegistered<LocalDatabase>()
+          ? sl<LocalDatabase>()
+          : null,
     ),
   );
+
+  // Sync status bloc — UI puede leerlo via Provider en el shell.
+  if (!kIsWeb) {
+    sl.registerFactory<SyncStatusBloc>(
+      () => SyncStatusBloc(
+        connectivity: sl<ConnectivityService>(),
+        outbox: sl<OutboxRepository>(),
+        syncWorker: sl<SyncWorker>(),
+      ),
+    );
+  }
 
   // Colaboradores internos del fachada `WorkoutRemoteDataSource`. Se registran
   // separados para poder reutilizarlos en tests o futuras refactorizaciones.
@@ -219,7 +244,25 @@ Future<void> init() async {
     sl.registerLazySingleton<WorkoutLocalDataSource>(
       () => WorkoutLocalDataSourceImpl(sl<WorkoutCacheDao>()),
     );
-    AppLogger.instance.info('local_db ready (schema v2)');
+
+    // Phase 2: outbox + sync worker. Solo disponibles cuando hay
+    // persistencia local — en web el write-path local-first vuelve más
+    // adelante (Phase W).
+    sl.registerLazySingleton<OutboxRepository>(
+      () => OutboxRepositoryImpl(sl<LocalDatabase>()),
+    );
+    sl.registerLazySingleton<SyncWorker>(
+      () => SyncWorkerImpl(
+        outbox: sl<OutboxRepository>(),
+        remote: sl<WorkoutRemoteDataSource>(),
+        local: sl<WorkoutLocalDataSource>(),
+        connectivity: sl<ConnectivityService>(),
+        authRepository: sl<AuthRepository>(),
+        clock: sl<Clock>(),
+      ),
+    );
+
+    AppLogger.instance.info('local_db ready (schema v3)');
   } else {
     // Phase W enables web persistence. For now, do not register.
   }
@@ -248,4 +291,20 @@ Future<void> init() async {
       sessionService: sl(),
     ),
   );
+
+  // ── SYNC BOOTSTRAP ────────────────────────────────────────────────────────
+  // Phase 2: arranca el SyncWorker tras tener LocalDatabase ping-ed, Outbox
+  // registrada y AuthRepository disponible. Lo hacemos al final del init
+  // para que la cadena de dependencias esté lista. En web es no-op (no se
+  // registra el SyncWorker).
+  if (!kIsWeb && sl.isRegistered<SyncWorker>()) {
+    try {
+      await sl<OutboxRepository>()
+          .releaseStaleLocks(const Duration(seconds: 60));
+      sl<SyncWorker>().start();
+      AppLogger.instance.info('sync_worker started');
+    } catch (e) {
+      AppLogger.instance.warning('sync_worker.start_failed: $e');
+    }
+  }
 }

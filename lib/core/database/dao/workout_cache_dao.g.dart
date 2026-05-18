@@ -11,6 +11,11 @@ mixin _$WorkoutCacheDaoMixin on DatabaseAccessor<LocalDatabase> {
   $CachedExercisesTable get cachedExercises => attachedDatabase.cachedExercises;
   $CachedLastPerformancesTable get cachedLastPerformances =>
       attachedDatabase.cachedLastPerformances;
+  $CachedWorkoutSessionsTable get cachedWorkoutSessions =>
+      attachedDatabase.cachedWorkoutSessions;
+  $CachedSetLogsTable get cachedSetLogs => attachedDatabase.cachedSetLogs;
+  $PendingMutationsTable get pendingMutations =>
+      attachedDatabase.pendingMutations;
   WorkoutCacheDaoManager get managers => WorkoutCacheDaoManager(this);
 }
 
@@ -36,5 +41,17 @@ class WorkoutCacheDaoManager {
       $$CachedLastPerformancesTableTableManager(
         _db.attachedDatabase,
         _db.cachedLastPerformances,
+      );
+  $$CachedWorkoutSessionsTableTableManager get cachedWorkoutSessions =>
+      $$CachedWorkoutSessionsTableTableManager(
+        _db.attachedDatabase,
+        _db.cachedWorkoutSessions,
+      );
+  $$CachedSetLogsTableTableManager get cachedSetLogs =>
+      $$CachedSetLogsTableTableManager(_db.attachedDatabase, _db.cachedSetLogs);
+  $$PendingMutationsTableTableManager get pendingMutations =>
+      $$PendingMutationsTableTableManager(
+        _db.attachedDatabase,
+        _db.pendingMutations,
       );
 }

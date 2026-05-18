@@ -183,6 +183,12 @@ abstract class WorkoutRepository {
     String userId,
   );
 
+  /// Observa una sesión local en tiempo real. Útil para que la UI reaccione
+  /// a actualizaciones tras un drain (coaching aplicado, completedAt
+  /// persistido). Devuelve `Stream.empty()` cuando la persistencia local no
+  /// está disponible (web sin cache).
+  Stream<WorkoutSession?> watchSession(String id);
+
   /// Obtiene el nombre del día de rutina por id (usado para banner/reanudación)
   Future<Either<Failure, String?>> getRoutineDayNameById(String routineDayId);
 

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
+import 'package:gym_flutter/core/database/local_database.dart';
 import 'package:gym_flutter/core/error/error_mapper.dart';
 import 'package:gym_flutter/core/error/exceptions.dart' as core_ex;
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
+import 'package:gym_flutter/core/sync/outbox_repository.dart';
+import 'package:gym_flutter/core/sync/sync_worker.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
@@ -35,6 +41,23 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   /// SWR delegan en este servicio antes de decidir red vs cache.
   final ConnectivityService? connectivity;
 
+  /// Outbox para Phase 2 write-path. Si llega `null` el repositorio cae
+  /// al comportamiento legacy (escritura directa al remote).
+  final OutboxRepository? outbox;
+
+  /// Worker que drena la outbox. El repositorio le dice `kick()` tras
+  /// encolar para acelerar el sync sin esperar al próximo evento.
+  final SyncWorker? syncWorker;
+
+  /// Generador de UUIDs. Solo se usa en el camino offline-capable; en
+  /// tests legacy queda `null` para no romper constructores existentes.
+  final Uuid? uuid;
+
+  /// Local DB. Se usa para envolver `local.write + outbox.enqueue` en una
+  /// única transacción atómica. `null` desactiva esa garantía y los dos
+  /// writes salen secuencialmente (suficiente para los tests que mockean).
+  final LocalDatabase? localDatabase;
+
   /// Resolver del usuario actual. Por defecto `Supabase.instance.client.auth`,
   /// inyectable para tests sin singleton.
   final String? Function() _currentUserId;
@@ -43,11 +66,31 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     required this.remoteDataSource,
     this.localDataSource,
     this.connectivity,
+    this.outbox,
+    this.syncWorker,
+    this.uuid,
+    this.localDatabase,
     String? Function()? currentUserIdResolver,
   }) : _currentUserId = currentUserIdResolver ??
             (() => Supabase.instance.client.auth.currentUser?.id);
 
   bool get _isOnline => connectivity?.isOnline ?? true;
+
+  /// Indica si la capa local-first está completa (cache + outbox + uuid).
+  /// Si falta cualquiera, los métodos write caen al comportamiento legacy
+  /// (escritura directa al remote sin offline) — preserva la compat con
+  /// tests Phase 0/1 que solo inyectan `remoteDataSource`.
+  bool get _offlineCapable =>
+      outbox != null && localDataSource != null && uuid != null;
+
+  /// Ejecuta `op` dentro de una transacción si hay [`localDatabase`], si no
+  /// la corre tal cual. Permite que `local.write + outbox.enqueue` sean
+  /// atómicos en producción sin obligar a los tests a montar la DB real.
+  Future<T> _txn<T>(Future<T> Function() op) {
+    final db = localDatabase;
+    if (db == null) return op();
+    return db.transaction(op);
+  }
 
   /// Patrón Stale-While-Revalidate. Si hay red, intenta remote y refresca el
   /// cache; ante fallo, devuelve cache si lo hay. Sin red, sólo cache. Si
@@ -163,17 +206,58 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     String routineDayId,
     DateTime sessionDate,
   ) =>
-      guard(
-        () => remoteDataSource.startWorkoutForDay(
-          userId,
-          routineDayId,
-          sessionDate,
-        ),
-      );
+      guard(() async {
+        if (!_offlineCapable) {
+          return remoteDataSource.startWorkoutForDay(
+            userId,
+            routineDayId,
+            sessionDate,
+          );
+        }
+        // Local-first: id provisional uuid v4. Si online + remote OK, el
+        // SyncWorker empuja la sesión más tarde; conflictos (e.g. el remote
+        // ya tiene una sesión activa del mismo día) se manejan dentro del
+        // drain como drop.
+        final newId = uuid!.v4();
+        final session = WorkoutSession(
+          id: newId,
+          userId: userId,
+          routineDayId: routineDayId,
+          sessionDate: sessionDate,
+        );
+        await _txn(() async {
+          await localDataSource!.saveCachedSession(session);
+          await outbox!.enqueue(MutationKind.insertSession, {
+            'id': newId,
+            'user_id': userId,
+            'routine_day_id': routineDayId,
+            'session_date': _isoDate(sessionDate),
+          });
+        });
+        // fire-and-forget — el drain es independiente del happy path.
+        unawaited(syncWorker?.kick());
+        return session;
+      });
 
   @override
   Future<Either<Failure, void>> saveSetLog(SetLog setLog) => guard(() async {
-        await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+        if (!_offlineCapable) {
+          await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+          return;
+        }
+        await _txn(() async {
+          await localDataSource!.upsertCachedSetLog(setLog);
+          await outbox!.enqueue(MutationKind.upsertSetLog, {
+            'id': setLog.id,
+            'session_id': setLog.sessionId,
+            'exercise_id': setLog.exerciseId,
+            'actual_weight': setLog.actualWeight,
+            'actual_reps': setLog.actualReps,
+            'set_index': setLog.setIndex,
+            'created_at': setLog.createdAt?.toUtc().toIso8601String(),
+          });
+        });
+        unawaited(syncWorker?.kick());
       });
 
   @override
@@ -261,12 +345,25 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     String sessionId, {
     List<CoachingAnalysis>? coachingAnalysis,
   }) =>
-      guard(
-        () => remoteDataSource.finishWorkoutSession(
-          sessionId,
-          coachingAnalysis: coachingAnalysis,
-        ),
-      );
+      guard(() async {
+        if (!_offlineCapable) {
+          await remoteDataSource.finishWorkoutSession(
+            sessionId,
+            coachingAnalysis: coachingAnalysis,
+          );
+          return;
+        }
+        final completedAt = DateTime.now().toUtc();
+        await _txn(() async {
+          await localDataSource!.markSessionCompleted(sessionId, completedAt);
+          await outbox!.enqueue(MutationKind.finalizeSession, {
+            'session_id': sessionId,
+            'coaching_analysis':
+                coachingAnalysis?.map((c) => c.toJson()).toList(),
+          });
+        });
+        unawaited(syncWorker?.kick());
+      });
 
   @override
   Future<Either<Failure, WeeklyInsights>> getWeeklyInsights({
@@ -310,5 +407,45 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(
     String userId,
   ) =>
-      guard(() => remoteDataSource.getActiveSessionForUser(userId));
+      guard(() async {
+        try {
+          return await remoteDataSource.getActiveSessionForUser(userId);
+        } catch (e) {
+          // Fallback offline-capable: ante errores de red caemos al cache
+          // local. Mantenemos el throw para todos los demás errores —
+          // `mapToFailure` los traducirá al failure correcto.
+          if (!_offlineCapable) rethrow;
+          if (e is core_ex.NetworkException || e is Exception && _isNetworkLike(e)) {
+            AppLogger.instance.warning(
+              'workout_repo.active_session.remote_failed → fallback cache: $e',
+            );
+            return localDataSource!.getOpenSessionForUser(userId);
+          }
+          rethrow;
+        }
+      });
+
+  /// Stream observable de una sesión local. UI puede suscribirse para ver
+  /// cambios tras drain (e.g. coaching aplicado).
+  @override
+  Stream<WorkoutSession?> watchSession(String id) {
+    final local = localDataSource;
+    if (local == null) return const Stream<WorkoutSession?>.empty();
+    return local.watchSession(id);
+  }
+
+  bool _isNetworkLike(Object e) {
+    // SocketException está en dart:io; no la importamos directamente para
+    // mantener este file plataforma-agnóstico. Comparamos por nombre del
+    // runtime type, igual que hace el error_mapper en otros casos.
+    final name = e.runtimeType.toString();
+    return name == 'SocketException' ||
+        name == 'TimeoutException';
+  }
+
+  String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 }
+

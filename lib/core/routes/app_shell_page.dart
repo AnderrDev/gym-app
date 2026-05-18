@@ -7,6 +7,8 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
+import 'package:gym_flutter/core/sync/presentation/sync_status_badge.dart';
+import 'package:gym_flutter/core/sync/presentation/sync_status_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -37,9 +39,17 @@ class AppShellPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ActiveSessionWatcherBloc>(
+    // El SyncStatusBloc sólo está registrado en plataformas con persistencia
+    // local (Phase 2). Si no, montamos el shell sin badge.
+    final hasSyncBloc = sl.isRegistered<SyncStatusBloc>();
+    final shell = BlocProvider<ActiveSessionWatcherBloc>(
       create: (_) => sl<ActiveSessionWatcherBloc>(),
       child: _AppShellView(navigationShell: navigationShell),
+    );
+    if (!hasSyncBloc) return shell;
+    return BlocProvider<SyncStatusBloc>(
+      create: (_) => sl<SyncStatusBloc>(),
+      child: shell,
     );
   }
 }
@@ -116,6 +126,14 @@ class _AppShellViewState extends State<_AppShellView> {
         bottom: false,
         child: Column(
           children: [
+            // Badge de sync — solo se renderiza si el SyncStatusBloc está
+            // provisto (plataformas con persistencia local). El badge
+            // mismo es un SizedBox.shrink() cuando no hay nada que mostrar.
+            if (sl.isRegistered<SyncStatusBloc>())
+              const Align(
+                alignment: Alignment.centerRight,
+                child: SyncStatusBadge(),
+              ),
             BlocSelector<
               ActiveSessionWatcherBloc,
               ActiveSessionWatcherState,
