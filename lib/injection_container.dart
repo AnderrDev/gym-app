@@ -1,7 +1,14 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:gym_flutter/core/database/local_database.dart';
+import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/sync/connectivity_service.dart';
 
 import 'core/notifications/active_workout_notifier.dart';
 import 'core/notifications/live_activities_bridge.dart';
@@ -188,6 +195,28 @@ Future<void> init() async {
   // ── EXTERNAL ──────────────────────────────────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
+
+  // Local database (drift): se abre eagerly y se valida con `ping()` para
+  // detectar corrupción/migrations rotas en bootstrap. En web la persistencia
+  // local llegará en Phase W; mientras tanto no se registra el singleton.
+  if (!kIsWeb) {
+    final localDb = LocalDatabase.open();
+    await localDb.ping();
+    sl.registerLazySingleton<LocalDatabase>(() => localDb);
+    AppLogger.instance.info('local_db ready (schema v1)');
+  } else {
+    // Phase W enables web persistence. For now, do not register.
+  }
+
+  // Connectivity: única fuente de verdad para online/offline. La consumirán
+  // los servicios de sync en Phase 1+.
+  sl.registerLazySingleton<ConnectivityService>(
+    () => ConnectivityServiceImpl(Connectivity()),
+  );
+
+  // UUID generator. Reusado por Phase 1+ (sync queue, optimistic ids, etc.).
+  sl.registerLazySingleton<Uuid>(() => const Uuid());
+
   sl.registerLazySingleton(() => Supabase.instance.client);
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
   sl.registerLazySingleton<Clock>(() => const SystemClock());
