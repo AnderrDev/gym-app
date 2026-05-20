@@ -236,10 +236,13 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.routineStats,
         builder: (context, state) {
-          final args = state.extra;
-          if (args is! RoutineStatsArgs) {
-            return _invalidArgs(AppRoutes.routineStats);
-          }
+          // Path normal: `state.extra` viene con args tipados (push desde
+          // dashboard/progress). Path de reload web: `state.extra` es null
+          // → reconstruimos desde el query string (`?userId=...`).
+          final args = state.extra is RoutineStatsArgs
+              ? state.extra as RoutineStatsArgs
+              : RoutineStatsArgs.tryFromQuery(state.uri.queryParameters);
+          if (args == null) return _invalidArgs(AppRoutes.routineStats);
           return TitledPage(
             title: 'Historial · ${args.routineName}',
             child: RoutineStatsPage(
@@ -254,10 +257,10 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.exerciseProgress,
         builder: (context, state) {
-          final args = state.extra;
-          if (args is! ExerciseProgressArgs) {
-            return _invalidArgs(AppRoutes.exerciseProgress);
-          }
+          final args = state.extra is ExerciseProgressArgs
+              ? state.extra as ExerciseProgressArgs
+              : ExerciseProgressArgs.tryFromQuery(state.uri.queryParameters);
+          if (args == null) return _invalidArgs(AppRoutes.exerciseProgress);
           return TitledPage(
             title: args.exerciseName,
             child: ExerciseProgressPage(

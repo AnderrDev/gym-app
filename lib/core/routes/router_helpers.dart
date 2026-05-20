@@ -37,8 +37,22 @@ Future<bool?> pushDayEditor(BuildContext context, DayEditorArgs args) =>
 Future<bool?> pushRoutineDay(BuildContext context, RoutineDayArgs args) =>
     context.push<bool>(AppRoutes.routineDay, extra: args);
 
-void pushRoutineStats(BuildContext context, RoutineStatsArgs args) =>
-    context.push(AppRoutes.routineStats, extra: args);
+/// Push de stats de rutina. Codificamos los args en el query string del
+/// URL (además de pasar `extra` por compat con go_router) para que el
+/// refresh del browser en web reconstruya la pantalla sin caer a
+/// `_invalidArgs`. Mismo motivo para [pushExerciseProgress].
+void pushRoutineStats(BuildContext context, RoutineStatsArgs args) {
+  final uri = Uri(
+    path: AppRoutes.routineStats,
+    queryParameters: args.toQueryParams(),
+  );
+  context.push(uri.toString(), extra: args);
+}
 
-void pushExerciseProgress(BuildContext context, ExerciseProgressArgs args) =>
-    context.push(AppRoutes.exerciseProgress, extra: args);
+void pushExerciseProgress(BuildContext context, ExerciseProgressArgs args) {
+  final uri = Uri(
+    path: AppRoutes.exerciseProgress,
+    queryParameters: args.toQueryParams(),
+  );
+  context.push(uri.toString(), extra: args);
+}
