@@ -43,13 +43,18 @@ class RoutineManagementRemoteDataSource {
   }
 
   Future<List<RoutineDayModel>> getRoutineDays(String routineId) async {
-    // Pedimos `exercises(name)` en el join para que `RoutineDayCard` pueda
-    // pintar un preview de los primeros nombres sin un round-trip por día.
+    // Traemos las columnas completas del join para que `RoutineDayModel.fromJson`
+    // pueda hidratar tanto `exerciseNamesPreview` (card del dashboard) como
+    // `exercises` (day editor). Sin la versión completa, el editor ve siempre
+    // `exercises = []` aunque el día tenga filas en `routine_exercises`.
     final response = await client
         .from('routine_days')
         .select(
           'id, routine_id, day_of_week, name, '
-          'routine_exercises(target_sets, "order", exercises(name))',
+          'routine_exercises('
+          'target_sets, target_reps, target_weight, rest_timer_seconds, "order", '
+          'exercises(id, name, muscle_group)'
+          ')',
         )
         .eq('routine_id', routineId)
         .order('day_of_week', ascending: true);
@@ -205,15 +210,22 @@ class RoutineManagementRemoteDataSource {
     required double targetWeight,
     int restSeconds = 90,
   }) async {
-    await client.from('routine_exercises').insert({
-      'routine_day_id': dayId,
-      'exercise_id': exerciseId,
-      'order': await _nextOrder(dayId),
-      'target_sets': targetSets,
-      'target_reps': targetReps,
-      'target_weight': targetWeight,
-      'rest_timer_seconds': restSeconds,
-    });
+    // upsert con ignoreDuplicates evita romper si el ejercicio ya está en el
+    // día (race entre catálogo y reload, doble-tap, etc.). El constraint
+    // `routine_exercises_day_exercise_uniq` sigue siendo la red de seguridad.
+    await client.from('routine_exercises').upsert(
+      {
+        'routine_day_id': dayId,
+        'exercise_id': exerciseId,
+        'order': await _nextOrder(dayId),
+        'target_sets': targetSets,
+        'target_reps': targetReps,
+        'target_weight': targetWeight,
+        'rest_timer_seconds': restSeconds,
+      },
+      onConflict: 'routine_day_id,exercise_id',
+      ignoreDuplicates: true,
+    );
   }
 
   Future<void> addExercisesToDay(
@@ -235,7 +247,11 @@ class RoutineManagementRemoteDataSource {
       nextOrder++;
       return row;
     }).toList();
-    await client.from('routine_exercises').insert(payload);
+    await client.from('routine_exercises').upsert(
+      payload,
+      onConflict: 'routine_day_id,exercise_id',
+      ignoreDuplicates: true,
+    );
   }
 
   Future<void> removeExerciseFromDay(String dayId, String exerciseId) async {

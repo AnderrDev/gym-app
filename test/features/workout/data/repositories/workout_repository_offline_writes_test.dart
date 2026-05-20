@@ -14,9 +14,11 @@ import 'package:gym_flutter/features/workout/domain/entities/workout_session.dar
 
 import '../../../../helpers/mocks.dart';
 
-/// Phase 2 write-path local-first: cuando `outbox + localDataSource + uuid`
-/// están provistos, los métodos write escriben en local y encolan; nunca
-/// llaman al remote directamente desde el camino "happy".
+/// Write-path online-first: cuando hay red (default en simulador), las
+/// escrituras van directo al remoto y refrescan el cache. Sólo cuando
+/// `connectivity.isOnline = false` caen al outbox para diferir el push.
+/// Esto fija el bug donde set_log POSTs no salían "ahí mismo" en iOS
+/// porque el SyncWorker se atascaba con backoffs / auth-pause.
 void main() {
   late WorkoutRepositoryImpl repo;
   late MockWorkoutRemoteDataSource remote;
@@ -87,24 +89,33 @@ void main() {
   });
 
   group('startWorkoutForDay (offline-capable)', () {
-    test('online: escribe local + encola, NO llama al remote', () async {
+    test('online: escribe directo al remoto + refresca cache, NO encola',
+        () async {
+      when(() => remote.startWorkoutForDay(any(), any(), any())).thenAnswer(
+        (_) async => WorkoutSessionModel(
+          id: 'srv-id',
+          userId: tUserId,
+          routineDayId: tRoutineDayId,
+          sessionDate: tSessionDate,
+        ),
+      );
       final result = await repo.startWorkoutForDay(
         tUserId,
         tRoutineDayId,
         tSessionDate,
       );
       result.fold((l) => fail('expected Right, got $l'), (session) {
-        expect(session.id, isNotEmpty);
+        expect(session.id, 'srv-id');
         expect(session.userId, tUserId);
         expect(session.routineDayId, tRoutineDayId);
       });
+      verify(() => remote.startWorkoutForDay(any(), any(), any())).called(1);
       verify(() => local.saveCachedSession(any())).called(1);
-      verify(() => outbox.enqueue(MutationKind.insertSession, any())).called(1);
-      verify(() => worker.kick()).called(1);
-      verifyNever(() => remote.startWorkoutForDay(any(), any(), any()));
+      verifyNever(() => outbox.enqueue(any(), any()));
+      verifyNever(() => worker.kick());
     });
 
-    test('offline: mismo comportamiento — local + outbox', () async {
+    test('offline: local + outbox, no toca remoto', () async {
       when(() => conn.isOnline).thenReturn(false);
       final result = await repo.startWorkoutForDay(
         tUserId,
@@ -121,7 +132,25 @@ void main() {
   });
 
   group('saveSetLog (offline-capable)', () {
-    test('escribe local + encola sin llamar al remote', () async {
+    test('online: escribe directo al remoto + refresca cache, NO encola',
+        () async {
+      when(() => remote.saveSetLog(any())).thenAnswer((_) async {});
+      const log = SetLog(
+        sessionId: 'sess-1',
+        exerciseId: 'e1',
+        actualWeight: 60,
+        actualReps: 10,
+        setIndex: 0,
+      );
+      final result = await repo.saveSetLog(log);
+      expect(result.isRight(), isTrue);
+      verify(() => remote.saveSetLog(any())).called(1);
+      verify(() => local.upsertCachedSetLog(log)).called(1);
+      verifyNever(() => outbox.enqueue(any(), any()));
+    });
+
+    test('offline: local + outbox, no toca remoto', () async {
+      when(() => conn.isOnline).thenReturn(false);
       const log = SetLog(
         sessionId: 'sess-1',
         exerciseId: 'e1',
@@ -138,7 +167,29 @@ void main() {
   });
 
   group('finishWorkoutSession (offline-capable)', () {
-    test('marca local completed + encola finalizeSession', () async {
+    test('online: llama al remoto + marca local completed, NO encola',
+        () async {
+      when(() => remote.finishWorkoutSession(any(),
+              coachingAnalysis: any(named: 'coachingAnalysis')))
+          .thenAnswer((_) async {});
+      final result = await repo.finishWorkoutSession(
+        'sess-1',
+        coachingAnalysis: const [
+          CoachingAnalysis(
+            exerciseName: 'X',
+            recommendation: 'r',
+          ),
+        ],
+      );
+      expect(result.isRight(), isTrue);
+      verify(() => remote.finishWorkoutSession(any(),
+          coachingAnalysis: any(named: 'coachingAnalysis'))).called(1);
+      verify(() => local.markSessionCompleted('sess-1', any())).called(1);
+      verifyNever(() => outbox.enqueue(any(), any()));
+    });
+
+    test('offline: marca local completed + encola finalizeSession', () async {
+      when(() => conn.isOnline).thenReturn(false);
       final result = await repo.finishWorkoutSession(
         'sess-1',
         coachingAnalysis: const [
@@ -184,9 +235,10 @@ void main() {
   });
 
   test(
-      'online + outbox.enqueue lanza → return Left pero local ya escribió '
-      '(idempotencia preservada vía PK)', () async {
-    when(() => outbox.enqueue(any(), any()))
+      'online: si la cache local falla tras el remote OK, igual devuelve '
+      'Right (best-effort write a cache)', () async {
+    when(() => remote.saveSetLog(any())).thenAnswer((_) async {});
+    when(() => local.upsertCachedSetLog(any()))
         .thenThrow(const SocketException('disk full'));
     const log = SetLog(
       sessionId: 'sess-1',
@@ -196,9 +248,7 @@ void main() {
       setIndex: 0,
     );
     final result = await repo.saveSetLog(log);
-    expect(result.isLeft(), isTrue);
-    // El write local sí pasó (drift-tx en producción haría rollback; aquí
-    // mockeamos sin envolver en una db real). Verificamos el orden esperado.
-    verify(() => local.upsertCachedSetLog(log)).called(1);
+    expect(result.isRight(), isTrue);
+    verify(() => remote.saveSetLog(any())).called(1);
   });
 }

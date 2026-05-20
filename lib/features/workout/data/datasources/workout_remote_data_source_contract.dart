@@ -20,8 +20,9 @@ abstract class WorkoutRemoteDataSource {
   Future<WorkoutSessionModel> startWorkoutForDay(
     String userId,
     String routineDayId,
-    DateTime sessionDate,
-  );
+    DateTime sessionDate, {
+    String? id,
+  });
   Future<WorkoutSessionModel?> getExistingSession(
     String userId,
     String routineDayId,

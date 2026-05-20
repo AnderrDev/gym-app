@@ -303,17 +303,30 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     DateTime sessionDate,
   ) =>
       guard(() async {
-        if (!_offlineCapable) {
-          return remoteDataSource.startWorkoutForDay(
+        // Online-first: si hay red, escribimos directo al remoto y devolvemos
+        // la sesión real (con el id que asignó Postgres). Sólo si genuinamente
+        // estamos offline caemos al outbox local. Antes el path local-first
+        // siempre encolaba aunque el cliente estuviera online, y el drain del
+        // SyncWorker quedaba atascado con backoffs / RLS auth-pause, dejando
+        // los POST sin enviarse "ahí mismo".
+        if (!_offlineCapable || _isOnline) {
+          final session = await remoteDataSource.startWorkoutForDay(
             userId,
             routineDayId,
             sessionDate,
           );
+          if (localDataSource != null) {
+            try {
+              await localDataSource!.saveCachedSession(session);
+            } catch (e) {
+              AppLogger.instance
+                  .warning('startWorkoutForDay: cache write failed: $e');
+            }
+          }
+          return session;
         }
-        // Local-first: id provisional uuid v4. Si online + remote OK, el
-        // SyncWorker empuja la sesión más tarde; conflictos (e.g. el remote
-        // ya tiene una sesión activa del mismo día) se manejan dentro del
-        // drain como drop.
+        // Offline real: id provisional uuid v4 + outbox. SyncWorker empuja
+        // cuando recupera red.
         final newId = uuid!.v4();
         final session = WorkoutSession(
           id: newId,
@@ -330,15 +343,24 @@ class WorkoutRepositoryImpl extends WorkoutRepository
             'session_date': _isoDate(sessionDate),
           });
         });
-        // fire-and-forget — el drain es independiente del happy path.
         unawaited(syncWorker?.kick());
         return session;
       });
 
   @override
   Future<Either<Failure, void>> saveSetLog(SetLog setLog) => guard(() async {
-        if (!_offlineCapable) {
+        // Online-first (ver nota en `startWorkoutForDay`). El POST sale ya
+        // mismo cuando hay red; el outbox sólo entra si estamos offline.
+        if (!_offlineCapable || _isOnline) {
           await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+          if (localDataSource != null) {
+            try {
+              await localDataSource!.upsertCachedSetLog(setLog);
+            } catch (e) {
+              AppLogger.instance
+                  .warning('saveSetLog: cache write failed: $e');
+            }
+          }
           return;
         }
         await _txn(() async {
@@ -442,11 +464,21 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     List<CoachingAnalysis>? coachingAnalysis,
   }) =>
       guard(() async {
-        if (!_offlineCapable) {
+        // Online-first (ver nota en `startWorkoutForDay`).
+        if (!_offlineCapable || _isOnline) {
           await remoteDataSource.finishWorkoutSession(
             sessionId,
             coachingAnalysis: coachingAnalysis,
           );
+          if (localDataSource != null) {
+            try {
+              await localDataSource!
+                  .markSessionCompleted(sessionId, DateTime.now().toUtc());
+            } catch (e) {
+              AppLogger.instance
+                  .warning('finishWorkoutSession: cache write failed: $e');
+            }
+          }
           return;
         }
         final completedAt = DateTime.now().toUtc();

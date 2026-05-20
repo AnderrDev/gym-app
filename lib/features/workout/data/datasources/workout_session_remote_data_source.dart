@@ -47,8 +47,9 @@ class WorkoutSessionRemoteDataSource {
   Future<WorkoutSessionModel> startWorkoutForDay(
     String userId,
     String routineDayId,
-    DateTime sessionDate,
-  ) async {
+    DateTime sessionDate, {
+    String? id,
+  }) async {
     // Regla de negocio: solo puede existir una sesión activa por usuario.
     final activeSession = await getActiveSessionForUser(userId);
     if (activeSession != null) return activeSession;
@@ -60,13 +61,19 @@ class WorkoutSessionRemoteDataSource {
     );
     if (existing != null) return existing;
 
+    // Si el caller (write-path local-first vía SyncWorker) ya tiene un UUID
+    // generado en local, lo respetamos para que set_logs y finalize que
+    // referencian ese mismo id encuentren la sesión en remoto. Sin esto,
+    // Postgres genera otro UUID y los logs nunca matchean en la sync.
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'routine_day_id': routineDayId,
+      'session_date': _isoDate(sessionDate),
+      'id': ?id,
+    };
     final response = await client
         .from('workout_sessions')
-        .insert({
-          'user_id': userId,
-          'routine_day_id': routineDayId,
-          'session_date': _isoDate(sessionDate),
-        })
+        .insert(payload)
         .select(_sessionsBaseSelect)
         .single();
 

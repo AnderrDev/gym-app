@@ -148,11 +148,12 @@ class DayCardTrailingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hoy + sesión actionable → CTA play prominente con sombra.
+    // Hoy + sesión actionable → CTA play prominente con sombra. `completedPartial`
+    // NO es actionable: la sesión ya se cerró aunque no se alcanzó el target
+    // completo — mostrar play sugería re-arrancar y confundía la UX.
     final isActionable = isToday &&
         (status == WorkoutDayStatus.pending ||
-            status == WorkoutDayStatus.inProgress ||
-            status == WorkoutDayStatus.completedPartial);
+            status == WorkoutDayStatus.inProgress);
 
     if (isActionable) {
       return AnimatedSwitcher(
@@ -181,18 +182,23 @@ class DayCardTrailingIndicator extends StatelessWidget {
       );
     }
 
-    // Día completado en el pasado → check verde inline.
-    if (status == WorkoutDayStatus.completed) {
+    // Día completado: check verde inline (full) o warning-tinted (parcial).
+    // Comparten el mismo afford visual (sesión terminada) pero el color
+    // separa "hit del target" de "cerrado por debajo del target".
+    if (status == WorkoutDayStatus.completed ||
+        status == WorkoutDayStatus.completedPartial) {
+      final isFull = status == WorkoutDayStatus.completed;
+      final color = isFull ? AppColors.success : AppColors.warning;
       return Container(
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.14),
+          color: color.withValues(alpha: 0.14),
           shape: BoxShape.circle,
         ),
-        child: const Icon(
+        child: Icon(
           Icons.check_rounded,
-          color: AppColors.success,
+          color: color,
           size: 18,
         ),
       );

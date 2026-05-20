@@ -224,7 +224,16 @@ class SyncWorkerImpl implements SyncWorker {
           final routineDayId = m.payload['routine_day_id'] as String;
           final sessionDate =
               DateTime.parse(m.payload['session_date'] as String);
-          await _remote.startWorkoutForDay(userId, routineDayId, sessionDate);
+          // El id local generado al encolar tiene que viajar al remoto: sin
+          // esto, set_logs y finalize encolados con `session_id = <local>`
+          // nunca matchean porque Postgres asigna otro UUID al insert.
+          final localId = m.payload['id'] as String?;
+          await _remote.startWorkoutForDay(
+            userId,
+            routineDayId,
+            sessionDate,
+            id: localId,
+          );
           return;
         case MutationKind.upsertSetLog:
           final log = SetLog(

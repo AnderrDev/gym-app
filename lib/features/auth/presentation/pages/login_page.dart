@@ -30,8 +30,12 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<LoginFormBloc>(
       create: (_) => LoginFormBloc(
-        seedEmail: kDebugMode ? dotenv.maybeGet('DEV_LOGIN_EMAIL') : null,
-        seedPassword: kDebugMode ? dotenv.maybeGet('DEV_LOGIN_PASSWORD') : null,
+        seedEmail: kDebugMode
+            ? (dotenv.maybeGet('DEV_LOGIN_EMAIL') ?? 'test@gym.com')
+            : null,
+        seedPassword: kDebugMode
+            ? (dotenv.maybeGet('DEV_LOGIN_PASSWORD') ?? 'Test1234!')
+            : null,
       ),
       child: const _LoginView(),
     );

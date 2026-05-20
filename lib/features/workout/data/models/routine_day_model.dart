@@ -18,25 +18,46 @@ class RoutineDayModel extends RoutineDay {
     Map<String, dynamic> json, {
     List<Exercise> exercises = const [],
   }) {
+    final dayId = json['id'] as String;
     final exercisesData = json['routine_exercises'] as List<dynamic>? ?? [];
     var totalTargetSets = 0;
     final names = <String>[];
+    // Hidratamos `exercises` desde el join sólo si el caller no inyectó una
+    // lista pre-armada. `getRoutineDays` ahora trae las columnas completas
+    // (id, muscle_group, target_*) y el day editor depende de `exercises`
+    // para pintar la lista — antes quedaba siempre vacío.
+    final hydrated = <Exercise>[];
+    final shouldHydrate = exercises.isEmpty;
     for (final ex in exercisesData) {
       final exMap = ex as Map<String, dynamic>;
       totalTargetSets += (exMap['target_sets'] as int? ?? 0);
-      // Nombre del ejercicio si el join lo trae (consumer-dependent: getRoutineDays
-      // pide `exercises(name)` para preview, pero no todos los queries lo hacen).
       final exerciseJoin = exMap['exercises'] as Map<String, dynamic>?;
       final name = exerciseJoin?['name'] as String?;
       if (name != null && name.isNotEmpty) names.add(name);
+      if (!shouldHydrate) continue;
+      final exId = exerciseJoin?['id'] as String?;
+      if (exId == null || name == null || name.isEmpty) continue;
+      hydrated.add(
+        ExerciseModel(
+          id: exId,
+          routineDayId: dayId,
+          name: name,
+          targetMuscle: (exerciseJoin?['muscle_group'] as String?) ?? '',
+          targetWeight: (exMap['target_weight'] as num?)?.toDouble() ?? 0.0,
+          targetReps: (exMap['target_reps'] as num?)?.toInt() ?? 0,
+          targetSets: (exMap['target_sets'] as num?)?.toInt() ?? 3,
+          restTimerSeconds:
+              (exMap['rest_timer_seconds'] as num?)?.toInt() ?? 90,
+        ),
+      );
     }
 
     return RoutineDayModel(
-      id: json['id'] as String,
+      id: dayId,
       routineId: json['routine_id'] as String,
       dayOfWeek: json['day_of_week'] as int,
       name: json['name'] as String,
-      exercises: exercises,
+      exercises: shouldHydrate ? hydrated : exercises,
       targetSetsCount: totalTargetSets,
       status: _statusFromName(json['status'] as String?),
       exerciseNamesPreview: List.unmodifiable(names),

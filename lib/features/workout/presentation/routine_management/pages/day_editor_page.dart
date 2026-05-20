@@ -59,6 +59,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
     BuildContext context,
     RoutineManagementState state,
   ) {
+    final wasSaveDay = state.lastAction == RoutineManagementAction.saveDay;
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
       AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
     } else if (state.submissionStatus ==
@@ -66,6 +67,13 @@ class _DayEditorPageState extends State<DayEditorPage> {
       AppSnackBar.error(context, 'Error: ${state.errorMessage ?? ''}');
     }
     context.read<RoutineManagementBloc>().add(const AcknowledgeFeedback());
+    // Si el guardar del día fue OK, cerramos el editor y devolvemos `true`
+    // al RoutineEditor para que sepa que hubo cambios (mismo contrato que
+    // usa `_onBackPressed`).
+    if (wasSaveDay &&
+        state.submissionStatus == RoutineManagementSubmissionStatus.success) {
+      GoRouter.of(context).pop(true);
+    }
   }
 
   bool _isSubmissionTerminal(

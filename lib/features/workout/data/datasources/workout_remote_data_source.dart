@@ -150,9 +150,15 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   Future<WorkoutSessionModel> startWorkoutForDay(
     String userId,
     String routineDayId,
-    DateTime sessionDate,
-  ) =>
-      _sessions.startWorkoutForDay(userId, routineDayId, sessionDate);
+    DateTime sessionDate, {
+    String? id,
+  }) =>
+      _sessions.startWorkoutForDay(
+        userId,
+        routineDayId,
+        sessionDate,
+        id: id,
+      );
 
   @override
   Future<WorkoutSessionModel?> getExistingSession(
