@@ -50,7 +50,36 @@
        OS en modo oscuro el body aparece gris/negro durante el bootstrap, y
        cualquier `BackdropFilter` que samplee fuera del canvas hereda ese
        color. */
-    html, body { background-color: #FFFFFF; margin: 0; padding: 0; }
+    html, body {
+      background-color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+
+      /* M2 — bloquea el "pull-to-refresh" del browser y el bounce de
+         iOS al hacer scroll en los bordes. Sin esto, si el usuario
+         scrollea hacia abajo en pleno workout, Chrome/Safari pueden
+         recargar la página y perder la sesión activa. */
+      overscroll-behavior: contain;
+
+      /* M1 — desactiva el flash gris que iOS Safari pinta sobre todo
+         tap. En Flutter canvas se ve mal porque el rectángulo gris
+         queda visible un frame después del tap. */
+      -webkit-tap-highlight-color: transparent;
+
+      /* M1 — `manipulation` permite zoom con pinch pero saca el delay
+         de 300 ms del double-tap-to-zoom legacy. Hace que cada tap se
+         sienta inmediato. */
+      touch-action: manipulation;
+    }
+
+    /* M3 — evita el auto-zoom de iOS Safari cuando un input toma focus.
+       Flutter crea inputs HTML ocultos para capturar el teclado; iOS
+       hace zoom si su font-size es <16 px. Forzarlo a 16 px no altera
+       el render del TextField (que sigue siendo canvas) — solo le
+       miente al heurístico del browser. */
+    input, textarea {
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
