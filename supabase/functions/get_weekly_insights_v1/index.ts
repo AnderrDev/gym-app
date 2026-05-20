@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { jsonResponse, preflight } from "../_shared/cors.ts";
-import { logError, logInfo, requireUser } from "../_shared/auth.ts";
+import { logError, logInfo, requireUser, userClient } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
 
 const RATE_LIMIT = {
@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
 
   const auth = await requireUser(req);
   if (!auth.ok) return auth.response;
-  const { userId, admin } = auth;
+  const { userId, admin, token } = auth;
 
   const rate = await enforceRateLimit(admin, userId, RATE_LIMIT);
   if (!rate.ok) return rate.response;
@@ -83,7 +83,9 @@ Deno.serve(async (req: Request) => {
     week_start: weekStartStr,
   });
 
-  const { data: rpcRows, error: rpcError } = await admin
+  // La RPC valida `p_user_id = auth.uid()` (IDOR hardening) y eso sólo
+  // resuelve al uid real si la llamada viaja con el JWT del usuario.
+  const { data: rpcRows, error: rpcError } = await userClient(token)
     .rpc("compute_weekly_insights_v1", {
       p_user_id: userId,
       p_routine_id: payload.routine_id,

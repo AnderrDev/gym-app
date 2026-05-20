@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { jsonResponse, preflight } from "../_shared/cors.ts";
-import { logError, logInfo, requireUser } from "../_shared/auth.ts";
+import { logError, logInfo, requireUser, userClient } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
 
 const RATE_LIMIT = {
@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
 
   const auth = await requireUser(req);
   if (!auth.ok) return auth.response;
-  const { userId, admin } = auth;
+  const { userId, admin, token } = auth;
 
   const rate = await enforceRateLimit(admin, userId, RATE_LIMIT);
   if (!rate.ok) return rate.response;
@@ -87,7 +87,9 @@ Deno.serve(async (req: Request) => {
 
   logInfo("COACHING_REQUEST", { user_id: userId, session_id: sessionId });
 
-  const { data: rpcPayload, error: rpcError } = await admin
+  // La RPC valida `p_user_id = auth.uid()` — sólo resuelve al uid real si la
+  // call viaja con el JWT del usuario, no con service_role.
+  const { data: rpcPayload, error: rpcError } = await userClient(token)
     .rpc("get_coaching_inputs_v1", {
       p_user_id: userId,
       p_session_id: sessionId,

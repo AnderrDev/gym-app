@@ -32,6 +32,25 @@ function adminClient(): SupabaseClient {
 }
 
 /**
+ * Crea un cliente Supabase scoped al usuario que hizo la request. Necesario
+ * para llamar RPCs `SECURITY DEFINER` que internamente comparan
+ * `p_user_id` contra `auth.uid()` (IDOR hardening) — esa comparación sólo
+ * resuelve al uid real cuando la conexión PostgREST viaja con el JWT del
+ * usuario. El `admin` client (service_role) hace `auth.uid()` = NULL y rompe
+ * el check con "forbidden: p_user_id mismatch".
+ */
+export function userClient(token: string): SupabaseClient {
+  return createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    },
+  );
+}
+
+/**
  * Reads the Authorization header, validates the JWT against Supabase Auth via
  * `auth.getUser(token)` and returns the authenticated user_id. Refuses anon /
  * service_role tokens by requiring a real user record. The gateway already
