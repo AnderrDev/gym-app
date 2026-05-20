@@ -21,9 +21,11 @@ class Capabilities {
 
   // ── Persistencia ──────────────────────────────────────────────────────
 
-  /// Base de datos local (drift + sqlite). Falso en web hasta que se
-  /// configure sqlite3 WASM + drift worker (Phase W del roadmap).
-  static bool get hasLocalDatabase => !kIsWeb;
+  /// Base de datos local (drift + sqlite).
+  ///   - Mobile/desktop: sqlite3 nativo via sqlite3_flutter_libs.
+  ///   - Web: sqlite3 WASM en SharedWorker; persiste a OPFS o
+  ///     IndexedDB según soporte del browser (Phase W activada).
+  static bool get hasLocalDatabase => true;
 
   /// Outbox + sync worker para escrituras local-first. Acoplado a
   /// `hasLocalDatabase` porque depende del mismo store.

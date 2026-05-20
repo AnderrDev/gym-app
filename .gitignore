@@ -39,6 +39,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Sidecars del `dart compile js` (web/drift_worker.dart.js.{deps,map}).
+# El .js compilado SÍ va al repo; los sidecars no porque se regeneran y
+# Flutter Web los empaqueta al build/web sin necesidad.
+web/*.js.deps
+web/*.js.map
+
 # Symbolication related
 app.*.symbols
 
