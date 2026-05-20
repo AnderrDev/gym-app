@@ -15,12 +15,17 @@ class ExerciseCatalogTile extends StatelessWidget {
     required this.isSelected,
     required this.isAlreadyInDay,
     required this.onTap,
+    this.onLongPress,
   });
 
   final ExerciseCatalogItem exercise;
   final bool isSelected;
   final bool isAlreadyInDay;
   final VoidCallback onTap;
+
+  /// Long-press abre el detalle del ejercicio (media + instrucciones). Lo
+  /// inyecta el padre porque la tile no conoce de navegación.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +43,7 @@ class ExerciseCatalogTile extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         enabled: !isAlreadyInDay,
         onTap: isAlreadyInDay ? null : onTap,
+        onLongPress: onLongPress,
         leading: Container(
           width: 40,
           height: 40,

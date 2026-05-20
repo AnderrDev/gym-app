@@ -56,3 +56,9 @@ void pushExerciseProgress(BuildContext context, ExerciseProgressArgs args) {
   );
   context.push(uri.toString(), extra: args);
 }
+
+/// Detalle de un ejercicio del catálogo (media + instrucciones).
+/// Push fullscreen — accesible desde day-editor, active workout, catálogo y
+/// progress.
+Future<void> pushExerciseDetail(BuildContext context, String exerciseId) =>
+    context.push<void>('${AppRoutes.exerciseDetail}/$exerciseId');

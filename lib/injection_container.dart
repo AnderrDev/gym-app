@@ -36,6 +36,7 @@ import 'features/workout/domain/usecases/save_set_log.dart';
 import 'features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
 import 'features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import 'features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import 'features/workout/presentation/bloc/exercise_detail/exercise_detail_bloc.dart';
 import 'features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
@@ -47,6 +48,7 @@ import 'features/workout/domain/usecases/delete_routine.dart';
 import 'features/workout/domain/usecases/delete_routine_day.dart';
 import 'features/workout/domain/usecases/fork_routine.dart';
 import 'features/workout/domain/usecases/get_all_routines.dart';
+import 'features/workout/domain/usecases/get_exercise_detail.dart';
 import 'features/workout/domain/usecases/get_exercises_catalog.dart';
 import 'features/workout/domain/usecases/get_routine_by_id.dart';
 import 'features/workout/domain/usecases/remove_exercise_from_day.dart';
@@ -115,6 +117,10 @@ Future<void> init() async {
   sl.registerFactory(() => ExerciseStatsBloc(repository: sl()));
 
   sl.registerFactory(
+    () => ExerciseDetailBloc(getExerciseDetail: sl()),
+  );
+
+  sl.registerFactory(
     () => DashboardBloc(
       getAssignedRoutines: sl(),
       getWeeklyPlan: sl(),
@@ -179,6 +185,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ReorderExercises(sl()));
   sl.registerLazySingleton(() => UpdateExerciseTarget(sl()));
   sl.registerLazySingleton(() => GetExercisesCatalog(sl()));
+  sl.registerLazySingleton(() => GetExerciseDetail(sl()));
 
   sl.registerLazySingleton<WorkoutRepository>(
     () => WorkoutRepositoryImpl(

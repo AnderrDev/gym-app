@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 
 /// Colaborador interno: catálogo de ejercicios + RPC
 /// `get_last_exercise_performances` (con fallback PostgREST).
@@ -113,5 +114,33 @@ class ExerciseCatalogRemoteDataSource {
         })
         .whereType<ExerciseCatalogItem>()
         .toList();
+  }
+
+  /// Trae el detalle enriquecido (media + instrucciones) de un ejercicio.
+  /// Throws `PostgrestException` si no existe; el repo lo mapea a NotFound.
+  Future<ExerciseDetail> getExerciseDetail(String exerciseId) async {
+    final response = await client
+        .from('exercises')
+        .select(
+          'id, name, muscle_group, description, '
+          'image_url, animation_url, video_url, '
+          'instructions, tips, equipment, difficulty',
+        )
+        .eq('id', exerciseId)
+        .single();
+
+    return ExerciseDetail(
+      id: response['id'] as String,
+      name: response['name'] as String,
+      muscleGroup: (response['muscle_group'] as String?) ?? '',
+      description: response['description'] as String?,
+      imageUrl: response['image_url'] as String?,
+      animationUrl: response['animation_url'] as String?,
+      videoUrl: response['video_url'] as String?,
+      instructions: response['instructions'] as String?,
+      tips: response['tips'] as String?,
+      equipment: response['equipment'] as String?,
+      difficulty: response['difficulty'] as String?,
+    );
   }
 }

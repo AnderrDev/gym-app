@@ -11,6 +11,7 @@ import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
 export 'package:gym_flutter/core/error/exceptions.dart'
@@ -268,4 +269,8 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
         search: search,
         limit: limit,
       );
+
+  @override
+  Future<ExerciseDetail> getExerciseDetail(String exerciseId) =>
+      _catalog.getExerciseDetail(exerciseId);
 }

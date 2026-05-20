@@ -1,4 +1,5 @@
 .agents/
+.playwright-mcp/
 
 # Secrets — credenciales locales no van al repo
 .env

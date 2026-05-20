@@ -216,6 +216,10 @@ class _ExerciseCardState extends State<ExerciseCard>
                 );
               }
             },
+            onOpenHowTo: () {
+              HapticFeedback.selectionClick();
+              pushExerciseDetail(context, widget.exercise.id);
+            },
             recommendationText: _getFriendlyRecommendation,
           ),
           ExerciseCardBody(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 
@@ -32,6 +33,16 @@ class ExerciseProgressPage extends StatelessWidget {
           tooltip: 'Volver',
           onPressed: () => Navigator.of(context).maybePop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.info_outline_rounded,
+              color: AppColors.textPrimary,
+            ),
+            tooltip: 'Cómo se hace',
+            onPressed: () => pushExerciseDetail(context, exerciseId),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,

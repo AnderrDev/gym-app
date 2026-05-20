@@ -7,6 +7,7 @@ import '../entities/exercise.dart';
 import '../entities/workout_session.dart';
 import '../entities/coaching_analysis.dart';
 import '../entities/exercise_catalog_item.dart';
+import '../entities/exercise_detail.dart';
 import '../entities/exercise_history_session.dart';
 import '../entities/routine_history_session.dart';
 import '../entities/weekly_insights.dart';
@@ -213,4 +214,8 @@ abstract class WorkoutRepository {
     String? search,
     int limit = 200,
   });
+
+  /// Detalle enriquecido de un ejercicio: media + instrucciones. `NotFoundFailure`
+  /// si no existe.
+  Future<Either<Failure, ExerciseDetail>> getExerciseDetail(String exerciseId);
 }

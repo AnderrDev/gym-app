@@ -5,6 +5,7 @@ import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/repositories/workout_repository_mappers.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
@@ -142,6 +143,12 @@ mixin WorkoutRepositoryRoutineMgmtMixin on WorkoutRepository {
           limit: limit,
         ),
       );
+
+  @override
+  Future<Either<Failure, ExerciseDetail>> getExerciseDetail(
+    String exerciseId,
+  ) =>
+      guard(() => remoteDataSource.getExerciseDetail(exerciseId));
 
   @override
   Future<Either<Failure, List<Routine>>> getAllRoutines() =>

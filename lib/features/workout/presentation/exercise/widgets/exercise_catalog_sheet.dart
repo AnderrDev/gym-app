@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_tile.dart';
@@ -108,6 +109,10 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
                             }
                           });
                           HapticFeedback.lightImpact();
+                        },
+                        onLongPress: () {
+                          HapticFeedback.mediumImpact();
+                          pushExerciseDetail(context, exercise.id);
                         },
                       );
                     },

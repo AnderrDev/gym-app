@@ -10,10 +10,12 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import '../../features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import '../../features/workout/presentation/bloc/exercise_detail/exercise_detail_bloc.dart';
 import '../../features/workout/presentation/bloc/progress/progress_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import '../../features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import '../../features/workout/presentation/dashboard/pages/dashboard_page.dart';
+import '../../features/workout/presentation/exercise/pages/exercise_detail_page.dart';
 import '../../features/workout/presentation/exercise/pages/exercise_progress_page.dart';
 import '../../features/workout/presentation/progress/pages/progress_page.dart';
 import '../../features/workout/presentation/routine_day/pages/routine_day_page.dart';
@@ -253,6 +255,21 @@ class AppRouter {
               userId: args.userId,
               routineId: args.routineId,
               routineName: args.routineName,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${AppRoutes.exerciseDetail}/:exerciseId',
+        builder: (context, state) {
+          final id = state.pathParameters['exerciseId'] ?? '';
+          if (id.isEmpty) return _invalidArgs(AppRoutes.exerciseDetail);
+          return TitledPage(
+            title: 'Detalle del ejercicio',
+            child: BlocProvider<ExerciseDetailBloc>(
+              create: (_) => sl<ExerciseDetailBloc>(),
+              child: ExerciseDetailPage(exerciseId: id),
             ),
           );
         },

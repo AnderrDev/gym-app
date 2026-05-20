@@ -8,7 +8,7 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card_coaching.dart';
 
-enum _HeaderMenuAction { target, insights, progress }
+enum _HeaderMenuAction { target, insights, progress, howTo }
 
 class _HeaderMenuTile extends StatelessWidget {
   const _HeaderMenuTile({required this.icon, required this.label});
@@ -51,6 +51,7 @@ class ExerciseCardHeader extends StatelessWidget {
   final VoidCallback onOpenTargetEditor;
   final VoidCallback onOpenInsights;
   final VoidCallback onOpenProgress;
+  final VoidCallback onOpenHowTo;
   final String Function(String) recommendationText;
   final bool showExpandChevron;
 
@@ -71,6 +72,7 @@ class ExerciseCardHeader extends StatelessWidget {
     required this.onOpenTargetEditor,
     required this.onOpenInsights,
     required this.onOpenProgress,
+    required this.onOpenHowTo,
     required this.recommendationText,
     this.showExpandChevron = true,
   });
@@ -202,6 +204,8 @@ class ExerciseCardHeader extends StatelessWidget {
                         onOpenInsights();
                       case _HeaderMenuAction.progress:
                         onOpenProgress();
+                      case _HeaderMenuAction.howTo:
+                        onOpenHowTo();
                     }
                   },
                   itemBuilder: (context) => [
@@ -214,6 +218,14 @@ class ExerciseCardHeader extends StatelessWidget {
                           label: 'Cambiar objetivo',
                         ),
                       ),
+                    const PopupMenuItem(
+                      key: ValueKey('menu_howto'),
+                      value: _HeaderMenuAction.howTo,
+                      child: _HeaderMenuTile(
+                        icon: Icons.info_outline_rounded,
+                        label: 'Cómo se hace',
+                      ),
+                    ),
                     const PopupMenuItem(
                       key: ValueKey('menu_insights'),
                       value: _HeaderMenuAction.insights,

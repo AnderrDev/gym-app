@@ -20,6 +20,7 @@ class ExerciseRowCard extends StatelessWidget {
     required this.index,
     this.onRemove,
     this.onTap,
+    this.onInfo,
   });
 
   final Exercise exercise;
@@ -29,6 +30,10 @@ class ExerciseRowCard extends StatelessWidget {
   /// ajena). Sin remove implica también sin Dismissible.
   final VoidCallback? onRemove;
   final VoidCallback? onTap;
+
+  /// Abre el detalle del ejercicio (media + instrucciones). `null` esconde el
+  /// botón ⓘ — útil en pruebas o contextos sin nav.
+  final VoidCallback? onInfo;
 
   static String _formatWeight(double w) {
     if (w == 0) return 'BW'; // bodyweight
@@ -125,6 +130,21 @@ class ExerciseRowCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Spacing.sm),
+                  if (onInfo != null)
+                    IconButton(
+                      onPressed: onInfo,
+                      icon: const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      tooltip: 'Ver detalle del ejercicio',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
                   if (onRemove != null)
                     const Icon(
                       Icons.drag_indicator_rounded,

@@ -14,4 +14,5 @@ class AppRoutes {
   static const routineDay = '/routine-day';
   static const routineStats = '/routine-stats';
   static const exerciseProgress = '/exercise-progress';
+  static const exerciseDetail = '/exercise-detail';
 }

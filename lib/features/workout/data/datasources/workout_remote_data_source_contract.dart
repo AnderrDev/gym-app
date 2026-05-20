@@ -6,6 +6,7 @@ import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
 abstract class WorkoutRemoteDataSource {
@@ -104,4 +105,5 @@ abstract class WorkoutRemoteDataSource {
     String? search,
     int limit = 200,
   });
+  Future<ExerciseDetail> getExerciseDetail(String exerciseId);
 }

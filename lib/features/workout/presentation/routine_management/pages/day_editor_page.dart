@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
@@ -272,6 +273,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
                 index: index,
                 onTap: null,
                 onRemove: null,
+                onInfo: () => pushExerciseDetail(context, ex.id),
               );
             },
             childCount: exercises.length,
@@ -300,6 +302,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
                 exercise: ex,
               ),
               onRemove: () => _onRemoveExercise(ex, currentDay),
+              onInfo: () => pushExerciseDetail(context, ex.id),
             ),
           );
         },
