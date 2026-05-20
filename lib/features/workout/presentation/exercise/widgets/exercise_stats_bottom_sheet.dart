@@ -22,11 +22,19 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
   final String exerciseId;
   final String exerciseName;
 
+  /// `true` cuando el widget se monta como página fullscreen
+  /// (`ExerciseProgressPage`) en vez de modal. En ese caso saltamos el
+  /// wrapper glass + el overlay 40% negro — el overlay tiene sentido como
+  /// dimming sobre la pantalla detrás, pero sobre el `Scaffold` blanco
+  /// produce un gris oscuro que se lee como "modo oscuro".
+  final bool fullscreen;
+
   const ExerciseStatsBottomSheet({
     super.key,
     required this.userId,
     required this.exerciseId,
     required this.exerciseName,
+    this.fullscreen = false,
   });
 
   static void show(
@@ -47,182 +55,191 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = GlassContainer(
-      blur: 40,
-      opacity: 0.05,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      padding: EdgeInsets.zero,
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        color: Colors.black.withValues(alpha: 0.4),
-        child: Column(
-          children: [
-            const BottomSheetHandle(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Spacing.xl,
-                Spacing.xl,
-                Spacing.xl,
-                Spacing.lg,
+    final inner = Column(
+      children: [
+        if (!fullscreen) const BottomSheetHandle(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.xl,
+            Spacing.xl,
+            Spacing.xl,
+            Spacing.lg,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exerciseName.toUpperCase(),
+                      style: AppTextStyles.heading1.copyWith(fontSize: 24),
+                    ),
+                    Text(
+                      'ANÁLISIS DE PROGRESIÓN',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.primary,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
+              if (!fullscreen)
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.textPrimary,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.surfaceHighlight,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<ExerciseStatsBloc, ExerciseStatsState>(
+            builder: (context, state) {
+              if (state is ExerciseStatsLoading) {
+                return const Center(child: BarbellLoader.large());
+              } else if (state is ExerciseStatsError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        state.message,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (state is ExerciseStatsLoaded) {
+                if (state.history.isEmpty) {
+                  return Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          exerciseName.toUpperCase(),
-                          style: AppTextStyles.heading1.copyWith(fontSize: 24),
-                        ),
-                        Text(
-                          'ANÁLISIS DE PROGRESIÓN',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.textPrimary,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surfaceHighlight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: BlocBuilder<ExerciseStatsBloc, ExerciseStatsState>(
-                builder: (context, state) {
-                  if (state is ExerciseStatsLoading) {
-                    return const Center(child: BarbellLoader.large());
-                  } else if (state is ExerciseStatsError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.error,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            state.message,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else if (state is ExerciseStatsLoaded) {
-                    if (state.history.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.query_stats_rounded,
-                              color: AppColors.textDisabled,
-                              size: 64,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Aún no hay datos para este ejercicio',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.textDisabled,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(
-                        Spacing.lgPlus,
-                        0,
-                        Spacing.lgPlus,
-                        Spacing.xxxl,
-                      ),
-                      children: [
-                        ExerciseStatsChartSection(
-                          title: 'PESO MÁXIMO',
-                          subtitle: 'El peso más alto que cargaste en una serie',
-                          icon: Icons.local_fire_department_rounded,
-                          unit: 'kg',
-                          series: ExerciseStatsSeries.from(
-                            state.history,
-                            (s) => s.maxWeight,
-                          ),
-                          formatter: (v) => v.toStringAsFixed(0),
-                          chart: ExerciseMaxWeightChart(history: state.history),
-                        ),
-                        const SizedBox(height: 32),
-                        ExerciseStatsChartSection(
-                          title: '1RM ESTIMADO',
-                          subtitle: 'Tu máxima en 1 rep, proyectada',
-                          icon: Icons.trending_up_rounded,
-                          unit: 'kg',
-                          series: ExerciseStatsSeries.from(
-                            state.history,
-                            (s) => s.estimated1RM,
-                          ),
-                          formatter: (v) =>
-                              v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1),
-                          chart: ExerciseEstimated1RMChart(
-                            history: state.history,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        ExerciseStatsChartSection(
-                          title: 'CARGA MOVIDA',
-                          subtitle: 'Suma de peso × reps en la sesión',
-                          icon: Icons.stacked_line_chart_rounded,
-                          unit: 'kg·reps',
-                          series: ExerciseStatsSeries.from(
-                            state.history,
-                            (s) => s.totalVolume,
-                          ),
-                          formatter: (v) => v.toStringAsFixed(0),
-                          chart: ExerciseVolumeChart(history: state.history),
-                        ),
-                        const SizedBox(height: 40),
-                        Text(
-                          'HISTORIAL DETALLADO',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.textSecondary,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        const Icon(
+                          Icons.query_stats_rounded,
+                          color: AppColors.textDisabled,
+                          size: 64,
                         ),
                         const SizedBox(height: 16),
-                        ...state.history.map(
-                          (session) =>
-                              ExerciseHistorySessionItem(session: session),
+                        Text(
+                          'Aún no hay datos para este ejercicio',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: AppColors.textDisabled,
+                          ),
                         ),
                       ],
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-          ],
+                    ),
+                  );
+                }
+
+                return ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.lgPlus,
+                    0,
+                    Spacing.lgPlus,
+                    Spacing.xxxl,
+                  ),
+                  children: [
+                    ExerciseStatsChartSection(
+                      title: 'PESO MÁXIMO',
+                      subtitle: 'El peso más alto que cargaste en una serie',
+                      icon: Icons.local_fire_department_rounded,
+                      unit: 'kg',
+                      series: ExerciseStatsSeries.from(
+                        state.history,
+                        (s) => s.maxWeight,
+                      ),
+                      formatter: (v) => v.toStringAsFixed(0),
+                      chart: ExerciseMaxWeightChart(history: state.history),
+                    ),
+                    const SizedBox(height: 32),
+                    ExerciseStatsChartSection(
+                      title: '1RM ESTIMADO',
+                      subtitle: 'Tu máxima en 1 rep, proyectada',
+                      icon: Icons.trending_up_rounded,
+                      unit: 'kg',
+                      series: ExerciseStatsSeries.from(
+                        state.history,
+                        (s) => s.estimated1RM,
+                      ),
+                      formatter: (v) =>
+                          v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1),
+                      chart: ExerciseEstimated1RMChart(
+                        history: state.history,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    ExerciseStatsChartSection(
+                      title: 'CARGA MOVIDA',
+                      subtitle: 'Suma de peso × reps en la sesión',
+                      icon: Icons.stacked_line_chart_rounded,
+                      unit: 'kg·reps',
+                      series: ExerciseStatsSeries.from(
+                        state.history,
+                        (s) => s.totalVolume,
+                      ),
+                      formatter: (v) => v.toStringAsFixed(0),
+                      chart: ExerciseVolumeChart(history: state.history),
+                    ),
+                    const SizedBox(height: 40),
+                    Text(
+                      'HISTORIAL DETALLADO',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.textSecondary,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...state.history.map(
+                      (session) =>
+                          ExerciseHistorySessionItem(session: session),
+                    ),
+                  ],
+                );
+              }
+              return const SizedBox();
+            },
+          ),
         ),
-      ),
+      ],
     );
+
+    // En modal: glass blur + dimming oscuro sobre la pantalla detrás.
+    // En fullscreen: sin wrapper — el contenido va directo sobre el
+    // `Scaffold` blanco de `ExerciseProgressPage`.
+    final Widget content = fullscreen
+        ? inner
+        : GlassContainer(
+            blur: 40,
+            opacity: 0.05,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(32)),
+            padding: EdgeInsets.zero,
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              color: Colors.black.withValues(alpha: 0.4),
+              child: inner,
+            ),
+          );
 
     try {
       context.read<ExerciseStatsBloc>();

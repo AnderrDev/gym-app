@@ -142,21 +142,30 @@ class KeyboardToggleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isActive ? AppColors.primary : AppColors.textSecondary;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 28,
-        width: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+    // Focus(canRequestFocus: false) evita que en web el chip robe el focus
+    // del TextField al hacer click — preserva la fila de chips visible.
+    return Focus(
+      canRequestFocus: false,
+      descendantsAreFocusable: false,
+      child: GestureDetector(
+        // `onTapDown` se dispara antes que el sistema de focus procese el
+        // click, así garantizamos que el handler corra incluso si el chip
+        // se desmonta en el mismo frame por el blur.
+        onTapDown: onTap == null ? null : (_) => onTap!(),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 28,
+          width: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppColors.primary.withValues(alpha: 0.2)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Icon(Icons.keyboard_alt_rounded, size: 16, color: color),
         ),
-        child: Icon(Icons.keyboard_alt_rounded, size: 16, color: color),
       ),
     );
   }
@@ -178,23 +187,29 @@ class QuickStepChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = positive ? AppColors.primary : AppColors.textSecondary;
     // GestureDetector (no InkWell) para no robar el focus del TextField.
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.label.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
+    // En web envolvemos en Focus(canRequestFocus: false) + usamos
+    // onTapDown para que el handler corra antes del blur del field.
+    return Focus(
+      canRequestFocus: false,
+      descendantsAreFocusable: false,
+      child: GestureDetector(
+        onTapDown: (_) => onTap(),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ),
       ),

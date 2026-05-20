@@ -21,11 +21,24 @@ class ExerciseProgressPage extends StatelessWidget {
     // para ofrecer una vista completa sin duplicar lógica ni BLoC.
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: SafeArea(
+        top: false,
         child: ExerciseStatsBottomSheet(
           userId: userId,
           exerciseId: exerciseId,
           exerciseName: exerciseName,
+          fullscreen: true,
         ),
       ),
     );

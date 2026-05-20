@@ -112,16 +112,28 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
     _recomputeDirty();
   }
 
-  static double _initialWeightFor(ExerciseSetRow w) => w.isDone
-      ? w.completedLog!.actualWeight
-      : (w.lastPerformanceLog?.actualWeight ?? w.targetWeight);
+  /// Prefill del peso para la serie en curso. Prioridad:
+  ///   1. Si la serie ya está guardada → respeta lo registrado.
+  ///   2. Última performance del ejercicio (RPC `get_last_exercise_performances`).
+  ///   3. `target_weight` configurado en la rutina.
+  /// Si ninguno aplica, devuelve 0 — el campo muestra "0" en vez de quedar
+  /// vacío para que el usuario tenga un valor inicial sobre el cual ajustar.
+  static double _initialWeightFor(ExerciseSetRow w) {
+    if (w.isDone) return w.completedLog!.actualWeight;
+    final last = w.lastPerformanceLog?.actualWeight;
+    if (last != null && last > 0) return last;
+    return w.targetWeight;
+  }
 
-  static int _initialRepsFor(ExerciseSetRow w) => w.isDone
-      ? w.completedLog!.actualReps
-      : (w.lastPerformanceLog?.actualReps ?? w.targetReps);
+  static int _initialRepsFor(ExerciseSetRow w) {
+    if (w.isDone) return w.completedLog!.actualReps;
+    final last = w.lastPerformanceLog?.actualReps;
+    if (last != null && last > 0) return last;
+    return w.targetReps;
+  }
 
-  String _weightText(double w) => w > 0 ? _formatWeight(w) : '';
-  String _repsText(int r) => r > 0 ? r.toString() : '';
+  String _weightText(double w) => _formatWeight(w);
+  String _repsText(int r) => r.toString();
 
   void _syncIfPristine(
     TextEditingController ctrl,
@@ -157,6 +169,11 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
+    // En web el click del chip blurrea el TextField → `_focused` cae a
+    // `none` y la fila de chips colapsa. Re-focuseamos para mantener los
+    // chips visibles y permitir taps repetidos. En móvil esto es no-op
+    // porque el touch no roba el focus.
+    if (!_weightFocus.hasFocus) _weightFocus.requestFocus();
     HapticFeedback.selectionClick();
   }
 
@@ -167,6 +184,7 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
+    if (!_repsFocus.hasFocus) _repsFocus.requestFocus();
     HapticFeedback.selectionClick();
   }
 
@@ -189,7 +207,18 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
       widget.onUnsaved!(widget.setNumber);
       return;
     }
-    if (reps <= 0) return;
+    // No registrar una serie sin peso o sin reps. El usuario tiene que
+    // capturar al menos un valor mayor a 0 en cada campo antes de marcar.
+    if (weight <= 0 || reps <= 0) {
+      HapticFeedback.lightImpact();
+      // Focuseamos el primer campo que está en 0 para guiar al usuario.
+      if (weight <= 0) {
+        _weightFocus.requestFocus();
+      } else {
+        _repsFocus.requestFocus();
+      }
+      return;
+    }
     HapticFeedback.mediumImpact();
     widget.onSaved(SetLog(
       sessionId: widget.sessionId,
