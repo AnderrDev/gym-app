@@ -19,7 +19,14 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#007AFF">
+
+  <!-- theme-color con media query: iOS Safari adapta el color de la URL
+       bar al esquema activo del usuario. Sin media query, el navegador
+       siempre usa el último meta tag y la status bar no matchea el dark
+       mode in-app. -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0A0A0B">
+
   <meta name="description" content="Smart Gym Tracker — entrena con sobrecarga progresiva.">
 
   <!-- iOS meta tags & icons -->
@@ -46,10 +53,9 @@
   <link rel="prefetch" href="drift_worker.dart.js" as="script">
 
   <style>
-    /* Fondo blanco antes de que Flutter pinte. Sin esto, en navegadores con
-       OS en modo oscuro el body aparece gris/negro durante el bootstrap, y
-       cualquier `BackdropFilter` que samplee fuera del canvas hereda ese
-       color. */
+    /* Fondo pre-paint: adaptado al esquema activo del usuario para que
+       no haya flash blanco→oscuro (o viceversa) entre el bootstrap del
+       browser y el primer paint de Flutter. */
     html, body {
       background-color: #FFFFFF;
       margin: 0;
@@ -79,6 +85,13 @@
        miente al heurístico del browser. */
     input, textarea {
       font-size: 16px;
+    }
+
+    /* Dark mode pre-paint bg: matchea AppPalette.dark.background. */
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background-color: #0A0A0B;
+      }
     }
   </style>
 </head>
