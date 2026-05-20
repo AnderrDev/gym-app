@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,8 @@ import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/observability/app_bloc_observer.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/platform/url_strategy_stub.dart'
+    if (dart.library.js_interop) 'package:gym_flutter/core/platform/url_strategy_web.dart';
 import 'package:gym_flutter/core/routes/app_router.dart';
 import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
@@ -24,6 +27,7 @@ import 'package:gym_flutter/injection_container.dart' as di;
 void main() {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    configureWebUrlStrategy();
     FlutterError.onError = ErrorReporter.onFlutterError;
     PlatformDispatcher.instance.onError = ErrorReporter.onPlatformError;
     Bloc.observer = AppBlocObserver();
@@ -124,8 +128,33 @@ class _BootstrapErrorApp extends StatelessWidget {
 
   final Object error;
 
+  /// En web Safari modo privado bloquea `localStorage`, lo que hace estallar
+  /// el init de Supabase y `SharedPreferences` con `SecurityError` /
+  /// `QuotaExceededError`. Detectamos el patrón para mostrar un mensaje
+  /// accionable en vez del stack trace crudo.
+  ({String title, String body}) _friendly() {
+    final raw = '$error';
+    if (kIsWeb) {
+      final s = raw.toLowerCase();
+      final looksLikeStorageBlock = s.contains('localstorage') ||
+          s.contains('quotaexceeded') ||
+          s.contains('securityerror') ||
+          (s.contains('storage') && s.contains('access'));
+      if (looksLikeStorageBlock) {
+        return (
+          title: 'Tu navegador está bloqueando el almacenamiento',
+          body:
+              'Esto suele pasar en el modo privado de Safari. Abrí la app en '
+                  'una pestaña normal (sin modo privado) y volvé a intentar.',
+        );
+      }
+    }
+    return (title: 'No pudimos arrancar la app', body: raw);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final msg = _friendly();
     return MaterialApp(
       title: 'Smart Gym Tracker',
       debugShowCheckedModeBanner: false,
@@ -144,9 +173,9 @@ class _BootstrapErrorApp extends StatelessWidget {
                   size: 48,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No pudimos arrancar la app',
-                  style: TextStyle(
+                Text(
+                  msg.title,
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
@@ -154,7 +183,7 @@ class _BootstrapErrorApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$error',
+                  msg.body,
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),
               ],

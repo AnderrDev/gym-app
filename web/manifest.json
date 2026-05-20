@@ -1,11 +1,11 @@
 {
-    "name": "gym_flutter",
-    "short_name": "gym_flutter",
+    "name": "Smart Gym Tracker",
+    "short_name": "Smart Gym",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#007AFF",
+    "description": "Entrena con sobrecarga progresiva y registra cada serie.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

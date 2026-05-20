@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,19 +18,29 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#007AFF">
+  <meta name="description" content="Smart Gym Tracker — entrena con sobrecarga progresiva.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="gym_flutter">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Smart Gym">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>gym_flutter</title>
+  <title>Smart Gym Tracker</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Fondo blanco antes de que Flutter pinte. Sin esto, en navegadores con
+       OS en modo oscuro el body aparece gris/negro durante el bootstrap, y
+       cualquier `BackdropFilter` que samplee fuera del canvas hereda ese
+       color. */
+    html, body { background-color: #FFFFFF; margin: 0; padding: 0; }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
