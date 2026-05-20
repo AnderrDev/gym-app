@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -15,6 +16,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboa
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/pages/dashboard_page.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_weekly_view.dart';
+import 'package:gym_flutter/injection_container.dart' show sl;
 import 'package:mocktail/mocktail.dart';
 
 class MockDashboardBloc extends Mock implements DashboardBloc {}
@@ -44,6 +46,14 @@ void main() {
     mockWatcherBloc = MockActiveSessionWatcherBloc();
     mockAuthBloc = MockAuthBloc();
     mockGoRouter = MockGoRouter();
+
+    // `DashboardPage.initState` resuelve el bus por GetIt; en test
+    // registramos una instancia real (es un `ChangeNotifier` trivial).
+    if (!sl.isRegistered<RoutineAssignmentBus>()) {
+      sl.registerLazySingleton<RoutineAssignmentBus>(
+        () => RoutineAssignmentBus(),
+      );
+    }
 
     when(() => mockAuthBloc.state).thenReturn(
       const Authenticated(

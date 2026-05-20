@@ -16,6 +16,8 @@ import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboa
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_state_content.dart';
+import 'package:gym_flutter/injection_container.dart';
+import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
 
 /// Página de Dashboard ("HOY") — primer branch del shell con NavigationBar.
 ///
@@ -40,9 +42,12 @@ class _DashboardPageState extends State<DashboardPage> {
     ).subtract(Duration(days: date.weekday - 1));
   }
 
+  late final RoutineAssignmentBus _assignmentBus;
+
   @override
   void initState() {
     super.initState();
+    _assignmentBus = sl<RoutineAssignmentBus>()..addListener(_onAssignmentBump);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
@@ -51,6 +56,26 @@ class _DashboardPageState extends State<DashboardPage> {
         LoadAssignedRoutines(authState.user.id),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _assignmentBus.removeListener(_onAssignmentBump);
+    super.dispose();
+  }
+
+  /// Re-dispara `LoadAssignedRoutines` cuando otro bloc (típicamente el de
+  /// gestión de rutinas en otra branch del shell) avisa que hubo un cambio
+  /// en `user_routines`. Bus singleton porque cada GoRoute crea su propia
+  /// instancia de `RoutineManagementBloc` y un BlocListener directo no las
+  /// alcanza cross-route.
+  void _onAssignmentBump() {
+    if (!mounted) return;
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    context
+        .read<DashboardBloc>()
+        .add(LoadAssignedRoutines(authState.user.id));
   }
 
   void _handleWorkoutFinished(String userId) {

@@ -22,6 +22,7 @@ import 'core/notifications/active_workout_notifier.dart';
 import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/active_session_service.dart';
+import 'core/services/routine_assignment_bus.dart';
 import 'core/utils/clock.dart';
 import 'features/workout/data/datasources/exercise_catalog_remote_data_source.dart';
 import 'features/workout/data/datasources/routine_management_remote_data_source.dart';
@@ -278,6 +279,7 @@ Future<void> init() async {
 
   sl.registerLazySingleton(() => Supabase.instance.client);
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
+  sl.registerLazySingleton(() => RoutineAssignmentBus());
   sl.registerLazySingleton<Clock>(() => const SystemClock());
 
   // ── NOTIFICATIONS ─────────────────────────────────────────────────────────

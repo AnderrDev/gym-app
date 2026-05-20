@@ -1,5 +1,10 @@
 part of 'routine_management_bloc.dart';
 
+// `sl` re-exportado vía bloc principal habría sido más limpio, pero el bus
+// es opcional (no romper si no está registrado en tests).
+RoutineAssignmentBus? _maybeAssignmentBus() =>
+    sl.isRegistered<RoutineAssignmentBus>() ? sl<RoutineAssignmentBus>() : null;
+
 /// Handlers del subdominio "catálogo de rutinas y ejercicios":
 /// carga del listado global, asignación a usuario y consulta del catálogo
 /// de ejercicios. Conviven con [RoutineManagementBloc] vía `part of`.
@@ -67,14 +72,20 @@ extension RoutineCatalogHandlers on RoutineManagementBloc {
           errorMessage: failure.message,
         ),
       ),
-      (_) => emit(
-        state.copyWith(
-          submissionStatus: RoutineManagementSubmissionStatus.success,
-          lastAction: RoutineManagementAction.assignRoutine,
-          feedbackMessage: 'Rutina activada correctamente',
-          activeRoutineId: event.routineId,
-        ),
-      ),
+      (_) {
+        emit(
+          state.copyWith(
+            submissionStatus: RoutineManagementSubmissionStatus.success,
+            lastAction: RoutineManagementAction.assignRoutine,
+            feedbackMessage: 'Rutina activada correctamente',
+            activeRoutineId: event.routineId,
+          ),
+        );
+        // Avisa al DashboardBloc (que vive en otra branch del shell con su
+        // propio scope de providers) que `user_routines` cambió, para que
+        // recargue la vista semanal sin esperar al próximo init.
+        _maybeAssignmentBus()?.bump();
+      },
     );
   }
 
