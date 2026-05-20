@@ -179,7 +179,6 @@ class _DayEditorPageState extends State<DayEditorPage> {
           canPop: !isDirty,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop, isDirty),
           child: Scaffold(
-            backgroundColor: AppColors.background,
             body: CustomScrollView(
               physics: AdaptiveScrollPhysics.preferred,
               slivers: [

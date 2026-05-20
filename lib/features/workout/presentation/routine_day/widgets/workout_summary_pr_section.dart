@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -35,10 +35,10 @@ class WorkoutSummaryPrSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const WorkoutSummarySectionLabel(
+        WorkoutSummarySectionLabel(
           text: 'Nuevos récords',
           icon: Icons.emoji_events_rounded,
-          iconColor: AppColors.warning,
+          iconColor: context.colors.warning,
         ),
         const SizedBox(height: Spacing.sm),
         ...prs.map((pr) => _PrRow(pr: pr)),
@@ -63,15 +63,15 @@ class _PrRow extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.08),
+        color: context.colors.warning.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+        border: Border.all(color: context.colors.warning.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.emoji_events_rounded,
-            color: AppColors.warning,
+            color: context.colors.warning,
             size: 18,
           ),
           const SizedBox(width: Spacing.sm),
@@ -90,7 +90,7 @@ class _PrRow extends StatelessWidget {
                 Text(
                   '${_fmt(pr.currentWeight)} kg × ${pr.reps} reps',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -100,7 +100,7 @@ class _PrRow extends StatelessWidget {
           Text(
             '+${_fmt(pr.delta)} kg',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.warning,
+              color: context.colors.warning,
               fontWeight: FontWeight.w800,
             ),
           ),

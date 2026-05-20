@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -31,13 +31,13 @@ class ExerciseSetRowReadOnly extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: isDone
-            ? AppColors.success.withValues(alpha: 0.08)
-            : AppColors.background,
+            ? context.colors.success.withValues(alpha: 0.08)
+            : context.colors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDone
-              ? AppColors.success.withValues(alpha: 0.3)
-              : AppColors.divider,
+              ? context.colors.success.withValues(alpha: 0.3)
+              : context.colors.divider,
         ),
       ),
       child: Row(
@@ -52,15 +52,15 @@ class ExerciseSetRowReadOnly extends StatelessWidget {
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
                 color: isDone
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
+                    ? context.colors.textPrimary
+                    : context.colors.textSecondary,
               ),
             ),
           ),
           if (isDone)
-            const Icon(
+            Icon(
               Icons.check_circle_rounded,
-              color: AppColors.success,
+              color: context.colors.success,
               size: 18,
             ),
         ],

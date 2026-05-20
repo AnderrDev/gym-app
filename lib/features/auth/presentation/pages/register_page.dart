@@ -54,7 +54,6 @@ class _RegisterView extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (previous, current) => current is AuthError,
         listener: (context, state) {

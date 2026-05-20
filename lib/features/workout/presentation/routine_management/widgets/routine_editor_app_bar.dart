@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 class RoutineEditorAppBar extends StatelessWidget {
   const RoutineEditorAppBar({
@@ -27,6 +26,7 @@ class RoutineEditorAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final isExisting = activeRoutineId != null;
     final title = !isExisting
         ? 'Nueva rutina'
@@ -34,26 +34,26 @@ class RoutineEditorAppBar extends StatelessWidget {
     return SliverAppBar(
       pinned: true,
       titleSpacing: 0,
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(
+        icon: Icon(
           Icons.close_rounded,
-          color: AppColors.textPrimary,
+          color: colors.textPrimary,
         ),
         tooltip: 'Cerrar editor',
         onPressed: onClose,
       ),
       title: Text(
         title,
-        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w800),
+        style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
       ),
       actions: [
         if (isExisting && isOwner)
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.delete_outline_rounded,
-              color: AppColors.error,
+              color: colors.error,
             ),
             tooltip: 'Eliminar rutina',
             onPressed: onDelete,
@@ -65,10 +65,10 @@ class RoutineEditorAppBar extends StatelessWidget {
               onPressed: isDirty ? onSave : null,
               child: Text(
                 'GUARDAR',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: isDirty
-                      ? AppColors.primary
-                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                      ? colors.primary
+                      : colors.textSecondary.withValues(alpha: 0.5),
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
                 ),

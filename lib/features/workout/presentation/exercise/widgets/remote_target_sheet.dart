@@ -6,7 +6,7 @@ import 'package:gym_flutter/core/forms/inputs/reps_input.dart';
 import 'package:gym_flutter/core/forms/inputs/weight_input.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
@@ -83,8 +83,8 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: const EdgeInsets.fromLTRB(
@@ -103,7 +103,7 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceHighlight,
+                  color: context.colors.surfaceHighlight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

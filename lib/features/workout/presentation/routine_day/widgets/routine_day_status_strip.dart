@@ -1,7 +1,7 @@
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 class RoutineDayStatusStrip extends StatelessWidget {
@@ -56,16 +56,16 @@ class RoutineDayStatusStrip extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isCompleted
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.surfaceHighlight,
+                      ? context.colors.success.withValues(alpha: 0.1)
+                      : context.colors.surfaceHighlight,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isCompleted ? 'COMPLETADO' : 'LECTURA',
                   style: AppTextStyles.label.copyWith(
                     color: isCompleted
-                        ? AppColors.success
-                        : AppColors.textSecondary,
+                        ? context.colors.success
+                        : context.colors.textSecondary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

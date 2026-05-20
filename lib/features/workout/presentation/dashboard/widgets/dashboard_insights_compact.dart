@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -29,7 +29,7 @@ class DashboardInsightsCompact extends StatelessWidget {
     if (i == null) return const SizedBox.shrink();
 
     final trendUp = i.volumeTrendPercent >= 0;
-    final trendColor = trendUp ? AppColors.success : AppColors.error;
+    final trendColor = trendUp ? context.colors.success : context.colors.error;
     final trendIcon = trendUp
         ? Icons.trending_up_rounded
         : Icons.trending_down_rounded;
@@ -46,7 +46,7 @@ class DashboardInsightsCompact extends StatelessWidget {
             icon: Icons.flag_circle_rounded,
             label: 'Adherencia',
             value: '${i.adherenceRate.toStringAsFixed(0)}%',
-            color: AppColors.primary,
+            color: context.colors.primary,
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
@@ -60,21 +60,21 @@ class DashboardInsightsCompact extends StatelessWidget {
             icon: Icons.emoji_events_rounded,
             label: 'PRs',
             value: '${i.personalRecords}',
-            color: AppColors.warning,
+            color: context.colors.warning,
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
             icon: Icons.event_available_rounded,
             label: 'Sesiones',
             value: '${i.completedSessions}/${i.plannedDays}',
-            color: AppColors.info,
+            color: context.colors.info,
           ),
           const SizedBox(width: Spacing.sm),
           _Metric(
             icon: Icons.local_fire_department_rounded,
             label: 'Total',
             value: '${i.totalVolume.toStringAsFixed(0)} kg',
-            color: AppColors.textPrimary,
+            color: context.colors.textPrimary,
           ),
         ],
       ),
@@ -104,9 +104,9 @@ class _Metric extends StatelessWidget {
         vertical: Spacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.colors.background,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Row(
         children: [
@@ -128,7 +128,7 @@ class _Metric extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                   letterSpacing: 0.4,
                 ),
               ),
@@ -136,7 +136,7 @@ class _Metric extends StatelessWidget {
               Text(
                 value,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -160,23 +160,23 @@ class _ErrorChip extends StatelessWidget {
         vertical: Spacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.colors.background,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             size: 16,
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
           ),
           const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(
               'Insights no disponibles esta semana',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ),
           ),

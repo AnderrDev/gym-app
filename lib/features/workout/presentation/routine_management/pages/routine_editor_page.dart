@@ -178,7 +178,6 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 if (shouldPop) navigator.pop(true);
               },
               child: Scaffold(
-                backgroundColor: AppColors.background,
                 body: CustomScrollView(
                   physics: AdaptiveScrollPhysics.preferred,
                   slivers: [

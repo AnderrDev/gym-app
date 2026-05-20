@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -54,7 +54,7 @@ class DayEditorDialogs {
               state.exerciseCatalog.isEmpty) {
             return const SizedBox(
               height: 200,
-              child: Center(child: BarbellLoader.large()),
+              child: Center(child: AppSpinner.large()),
             );
           }
           return ExerciseCatalogSheet(

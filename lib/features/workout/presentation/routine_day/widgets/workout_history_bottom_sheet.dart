@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
@@ -46,8 +46,8 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
       minChildSize: 0.4,
       maxChildSize: 0.95,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
+        decoration: BoxDecoration(
+          color: context.colors.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -76,21 +76,21 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
                         label: 'CARGA',
                         value: totalVolume.toStringAsFixed(0),
                         secondary: AppStrings.kgReps,
-                        accent: AppColors.textPrimary,
+                        accent: context.colors.textPrimary,
                         icon: Icons.local_fire_department_rounded,
                         valueFontSize: 20,
                       ),
                       WorkoutMetric(
                         label: 'SERIES',
                         value: '${logs.length}',
-                        accent: AppColors.primary,
+                        accent: context.colors.primary,
                         icon: Icons.task_alt_rounded,
                         valueFontSize: 20,
                       ),
                       WorkoutMetric(
                         label: 'EJERCICIOS',
                         value: '${groupedLogs.length}',
-                        accent: AppColors.info,
+                        accent: context.colors.info,
                         icon: Icons.format_list_numbered_rounded,
                         valueFontSize: 20,
                       ),

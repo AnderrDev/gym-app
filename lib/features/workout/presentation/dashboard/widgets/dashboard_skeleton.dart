@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_skeleton.dart';
 
@@ -28,8 +28,8 @@ class DashboardSkeleton extends StatelessWidget {
               Spacing.lg,
               Spacing.md,
             ),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.divider)),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.colors.divider)),
             ),
             child: const Row(
               children: [
@@ -95,9 +95,9 @@ class _WeekSummarySkeleton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,

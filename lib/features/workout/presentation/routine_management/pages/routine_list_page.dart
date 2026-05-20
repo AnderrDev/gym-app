@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/app_routes.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -102,14 +103,15 @@ class _RoutineListPageState extends State<RoutineListPage> {
   }
 
   Widget _buildAppBar() {
+    final colors = context.colors;
     return SliverAppBar(
       pinned: true,
-      backgroundColor: AppColors.background,
-      surfaceTintColor: AppColors.background,
+      backgroundColor: colors.background,
+      surfaceTintColor: colors.background,
       elevation: 0,
       centerTitle: false,
       titleSpacing: Spacing.lgPlus,
-      iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      iconTheme: IconThemeData(color: colors.textPrimary),
       title: Text(
         'MIS RUTINAS',
         style: AppTextStyles.heading2.copyWith(
@@ -232,7 +234,6 @@ class _RoutineListPageState extends State<RoutineListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: BlocConsumer<RoutineManagementBloc, RoutineManagementState>(
         listenWhen: (p, c) =>
             p.submissionStatus != c.submissionStatus &&

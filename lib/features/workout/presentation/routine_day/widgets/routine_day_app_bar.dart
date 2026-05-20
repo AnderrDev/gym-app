@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -48,13 +48,13 @@ class RoutineDayAppBar extends StatelessWidget {
     if (isActive) {
       return SliverAppBar(
         pinned: true,
-        backgroundColor: AppColors.background,
+        backgroundColor: context.colors.background,
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.close_rounded,
-            color: AppColors.textPrimary,
+            color: context.colors.textPrimary,
             size: 24,
           ),
           tooltip: 'Salir del entrenamiento',
@@ -91,12 +91,12 @@ class RoutineDayAppBar extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 132,
       pinned: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(
+        icon: Icon(
           Icons.close_rounded,
-          color: AppColors.textPrimary,
+          color: context.colors.textPrimary,
           size: 24,
         ),
         onPressed: onClose,
@@ -104,9 +104,9 @@ class RoutineDayAppBar extends StatelessWidget {
       actions: [
         if (lastSession != null)
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.history_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 22,
             ),
             tooltip: 'Ver última sesión',
@@ -134,7 +134,7 @@ class RoutineDayAppBar extends StatelessWidget {
             Text(
               dateLabel,
               style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
                 fontSize: 10,
               ),
             ),
@@ -146,8 +146,8 @@ class RoutineDayAppBar extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppColors.primary.withValues(alpha: 0.1),
-                AppColors.background,
+                context.colors.primary.withValues(alpha: 0.1),
+                context.colors.background,
               ],
             ),
           ),
@@ -180,8 +180,8 @@ class _ActiveBottomBar extends StatelessWidget {
         ? (completedSets / totalSets).clamp(0.0, 1.0)
         : 0.0;
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.colors.divider)),
       ),
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,
@@ -210,13 +210,13 @@ class _ActiveBottomBar extends StatelessWidget {
                 // finito contra el que computar el factor.
                 fit: StackFit.expand,
                 children: [
-                  const ColoredBox(color: AppColors.divider),
+                  ColoredBox(color: context.colors.divider),
                   AnimatedFractionallySizedBox(
                     widthFactor: progress,
                     alignment: Alignment.centerLeft,
                     duration: const Duration(milliseconds: 280),
                     curve: Curves.easeOutCubic,
-                    child: const ColoredBox(color: AppColors.primary),
+                    child: ColoredBox(color: context.colors.primary),
                   ),
                 ],
               ),
@@ -228,7 +228,7 @@ class _ActiveBottomBar extends StatelessWidget {
               Text(
                 '$completedSets/$totalSets series',
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -238,7 +238,7 @@ class _ActiveBottomBar extends StatelessWidget {
                   width: 4,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -246,16 +246,16 @@ class _ActiveBottomBar extends StatelessWidget {
                 Text(
                   '${totalVolume.toStringAsFixed(0)} kg',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ],
               const Spacer(),
               if (hasLastSession && onOpenHistory != null)
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.history_rounded,
-                    color: AppColors.primary,
+                    color: context.colors.primary,
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,
@@ -270,21 +270,21 @@ class _ActiveBottomBar extends StatelessWidget {
                 TextButton(
                   onPressed: onFinish,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: context.colors.primary,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     minimumSize: const Size(0, 30),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                       side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.5),
+                        color: context.colors.primary.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
                   child: Text(
                     'FINALIZAR',
                     style: AppTextStyles.label.copyWith(
-                      color: AppColors.primary,
+                      color: context.colors.primary,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.0,
                       fontSize: 10,

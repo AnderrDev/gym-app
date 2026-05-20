@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_day_card_parts.dart';
@@ -47,7 +47,7 @@ class DayCardWorkoutContent extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AppTextStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: context.colors.textPrimary,
             fontSize: isToday ? 16 : 14.5,
             letterSpacing: -0.1,
           ),
@@ -92,7 +92,7 @@ class DayCardInlineMeta extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.label.copyWith(
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               fontSize: emphasize ? 12 : 11,
             ),
           ),
@@ -100,7 +100,7 @@ class DayCardInlineMeta extends StatelessWidget {
         Text(
           '  ·  ',
           style: AppTextStyles.label.copyWith(
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
+            color: context.colors.textSecondary.withValues(alpha: 0.5),
           ),
         ),
         Icon(icon, size: emphasize ? 13 : 11, color: accent),
@@ -163,19 +163,19 @@ class DayCardTrailingIndicator extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: context.colors.primary,
             borderRadius: BorderRadius.circular(Radii.md),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
+                color: context.colors.primary.withValues(alpha: 0.35),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.play_arrow_rounded,
-            color: AppColors.onPrimary,
+            color: context.colors.onPrimary,
             size: 26,
           ),
         ),
@@ -188,7 +188,7 @@ class DayCardTrailingIndicator extends StatelessWidget {
     if (status == WorkoutDayStatus.completed ||
         status == WorkoutDayStatus.completedPartial) {
       final isFull = status == WorkoutDayStatus.completed;
-      final color = isFull ? AppColors.success : AppColors.warning;
+      final color = isFull ? context.colors.success : context.colors.warning;
       return Container(
         width: 28,
         height: 28,
@@ -206,7 +206,7 @@ class DayCardTrailingIndicator extends StatelessWidget {
 
     return Icon(
       Icons.chevron_right_rounded,
-      color: AppColors.textSecondary.withValues(alpha: 0.55),
+      color: context.colors.textSecondary.withValues(alpha: 0.55),
       size: 22,
     );
   }

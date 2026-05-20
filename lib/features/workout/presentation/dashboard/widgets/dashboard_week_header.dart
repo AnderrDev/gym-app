@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -38,9 +38,9 @@ class DashboardWeekHeader extends StatelessWidget {
         Spacing.lg,
         Spacing.md,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        border: Border(bottom: BorderSide(color: context.colors.divider)),
       ),
       child: Row(
         children: [
@@ -63,7 +63,7 @@ class DashboardWeekHeader extends StatelessWidget {
                         weekEnd: weekEnd,
                         isCurrentWeek: isCurrentWeek,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
                         ),
@@ -82,7 +82,7 @@ class DashboardWeekHeader extends StatelessWidget {
                   Text(
                     'Sin rutina seleccionada',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                     ),
                   ),
               ],
@@ -135,7 +135,7 @@ class _AnimatedRangeLabel extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: baseStyle?.copyWith(
-          color: isCurrentWeek ? baseStyle.color : AppColors.textSecondary,
+          color: isCurrentWeek ? baseStyle.color : context.colors.textSecondary,
         ),
       ),
     );
@@ -181,7 +181,7 @@ class _TodayDot extends StatelessWidget {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: value),
+            color: context.colors.primary.withValues(alpha: value),
             shape: BoxShape.circle,
           ),
         );
@@ -213,11 +213,11 @@ class _ArrowButton extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(Radii.sm),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.colors.divider),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 22),
+          child: Icon(icon, color: context.colors.primary, size: 22),
         ),
       ),
     );
@@ -240,7 +240,7 @@ class _RoutinePill extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 220),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.10),
+          color: context.colors.primary.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(Radii.pill),
         ),
         child: Row(
@@ -252,17 +252,17 @@ class _RoutinePill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.primary,
+                  color: context.colors.primary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
                 ),
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(
+            Icon(
               Icons.analytics_rounded,
               size: 13,
-              color: AppColors.primary,
+              color: context.colors.primary,
             ),
           ],
         ),

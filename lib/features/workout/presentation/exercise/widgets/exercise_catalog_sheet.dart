@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -69,8 +69,8 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      decoration: BoxDecoration(
+        color: context.colors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -79,7 +79,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           _buildSearchBar(),
           _buildCategoryFilter(),
           const SizedBox(height: 8),
-          const Divider(color: AppColors.surfaceHighlight, height: 1),
+          Divider(color: context.colors.surfaceHighlight, height: 1),
           Expanded(
             child: _filteredExercises.isEmpty
                 ? _buildEmptyState()
@@ -132,7 +132,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           width: 36,
           height: 4,
           decoration: BoxDecoration(
-            color: AppColors.textDisabled,
+            color: context.colors.textDisabled,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -150,7 +150,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
               Text(
                 '${_selectedIds.length} seleccionados',
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],
@@ -166,17 +166,17 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceHighlight, width: 0.5),
+          border: Border.all(color: context.colors.surfaceHighlight, width: 0.5),
         ),
         child: TextField(
           onChanged: (v) => setState(() => _searchQuery = v),
           style: AppTextStyles.bodyLarge,
-          decoration: const InputDecoration(
-            icon: Icon(Icons.search_rounded, color: AppColors.textDisabled, size: 20),
+          decoration: InputDecoration(
+            icon: Icon(Icons.search_rounded, color: context.colors.textDisabled, size: 20),
             hintText: 'Press banca, sentadilla...',
-            hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 14),
+            hintStyle: TextStyle(color: context.colors.textDisabled, fontSize: 14),
             border: InputBorder.none,
           ),
         ),
@@ -206,18 +206,18 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
                   HapticFeedback.selectionClick();
                 }
               },
-              backgroundColor: AppColors.surface,
-              selectedColor: AppColors.primary,
+              backgroundColor: context.colors.surface,
+              selectedColor: context.colors.primary,
               labelStyle: TextStyle(
-                color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+                color: isSelected ? context.colors.onPrimary : context.colors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
                   color: isSelected
-                      ? AppColors.primary
-                      : AppColors.surfaceHighlight,
+                      ? context.colors.primary
+                      : context.colors.surfaceHighlight,
                   width: 0.5,
                 ),
               ),
@@ -234,13 +234,13 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.search_off_rounded, size: 48, color: AppColors.textDisabled),
+          Icon(Icons.search_off_rounded, size: 48, color: context.colors.textDisabled),
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty
                 ? 'No hay ejercicios en esta categoría'
                 : 'No encontramos nada para "$_searchQuery"',
-            style: const TextStyle(color: AppColors.textDisabled),
+            style: TextStyle(color: context.colors.textDisabled),
           ),
         ],
       ),
@@ -258,7 +258,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.colors.background,
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10),
         ],
@@ -268,8 +268,8 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
             ? () => Navigator.pop(context, _buildResult())
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.surface,
+          backgroundColor: context.colors.primary,
+          disabledBackgroundColor: context.colors.surface,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -281,7 +281,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
               ? 'Añadir ${_selectedIds.length} ejercicios'
               : 'Selecciona ejercicios',
           style: TextStyle(
-            color: hasSelection ? AppColors.onPrimary : AppColors.textDisabled,
+            color: hasSelection ? context.colors.onPrimary : context.colors.textDisabled,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),

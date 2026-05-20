@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 
 /// Título de sección en uppercase con letterspacing, usado encima de cada
@@ -17,8 +16,8 @@ class ProfileSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         text,
-        style: AppTextStyles.label.copyWith(
-          color: AppColors.textSecondary,
+        style: context.text.labelSmall?.copyWith(
+          color: context.colors.textSecondary,
           fontSize: 12,
           letterSpacing: 1.4,
           fontWeight: FontWeight.w700,
@@ -36,22 +35,23 @@ class ProfileInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final children = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
       children.add(rows[i]);
       if (i < rows.length - 1) {
-        children.add(const Divider(
+        children.add(Divider(
           height: 1,
           thickness: 1,
-          color: AppColors.divider,
+          color: colors.divider,
         ));
       }
     }
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider, width: 1),
+        border: Border.all(color: colors.divider, width: 1),
       ),
       child: Column(children: children),
     );
@@ -79,12 +79,14 @@ class ProfileInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final text = context.text;
     final content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: AppColors.primary.withValues(alpha: 0.7)),
+          Icon(icon, size: 20, color: colors.primary.withValues(alpha: 0.7)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -93,8 +95,8 @@ class ProfileInfoRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                  style: text.bodySmall?.copyWith(
+                    color: colors.textSecondary,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
                   ),
@@ -102,8 +104,8 @@ class ProfileInfoRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
+                  style: text.bodyMedium?.copyWith(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -117,13 +119,13 @@ class ProfileInfoRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: colors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(Radii.xs),
               ),
               child: Text(
                 trailingTag!,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.primary,
+                style: text.labelSmall?.copyWith(
+                  color: colors.primary,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
@@ -136,7 +138,7 @@ class ProfileInfoRow extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: AppColors.textSecondary.withValues(alpha: 0.6),
+              color: colors.textSecondary.withValues(alpha: 0.6),
             ),
           ],
         ],

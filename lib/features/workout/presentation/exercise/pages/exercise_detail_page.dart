@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_detail/exercise_detail_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_detail/exercise_detail_event.dart';
@@ -44,9 +45,7 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
     return BlocBuilder<ExerciseDetailBloc, ExerciseDetailState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: AppColors.background,
           appBar: AppBar(
-            backgroundColor: AppColors.background,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
@@ -70,7 +69,7 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
 
   Widget _buildBody(BuildContext context, ExerciseDetailState state) {
     if (state.isLoading || state.status == ExerciseDetailStatus.initial) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppSpinner.large());
     }
     if (state.status == ExerciseDetailStatus.failure) {
       return _ErrorView(
@@ -120,7 +119,7 @@ class _Content extends StatelessWidget {
             child: Text(
               detail.description!,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ),
           ),
@@ -146,13 +145,13 @@ class _Content extends StatelessWidget {
         ],
         if (detail.tips != null && detail.tips!.trim().isNotEmpty) ...[
           const SizedBox(height: Spacing.xl),
-          const _SectionHeader(
+          _SectionHeader(
             icon: Icons.lightbulb_outline_rounded,
             label: 'CONSEJOS',
-            accent: AppColors.warning,
+            accent: context.colors.warning,
           ),
           const SizedBox(height: Spacing.md),
-          ExerciseMarkdownLite(detail.tips!, accent: AppColors.warning),
+          ExerciseMarkdownLite(detail.tips!, accent: context.colors.warning),
         ],
         if (!detail.hasRichContent) ...[
           const SizedBox(height: Spacing.xl),
@@ -176,7 +175,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = accent ?? AppColors.primary;
+    final color = accent ?? context.colors.primary;
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
@@ -219,17 +218,17 @@ class _VideoCTA extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(Spacing.md),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.10),
+            color: context.colors.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.35),
+              color: context.colors.primary.withValues(alpha: 0.35),
             ),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.play_circle_filled_rounded,
-                color: AppColors.primary,
+                color: context.colors.primary,
                 size: 32,
               ),
               const SizedBox(width: Spacing.md),
@@ -240,7 +239,7 @@ class _VideoCTA extends StatelessWidget {
                     Text(
                       'VER VIDEO TUTORIAL',
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                         fontSize: 11,
@@ -250,16 +249,16 @@ class _VideoCTA extends StatelessWidget {
                     Text(
                       'Tocá para copiar el link',
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.textSecondary,
+                        color: context.colors.textSecondary,
                         fontSize: 11,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.content_copy_rounded,
-                color: AppColors.primary,
+                color: context.colors.primary,
                 size: 18,
               ),
             ],
@@ -276,15 +275,15 @@ class _EmptyContentHint extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
             size: 20,
           ),
           const SizedBox(width: Spacing.sm),
@@ -292,7 +291,7 @@ class _EmptyContentHint extends StatelessWidget {
             child: Text(
               'Todavía no hay contenido enriquecido para este ejercicio.',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ),
           ),
@@ -316,17 +315,17 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               size: 48,
-              color: AppColors.error,
+              color: context.colors.error,
             ),
             const SizedBox(height: Spacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ),
             if (onRetry != null) ...[

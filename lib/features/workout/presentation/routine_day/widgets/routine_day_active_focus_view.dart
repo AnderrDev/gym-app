@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/durations.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -105,12 +105,12 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
   @override
   Widget build(BuildContext context) {
     if (widget.exercises.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(Spacing.xl),
           child: Text(
             'No hay ejercicios para esta sesión',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
         ),
       );

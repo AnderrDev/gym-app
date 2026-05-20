@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Componentes leaf usados por `ExerciseSetRow`. Se extraen para mantener
@@ -38,10 +38,10 @@ class CompactNumberField extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: context.colors.surface,
         suffixText: suffix,
         suffixStyle: AppTextStyles.label.copyWith(
-          color: AppColors.textSecondary,
+          color: context.colors.textSecondary,
           fontSize: 10,
         ),
         contentPadding:
@@ -86,7 +86,7 @@ class SetSaveButton extends StatelessWidget {
         child: Icon(
           Icons.check_rounded,
           size: 20,
-          color: isDone ? AppColors.onPrimary : accent,
+          color: isDone ? context.colors.onPrimary : accent,
         ),
       ),
     );
@@ -149,13 +149,13 @@ class _KeyboardToggleChipState extends State<KeyboardToggleChip> {
   @override
   Widget build(BuildContext context) {
     final color =
-        widget.isActive ? AppColors.primary : AppColors.textSecondary;
+        widget.isActive ? context.colors.primary : context.colors.textSecondary;
     // Focus(canRequestFocus: false) evita que en web el chip robe el focus
     // del TextField al hacer click — preserva la fila de chips visible.
     // MouseRegion: cursor pointer + tint en hover (no-op en touch puro).
     final bg = widget.isActive
-        ? AppColors.primary.withValues(alpha: _hovered ? 0.3 : 0.2)
-        : (_hovered ? AppColors.surfaceHighlight : AppColors.surface);
+        ? context.colors.primary.withValues(alpha: _hovered ? 0.3 : 0.2)
+        : (_hovered ? context.colors.surfaceHighlight : context.colors.surface);
     return Focus(
       canRequestFocus: false,
       descendantsAreFocusable: false,
@@ -206,7 +206,7 @@ class _QuickStepChipState extends State<QuickStepChip> {
   @override
   Widget build(BuildContext context) {
     final color =
-        widget.positive ? AppColors.primary : AppColors.textSecondary;
+        widget.positive ? context.colors.primary : context.colors.textSecondary;
     final bg = color.withValues(alpha: _hovered ? 0.2 : 0.1);
     return Focus(
       canRequestFocus: false,

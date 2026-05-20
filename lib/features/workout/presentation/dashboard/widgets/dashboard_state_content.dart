@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -103,12 +103,12 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
+            Icon(Icons.error_outline_rounded, color: context.colors.error, size: 48),
             const SizedBox(height: Spacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodyMedium.copyWith(color: context.colors.error),
             ),
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(

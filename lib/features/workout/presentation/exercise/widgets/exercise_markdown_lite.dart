@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -20,12 +21,12 @@ class ExerciseMarkdownLite extends StatelessWidget {
 
   final String text;
 
-  /// Color del marker de los bullets. Default: `AppColors.primary`.
+  /// Color del marker de los bullets. Default: `context.colors.primary`.
   final Color? accent;
 
   @override
   Widget build(BuildContext context) {
-    final bulletColor = accent ?? AppColors.primary;
+    final bulletColor = accent ?? context.colors.primary;
     final paragraphs = _splitParagraphs(text);
 
     return Column(
@@ -33,7 +34,7 @@ class ExerciseMarkdownLite extends StatelessWidget {
       children: [
         for (var i = 0; i < paragraphs.length; i++) ...[
           if (i > 0) const SizedBox(height: Spacing.md),
-          _renderBlock(paragraphs[i], bulletColor),
+          _renderBlock(context, paragraphs[i], bulletColor),
         ],
       ],
     );
@@ -47,7 +48,7 @@ class ExerciseMarkdownLite extends StatelessWidget {
         .toList();
   }
 
-  Widget _renderBlock(String block, Color bulletColor) {
+  Widget _renderBlock(BuildContext context, String block, Color bulletColor) {
     final lines = block.split('\n');
     final isBulletList = lines.every(
       (l) => l.trim().startsWith('- ') || l.trim().startsWith('* '),
@@ -70,6 +71,9 @@ class ExerciseMarkdownLite extends StatelessWidget {
     return Text(
       block.replaceAll('\n', ' '),
       style: AppTextStyles.bodyMedium.copyWith(
+        // `_renderBlock` no recibe context; usamos AppColors. Si se
+        // necesita reactividad al tema en este texto, propagar context
+        // como argumento del método.
         color: AppColors.textPrimary,
         height: 1.45,
       ),
@@ -104,7 +108,7 @@ class _BulletRow extends StatelessWidget {
           child: Text(
             text,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+              color: context.colors.textPrimary,
               height: 1.45,
             ),
           ),

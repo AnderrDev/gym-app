@@ -7,7 +7,7 @@ import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/auth/domain/usecases/request_password_reset.dart';
 import 'package:gym_flutter/injection_container.dart';
@@ -166,7 +166,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
               child: _submitting
                   ? const SizedBox(
                       height: 22,
-                      child: Center(child: BarbellLoader.small()),
+                      child: Center(child: AppSpinner.small()),
                     )
                   : Text(
                       'ENVIAR ENLACE',

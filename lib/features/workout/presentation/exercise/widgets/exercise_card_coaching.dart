@@ -1,7 +1,7 @@
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -23,7 +23,7 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
     final isGreat = score >= 1.0;
 
     final color = isGreat
-        ? AppColors.success
+        ? context.colors.success
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
     IconData trendIcon = Icons.psychology_rounded;
@@ -97,7 +97,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
     final isGreat = score >= 1.0;
 
     final accentColor = isGreat
-        ? AppColors.success
+        ? context.colors.success
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
     if (compact) {
@@ -121,17 +121,17 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
                     ? (coaching.feedback ?? '')
                     : recommendationText(coaching.recommendation),
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   fontStyle: FontStyle.italic,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               size: 14,
-              color: AppColors.textDisabled,
+              color: context.colors.textDisabled,
             ),
           ],
         ),
@@ -160,7 +160,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
             child: Text(
               recommendationText(coaching.recommendation),
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -181,19 +181,19 @@ class ExerciseCardLiveAdvice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: context.colors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.flash_on_rounded, color: AppColors.primary, size: 18),
+          Icon(Icons.flash_on_rounded, color: context.colors.primary, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontStyle: FontStyle.italic,
               ),

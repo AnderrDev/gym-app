@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
@@ -70,7 +70,7 @@ class _Body extends StatelessWidget {
         : 0.0;
     return Container(
       width: double.infinity,
-      color: AppColors.primary.withValues(alpha: 0.12),
+      color: context.colors.primary.withValues(alpha: 0.12),
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,
         Spacing.md,
@@ -82,16 +82,16 @@ class _Body extends StatelessWidget {
         children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.timer_rounded,
                   size: 20,
-                  color: AppColors.primary,
+                  color: context.colors.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'DESCANSO',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.primary,
+                    color: context.colors.primary,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
                     fontSize: 10,
@@ -101,7 +101,7 @@ class _Body extends StatelessWidget {
                 Text(
                   formattedTime,
                   style: AppTextStyles.heading2.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                     fontWeight: FontWeight.w800,
                   ),
@@ -114,8 +114,8 @@ class _Body extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress.clamp(0.0, 1.0),
                 minHeight: 3,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.18),
-                color: AppColors.primary,
+                backgroundColor: context.colors.primary.withValues(alpha: 0.18),
+                color: context.colors.primary,
               ),
             ),
             const SizedBox(height: 8),
@@ -167,14 +167,14 @@ class _AdjustButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+          border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
         ),
         child: Text(
           label,
           style: AppTextStyles.label.copyWith(
-            color: AppColors.primary,
+            color: context.colors.primary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -197,13 +197,13 @@ class _SkipButton extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: context.colors.primary,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           'SALTAR',
           style: AppTextStyles.label.copyWith(
-            color: AppColors.onPrimary,
+            color: context.colors.onPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -31,8 +31,8 @@ class DayCardSurface extends StatelessWidget {
       return DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(Radii.lg),
-          color: AppColors.surface.withValues(alpha: 0.25),
-          border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+          color: context.colors.surface.withValues(alpha: 0.25),
+          border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -58,17 +58,17 @@ class DayCardSurface extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.18),
-            AppColors.primary.withValues(alpha: 0.05),
+            context.colors.primary.withValues(alpha: 0.18),
+            context.colors.primary.withValues(alpha: 0.05),
           ],
         ),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.75),
+          color: context.colors.primary.withValues(alpha: 0.75),
           width: 1.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.18),
+            color: context.colors.primary.withValues(alpha: 0.18),
             blurRadius: 22,
             offset: const Offset(0, 8),
           ),
@@ -78,9 +78,9 @@ class DayCardSurface extends StatelessWidget {
       decoration = BoxDecoration(
         borderRadius: radius,
         color: isFuture
-            ? AppColors.background
-            : AppColors.surface.withValues(alpha: 0.55),
-        border: Border.all(color: AppColors.divider),
+            ? context.colors.background
+            : context.colors.surface.withValues(alpha: 0.55),
+        border: Border.all(color: context.colors.divider),
       );
     }
 
@@ -119,7 +119,7 @@ class DayCardRestRow extends StatelessWidget {
               Text(
                 initial,
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textDisabled,
+                  color: context.colors.textDisabled,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                   fontSize: 11,
@@ -129,7 +129,7 @@ class DayCardRestRow extends StatelessWidget {
               Text(
                 '$dayNumber',
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textDisabled,
+                  color: context.colors.textDisabled,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
@@ -144,13 +144,13 @@ class DayCardRestRow extends StatelessWidget {
               Icon(
                 Icons.bedtime_rounded,
                 size: 14,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
+                color: context.colors.textSecondary.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 8),
               Text(
                 'Descanso',
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                   letterSpacing: 0.4,
                   fontWeight: FontWeight.w600,
                 ),
@@ -191,11 +191,11 @@ class DayCardDateBlock extends StatelessWidget {
         width: 44,
         padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: context.colors.primary,
           borderRadius: BorderRadius.circular(Radii.md),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.25),
+              color: context.colors.primary.withValues(alpha: 0.25),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -207,7 +207,7 @@ class DayCardDateBlock extends StatelessWidget {
             Text(
               initial,
               style: AppTextStyles.label.copyWith(
-                color: AppColors.onPrimary.withValues(alpha: 0.85),
+                color: context.colors.onPrimary.withValues(alpha: 0.85),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
                 fontSize: 10,
@@ -217,7 +217,7 @@ class DayCardDateBlock extends StatelessWidget {
             Text(
               '$dayNumber',
               style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.onPrimary,
+                color: context.colors.onPrimary,
                 fontWeight: FontWeight.w800,
                 fontSize: 19,
                 height: 1.05,
@@ -228,9 +228,9 @@ class DayCardDateBlock extends StatelessWidget {
       );
     }
 
-    final initialColor = muted ? AppColors.textSecondary : accent;
+    final initialColor = muted ? context.colors.textSecondary : accent;
     final numberColor =
-        muted ? AppColors.textSecondary : AppColors.textPrimary;
+        muted ? context.colors.textSecondary : context.colors.textPrimary;
     return SizedBox(
       width: 36,
       child: Column(

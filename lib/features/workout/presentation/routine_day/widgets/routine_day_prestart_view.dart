@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -62,7 +62,7 @@ class RoutineDayPreStartView extends StatelessWidget {
               Text(
                 'PLAN DE HOY',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -71,7 +71,7 @@ class RoutineDayPreStartView extends StatelessWidget {
               Text(
                 '${exercises.length} ejercicios',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],
@@ -145,15 +145,15 @@ class _ActiveSessionWarning extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(Spacing.md),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.08),
+        color: context.colors.warning.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+        border: Border.all(color: context.colors.warning.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
-            color: AppColors.warning,
+            color: context.colors.warning,
             size: 18,
           ),
           const SizedBox(width: Spacing.sm),
@@ -163,7 +163,7 @@ class _ActiveSessionWarning extends StatelessWidget {
                   ? 'Ya tienes un entrenamiento en curso ($dayName). Finalízalo o retómalo antes de iniciar otro.'
                   : 'Ya tienes un entrenamiento en curso. Finalízalo o retómalo antes de iniciar otro.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.warning,
+                color: context.colors.warning,
               ),
             ),
           ),

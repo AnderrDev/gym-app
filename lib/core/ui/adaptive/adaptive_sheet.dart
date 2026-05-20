@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/platform/capabilities.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -99,7 +99,7 @@ class AdaptiveSheet {
   }) {
     return showDialog<T>(
       context: context,
-      barrierColor: AppColors.overlay,
+      barrierColor: context.colors.overlay,
       builder: (ctx) => Dialog(
         backgroundColor: backgroundColor ?? Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(
@@ -144,13 +144,14 @@ class _ChromedContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
     final radius = isDialog
         ? const BorderRadius.all(Radius.circular(Radii.xxl))
         : const BorderRadius.vertical(top: Radius.circular(Radii.xxl));
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.surface,
+        color: backgroundColor ?? colors.surface,
         borderRadius: radius,
       ),
       padding: padding ??
@@ -171,7 +172,7 @@ class _ChromedContainer extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceHighlight,
+                    color: colors.surfaceHighlight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

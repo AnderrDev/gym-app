@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
@@ -24,7 +25,7 @@ class ExerciseMaxWeightChart extends StatelessWidget {
     return _LineMetricChart(
       sessions: reversed,
       values: values,
-      color: AppColors.primary,
+      color: context.colors.primary,
       unit: 'kg',
       valueFormatter: _intFormat,
     );
@@ -42,7 +43,7 @@ class ExerciseEstimated1RMChart extends StatelessWidget {
     return _LineMetricChart(
       sessions: reversed,
       values: values,
-      color: AppColors.info,
+      color: context.colors.info,
       unit: 'kg',
       valueFormatter: _oneDecimalFormat,
     );
@@ -63,7 +64,7 @@ class ExerciseVolumeChart extends StatelessWidget {
     return _LineMetricChart(
       sessions: reversed,
       values: values,
-      color: AppColors.primary.withValues(alpha: 0.85),
+      color: context.colors.primary.withValues(alpha: 0.85),
       unit: 'kg·reps',
       valueFormatter: _intFormat,
     );
@@ -116,7 +117,7 @@ class _LineMetricChart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: yRange == 0 ? null : yRange / 3,
-          getDrawingHorizontalLine: (_) => const FlLine(
+          getDrawingHorizontalLine: (_) => FlLine(
             color: AppColors.surfaceHighlight,
             strokeWidth: 1,
           ),
@@ -142,9 +143,9 @@ class _LineMetricChart extends StatelessWidget {
               getDotPainter: (spot, xPercentage, bar, index) {
                 return FlDotCirclePainter(
                   radius: 4,
-                  color: AppColors.warning,
+                  color: context.colors.warning,
                   strokeWidth: 2,
-                  strokeColor: AppColors.background,
+                  strokeColor: context.colors.background,
                 );
               },
             ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_editor_save_action.dart';
 
 class DayEditorAppBar extends StatelessWidget {
@@ -20,15 +19,16 @@ class DayEditorAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return SliverAppBar(
       pinned: true,
       titleSpacing: 0,
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(
+        icon: Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: AppColors.textPrimary,
+          color: colors.textPrimary,
           size: 20,
         ),
         tooltip: 'Volver',
@@ -36,7 +36,7 @@ class DayEditorAppBar extends StatelessWidget {
       ),
       title: Text(
         isOwner ? 'Editar día' : 'Vista previa',
-        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w800),
+        style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
       ),
       actions: [
         if (isOwner) DayEditorSaveAction(isDirty: isDirty, onSave: onSave),

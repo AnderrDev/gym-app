@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -48,8 +48,8 @@ class RoutineDaySessionRecap extends StatelessWidget {
 
     final isUp = (deltaPercent ?? 0) >= 0;
     final deltaColor = deltaPercent == null
-        ? AppColors.textSecondary
-        : (isUp ? AppColors.success : AppColors.error);
+        ? context.colors.textSecondary
+        : (isUp ? context.colors.success : context.colors.error);
 
     return InkWell(
       onTap: () => onOpenLastSession(last, lastLogs, exercises),
@@ -57,9 +57,9 @@ class RoutineDaySessionRecap extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(Spacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(Radii.lg),
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Row(
           children: [
@@ -70,7 +70,7 @@ class RoutineDaySessionRecap extends StatelessWidget {
                   Text(
                     'ÚLTIMA SESIÓN',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                       letterSpacing: 1.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -79,7 +79,7 @@ class RoutineDaySessionRecap extends StatelessWidget {
                   Text(
                     '${_formatDate(last.sessionDate)} · ${lastLogs.length} series · ${lastVolume.toStringAsFixed(0)} kg',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -91,9 +91,9 @@ class RoutineDaySessionRecap extends StatelessWidget {
               _DeltaPill(color: deltaColor, isUp: isUp, percent: deltaPercent),
             ],
             const SizedBox(width: Spacing.sm),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               size: 20,
             ),
           ],

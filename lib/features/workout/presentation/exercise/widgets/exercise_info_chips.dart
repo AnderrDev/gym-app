@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -18,16 +18,17 @@ class ExerciseInfoChips extends StatelessWidget {
   final String? equipment;
   final String? difficulty;
 
-  static Color _difficultyColor(String? d) {
+  static Color _difficultyColor(BuildContext context, String? d) {
+    final colors = context.colors;
     switch (d?.toLowerCase()) {
       case 'principiante':
-        return AppColors.success;
+        return colors.success;
       case 'intermedio':
-        return AppColors.warning;
+        return colors.warning;
       case 'avanzado':
-        return AppColors.error;
+        return colors.error;
       default:
-        return AppColors.primary;
+        return colors.primary;
     }
   }
 
@@ -44,7 +45,7 @@ class ExerciseInfoChips extends StatelessWidget {
         _Chip(
           icon: Icons.accessibility_new_rounded,
           label: muscleGroup.toUpperCase(),
-          color: AppColors.primary,
+          color: context.colors.primary,
         ),
       );
     }
@@ -53,7 +54,7 @@ class ExerciseInfoChips extends StatelessWidget {
         _Chip(
           icon: Icons.fitness_center_rounded,
           label: equipment!,
-          color: AppColors.textSecondary,
+          color: context.colors.textSecondary,
         ),
       );
     }
@@ -62,7 +63,7 @@ class ExerciseInfoChips extends StatelessWidget {
         _Chip(
           icon: Icons.bolt_rounded,
           label: _difficultyLabel(difficulty!),
-          color: _difficultyColor(difficulty),
+          color: _difficultyColor(context, difficulty),
         ),
       );
     }

@@ -7,7 +7,7 @@ import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -51,7 +51,7 @@ void main() {
 
     await tester.pumpWidget(createWidgetUnderTest());
 
-    expect(find.byType(BarbellLoader), findsOneWidget);
+    expect(find.byType(AppSpinner), findsOneWidget);
   });
 
   testWidgets('debe mostrar mensaje de error cuando falla la carga', (

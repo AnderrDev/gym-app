@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -47,10 +47,10 @@ class DashboardWeekSummary extends StatelessWidget {
     final ratio = planned.isEmpty ? 0.0 : completed / planned.length;
 
     final accent = ratio >= 1.0
-        ? AppColors.success
+        ? context.colors.success
         : ratio >= 0.5
-            ? AppColors.primary
-            : AppColors.warning;
+            ? context.colors.primary
+            : context.colors.warning;
 
     // Próximo día con workout pendiente (hoy o futuro dentro de la semana).
     final next = _findNextWorkout();
@@ -58,9 +58,9 @@ class DashboardWeekSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +72,7 @@ class DashboardWeekSummary extends StatelessWidget {
               Text(
                 'RESUMEN DE LA SEMANA',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.4,
                     ),
@@ -92,13 +92,13 @@ class DashboardWeekSummary extends StatelessWidget {
               _BigStat(
                 value: '$remaining',
                 label: 'Restantes',
-                accent: AppColors.textSecondary,
+                accent: context.colors.textSecondary,
               ),
               const SizedBox(width: Spacing.md),
               _BigStat(
                 value: '$totalSetsPlanned',
                 label: 'Series totales',
-                accent: AppColors.textSecondary,
+                accent: context.colors.textSecondary,
               ),
             ],
           ),
@@ -108,7 +108,7 @@ class DashboardWeekSummary extends StatelessWidget {
             child: LinearProgressIndicator(
               value: ratio.clamp(0.0, 1.0),
               minHeight: 6,
-              backgroundColor: AppColors.divider.withValues(alpha: 0.3),
+              backgroundColor: context.colors.divider.withValues(alpha: 0.3),
               color: accent,
             ),
           ),
@@ -116,7 +116,7 @@ class DashboardWeekSummary extends StatelessWidget {
           Text(
             _statusMessage(completed, planned.length, inProgress),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
           ),
           if (next != null && onTapNext != null) ...[
@@ -256,7 +256,7 @@ class _NextWorkoutButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
@@ -311,7 +311,7 @@ class _BigStat extends StatelessWidget {
                   TextSpan(
                     text: suffix,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -321,7 +321,7 @@ class _BigStat extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w600,
             ),

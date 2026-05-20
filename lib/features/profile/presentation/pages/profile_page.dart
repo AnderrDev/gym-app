@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
@@ -54,7 +54,7 @@ class _ProfileView extends StatelessWidget {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthInitial || state is AuthLoading) {
-            return const Center(child: BarbellLoader.medium());
+            return const Center(child: AppSpinner.medium());
           }
           if (state is Authenticated) {
             return _ProfileContent(user: state.user);
@@ -74,7 +74,7 @@ class _ProfileContent extends StatelessWidget {
   void _onEditName(BuildContext context) {
     final profileBloc = context.read<ProfileBloc>();
     final authBloc = context.read<AuthBloc>();
-    AppBottomSheet.showRaw<void>(
+    AdaptiveSheet.showRaw<void>(
       context,
       builder: (sheetCtx) => BlocProvider.value(
         value: profileBloc,
@@ -86,6 +86,13 @@ class _ProfileContent extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  void _onPickTheme(BuildContext context) {
+    AdaptiveSheet.showRaw<void>(
+      context,
+      builder: (_) => const ProfileThemeModeSheet(),
     );
   }
 
@@ -121,21 +128,32 @@ class _ProfileContent extends StatelessWidget {
         const SizedBox(height: Spacing.xl),
         const ProfileSectionTitle('PREFERENCIAS'),
         const SizedBox(height: Spacing.sm),
-        const ProfileInfoCard(
-          rows: [
-            ProfileInfoRow(
-              icon: Icons.language_rounded,
-              label: 'Idioma',
-              value: 'Español',
-              trailingTag: 'PRÓXIMAMENTE',
-            ),
-            ProfileInfoRow(
-              icon: Icons.straighten_rounded,
-              label: 'Unidades',
-              value: 'Kilogramos (kg)',
-              trailingTag: 'PRÓXIMAMENTE',
-            ),
-          ],
+        BlocBuilder<SettingsBloc, SettingsState>(
+          buildWhen: (p, c) => p.themeMode != c.themeMode,
+          builder: (context, settings) {
+            return ProfileInfoCard(
+              rows: [
+                ProfileInfoRow(
+                  icon: Icons.dark_mode_outlined,
+                  label: 'Tema',
+                  value: themeModeLabel(settings.themeMode),
+                  onTap: () => _onPickTheme(context),
+                ),
+                const ProfileInfoRow(
+                  icon: Icons.language_rounded,
+                  label: 'Idioma',
+                  value: 'Español',
+                  trailingTag: 'PRÓXIMAMENTE',
+                ),
+                const ProfileInfoRow(
+                  icon: Icons.straighten_rounded,
+                  label: 'Unidades',
+                  value: 'Kilogramos (kg)',
+                  trailingTag: 'PRÓXIMAMENTE',
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: Spacing.xl),
         const ProfileSectionTitle('SESIÓN'),

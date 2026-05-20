@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
@@ -17,51 +16,55 @@ class ProfileSignOutButton extends StatelessWidget {
     final authBloc = context.read<AuthBloc>();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Radii.md),
-        ),
-        title: Text(
-          '¿Cerrar sesión?',
-          style: AppTextStyles.heading2.copyWith(fontSize: 18),
-        ),
-        content: Text(
-          'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
-          style: AppTextStyles.bodyMedium
-              .copyWith(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style:
-                TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-            child: Text(
-              'CANCELAR',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+      builder: (dialogContext) {
+        final colors = dialogContext.colors;
+        final text = dialogContext.text;
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.md),
+          ),
+          title: Text(
+            '¿Cerrar sesión?',
+            style: text.headlineSmall,
+          ),
+          content: Text(
+            'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
+            style: text.bodyMedium?.copyWith(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: colors.textSecondary,
+              ),
+              child: Text(
+                'CANCELAR',
+                style: text.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: AppColors.onPrimary,
-            ),
-            child: Text(
-              'CERRAR SESIÓN',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: colors.onPrimary,
+              ),
+              child: Text(
+                'CERRAR SESIÓN',
+                style: text.labelMedium?.copyWith(
+                  color: colors.onPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
     if (confirmed == true) {
       authBloc.add(SignOutRequested());
@@ -70,15 +73,17 @@ class ProfileSignOutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final text = context.text;
     return SizedBox(
       width: double.infinity,
       child: FilledButton.tonal(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.error.withValues(alpha: 0.12),
-          foregroundColor: AppColors.error,
+          backgroundColor: colors.error.withValues(alpha: 0.12),
+          foregroundColor: colors.error,
           padding: const EdgeInsets.symmetric(vertical: Spacing.md),
           side: BorderSide(
-            color: AppColors.error.withValues(alpha: 0.3),
+            color: colors.error.withValues(alpha: 0.3),
             width: 1,
           ),
           shape: RoundedRectangleBorder(
@@ -90,12 +95,12 @@ class ProfileSignOutButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
+            Icon(Icons.logout_rounded, size: 18, color: colors.error),
             const SizedBox(width: Spacing.sm),
             Text(
               'CERRAR SESIÓN',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.error,
+              style: text.labelMedium?.copyWith(
+                color: colors.error,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
               ),

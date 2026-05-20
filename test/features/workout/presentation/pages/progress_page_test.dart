@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -75,13 +75,13 @@ void main() {
     );
   }
 
-  testWidgets('estado Loading muestra BarbellLoader', (tester) async {
+  testWidgets('estado Loading muestra AppSpinner', (tester) async {
     when(() => bloc.state).thenReturn(const ProgressLoading());
 
     await tester.pumpWidget(wrap());
     await tester.pump();
 
-    expect(find.byType(BarbellLoader), findsOneWidget);
+    expect(find.byType(AppSpinner), findsOneWidget);
   });
 
   testWidgets('Ready con insights + rutinas pinta ambas secciones', (

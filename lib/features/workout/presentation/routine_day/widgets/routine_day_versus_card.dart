@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -32,9 +32,9 @@ class RoutineDayVersusCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +45,7 @@ class RoutineDayVersusCard extends StatelessWidget {
                 child: Text(
                   exercise.name,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -88,13 +88,13 @@ class _SetsChip extends StatelessWidget {
         vertical: Spacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight,
+        color: context.colors.surfaceHighlight,
         borderRadius: BorderRadius.circular(Radii.sm),
       ),
       child: Text(
         '$sets×$reps',
         style: theme.textTheme.labelSmall?.copyWith(
-          color: AppColors.textSecondary,
+          color: context.colors.textSecondary,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
         ),
@@ -127,10 +127,10 @@ class _WeightVersusBar extends StatelessWidget {
     final isUp = delta > 0;
     final isDown = delta < -0.1;
     final fillColor = !hasPrev
-        ? AppColors.textDisabled
+        ? context.colors.textDisabled
         : (isDown
-            ? AppColors.error
-            : (isUp ? AppColors.primary : AppColors.success));
+            ? context.colors.error
+            : (isUp ? context.colors.primary : context.colors.success));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +140,7 @@ class _WeightVersusBar extends StatelessWidget {
             Text(
               'OBJETIVO ${targetWeight.toStringAsFixed(0)} kg',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w600,
               ),
@@ -150,7 +150,7 @@ class _WeightVersusBar extends StatelessWidget {
               Text(
                 'Sin historial',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textDisabled,
+                  color: context.colors.textDisabled,
                   fontStyle: FontStyle.italic,
                 ),
               )
@@ -173,10 +173,10 @@ class _WeightVersusBar extends StatelessWidget {
                       width: width * targetRatio,
                       height: _barHeight,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceHighlight,
+                        color: context.colors.surfaceHighlight,
                         borderRadius: BorderRadius.circular(Radii.sm),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.4),
+                          color: context.colors.primary.withValues(alpha: 0.4),
                           width: 1,
                         ),
                       ),
@@ -202,7 +202,7 @@ class _WeightVersusBar extends StatelessWidget {
                     child: Container(
                       width: 2,
                       height: _barHeight + 8,
-                      color: AppColors.primary,
+                      color: context.colors.primary,
                     ),
                   ),
                 ],
@@ -215,7 +215,7 @@ class _WeightVersusBar extends StatelessWidget {
           Text(
             'Última vez ${prevWeight!.toStringAsFixed(1)} kg',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
             ),
           ),
         ],

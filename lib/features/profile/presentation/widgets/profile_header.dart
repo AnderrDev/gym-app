@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 
 /// Avatar circular con iniciales (o icono fallback) + nombre + email.
@@ -30,6 +29,8 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final text = context.text;
     final initials = _computeInitials(user.fullName);
     final hasInitials = initials.isNotEmpty;
 
@@ -42,25 +43,25 @@ class ProfileHeader extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.16),
+            color: colors.primary.withValues(alpha: 0.16),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: colors.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
           child: hasInitials
               ? Text(
                   initials,
-                  style: AppTextStyles.heading1.copyWith(
-                    color: AppColors.primary,
+                  style: text.headlineLarge?.copyWith(
+                    color: colors.primary,
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                   ),
                 )
-              : const Icon(
+              : Icon(
                   Icons.person_rounded,
                   size: 40,
-                  color: AppColors.primary,
+                  color: colors.primary,
                 ),
         ),
         const SizedBox(height: 16),
@@ -68,7 +69,7 @@ class ProfileHeader extends StatelessWidget {
           (user.fullName != null && user.fullName!.trim().isNotEmpty)
               ? user.fullName!
               : 'Sin nombre',
-          style: AppTextStyles.heading2,
+          style: text.headlineMedium,
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -76,8 +77,7 @@ class ProfileHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           user.email,
-          style: AppTextStyles.bodyMedium
-              .copyWith(color: AppColors.textSecondary),
+          style: text.bodyMedium?.copyWith(color: colors.textSecondary),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

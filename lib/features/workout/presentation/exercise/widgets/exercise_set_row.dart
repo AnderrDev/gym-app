@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_focus_parts.dart';
@@ -247,20 +247,20 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
     final prevLabel = prev == null
         ? null
         : '${_formatWeight(prev.actualWeight)}×${prev.actualReps}';
-    final accent = widget.isDone ? AppColors.success : AppColors.primary;
+    final accent = widget.isDone ? context.colors.success : context.colors.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.sm),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: widget.isDone
-            ? AppColors.success.withValues(alpha: 0.06)
-            : AppColors.background,
+            ? context.colors.success.withValues(alpha: 0.06)
+            : context.colors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: widget.isDone
-              ? AppColors.success.withValues(alpha: 0.35)
-              : AppColors.divider,
+              ? context.colors.success.withValues(alpha: 0.35)
+              : context.colors.divider,
         ),
       ),
       child: Column(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
@@ -208,9 +207,7 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
           elevation: 0,
           title: Text('Smart Gym Tracker', style: AppTextStyles.heading2),
         ),

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
@@ -80,7 +80,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                     Text(
                       'ANÁLISIS DE PROGRESIÓN',
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,
                       ),
@@ -91,12 +91,12 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
               if (!fullscreen)
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surfaceHighlight,
+                    backgroundColor: context.colors.surfaceHighlight,
                   ),
                 ),
             ],
@@ -106,22 +106,22 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
           child: BlocBuilder<ExerciseStatsBloc, ExerciseStatsState>(
             builder: (context, state) {
               if (state is ExerciseStatsLoading) {
-                return const Center(child: BarbellLoader.large());
+                return const Center(child: AppSpinner.large());
               } else if (state is ExerciseStatsError) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline_rounded,
-                        color: AppColors.error,
+                        color: context.colors.error,
                         size: 48,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         state.message,
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.error,
+                          color: context.colors.error,
                         ),
                       ),
                     ],
@@ -133,16 +133,16 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.query_stats_rounded,
-                          color: AppColors.textDisabled,
+                          color: context.colors.textDisabled,
                           size: 64,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Aún no hay datos para este ejercicio',
                           style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textDisabled,
+                            color: context.colors.textDisabled,
                           ),
                         ),
                       ],
@@ -204,7 +204,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                     Text(
                       'HISTORIAL DETALLADO',
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.textSecondary,
+                        color: context.colors.textSecondary,
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,
                       ),

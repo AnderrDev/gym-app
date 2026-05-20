@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -19,10 +19,10 @@ class WorkoutSummaryCoachingSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const WorkoutSummarySectionLabel(
+        WorkoutSummarySectionLabel(
           text: 'Para la próxima',
           icon: Icons.psychology_rounded,
-          iconColor: AppColors.info,
+          iconColor: context.colors.info,
         ),
         const SizedBox(height: Spacing.sm),
         ...coaching.map((c) => _CoachingRow(item: c)),
@@ -44,9 +44,9 @@ class _CoachingRow extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +61,7 @@ class _CoachingRow extends StatelessWidget {
           Text(
             item.recommendation,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),

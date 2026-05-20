@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_parts.dart';
 
@@ -21,7 +21,7 @@ class PrevPerformanceLabel extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyles.label.copyWith(
-          color: AppColors.textSecondary.withValues(alpha: 0.8),
+          color: context.colors.textSecondary.withValues(alpha: 0.8),
           fontSize: 11,
         ),
         maxLines: 1,
@@ -121,20 +121,20 @@ class SetCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = filled
-        ? AppColors.success
+        ? context.colors.success
         : active
-        ? AppColors.primary.withValues(alpha: 0.12)
+        ? context.colors.primary.withValues(alpha: 0.12)
         : Colors.transparent;
     final border = filled
-        ? AppColors.success
+        ? context.colors.success
         : active
-        ? AppColors.primary
-        : AppColors.textSecondary;
+        ? context.colors.primary
+        : context.colors.textSecondary;
     final textColor = filled
-        ? AppColors.onPrimary
+        ? context.colors.onPrimary
         : active
-        ? AppColors.primary
-        : AppColors.textSecondary;
+        ? context.colors.primary
+        : context.colors.textSecondary;
 
     return Container(
       width: 26,

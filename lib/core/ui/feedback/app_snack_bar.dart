@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Helpers tipados para snackbars. Sustituye a `ScaffoldMessenger.of
 /// (context).showSnackBar(SnackBar(...))` en `lib/features/`.
@@ -14,40 +14,49 @@ class AppSnackBar {
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 2),
-  }) => _show(
-    context,
-    message: message,
-    background: AppColors.success,
-    foreground: AppColors.background,
-    duration: duration,
-    icon: Icons.check_circle_outline_rounded,
-  );
+  }) {
+    final colors = context.colors;
+    _show(
+      context,
+      message: message,
+      background: colors.success,
+      foreground: colors.onPrimary,
+      duration: duration,
+      icon: Icons.check_circle_outline_rounded,
+    );
+  }
 
   static void error(
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 4),
-  }) => _show(
-    context,
-    message: message,
-    background: AppColors.error,
-    foreground: AppColors.textPrimary,
-    duration: duration,
-    icon: Icons.error_outline_rounded,
-  );
+  }) {
+    final colors = context.colors;
+    _show(
+      context,
+      message: message,
+      background: colors.error,
+      foreground: colors.onPrimary,
+      duration: duration,
+      icon: Icons.error_outline_rounded,
+    );
+  }
 
   static void info(
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 3),
-  }) => _show(
-    context,
-    message: message,
-    background: AppColors.surfaceHighlight,
-    foreground: AppColors.textPrimary,
-    duration: duration,
-    icon: Icons.info_outline_rounded,
-  );
+  }) {
+    final colors = context.colors;
+    _show(
+      context,
+      message: message,
+      background: colors.surfaceHighlight,
+      foreground: colors.textPrimary,
+      duration: duration,
+      icon: Icons.info_outline_rounded,
+    );
+  }
 
   /// Misma duración que info pero icono y color de advertencia — para
   /// guardar contra acciones rechazadas suaves (input vacío, requisito
@@ -56,14 +65,17 @@ class AppSnackBar {
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 3),
-  }) => _show(
-    context,
-    message: message,
-    background: AppColors.warning,
-    foreground: AppColors.background,
-    duration: duration,
-    icon: Icons.warning_amber_rounded,
-  );
+  }) {
+    final colors = context.colors;
+    _show(
+      context,
+      message: message,
+      background: colors.warning,
+      foreground: colors.onPrimary,
+      duration: duration,
+      icon: Icons.warning_amber_rounded,
+    );
+  }
 
   static void _show(
     BuildContext context, {

@@ -16,54 +16,80 @@ class ProfileThemeModeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (p, c) => p.themeMode != c.themeMode,
-      builder: (context, state) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.xl,
-            Spacing.md,
-            Spacing.xl,
-            Spacing.xl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Tema', style: context.text.titleLarge),
-              const SizedBox(height: Spacing.xs),
-              Text(
-                'Elegí cómo se ve la app. "Sistema" sigue la configuración del dispositivo.',
-                style: context.text.bodySmall,
-              ),
-              const SizedBox(height: Spacing.lg),
-              _ThemeOption(
-                mode: ThemeMode.system,
-                selected: state.themeMode == ThemeMode.system,
-                title: 'Sistema',
-                subtitle: 'Sigue al dispositivo',
-                icon: Icons.brightness_auto_rounded,
-              ),
-              const SizedBox(height: Spacing.sm),
-              _ThemeOption(
-                mode: ThemeMode.light,
-                selected: state.themeMode == ThemeMode.light,
-                title: 'Claro',
-                subtitle: 'Fondo blanco siempre',
-                icon: Icons.light_mode_rounded,
-              ),
-              const SizedBox(height: Spacing.sm),
-              _ThemeOption(
-                mode: ThemeMode.dark,
-                selected: state.themeMode == ThemeMode.dark,
-                title: 'Oscuro',
-                subtitle: 'Fondo oscuro siempre',
-                icon: Icons.dark_mode_rounded,
-              ),
-            ],
-          ),
-        );
-      },
+    // El picker se monta vía `AdaptiveSheet.showRaw`, que en web envuelve en
+    // un `Dialog` con backgroundColor transparent (sin chrome) y en mobile
+    // en un `showModalBottomSheet` también con backgroundColor transparent.
+    // Por eso el sheet debe traer su propio Material con `surface` y radii
+    // de bottom-sheet — sin esto se ve transparente sobre la página.
+    final colors = context.colors;
+    return Material(
+      color: colors.surface,
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(Radii.xxl),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        buildWhen: (p, c) => p.themeMode != c.themeMode,
+        builder: (context, state) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.xl,
+              Spacing.md,
+              Spacing.xl,
+              Spacing.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle (también sirve de affordance en web — separa
+                // visualmente el sheet del scrim).
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: Spacing.md),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceOverlay,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text('Tema', style: context.text.titleLarge),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  'Elegí cómo se ve la app. "Sistema" sigue la configuración del dispositivo.',
+                  style: context.text.bodySmall,
+                ),
+                const SizedBox(height: Spacing.lg),
+                _ThemeOption(
+                  mode: ThemeMode.system,
+                  selected: state.themeMode == ThemeMode.system,
+                  title: 'Sistema',
+                  subtitle: 'Sigue al dispositivo',
+                  icon: Icons.brightness_auto_rounded,
+                ),
+                const SizedBox(height: Spacing.sm),
+                _ThemeOption(
+                  mode: ThemeMode.light,
+                  selected: state.themeMode == ThemeMode.light,
+                  title: 'Claro',
+                  subtitle: 'Fondo blanco siempre',
+                  icon: Icons.light_mode_rounded,
+                ),
+                const SizedBox(height: Spacing.sm),
+                _ThemeOption(
+                  mode: ThemeMode.dark,
+                  selected: state.themeMode == ThemeMode.dark,
+                  title: 'Oscuro',
+                  subtitle: 'Fondo oscuro siempre',
+                  icon: Icons.dark_mode_rounded,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

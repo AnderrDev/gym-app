@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
 /// Hero del detalle de ejercicio:
 /// - Si hay `animationUrl` (GIF/MP4 corto), se prefiere — usamos `Image.network`
@@ -42,7 +43,7 @@ class ExerciseMediaHero extends StatelessWidget {
       aspectRatio: 16 / 10,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceHighlight,
+          color: context.colors.surfaceHighlight,
           borderRadius: BorderRadius.circular(24),
         ),
         clipBehavior: Clip.antiAlias,
@@ -53,13 +54,7 @@ class ExerciseMediaHero extends StatelessWidget {
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, progress) {
                   if (progress == null) return child;
-                  return const Center(
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    ),
-                  );
+                  return const Center(child: AppSpinner.medium());
                 },
                 errorBuilder: (context, error, stack) =>
                     _Placeholder(muscleGroup: muscleGroup),
@@ -82,10 +77,10 @@ class _Placeholder extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.fitness_center_rounded,
               size: 48,
-              color: AppColors.textDisabled,
+              color: context.colors.textDisabled,
             ),
             const SizedBox(height: Spacing.sm),
             Text(
@@ -93,7 +88,7 @@ class _Placeholder extends StatelessWidget {
                   ? 'Sin imagen disponible'
                   : muscleGroup.toUpperCase(),
               style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.4,
                 fontSize: 11,

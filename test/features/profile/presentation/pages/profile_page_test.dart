@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
+import 'package:gym_flutter/core/settings/user_preferences_service.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/profile/presentation/pages/profile_page.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthBloc extends Mock implements AuthBloc {}
 
 void main() {
   late _MockAuthBloc mockAuthBloc;
+  late SettingsBloc settingsBloc;
 
   const tUser = User(
     id: 'user-123',
@@ -24,15 +28,25 @@ void main() {
     registerFallbackValue(SignOutRequested());
   });
 
-  setUp(() {
+  setUp(() async {
     mockAuthBloc = _MockAuthBloc();
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    settingsBloc = SettingsBloc(preferences: UserPreferencesService(prefs));
+  });
+
+  tearDown(() async {
+    await settingsBloc.close();
   });
 
   Widget pumpProfile() {
     return MaterialApp(
-      home: BlocProvider<AuthBloc>.value(
-        value: mockAuthBloc,
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<SettingsBloc>.value(value: settingsBloc),
+        ],
         child: const ProfilePage(),
       ),
     );
@@ -65,28 +79,31 @@ void main() {
 
       // Sección PREFERENCIAS (con valores)
       expect(find.text('PREFERENCIAS'), findsOneWidget);
+      expect(find.text('Tema'), findsOneWidget);
+      // Default = system → "Sistema".
+      expect(find.text('Sistema'), findsOneWidget);
       expect(find.text('Idioma'), findsOneWidget);
       expect(find.text('Español'), findsOneWidget);
       expect(find.text('Unidades'), findsOneWidget);
       expect(find.text('Kilogramos (kg)'), findsOneWidget);
 
-      // Sólo las rows de preferencias siguen con el tag "PRÓXIMAMENTE".
-      // La row de "Nombre" ahora es editable (tap → sheet) y muestra chevron.
+      // Idioma y Unidades siguen como "PRÓXIMAMENTE"; Tema ya es interactivo
+      // (chevron en vez de tag). El segundo chevron corresponde a "Nombre".
       expect(find.text('PRÓXIMAMENTE'), findsNWidgets(2));
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
 
       // CTA sign-out
       expect(find.text('CERRAR SESIÓN'), findsOneWidget);
     },
   );
 
-  testWidgets('muestra BarbellLoader cuando AuthLoading', (tester) async {
+  testWidgets('muestra AppSpinner cuando AuthLoading', (tester) async {
     when(() => mockAuthBloc.state).thenReturn(AuthLoading());
 
     await tester.pumpWidget(pumpProfile());
     await tester.pump();
 
-    expect(find.byType(BarbellLoader), findsOneWidget);
+    expect(find.byType(AppSpinner), findsOneWidget);
     // Sin contenido del perfil.
     expect(find.text('CUENTA'), findsNothing);
   });

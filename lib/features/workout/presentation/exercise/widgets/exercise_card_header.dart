@@ -1,7 +1,7 @@
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -21,7 +21,7 @@ class _HeaderMenuTile extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Icon(icon, size: 20, color: context.colors.primary),
         const SizedBox(width: 12),
         Flexible(
           child: Text(
@@ -94,14 +94,14 @@ class ExerciseCardHeader extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     color: allDone
-                        ? AppColors.success.withValues(alpha: 0.15)
-                        : AppColors.primary.withValues(alpha: 0.12),
+                        ? context.colors.success.withValues(alpha: 0.15)
+                        : context.colors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     allDone ? Icons.check_circle_rounded : Icons.local_fire_department_rounded,
                     size: 20,
-                    color: allDone ? AppColors.success : AppColors.primary,
+                    color: allDone ? context.colors.success : context.colors.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -127,13 +127,13 @@ class ExerciseCardHeader extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: context.colors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'TARGET: ${exercise.targetWeight.toStringAsFixed(0)}kg x ${exercise.targetReps}',
                               style: AppTextStyles.label.copyWith(
-                                color: AppColors.primary,
+                                color: context.colors.primary,
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -142,7 +142,7 @@ class ExerciseCardHeader extends StatelessWidget {
                           Text(
                             '$targetSets series',
                             style: AppTextStyles.label.copyWith(
-                              color: AppColors.textSecondary,
+                              color: context.colors.textSecondary,
                             ),
                           ),
                           if (lastPerformance != null)
@@ -152,7 +152,7 @@ class ExerciseCardHeader extends StatelessWidget {
                                 Icon(
                                   Icons.history_rounded,
                                   size: 12,
-                                  color: AppColors.primary.withValues(
+                                  color: context.colors.primary.withValues(
                                     alpha: 0.7,
                                   ),
                                 ),
@@ -160,7 +160,7 @@ class ExerciseCardHeader extends StatelessWidget {
                                 Text(
                                   'Record: ${lastPerformance!.actualWeight.toStringAsFixed(0)}kg x ${lastPerformance!.actualReps}',
                                   style: AppTextStyles.label.copyWith(
-                                    color: AppColors.primary.withValues(
+                                    color: context.colors.primary.withValues(
                                       alpha: 0.8,
                                     ),
                                     fontWeight: FontWeight.w600,
@@ -177,8 +177,8 @@ class ExerciseCardHeader extends StatelessWidget {
                   '$doneCount/$targetSets',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: readOnly
-                        ? AppColors.textSecondary
-                        : (allDone ? AppColors.success : AppColors.primary),
+                        ? context.colors.textSecondary
+                        : (allDone ? context.colors.success : context.colors.primary),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -186,13 +186,13 @@ class ExerciseCardHeader extends StatelessWidget {
                 if (showExpandChevron)
                   Icon(
                     isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 PopupMenuButton<_HeaderMenuAction>(
                   tooltip: 'Más opciones',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.more_vert_rounded,
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,

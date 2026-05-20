@@ -1,7 +1,7 @@
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -46,12 +46,12 @@ class DashboardRoutineSelector extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(Spacing.sm),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                        color: context.colors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.local_fire_department_rounded,
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                       ),
                     ),
                     title: Text(routine.name, style: AppTextStyles.bodyLarge),
@@ -59,16 +59,16 @@ class DashboardRoutineSelector extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.analytics_rounded,
-                            color: AppColors.primary,
+                            color: context.colors.primary,
                             size: 20,
                           ),
                           onPressed: () => onOpenRoutineStats(routine),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.calendar_month_rounded,
-                          color: AppColors.primary,
+                          color: context.colors.primary,
                         ),
                       ],
                     ),

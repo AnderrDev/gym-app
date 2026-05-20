@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_day_card_content_parts.dart';
@@ -63,6 +63,7 @@ class _DashboardDayCardState extends State<DashboardDayCard> {
       isRest: isRest,
     );
     final accent = _accentFor(
+      context,
       status,
       isToday: widget.isToday,
       isPast: widget.isPast,
@@ -147,22 +148,24 @@ class _DashboardDayCardState extends State<DashboardDayCard> {
   }
 
   static Color _accentFor(
+    BuildContext context,
     WorkoutDayStatus status, {
     required bool isToday,
     required bool isPast,
   }) {
+    final colors = context.colors;
     switch (status) {
       case WorkoutDayStatus.completed:
-        return AppColors.success;
+        return colors.success;
       case WorkoutDayStatus.completedPartial:
-        return AppColors.warning;
+        return colors.warning;
       case WorkoutDayStatus.inProgress:
-        return AppColors.primary;
+        return colors.primary;
       case WorkoutDayStatus.pending:
-        if (isPast) return AppColors.textSecondary;
-        return isToday ? AppColors.primary : AppColors.textPrimary;
+        if (isPast) return colors.textSecondary;
+        return isToday ? colors.primary : colors.textPrimary;
       case WorkoutDayStatus.rest:
-        return AppColors.textDisabled;
+        return colors.textDisabled;
     }
   }
 }

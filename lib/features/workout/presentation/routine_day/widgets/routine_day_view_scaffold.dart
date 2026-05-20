@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -122,7 +122,6 @@ class RoutineDayViewScaffold extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: isActive
           ? SafeArea(
               bottom: false,
@@ -161,7 +160,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     if (current is RoutineDayLoadingPhase) {
       return const [
         SliverFillRemaining(
-          child: Center(child: BarbellLoader.large()),
+          child: Center(child: AppSpinner.large()),
         ),
       ];
     }
@@ -257,6 +256,7 @@ class _PrestartBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,
@@ -264,9 +264,9 @@ class _PrestartBottomBar extends StatelessWidget {
         Spacing.lg,
         Spacing.lg,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(top: BorderSide(color: colors.divider)),
       ),
       child: SafeArea(
         top: false,

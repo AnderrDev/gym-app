@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Tag con icono direccional + delta en kg (o "Igualar" cuando no hay
 /// diferencia significativa).
@@ -20,8 +20,8 @@ class VersusDeltaTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = isDown
-        ? AppColors.error
-        : (isUp ? AppColors.primary : AppColors.success);
+        ? context.colors.error
+        : (isUp ? context.colors.primary : context.colors.success);
     final sign = isUp ? '+' : (isDown ? '' : '=');
     final label = isUp || isDown
         ? '$sign${delta.toStringAsFixed(1)} kg'
@@ -68,7 +68,7 @@ class VersusNoTargetWeightRow extends StatelessWidget {
         Text(
           'OBJETIVO $targetReps reps',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
             letterSpacing: 0.8,
             fontWeight: FontWeight.w600,
           ),
@@ -78,14 +78,14 @@ class VersusNoTargetWeightRow extends StatelessWidget {
           Text(
             'Última ${prevReps!.toStringAsFixed(0)} reps',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.primary,
+              color: context.colors.primary,
             ),
           )
         else
           Text(
             'Sin historial',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.textDisabled,
+              color: context.colors.textDisabled,
               fontStyle: FontStyle.italic,
             ),
           ),

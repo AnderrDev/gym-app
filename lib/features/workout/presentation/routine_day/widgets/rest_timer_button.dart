@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Snapshot inmutable del estado del timer de descanso. Lo entrega el
@@ -60,8 +60,8 @@ class RestTimerButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: value.isResting ? progress : 0,
                   strokeWidth: 3,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  color: AppColors.primary,
+                  backgroundColor: context.colors.primary.withValues(alpha: 0.1),
+                  color: context.colors.primary,
                 ),
               ),
               Container(
@@ -69,15 +69,15 @@ class RestTimerButton extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: value.isResting
-                      ? AppColors.primary
-                      : AppColors.surfaceHighlight,
+                      ? context.colors.primary
+                      : context.colors.surfaceHighlight,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   value.isResting
                       ? Icons.timer_rounded
                       : Icons.play_arrow_rounded,
-                  color: value.isResting ? AppColors.onPrimary : AppColors.textPrimary,
+                  color: value.isResting ? context.colors.onPrimary : context.colors.textPrimary,
                   size: 20,
                 ),
               ),
@@ -90,13 +90,13 @@ class RestTimerButton extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: context.colors.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       _formatTime(value.secondsRemaining),
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.onPrimary,
+                        color: context.colors.onPrimary,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                       ),

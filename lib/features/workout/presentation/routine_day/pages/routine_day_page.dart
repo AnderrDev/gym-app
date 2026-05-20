@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
@@ -79,9 +79,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   void _onRestNaturalEnd() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('¡A entrenar! Próxima serie te espera'),
-        backgroundColor: AppColors.success,
+        backgroundColor: context.colors.success,
         duration: Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),

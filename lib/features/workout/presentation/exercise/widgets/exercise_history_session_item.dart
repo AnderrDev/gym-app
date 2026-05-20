@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
@@ -19,9 +19,9 @@ class ExerciseHistorySessionItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: Spacing.md),
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.3),
+        color: context.colors.surface.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceHighlight),
+        border: Border.all(color: context.colors.surfaceHighlight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,7 +35,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                     .toUpperCase(),
                 style: AppTextStyles.label.copyWith(
                   fontSize: 10,
-                  color: AppColors.primary,
+                  color: context.colors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -43,7 +43,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                 '${session.totalVolume.toStringAsFixed(0)} kg Vol.',
                 style: AppTextStyles.label.copyWith(
                   fontSize: 10,
-                  color: AppColors.textDisabled,
+                  color: context.colors.textDisabled,
                 ),
               ),
             ],
@@ -60,7 +60,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceHighlight,
+                      color: context.colors.surfaceHighlight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

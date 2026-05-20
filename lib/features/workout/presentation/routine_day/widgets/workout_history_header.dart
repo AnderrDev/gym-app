@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -39,12 +39,12 @@ class WorkoutHistoryHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(Spacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
+              color: context.colors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(Radii.sm),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.history_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 22,
             ),
           ),
@@ -56,7 +56,7 @@ class WorkoutHistoryHeader extends StatelessWidget {
                 Text(
                   'Sesión anterior',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.w700,
                   ),
@@ -75,9 +75,9 @@ class WorkoutHistoryHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onClose,
-            icon: const Icon(
+            icon: Icon(
               Icons.close_rounded,
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               size: 22,
             ),
           ),

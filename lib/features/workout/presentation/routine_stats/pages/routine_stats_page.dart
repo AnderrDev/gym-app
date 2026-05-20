@@ -5,7 +5,7 @@ import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_event.dart';
@@ -33,9 +33,7 @@ class RoutineStatsPage extends StatelessWidget {
           RoutineStatsBloc(repository: sl())
             ..add(FetchRoutineStats(userId: userId, routineId: routineId)),
       child: Scaffold(
-        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
           elevation: 0,
           title: Text('Historial: $routineName', style: AppTextStyles.heading2),
         ),
@@ -52,7 +50,7 @@ class RoutineStatsPage extends StatelessWidget {
               current is RoutineStatsError,
           builder: (context, state) {
             if (state is RoutineStatsLoading) {
-              return const Center(child: BarbellLoader.large());
+              return const Center(child: AppSpinner.large());
             }
             if (state is RoutineStatsError) {
               return Center(

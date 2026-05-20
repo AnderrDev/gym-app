@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
@@ -166,7 +166,7 @@ class _ExerciseCardState extends State<ExerciseCard>
     final doneCount = _completedSets.length;
 
     return Card(
-      color: AppColors.surface,
+      color: context.colors.surface,
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(

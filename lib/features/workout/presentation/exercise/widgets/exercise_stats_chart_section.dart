@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_series.dart';
@@ -39,10 +39,10 @@ class ExerciseStatsChartSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(Spacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.colors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
+              child: Icon(icon, color: context.colors.primary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -59,7 +59,7 @@ class ExerciseStatsChartSection extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textDisabled,
+                      color: context.colors.textDisabled,
                       fontSize: 10,
                     ),
                   ),
@@ -81,9 +81,9 @@ class ExerciseStatsChartSection extends StatelessWidget {
           height: 220,
           padding: const EdgeInsets.fromLTRB(10, 16, 20, 10),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.3),
+            color: context.colors.surface.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.surfaceHighlight),
+            border: Border.all(color: context.colors.surfaceHighlight),
           ),
           child: chart,
         ),

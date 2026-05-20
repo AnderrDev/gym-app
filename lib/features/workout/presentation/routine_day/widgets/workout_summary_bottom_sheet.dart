@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
@@ -58,8 +58,8 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (_, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
+        decoration: BoxDecoration(
+          color: context.colors.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
@@ -90,14 +90,14 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                         value: '$totalCompletedSets',
                         secondary:
                             totalTargetSets > 0 ? '/ $totalTargetSets' : null,
-                        accent: AppColors.primary,
+                        accent: context.colors.primary,
                         icon: Icons.task_alt_rounded,
                       ),
                       WorkoutMetric(
                         label: 'CARGA',
                         value: totalVolume.toStringAsFixed(0),
                         secondary: AppStrings.kgReps,
-                        accent: AppColors.textPrimary,
+                        accent: context.colors.textPrimary,
                         icon: Icons.local_fire_department_rounded,
                       ),
                       WorkoutMetric(
@@ -105,8 +105,8 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                         value: '${prs.length}',
                         secondary: prs.length == 1 ? 'nuevo' : 'nuevos',
                         accent: prs.isNotEmpty
-                            ? AppColors.warning
-                            : AppColors.textSecondary,
+                            ? context.colors.warning
+                            : context.colors.textSecondary,
                         icon: Icons.emoji_events_rounded,
                       ),
                     ],
@@ -218,7 +218,7 @@ class _ActionRow extends StatelessWidget {
             child: Text(
               AppStrings.continueUpper,
               style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
               ),
@@ -231,8 +231,8 @@ class _ActionRow extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onFinishAndSave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.colors.primary,
+              foregroundColor: context.colors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(Radii.md),
@@ -241,7 +241,7 @@ class _ActionRow extends StatelessWidget {
             child: Text(
               AppStrings.finishAndSaveUpper,
               style: AppTextStyles.label.copyWith(
-                color: AppColors.onPrimary,
+                color: context.colors.onPrimary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.0,
               ),

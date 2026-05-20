@@ -9,7 +9,7 @@ import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -93,9 +93,7 @@ class _ProgressPageState extends State<ProgressPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         title: Text(
           'PROGRESO',
@@ -106,7 +104,7 @@ class _ProgressPageState extends State<ProgressPage> {
         builder: (context, state) {
           return switch (state) {
             ProgressInitial() || ProgressLoading() => const Center(
-              child: BarbellLoader.medium(),
+              child: AppSpinner.medium(),
             ),
             ProgressFailure(:final message) => _ProgressErrorView(
               message: message,

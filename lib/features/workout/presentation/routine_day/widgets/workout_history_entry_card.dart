@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -42,9 +42,9 @@ class WorkoutHistoryEntryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,19 +72,19 @@ class WorkoutHistoryEntryCard extends StatelessWidget {
                   '${logs.length} ${logs.length == 1 ? 'serie' : 'series'} · '
                   '${exerciseVolume.toStringAsFixed(0)} kg·reps',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                     fontSize: 10,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: context.colors.divider),
           ...logs.map(
             (log) => _SetRow(log: log, isTopSet: identical(log, topSet)),
           ),
           if (coaching != null && coaching!.hasActionableAdvice) ...[
-            const Divider(height: 1, color: AppColors.divider),
+            Divider(height: 1, color: context.colors.divider),
             Padding(
               padding: const EdgeInsets.all(Spacing.md),
               child: _CoachingAdvice(coaching: coaching!),
@@ -107,7 +107,7 @@ class _SetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isTopSet ? AppColors.warning : AppColors.primary;
+    final accent = isTopSet ? context.colors.warning : context.colors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: Spacing.lg,
@@ -115,7 +115,7 @@ class _SetRow extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.divider.withValues(alpha: 0.5)),
+          bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5)),
         ),
       ),
       child: Row(
@@ -130,26 +130,26 @@ class _SetRow extends StatelessWidget {
                     text: _fmtWeight(log.actualWeight),
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   TextSpan(
                     text: ' kg × ',
                     style: AppTextStyles.label.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                   TextSpan(
                     text: '${log.actualReps}',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   TextSpan(
                     text: ' reps',
                     style: AppTextStyles.label.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                 ],
@@ -160,16 +160,16 @@ class _SetRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.15),
+                color: context.colors.warning.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.45),
+                  color: context.colors.warning.withValues(alpha: 0.45),
                 ),
               ),
               child: Text(
                 'TOP',
                 style: AppTextStyles.label.copyWith(
-                  color: AppColors.warning,
+                  color: context.colors.warning,
                   fontWeight: FontWeight.w900,
                   fontSize: 9,
                   letterSpacing: 0.8,
@@ -221,7 +221,7 @@ class _CoachingAdvice extends StatelessWidget {
     final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
     final accent = isGreat
-        ? AppColors.success
+        ? context.colors.success
         : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
 
     return Container(
@@ -242,7 +242,7 @@ class _CoachingAdvice extends StatelessWidget {
                 coaching.recommendation,
               ),
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,
               ),
             ),

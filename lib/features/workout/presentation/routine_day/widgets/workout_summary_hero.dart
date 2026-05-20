@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -18,7 +18,7 @@ class WorkoutSummaryHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isStrictlyCompleted ? AppColors.success : AppColors.primary;
+    final color = isStrictlyCompleted ? context.colors.success : context.colors.primary;
     final icon = isStrictlyCompleted
         ? Icons.check_circle_rounded
         : Icons.pending_actions_rounded;
@@ -49,7 +49,7 @@ class WorkoutSummaryHero extends StatelessWidget {
         Text(
           subtitle,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),

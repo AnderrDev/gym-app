@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
@@ -91,13 +90,13 @@ class _ProfileEditNameSheetState extends State<ProfileEditNameSheet> {
             children: [
               Text(
                 'Editar nombre',
-                style: AppTextStyles.heading2.copyWith(fontSize: 18),
+                style: context.text.titleLarge,
               ),
               const SizedBox(height: Spacing.xs),
               Text(
                 'Así te ven los demás cuando compartís rutinas.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                style: context.text.bodySmall?.copyWith(
+                  color: context.colors.textSecondary,
                 ),
               ),
               const SizedBox(height: Spacing.xl),

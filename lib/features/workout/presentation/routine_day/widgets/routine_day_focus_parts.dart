@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/durations.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -42,9 +42,9 @@ class FocusViewExerciseStepper extends StatelessWidget {
         Spacing.lg,
         Spacing.md,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        border: Border(bottom: BorderSide(color: context.colors.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,7 +57,7 @@ class FocusViewExerciseStepper extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -66,7 +66,7 @@ class FocusViewExerciseStepper extends StatelessWidget {
               Text(
                 '${currentIndex + 1}/${exercises.length}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                 ),
@@ -119,11 +119,11 @@ class _StepperDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fill = switch (state) {
-      _DotState.completed => AppColors.primary,
-      _DotState.inProgress => AppColors.primary.withValues(alpha: 0.4),
+      _DotState.completed => context.colors.primary,
+      _DotState.inProgress => context.colors.primary.withValues(alpha: 0.4),
       _DotState.pending => Colors.transparent,
     };
-    final border = isCurrent ? AppColors.primary : AppColors.divider;
+    final border = isCurrent ? context.colors.primary : context.colors.divider;
     final width = isCurrent ? 28.0 : 18.0;
     return InkWell(
       onTap: onTap,
@@ -168,14 +168,14 @@ class FocusViewNextStepCta extends StatelessWidget {
           vertical: Spacing.md,
         ),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: context.colors.primary,
           borderRadius: BorderRadius.circular(Radii.md),
         ),
         child: Row(
           children: [
             Icon(
               isLast ? Icons.flag_rounded : Icons.arrow_forward_rounded,
-              color: AppColors.onPrimary,
+              color: context.colors.onPrimary,
             ),
             const SizedBox(width: Spacing.sm),
             Expanded(
@@ -186,7 +186,7 @@ class FocusViewNextStepCta extends StatelessWidget {
                   Text(
                     isLast ? 'TERMINASTE' : 'SIGUIENTE EJERCICIO',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppColors.onPrimary.withValues(alpha: 0.85),
+                      color: context.colors.onPrimary.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
                     ),
@@ -196,16 +196,16 @@ class FocusViewNextStepCta extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppColors.onPrimary,
+                      color: context.colors.onPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.onPrimary,
+              color: context.colors.onPrimary,
             ),
           ],
         ),

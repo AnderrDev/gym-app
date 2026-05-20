@@ -1,7 +1,7 @@
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -53,7 +53,7 @@ class ExerciseCardBody extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Divider(height: 1, color: AppColors.divider),
+                  Divider(height: 1, color: context.colors.divider),
                   if (coachingAnalysis?.hasActionableAdvice ?? false) ...[
                     const SizedBox(height: 12),
                     ExerciseCardCoachingAdvice(

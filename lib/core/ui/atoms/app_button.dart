@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Variantes semánticas del botón. La paleta y radii vienen del tema, así
 /// que solo necesitamos discriminar el rol (primary, secondary, ghost,
@@ -36,6 +36,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final disabled = isLoading || onPressed == null;
     final child = _buildContent(context);
     Widget button;
@@ -62,8 +63,8 @@ class AppButton extends StatelessWidget {
         button = ElevatedButton(
           onPressed: disabled ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: AppColors.onPrimary,
+            backgroundColor: colors.error,
+            foregroundColor: colors.onPrimary,
           ),
           child: child,
         );
@@ -74,15 +75,16 @@ class AppButton extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     if (isLoading) {
-      // Spinner contrasta con el fondo segun variante: blanco sobre primary/
-      // destructive (fills saturados), primary sobre secondary/ghost (sin
-      // fill). Sin esto el spinner se funde con el fondo en la variante
+      final colors = context.colors;
+      // Spinner contrasta con el fondo segun variante: onPrimary sobre
+      // primary/destructive (fills saturados), primary sobre secondary/ghost
+      // (sin fill). Sin esto el spinner se funde con el fondo en la variante
       // primary (azul sobre azul = invisible).
       final spinnerColor =
           variant == AppButtonVariant.primary ||
               variant == AppButtonVariant.destructive
-          ? AppColors.onPrimary
-          : AppColors.primary;
+          ? colors.onPrimary
+          : colors.primary;
       return SizedBox(
         width: 18,
         height: 18,

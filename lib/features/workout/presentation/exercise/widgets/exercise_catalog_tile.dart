@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
@@ -33,9 +33,9 @@ class ExerciseCatalogTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: Spacing.sm),
       decoration: BoxDecoration(
         color: isAlreadyInDay
-            ? AppColors.textDisabled.withValues(alpha: 0.1)
+            ? context.colors.textDisabled.withValues(alpha: 0.1)
             : (isSelected
-                ? AppColors.primary.withValues(alpha: 0.05)
+                ? context.colors.primary.withValues(alpha: 0.05)
                 : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -49,8 +49,8 @@ class ExerciseCatalogTile extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: isAlreadyInDay
-                ? AppColors.surfaceHighlight
-                : (isSelected ? AppColors.primary : AppColors.surface),
+                ? context.colors.surfaceHighlight
+                : (isSelected ? context.colors.primary : context.colors.surface),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -58,8 +58,8 @@ class ExerciseCatalogTile extends StatelessWidget {
                 ? Icons.lock_outline_rounded
                 : (isSelected ? Icons.check_rounded : Icons.local_fire_department_rounded),
             color: isSelected && !isAlreadyInDay
-                ? AppColors.onPrimary
-                : AppColors.textDisabled,
+                ? context.colors.onPrimary
+                : context.colors.textDisabled,
             size: 18,
           ),
         ),
@@ -67,21 +67,21 @@ class ExerciseCatalogTile extends StatelessWidget {
           exercise.name,
           style: AppTextStyles.bodyLarge.copyWith(
             color: isAlreadyInDay
-                ? AppColors.textDisabled
-                : (isSelected ? AppColors.primary : AppColors.textPrimary),
+                ? context.colors.textDisabled
+                : (isSelected ? context.colors.primary : context.colors.textPrimary),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         subtitle: Text(
           isAlreadyInDay ? 'Ya en tu rutina' : exercise.muscleGroup,
-          style: AppTextStyles.label.copyWith(color: AppColors.textDisabled),
+          style: AppTextStyles.label.copyWith(color: context.colors.textDisabled),
         ),
         trailing: isAlreadyInDay
             ? null
             : (isSelected
-                ? const Icon(
+                ? Icon(
                     Icons.check_circle_rounded,
-                    color: AppColors.primary,
+                    color: context.colors.primary,
                     size: 20,
                   )
                 : null),

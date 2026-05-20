@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -153,8 +153,8 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView>
         ),
         Expanded(
           child: RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.background,
+            color: context.colors.primary,
+            backgroundColor: context.colors.background,
             onRefresh: _onRefresh,
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -247,7 +247,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: theme.textTheme.labelSmall?.copyWith(
-        color: AppColors.textSecondary,
+        color: context.colors.textSecondary,
         letterSpacing: 1.5,
         fontWeight: FontWeight.w600,
       ),

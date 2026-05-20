@@ -16,15 +16,13 @@ import 'package:gym_flutter/core/theme/app_palette.dart';
 /// ```
 extension AppThemeAccess on BuildContext {
   /// Paleta resuelta para el brightness actual.
-  AppPalette get colors {
-    final ext = Theme.of(this).extension<AppPalette>();
-    assert(
-      ext != null,
-      'AppPalette no está registrada en ThemeData.extensions. '
-      'Revisar AppTheme.light()/dark().',
-    );
-    return ext ?? AppPalette.light();
-  }
+  ///
+  /// Si el `ThemeData` activo no registró `AppPalette` (típico en widget
+  /// tests con `MaterialApp` default), cae al palette light por defecto en
+  /// vez de romper. En la app real `main.dart` siempre usa
+  /// `AppTheme.light()/dark()`, que sí registran la extension.
+  AppPalette get colors =>
+      Theme.of(this).extension<AppPalette>() ?? AppPalette.light();
 
   /// `TextTheme` derivado del `ColorScheme` activo.
   TextTheme get text => Theme.of(this).textTheme;

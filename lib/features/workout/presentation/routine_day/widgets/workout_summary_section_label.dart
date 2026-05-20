@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Etiqueta compartida usada como header de cada sección del summary
@@ -26,7 +26,7 @@ class WorkoutSummarySectionLabel extends StatelessWidget {
         Text(
           text.toUpperCase(),
           style: AppTextStyles.label.copyWith(
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w800,
             fontSize: 10,
