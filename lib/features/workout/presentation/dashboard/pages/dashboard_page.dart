@@ -44,6 +44,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   late final RoutineAssignmentBus _assignmentBus;
 
+  /// True una vez que disparamos `LoadAssignedRoutines` por primera vez.
+  /// En web reload el `AuthBloc` empieza en `AuthInitial` mientras Supabase
+  /// restaura la sesión desde `localStorage` (1-2 frames). El `initState`
+  /// corre antes y la lectura síncrona de `AuthBloc.state` salía sin
+  /// disparar nada. El `BlocListener` del build cubre ese race; el flag
+  /// evita duplicar el load cuando auth ya estaba listo al montar.
+  bool _initialLoadDispatched = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +60,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
       if (authState is! Authenticated) return;
+      _initialLoadDispatched = true;
       context.read<DashboardBloc>().add(
         LoadAssignedRoutines(authState.user.id),
       );
@@ -188,30 +197,41 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, curr) =>
+          !_initialLoadDispatched && curr is Authenticated,
+      listener: (context, authState) {
+        if (!mounted || authState is! Authenticated) return;
+        _initialLoadDispatched = true;
+        context.read<DashboardBloc>().add(
+          LoadAssignedRoutines(authState.user.id),
+        );
+      },
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        title: Text('Smart Gym Tracker', style: AppTextStyles.heading2),
-      ),
-      body: BlocBuilder<DashboardBloc, DashboardState>(
-        builder: (context, dashState) {
-          return DashboardStateContent(
-            state: dashState,
-            onRetry: _retryLoadRoutines,
-            // El catálogo de rutinas ahora vive en la pestaña RUTINAS — el
-            // CTA del empty state cambia de tab en vez de pushar una ruta.
-            onExploreCatalog: () => goToRoutines(context),
-            onCreateRoutine: _openRoutineEditorAndRefresh,
-            onSelectRoutine: _onSelectRoutine,
-            onOpenRoutineStats: _openRoutineStats,
-            onPreviousWeek: () => _changeWeek(-1),
-            onNextWeek: () => _changeWeek(1),
-            onOpenSelectedRoutineStats: _openSelectedRoutineStats,
-            onOpenDay: _openRoutineDay,
-          );
-        },
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          title: Text('Smart Gym Tracker', style: AppTextStyles.heading2),
+        ),
+        body: BlocBuilder<DashboardBloc, DashboardState>(
+          builder: (context, dashState) {
+            return DashboardStateContent(
+              state: dashState,
+              onRetry: _retryLoadRoutines,
+              // El catálogo de rutinas ahora vive en la pestaña RUTINAS — el
+              // CTA del empty state cambia de tab en vez de pushar una ruta.
+              onExploreCatalog: () => goToRoutines(context),
+              onCreateRoutine: _openRoutineEditorAndRefresh,
+              onSelectRoutine: _onSelectRoutine,
+              onOpenRoutineStats: _openRoutineStats,
+              onPreviousWeek: () => _changeWeek(-1),
+              onNextWeek: () => _changeWeek(1),
+              onOpenSelectedRoutineStats: _openSelectedRoutineStats,
+              onOpenDay: _openRoutineDay,
+            );
+          },
+        ),
       ),
     );
   }

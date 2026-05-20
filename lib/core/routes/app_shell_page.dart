@@ -64,6 +64,13 @@ class _AppShellView extends StatefulWidget {
 }
 
 class _AppShellViewState extends State<_AppShellView> {
+  /// True una vez que disparamos `CheckActiveSession` por primera vez.
+  /// En web reload el `AuthBloc` empieza en `AuthInitial`. El `initState`
+  /// puede correr antes y la lectura síncrona de `AuthBloc.state` salía
+  /// sin disparar nada — el banner nunca aparecía. El `BlocListener`
+  /// del build cubre ese race; el flag evita doble dispatch.
+  bool _initialCheckDispatched = false;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +78,7 @@ class _AppShellViewState extends State<_AppShellView> {
       if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
       if (authState is! Authenticated) return;
+      _initialCheckDispatched = true;
       context.read<ActiveSessionWatcherBloc>().add(
         CheckActiveSession(authState.user.id),
       );
@@ -115,6 +123,21 @@ class _AppShellViewState extends State<_AppShellView> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, curr) =>
+          !_initialCheckDispatched && curr is Authenticated,
+      listener: (context, authState) {
+        if (!mounted || authState is! Authenticated) return;
+        _initialCheckDispatched = true;
+        context.read<ActiveSessionWatcherBloc>().add(
+          CheckActiveSession(authState.user.id),
+        );
+      },
+      child: _buildShell(context),
+    );
+  }
+
+  Widget _buildShell(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       // SafeArea envolviendo el shell ENTERO consume el inset del status
