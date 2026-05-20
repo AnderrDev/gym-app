@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/atoms/app_button.dart';
+import 'package:gym_flutter/core/ui/feedback/app_dialog.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 
@@ -12,7 +14,9 @@ import 'package:gym_flutter/features/workout/presentation/routine_management/uti
 /// - Tap → abre el sheet de edición de targets (`onTap`).
 /// - Long-press → inicia el drag de reorder (lo consume `ReorderableDelayed
 ///   DragStartListener` del padre).
-/// - Swipe izquierdo → `onRemove` con confirmación implícita del Dismissible.
+/// - Botón de basura visible (mouse + touch + accesibilidad) cuando hay
+///   `onRemove`; pide confirmación antes de borrar.
+/// - Swipe izquierdo mantiene el path de gesture para mobile.
 class ExerciseRowCard extends StatelessWidget {
   const ExerciseRowCard({
     super.key,
@@ -143,6 +147,36 @@ class ExerciseRowCard extends StatelessWidget {
                       constraints: const BoxConstraints(
                         minWidth: 32,
                         minHeight: 32,
+                      ),
+                    ),
+                  if (onRemove != null)
+                    Builder(
+                      builder: (ctx) => IconButton(
+                        onPressed: () async {
+                          final ok = await AppDialog.confirm(
+                            ctx,
+                            title: 'Quitar ejercicio',
+                            message:
+                                'Vas a quitar "${exercise.name}" del día. Podés volver a añadirlo desde el catálogo.',
+                            confirmLabel: 'Quitar',
+                            confirmVariant: AppButtonVariant.destructive,
+                          );
+                          if (ok == true) {
+                            HapticFeedback.heavyImpact();
+                            onRemove!();
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        tooltip: 'Quitar ejercicio',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                       ),
                     ),
                   if (onRemove != null)

@@ -14,7 +14,9 @@ import 'package:gym_flutter/features/workout/presentation/routine_management/uti
 /// Diseño "split-tile":
 /// - Cuadro numerado prominente a la izquierda (color por índice).
 /// - Nombre del día + contador de ejercicios + chevron.
-/// - Swipe izquierdo borra (con confirmación) si `onDelete` está provisto.
+/// - Botón de basura visible (mouse + touch + accesibilidad) cuando hay
+///   `onDelete`; el swipe izquierdo se mantiene como alternativa de
+///   gesture para usuarios de mobile.
 class RoutineDayCard extends StatelessWidget {
   const RoutineDayCard({
     super.key,
@@ -113,6 +115,26 @@ class RoutineDayCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onDelete != null)
+                  IconButton(
+                    onPressed: () async {
+                      final ok = (await confirmDelete?.call()) ?? true;
+                      if (!ok) return;
+                      HapticFeedback.heavyImpact();
+                      onDelete!();
+                    },
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                    tooltip: 'Eliminar día',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
                 const Icon(
                   Icons.chevron_right_rounded,
                   color: AppColors.textDisabled,
