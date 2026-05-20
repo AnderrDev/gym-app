@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+
+import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -219,9 +221,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
             backgroundColor: AppColors.surface,
             onRefresh: _onRefresh,
             child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
+            physics: AdaptiveScrollPhysics.preferred,
             slivers: [
               _buildAppBar(),
 

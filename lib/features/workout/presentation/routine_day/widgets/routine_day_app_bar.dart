@@ -57,6 +57,7 @@ class RoutineDayAppBar extends StatelessWidget {
             color: AppColors.textPrimary,
             size: 24,
           ),
+          tooltip: 'Salir del entrenamiento',
           onPressed: onClose,
         ),
         title: Text(
@@ -108,6 +109,7 @@ class RoutineDayAppBar extends StatelessWidget {
               color: AppColors.primary,
               size: 22,
             ),
+            tooltip: 'Ver última sesión',
             onPressed: () =>
                 onShowLastSessionDetails(lastSession!, lastLogs, exercises),
           ),

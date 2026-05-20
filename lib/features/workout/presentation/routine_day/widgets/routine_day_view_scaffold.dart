@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
@@ -81,7 +83,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     final isActive = phase is RoutineDayActivePhase;
 
     final scroll = CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: AdaptiveScrollPhysics.preferred,
       slivers: [
         RoutineDayAppBar(
           routineDay: routineDay,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
@@ -168,7 +170,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
           child: Scaffold(
             backgroundColor: AppColors.background,
             body: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: AdaptiveScrollPhysics.preferred,
               slivers: [
                 DayEditorAppBar(
                   isDirty: isDirty,

@@ -25,6 +25,7 @@ import '../../injection_container.dart';
 import 'app_routes.dart';
 import 'app_shell_page.dart';
 import 'args/routing_args.dart';
+import 'titled_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -94,11 +95,13 @@ class AppRouter {
       // ── Auth (root, sin shell) ─────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) =>
+            const TitledPage(title: 'Iniciar sesión', child: LoginPage()),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) =>
+            const TitledPage(title: 'Crear cuenta', child: RegisterPage()),
       ),
 
       // ── Shell con bottom navigation persistente ────────────────────────
@@ -117,9 +120,12 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.dashboard,
-                builder: (context, state) => BlocProvider<DashboardBloc>(
-                  create: (_) => sl<DashboardBloc>(),
-                  child: const DashboardPage(),
+                builder: (context, state) => TitledPage(
+                  title: 'Hoy',
+                  child: BlocProvider<DashboardBloc>(
+                    create: (_) => sl<DashboardBloc>(),
+                    child: const DashboardPage(),
+                  ),
                 ),
               ),
             ],
@@ -130,11 +136,13 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.routines,
-                builder: (context, state) =>
-                    BlocProvider<RoutineManagementBloc>(
-                      create: (_) => sl<RoutineManagementBloc>(),
-                      child: const RoutineListPage(),
-                    ),
+                builder: (context, state) => TitledPage(
+                  title: 'Rutinas',
+                  child: BlocProvider<RoutineManagementBloc>(
+                    create: (_) => sl<RoutineManagementBloc>(),
+                    child: const RoutineListPage(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -144,9 +152,12 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.progress,
-                builder: (context, state) => BlocProvider<ProgressBloc>(
-                  create: (_) => sl<ProgressBloc>(),
-                  child: const ProgressPage(),
+                builder: (context, state) => TitledPage(
+                  title: 'Progreso',
+                  child: BlocProvider<ProgressBloc>(
+                    create: (_) => sl<ProgressBloc>(),
+                    child: const ProgressPage(),
+                  ),
                 ),
               ),
             ],
@@ -157,7 +168,8 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                builder: (context, state) => const ProfilePage(),
+                builder: (context, state) =>
+                    const TitledPage(title: 'Perfil', child: ProfilePage()),
               ),
             ],
           ),
@@ -170,9 +182,12 @@ class AppRouter {
         path: AppRoutes.routineEditor,
         builder: (context, state) {
           final routineId = state.extra as String?;
-          return BlocProvider<RoutineManagementBloc>(
-            create: (_) => sl<RoutineManagementBloc>(),
-            child: RoutineEditorPage(routineId: routineId),
+          return TitledPage(
+            title: 'Editar rutina',
+            child: BlocProvider<RoutineManagementBloc>(
+              create: (_) => sl<RoutineManagementBloc>(),
+              child: RoutineEditorPage(routineId: routineId),
+            ),
           );
         },
       ),
@@ -182,9 +197,12 @@ class AppRouter {
         builder: (context, state) {
           final args = state.extra;
           if (args is! DayEditorArgs) return _invalidArgs(AppRoutes.dayEditor);
-          return BlocProvider<RoutineManagementBloc>(
-            create: (_) => sl<RoutineManagementBloc>(),
-            child: DayEditorPage(day: args.day, routineId: args.routineId),
+          return TitledPage(
+            title: 'Editar día',
+            child: BlocProvider<RoutineManagementBloc>(
+              create: (_) => sl<RoutineManagementBloc>(),
+              child: DayEditorPage(day: args.day, routineId: args.routineId),
+            ),
           );
         },
       ),
@@ -194,17 +212,22 @@ class AppRouter {
         builder: (context, state) {
           final args = state.extra;
           if (args is! RoutineDayArgs) return _invalidArgs(AppRoutes.routineDay);
-          return MultiBlocProvider(
-            providers: [
-              BlocProvider<RoutineDayBloc>(create: (_) => sl<RoutineDayBloc>()),
-              BlocProvider<ActiveWorkoutBloc>(
-                create: (_) => sl<ActiveWorkoutBloc>(),
+          return TitledPage(
+            title: args.routineDay.name,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RoutineDayBloc>(
+                  create: (_) => sl<RoutineDayBloc>(),
+                ),
+                BlocProvider<ActiveWorkoutBloc>(
+                  create: (_) => sl<ActiveWorkoutBloc>(),
+                ),
+              ],
+              child: RoutineDayPage(
+                routineDay: args.routineDay,
+                userId: args.userId,
+                sessionDate: args.sessionDate,
               ),
-            ],
-            child: RoutineDayPage(
-              routineDay: args.routineDay,
-              userId: args.userId,
-              sessionDate: args.sessionDate,
             ),
           );
         },
@@ -217,10 +240,13 @@ class AppRouter {
           if (args is! RoutineStatsArgs) {
             return _invalidArgs(AppRoutes.routineStats);
           }
-          return RoutineStatsPage(
-            userId: args.userId,
-            routineId: args.routineId,
-            routineName: args.routineName,
+          return TitledPage(
+            title: 'Historial · ${args.routineName}',
+            child: RoutineStatsPage(
+              userId: args.userId,
+              routineId: args.routineId,
+              routineName: args.routineName,
+            ),
           );
         },
       ),
@@ -232,10 +258,13 @@ class AppRouter {
           if (args is! ExerciseProgressArgs) {
             return _invalidArgs(AppRoutes.exerciseProgress);
           }
-          return ExerciseProgressPage(
-            userId: args.userId,
-            exerciseId: args.exerciseId,
-            exerciseName: args.exerciseName,
+          return TitledPage(
+            title: args.exerciseName,
+            child: ExerciseProgressPage(
+              userId: args.userId,
+              exerciseId: args.exerciseId,
+              exerciseName: args.exerciseName,
+            ),
           );
         },
       ),

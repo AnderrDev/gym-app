@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
@@ -38,7 +39,7 @@ class DashboardInsightsCompact extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+      physics: AdaptiveScrollPhysics.preferred,
       child: Row(
         children: [
           _Metric(

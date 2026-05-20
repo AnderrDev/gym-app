@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -150,7 +151,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                 }
 
                 return ListView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: AdaptiveScrollPhysics.preferred,
                   padding: const EdgeInsets.fromLTRB(
                     Spacing.lgPlus,
                     0,

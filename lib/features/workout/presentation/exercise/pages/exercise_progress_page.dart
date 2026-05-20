@@ -29,6 +29,7 @@ class ExerciseProgressPage extends StatelessWidget {
             Icons.arrow_back_rounded,
             color: AppColors.textPrimary,
           ),
+          tooltip: 'Volver',
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),

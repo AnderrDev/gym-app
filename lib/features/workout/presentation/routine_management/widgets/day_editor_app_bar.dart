@@ -29,6 +29,7 @@ class DayEditorAppBar extends StatelessWidget {
           color: AppColors.textPrimary,
           size: 20,
         ),
+        tooltip: 'Volver',
         onPressed: onBack,
       ),
       title: Text(

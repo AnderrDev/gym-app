@@ -31,6 +31,7 @@ class RoutineEditorAppBar extends StatelessWidget {
           Icons.close_rounded,
           color: AppColors.textPrimary,
         ),
+        tooltip: 'Cerrar editor',
         onPressed: onClose,
       ),
       title: Text(
@@ -44,6 +45,7 @@ class RoutineEditorAppBar extends StatelessWidget {
               Icons.delete_outline_rounded,
               color: AppColors.error,
             ),
+            tooltip: 'Eliminar rutina',
             onPressed: onDelete,
           ),
         Padding(

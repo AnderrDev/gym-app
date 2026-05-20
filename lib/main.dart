@@ -22,6 +22,7 @@ import 'package:gym_flutter/core/theme/app_colors.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/injection_container.dart' as di;
 
 void main() {
@@ -32,16 +33,22 @@ void main() {
     PlatformDispatcher.instance.onError = ErrorReporter.onPlatformError;
     Bloc.observer = AppBlocObserver();
 
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.background,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-    );
+    if (Capabilities.supportsOrientationLock) {
+      await SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.portraitUp],
+      );
+    }
+    if (Capabilities.supportsSystemUiStyling) {
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: AppColors.background,
+          systemNavigationBarIconBrightness: Brightness.dark,
+        ),
+      );
+    }
 
     await initializeDateFormatting('es', null);
 
@@ -118,6 +125,10 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
         title: 'Smart Gym Tracker',
         theme: AppTheme.dark,
         routerConfig: _appRouter.router,
+        // SelectionArea hace seleccionable cualquier `Text` debajo. Útil
+        // en web (copiar nombres de ejercicios, fechas, pesos del
+        // historial) y benigna en móvil (no interfiere con TextField).
+        builder: (context, child) => SelectionArea(child: child ?? const SizedBox.shrink()),
       ),
     );
   }
