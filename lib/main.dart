@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:gym_flutter/core/config/supabase_config.dart';
@@ -29,6 +30,11 @@ void main() {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
     configureWebUrlStrategy();
+    // Las fonts (Manrope, Space Grotesk) están bundleadas como assets;
+    // no permitimos que el paquete las baje de la CDN en runtime. Esto
+    // elimina el flicker de fuente en el primer paint en web y rompe
+    // la dependencia con `fonts.gstatic.com` para builds offline.
+    GoogleFonts.config.allowRuntimeFetching = false;
     FlutterError.onError = ErrorReporter.onFlutterError;
     PlatformDispatcher.instance.onError = ErrorReporter.onPlatformError;
     Bloc.observer = AppBlocObserver();
