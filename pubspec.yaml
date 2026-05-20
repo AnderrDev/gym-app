@@ -94,12 +94,6 @@ flutter:
 
   assets:
     - .env
-    # Fonts bundleadas para que el paquete `google_fonts` no descargue
-    # de la CDN en runtime (elimina flicker + waterfall en primer paint
-    # web). Combinado con `GoogleFonts.config.allowRuntimeFetching=false`
-    # en main.dart.
-    - assets/google_fonts/Manrope/
-    - assets/google_fonts/Space_Grotesk/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

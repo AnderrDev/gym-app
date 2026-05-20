@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/app_colors.dart';
 
-/// Wrappea una página con `Title`, que en web propaga al `<title>` de la
-/// pestaña del browser. En mobile es no-op visual (el sistema operativo
-/// usa el title del `MaterialApp`).
+/// Wrappea una página con:
+///   1. `Title` — en web propaga al `<title>` de la pestaña del browser.
+///      En mobile es no-op visual (el OS usa el title del MaterialApp).
+///   2. `SelectionArea` — habilita selección de texto en web sobre
+///      cualquier `Text` descendiente. Vive acá (no en `MaterialApp.builder`)
+///      porque SelectionArea requiere un `Overlay` ancestor; al estar
+///      dentro de un route builder está siempre dentro del Navigator
+///      de la app.
 ///
 /// Convención de naming: `"<sección> — Smart Gym"`. Sección corta, sin
 /// emoji, mayúscula inicial.
@@ -19,7 +24,7 @@ class TitledPage extends StatelessWidget {
     return Title(
       title: '$title — Smart Gym',
       color: AppColors.primary,
-      child: child,
+      child: SelectionArea(child: child),
     );
   }
 }

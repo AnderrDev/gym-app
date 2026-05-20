@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:gym_flutter/core/config/supabase_config.dart';
@@ -30,11 +29,6 @@ void main() {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
     configureWebUrlStrategy();
-    // Las fonts (Manrope, Space Grotesk) están bundleadas como assets;
-    // no permitimos que el paquete las baje de la CDN en runtime. Esto
-    // elimina el flicker de fuente en el primer paint en web y rompe
-    // la dependencia con `fonts.gstatic.com` para builds offline.
-    GoogleFonts.config.allowRuntimeFetching = false;
     FlutterError.onError = ErrorReporter.onFlutterError;
     PlatformDispatcher.instance.onError = ErrorReporter.onPlatformError;
     Bloc.observer = AppBlocObserver();
@@ -131,10 +125,12 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
         title: 'Smart Gym Tracker',
         theme: AppTheme.dark,
         routerConfig: _appRouter.router,
-        // SelectionArea hace seleccionable cualquier `Text` debajo. Útil
-        // en web (copiar nombres de ejercicios, fechas, pesos del
-        // historial) y benigna en móvil (no interfiere con TextField).
-        builder: (context, child) => SelectionArea(child: child ?? const SizedBox.shrink()),
+        // Nota: NO wrappear con SelectionArea acá. El `builder` del
+        // MaterialApp.router corre ANTES de que el Navigator monte su
+        // Overlay; SelectionArea necesita un Overlay ancestor y
+        // crashea (`No Overlay widget found`). En su lugar, el wrapper
+        // vive dentro de `TitledPage`, que se monta por route — ya
+        // dentro del subtree del Navigator.
       ),
     );
   }
