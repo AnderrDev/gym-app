@@ -129,7 +129,7 @@ class QuickStepStrip extends StatelessWidget {
   }
 }
 
-class KeyboardToggleChip extends StatelessWidget {
+class KeyboardToggleChip extends StatefulWidget {
   const KeyboardToggleChip({
     super.key,
     required this.isActive,
@@ -140,38 +140,51 @@ class KeyboardToggleChip extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<KeyboardToggleChip> createState() => _KeyboardToggleChipState();
+}
+
+class _KeyboardToggleChipState extends State<KeyboardToggleChip> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.textSecondary;
+    final color =
+        widget.isActive ? AppColors.primary : AppColors.textSecondary;
     // Focus(canRequestFocus: false) evita que en web el chip robe el focus
     // del TextField al hacer click — preserva la fila de chips visible.
+    // MouseRegion: cursor pointer + tint en hover (no-op en touch puro).
+    final bg = widget.isActive
+        ? AppColors.primary.withValues(alpha: _hovered ? 0.3 : 0.2)
+        : (_hovered ? AppColors.surfaceHighlight : AppColors.surface);
     return Focus(
       canRequestFocus: false,
       descendantsAreFocusable: false,
-      child: GestureDetector(
-        // `onTapDown` se dispara antes que el sistema de focus procese el
-        // click, así garantizamos que el handler corra incluso si el chip
-        // se desmonta en el mismo frame por el blur.
-        onTapDown: onTap == null ? null : (_) => onTap!(),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 28,
-          width: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.primary.withValues(alpha: 0.2)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTapDown:
+              widget.onTap == null ? null : (_) => widget.onTap!(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 28,
+            width: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Icon(Icons.keyboard_alt_rounded, size: 16, color: color),
           ),
-          child: Icon(Icons.keyboard_alt_rounded, size: 16, color: color),
         ),
       ),
     );
   }
 }
 
-class QuickStepChip extends StatelessWidget {
+class QuickStepChip extends StatefulWidget {
   const QuickStepChip({
     super.key,
     required this.label,
@@ -184,31 +197,42 @@ class QuickStepChip extends StatelessWidget {
   final bool positive;
 
   @override
+  State<QuickStepChip> createState() => _QuickStepChipState();
+}
+
+class _QuickStepChipState extends State<QuickStepChip> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = positive ? AppColors.primary : AppColors.textSecondary;
-    // GestureDetector (no InkWell) para no robar el focus del TextField.
-    // En web envolvemos en Focus(canRequestFocus: false) + usamos
-    // onTapDown para que el handler corra antes del blur del field.
+    final color =
+        widget.positive ? AppColors.primary : AppColors.textSecondary;
+    final bg = color.withValues(alpha: _hovered ? 0.2 : 0.1);
     return Focus(
       canRequestFocus: false,
       descendantsAreFocusable: false,
-      child: GestureDetector(
-        onTapDown: (_) => onTap(),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyles.label.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTapDown: (_) => widget.onTap(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              widget.label,
+              style: AppTextStyles.label.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
           ),
         ),

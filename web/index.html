@@ -34,6 +34,17 @@
 
   <title>Smart Gym Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Prefetch (no preload) del runtime de drift en web. La app abre la
+       base local lazy en el primer query (LazyDatabase), pero estos
+       binarios pesan ~1.8 MB combinados. `prefetch` hace que el browser
+       los baje en idle después del primer paint, así el render inicial
+       no compite por bandwidth y cuando el usuario interactúa con datos
+       locales ya están cacheados. Combinado con Cache-Control immutable
+       en firebase.json, en visitas siguientes son 0 bytes. -->
+  <link rel="prefetch" href="sqlite3.wasm" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="drift_worker.dart.js" as="script">
+
   <style>
     /* Fondo blanco antes de que Flutter pinte. Sin esto, en navegadores con
        OS en modo oscuro el body aparece gris/negro durante el bootstrap, y

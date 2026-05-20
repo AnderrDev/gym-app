@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/core/theme/app_palette.dart';
 import 'package:gym_flutter/core/theme/app_text_theme.dart';
 import 'package:gym_flutter/core/theme/tokens/durations.dart';
@@ -242,12 +243,25 @@ class AppTheme {
         ),
         textStyle: textTheme.labelMedium,
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-        },
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: Capabilities.isWeb
+            // En web todos los targets caen al fade corto (140ms, sin
+            // slide horizontal). El slide-from-right de Cupertino o el
+            // Material default se sienten "appy" cuando se navega en
+            // browser — el feel canónico de SPA es transición de opacity
+            // rápida o sin transición.
+            ? const {
+                TargetPlatform.iOS: _WebFadeTransitionsBuilder(),
+                TargetPlatform.macOS: _WebFadeTransitionsBuilder(),
+                TargetPlatform.android: _WebFadeTransitionsBuilder(),
+                TargetPlatform.linux: _WebFadeTransitionsBuilder(),
+                TargetPlatform.windows: _WebFadeTransitionsBuilder(),
+              }
+            : const {
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+              },
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
@@ -293,6 +307,40 @@ class AppTheme {
   /// pocos call-sites migren a `AppTheme.light()/dark()`.
   @Deprecated('Usar AppTheme.light() o AppTheme.dark()')
   static ThemeData get darkLegacy => light();
+}
+
+/// PageTransitionsBuilder usado solo en web (todos los targets).
+///
+/// Salta el slide horizontal de Cupertino y el FadeForwards de Material —
+/// renderiza un `FadeTransition` corto (~140 ms) sin desplazamiento. El
+/// feel resultante es de "router de SPA" (la pantalla aparece) en vez de
+/// "stack de pantallas físicas" (push desde la derecha).
+///
+/// Se usa la duración por defecto del Navigator (`transitionDuration` lo
+/// puede sobrescribir el route). 140ms es lo bastante corto para sentirse
+/// instantáneo en desktop browser sin parecer un cut sin transición.
+class _WebFadeTransitionsBuilder extends PageTransitionsBuilder {
+  const _WebFadeTransitionsBuilder();
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 140);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 90);
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: child,
+    );
+  }
 }
 
 /// Extensión de tema con duraciones de animación expuestas en `Theme.of`.

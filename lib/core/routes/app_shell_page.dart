@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/sync/presentation/sync_status_badge.dart';
 import 'package:gym_flutter/core/sync/presentation/sync_status_bloc.dart';
@@ -138,60 +138,73 @@ class _AppShellViewState extends State<_AppShellView> {
   }
 
   Widget _buildShell(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      // SafeArea envolviendo el shell ENTERO consume el inset del status
-      // bar / Dynamic Island UNA SOLA VEZ. Sin esto, el AppBar del Scaffold
-      // interno (DashboardPage, RoutinesPage, etc.) re-paddingea por la
-      // status bar encima de la SafeArea, generando un gap visual gigante
-      // entre el banner y el título.
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // Badge de sync — solo se renderiza si el SyncStatusBloc está
-            // provisto (plataformas con persistencia local). El badge
-            // mismo es un SizedBox.shrink() cuando no hay nada que mostrar.
-            if (sl.isRegistered<SyncStatusBloc>())
-              const Align(
-                alignment: Alignment.centerRight,
-                child: SyncStatusBadge(),
-              ),
-            BlocSelector<
-              ActiveSessionWatcherBloc,
-              ActiveSessionWatcherState,
-              ActiveSessionInfo?
-            >(
-              selector: (state) =>
-                  state.hasActiveSession ? state.session : null,
-              builder: (context, session) {
-                if (session == null) return const SizedBox.shrink();
-                return DashboardActiveSessionBanner(
-                  session: session,
-                  onTap: () => _resumeActiveSession(session),
-                );
-              },
+    final colors = context.colors;
+    final text = context.text;
+    // En web sobre desktop browser (viewport >= 720px) centramos el
+    // contenido en un ancho cómodo de lectura para que la app no se
+    // estire a 1920px (anti-pattern de mobile-app en desktop). En
+    // mobile-web (viewport angosto) o en mobile nativo, passthrough.
+    // La `bottomNavigationBar` queda full-width — esa es la convención
+    // en webapps con tab bar.
+    final body = SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          // Badge de sync — solo se renderiza si el SyncStatusBloc está
+          // provisto (plataformas con persistencia local). El badge
+          // mismo es un SizedBox.shrink() cuando no hay nada que mostrar.
+          if (sl.isRegistered<SyncStatusBloc>())
+            const Align(
+              alignment: Alignment.centerRight,
+              child: SyncStatusBadge(),
             ),
-            Expanded(child: widget.navigationShell),
-          ],
-        ),
+          BlocSelector<
+            ActiveSessionWatcherBloc,
+            ActiveSessionWatcherState,
+            ActiveSessionInfo?
+          >(
+            selector: (state) =>
+                state.hasActiveSession ? state.session : null,
+            builder: (context, session) {
+              if (session == null) return const SizedBox.shrink();
+              return DashboardActiveSessionBanner(
+                session: session,
+                onTap: () => _resumeActiveSession(session),
+              );
+            },
+          ),
+          Expanded(child: widget.navigationShell),
+        ],
       ),
+    );
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: Capabilities.isWeb
+          ? Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: body,
+              ),
+            )
+          : body,
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          backgroundColor: AppColors.background,
-          indicatorColor: AppColors.primary.withValues(alpha: 0.16),
+          backgroundColor: colors.background,
+          indicatorColor: colors.primary.withValues(alpha: 0.16),
           labelTextStyle: WidgetStatePropertyAll(
-            AppTextStyles.label.copyWith(letterSpacing: 1.2),
+            text.labelMedium?.copyWith(letterSpacing: 1.2),
           ),
-          // a11y/contraste: forzamos `textSecondary` (#6E6E73 ≈ 4.78:1 sobre
-          // background blanco — supera WCAG AA UI 3:1) para iconos inactivos
-          // y `primary` para los seleccionados, evitando depender del default
-          // `onSurfaceVariant` del ColorScheme.
+          // a11y/contraste: forzamos `textSecondary` para iconos inactivos y
+          // `primary` para los seleccionados, evitando depender del default
+          // `onSurfaceVariant` del ColorScheme. En dark el ratio sigue
+          // cumpliendo WCAG AA UI (≥3:1) gracias al `palette.textSecondary`
+          // del modo oscuro (#A1A1A6 sobre #0A0A0B).
           iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: AppColors.primary, size: 24);
+              return IconThemeData(color: colors.primary, size: 24);
             }
-            return const IconThemeData(color: AppColors.textSecondary, size: 24);
+            return IconThemeData(color: colors.textSecondary, size: 24);
           }),
         ),
         child: NavigationBar(
