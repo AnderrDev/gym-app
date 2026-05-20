@@ -97,7 +97,7 @@ Repository implementations should NOT use ad-hoc `catch (e) { return Left(Server
 
 - **Mobile/desktop**: native `sqlite3` via `sqlite3_flutter_libs` + `drift_flutter`. Connection in `open_connection_io.dart`.
 - **Web**: `sqlite3` compiled to WASM, running in a SharedWorker. Persistence to OPFS where supported (Chrome/Edge/Safari 16.4+/Firefox 111+), fallback to IndexedDB. Connection in `open_connection_web.dart`. Two binary assets in `web/` are required:
-  - `web/sqlite3.wasm` — the sqlite3 binary (vendored, do not regenerate).
+  - `web/sqlite3.wasm` — the sqlite3 binary. **Must match the `sqlite3` Dart package version pinned in `pubspec.lock`**. Mismatch produces `LinkError: ... function import requires a callable` at first query. Re-download when you upgrade `sqlite3`: `curl -sSLfo web/sqlite3.wasm "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-<VERSION>/sqlite3.wasm"`.
   - `web/drift_worker.dart.js` — the worker entrypoint, **compiled** from `tool/drift_worker.dart`. When `drift` or `sqlite3` is upgraded, regenerate with: `dart compile js tool/drift_worker.dart -o web/drift_worker.dart.js`. The `.deps` / `.map` sidecars are gitignored.
 
 `Capabilities.hasLocalDatabase` returns `true` everywhere — DI registers `LocalDatabase`, `OutboxRepository`, `SyncWorker`, `SyncStatusBloc` on all platforms. The bootstrap calls `localDb.ping()` synchronously after `LocalDatabase.open()`; on web that triggers the actual `WasmDatabase.open()` async, so the error path in `_BootstrapErrorApp` catches IndexedDB-blocked-by-Safari-private cases via the same heuristic as `localStorage`.
