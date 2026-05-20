@@ -1,10 +1,8 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
 import 'package:live_activities/live_activities.dart';
 import 'package:live_activities/models/alert_config.dart';
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 
 /// Wrapper sobre el plugin `live_activities`. En iOS 16.1+ encapsula la
 /// creación / update / end de la `ActiveWorkoutAttributes` declarada en el
@@ -31,7 +29,7 @@ class LiveActivitiesBridge {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
-    if (kIsWeb || !Platform.isIOS) return;
+    if (!Capabilities.supportsLiveActivities) return;
     try {
       await _plugin.init(appGroupId: _appGroupId);
       final enabled = await _plugin.areActivitiesEnabled();

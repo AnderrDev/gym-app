@@ -1,9 +1,9 @@
-import 'dart:io' show Platform;
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 
 /// Wrapper fino sobre `flutter_local_notifications`. Centraliza el setup, los
 /// permisos y el channel Android para que el resto del app no toque el plugin
@@ -36,10 +36,7 @@ class NotificationService {
 
   bool _initialized = false;
 
-  bool get _isSupported {
-    if (kIsWeb) return false;
-    return Platform.isAndroid || Platform.isIOS;
-  }
+  bool get _isSupported => Capabilities.supportsLocalNotifications;
 
   Future<void> init() async {
     if (!_isSupported || _initialized) return;

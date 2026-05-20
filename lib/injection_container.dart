@@ -1,5 +1,4 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:gym_flutter/core/database/dao/workout_cache_dao.dart';
 import 'package:gym_flutter/core/database/local_database.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
 import 'package:gym_flutter/core/sync/outbox_repository.dart';
 import 'package:gym_flutter/core/sync/outbox_repository_impl.dart';
@@ -197,7 +197,7 @@ Future<void> init() async {
   );
 
   // Sync status bloc — UI puede leerlo via Provider en el shell.
-  if (!kIsWeb) {
+  if (Capabilities.hasOfflineSync) {
     sl.registerFactory<SyncStatusBloc>(
       () => SyncStatusBloc(
         connectivity: sl<ConnectivityService>(),
@@ -234,7 +234,7 @@ Future<void> init() async {
   // Local database (drift): se abre eagerly y se valida con `ping()` para
   // detectar corrupción/migrations rotas en bootstrap. En web la persistencia
   // local llegará en Phase W; mientras tanto no se registra el singleton.
-  if (!kIsWeb) {
+  if (Capabilities.hasLocalDatabase) {
     final localDb = LocalDatabase.open();
     await localDb.ping();
     sl.registerLazySingleton<LocalDatabase>(() => localDb);
@@ -299,7 +299,7 @@ Future<void> init() async {
   // registrada y AuthRepository disponible. Lo hacemos al final del init
   // para que la cadena de dependencias esté lista. En web es no-op (no se
   // registra el SyncWorker).
-  if (!kIsWeb && sl.isRegistered<SyncWorker>()) {
+  if (Capabilities.hasOfflineSync && sl.isRegistered<SyncWorker>()) {
     try {
       await sl<OutboxRepository>()
           .releaseStaleLocks(const Duration(seconds: 60));
