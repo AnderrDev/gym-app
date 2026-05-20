@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/forms/inputs/reps_input.dart';
 import 'package:gym_flutter/core/forms/inputs/weight_input.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -34,7 +34,7 @@ class RemoteTargetSheet extends StatefulWidget {
     required double initialWeight,
     required int initialReps,
   }) {
-    return AppBottomSheet.showRaw<void>(
+    return AdaptiveSheet.showRaw<void>(
       context,
       builder: (_) => BlocProvider.value(
         value: context.read<ActiveWorkoutBloc>(),
@@ -85,7 +85,7 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: const EdgeInsets.fromLTRB(
         Spacing.xl,

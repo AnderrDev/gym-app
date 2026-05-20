@@ -6,7 +6,7 @@ import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
@@ -44,7 +44,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
     required String exerciseId,
     required String exerciseName,
   }) {
-    AppBottomSheet.showRaw<void>(
+    AdaptiveSheet.showRaw<void>(
       context,
       builder: (_) => ExerciseStatsBottomSheet(
         userId: userId,

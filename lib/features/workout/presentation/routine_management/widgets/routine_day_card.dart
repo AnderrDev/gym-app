@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -58,10 +58,10 @@ class RoutineDayCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppColors.divider.withValues(alpha: 0.4),
+              color: context.colors.divider.withValues(alpha: 0.4),
             ),
           ),
           child: Padding(
@@ -94,8 +94,8 @@ class RoutineDayCard extends StatelessWidget {
                             : '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
                         style: AppTextStyles.label.copyWith(
                           color: exerciseCount == 0
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? context.colors.primary
+                              : context.colors.textSecondary,
                           fontSize: 11,
                         ),
                       ),
@@ -104,7 +104,7 @@ class RoutineDayCard extends StatelessWidget {
                         Text(
                           _buildPreview(day.exerciseNamesPreview),
                           style: AppTextStyles.label.copyWith(
-                            color: AppColors.textDisabled,
+                            color: context.colors.textDisabled,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                           ),
@@ -120,12 +120,12 @@ class RoutineDayCard extends StatelessWidget {
                     onPressed: () async {
                       final ok = (await confirmDelete?.call()) ?? true;
                       if (!ok) return;
-                      HapticFeedback.heavyImpact();
+                      unawaited(HapticFeedback.heavyImpact());
                       onDelete!();
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_outline_rounded,
-                      color: AppColors.error,
+                      color: context.colors.error,
                       size: 20,
                     ),
                     tooltip: 'Eliminar día',
@@ -135,9 +135,9 @@ class RoutineDayCard extends StatelessWidget {
                       minHeight: 32,
                     ),
                   ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
-                  color: AppColors.textDisabled,
+                  color: context.colors.textDisabled,
                 ),
               ],
             ),
@@ -165,14 +165,14 @@ class RoutineDayCard extends StatelessWidget {
       background: Container(
         margin: const EdgeInsets.only(bottom: Spacing.md),
         decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.85),
+          color: context.colors.error.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
-        child: const Icon(
+        child: Icon(
           Icons.delete_sweep_rounded,
-          color: AppColors.onPrimary,
+          color: context.colors.onPrimary,
           size: 26,
         ),
       ),

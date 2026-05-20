@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
@@ -44,7 +44,7 @@ class DayEditorDialogs {
       bloc.add(const LoadExerciseCatalog());
     }
 
-    final result = await AppBottomSheet.showRaw<List<ExerciseCatalogItem>>(
+    final result = await AdaptiveSheet.showRaw<List<ExerciseCatalogItem>>(
       context,
       builder: (_) =>
           BlocBuilder<RoutineManagementBloc, RoutineManagementState>(
@@ -94,7 +94,7 @@ class DayEditorDialogs {
     final userId = _userId(context);
     final bloc = context.read<RoutineManagementBloc>();
     unawaited(HapticFeedback.selectionClick());
-    final result = await AppBottomSheet.show<EditExerciseTargetResult>(
+    final result = await AdaptiveSheet.show<EditExerciseTargetResult>(
       context,
       title: 'Editar objetivos',
       child: EditExerciseTargetSheet(exercise: exercise),

@@ -10,7 +10,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -80,9 +80,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('¡A entrenar! Próxima serie te espera'),
+        content: const Text('¡A entrenar! Próxima serie te espera'),
         backgroundColor: context.colors.success,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -130,7 +130,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     List<Exercise> exercises,
   ) {
     HapticFeedback.mediumImpact();
-    AppBottomSheet.showRaw<void>(
+    AdaptiveSheet.showRaw<void>(
       context,
       builder: (_) => WorkoutHistoryBottomSheet(
         session: session,
@@ -156,7 +156,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       (sum, l) => sum + (l.actualWeight * l.actualReps),
     );
 
-    AppBottomSheet.showRaw<void>(
+    AdaptiveSheet.showRaw<void>(
       context,
       builder: (ctx) => WorkoutSummaryBottomSheet(
         totalTargetSets: widget.routineDay.targetSetsCount,

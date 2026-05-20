@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/forms/inputs/email.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
@@ -22,7 +22,7 @@ class ForgotPasswordSheet extends StatefulWidget {
   final String? initialEmail;
 
   static Future<void> show(BuildContext context, {String? initialEmail}) {
-    return AppBottomSheet.showRaw<void>(
+    return AdaptiveSheet.showRaw<void>(
       context,
       builder: (_) => ForgotPasswordSheet(initialEmail: initialEmail),
     );
@@ -77,9 +77,9 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.colors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(
           Spacing.xl,
@@ -96,7 +96,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceHighlight,
+                  color: context.colors.surfaceHighlight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -107,12 +107,12 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                 Container(
                   padding: const EdgeInsets.all(Spacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: context.colors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(Radii.sm),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.lock_reset_rounded,
-                    color: AppColors.primary,
+                    color: context.colors.primary,
                     size: 22,
                   ),
                 ),
@@ -131,7 +131,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                       Text(
                         'Te mandamos un enlace para crear una nueva.',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.colors.textSecondary,
                         ),
                       ),
                     ],
@@ -156,8 +156,8 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
             FilledButton(
               onPressed: _submitting ? null : _submit,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
+                backgroundColor: context.colors.primary,
+                foregroundColor: context.colors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: Spacing.md),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Radii.md),
@@ -171,7 +171,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                   : Text(
                       'ENVIAR ENLACE',
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.onPrimary,
+                        color: context.colors.onPrimary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                       ),

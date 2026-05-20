@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
-import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.dark(),
@@ -9,7 +9,7 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
-  group('AppBottomSheet.show', () {
+  group('AdaptiveSheet.show', () {
     testWidgets('renderiza title y child', (tester) async {
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -18,7 +18,7 @@ void main() {
             builder: (ctx) {
               capturedContext = ctx;
               return ElevatedButton(
-                onPressed: () => AppBottomSheet.show<void>(
+                onPressed: () => AdaptiveSheet.show<void>(
                   ctx,
                   title: 'Mi título',
                   child: const Text('Mi contenido'),
@@ -43,7 +43,7 @@ void main() {
         _wrap(
           Builder(
             builder: (ctx) => ElevatedButton(
-              onPressed: () => AppBottomSheet.show<void>(
+              onPressed: () => AdaptiveSheet.show<void>(
                 ctx,
                 title: 'X',
                 child: const Text('contenido'),
@@ -63,13 +63,13 @@ void main() {
     });
   });
 
-  group('AppBottomSheet.showRaw', () {
+  group('AdaptiveSheet.showRaw', () {
     testWidgets('renderiza el child sin chrome', (tester) async {
       await tester.pumpWidget(
         _wrap(
           Builder(
             builder: (ctx) => ElevatedButton(
-              onPressed: () => AppBottomSheet.showRaw<void>(
+              onPressed: () => AdaptiveSheet.showRaw<void>(
                 ctx,
                 builder: (_) => Container(
                   height: 200,

@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
@@ -66,10 +68,10 @@ class ExerciseRowCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             child: Ink(
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: AppColors.divider.withValues(alpha: 0.4),
+                  color: context.colors.divider.withValues(alpha: 0.4),
                 ),
               ),
               padding: const EdgeInsets.symmetric(
@@ -137,9 +139,9 @@ class ExerciseRowCard extends StatelessWidget {
                   if (onInfo != null)
                     IconButton(
                       onPressed: onInfo,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.info_outline_rounded,
-                        color: AppColors.textSecondary,
+                        color: context.colors.textSecondary,
                         size: 20,
                       ),
                       tooltip: 'Ver detalle del ejercicio',
@@ -162,13 +164,13 @@ class ExerciseRowCard extends StatelessWidget {
                             confirmVariant: AppButtonVariant.destructive,
                           );
                           if (ok == true) {
-                            HapticFeedback.heavyImpact();
+                            unawaited(HapticFeedback.heavyImpact());
                             onRemove!();
                           }
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline_rounded,
-                          color: AppColors.error,
+                          color: context.colors.error,
                           size: 20,
                         ),
                         tooltip: 'Quitar ejercicio',
@@ -180,9 +182,9 @@ class ExerciseRowCard extends StatelessWidget {
                       ),
                     ),
                   if (onRemove != null)
-                    const Icon(
+                    Icon(
                       Icons.drag_indicator_rounded,
-                      color: AppColors.textDisabled,
+                      color: context.colors.textDisabled,
                       size: 22,
                     ),
                 ],
@@ -204,14 +206,14 @@ class ExerciseRowCard extends StatelessWidget {
       background: Container(
         margin: const EdgeInsets.only(bottom: Spacing.sm),
         decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.85),
+          color: context.colors.error.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(18),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
-        child: const Icon(
+        child: Icon(
           Icons.delete_sweep_rounded,
-          color: AppColors.onPrimary,
+          color: context.colors.onPrimary,
           size: 26,
         ),
       ),
@@ -231,20 +233,20 @@ class _StatTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.5),
+        color: context.colors.background.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: AppColors.textSecondary),
+          Icon(icon, size: 11, color: context.colors.textSecondary),
           const SizedBox(width: 4),
           Text(
             label,
             style: AppTextStyles.label.copyWith(
               fontSize: 10.5,
-              color: AppColors.textPrimary.withValues(alpha: 0.85),
+              color: context.colors.textPrimary.withValues(alpha: 0.85),
               fontWeight: FontWeight.w700,
             ),
           ),
