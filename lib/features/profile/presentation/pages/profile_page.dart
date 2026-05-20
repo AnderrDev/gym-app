@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_bottom_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/barbell_loader.dart';
@@ -15,6 +15,7 @@ import 'package:gym_flutter/features/profile/presentation/widgets/profile_edit_n
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_info_card.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_sign_out_button.dart';
+import 'package:gym_flutter/features/profile/presentation/widgets/profile_theme_mode_sheet.dart';
 import 'package:gym_flutter/injection_container.dart';
 
 /// Pestaña "PERFIL".
@@ -41,13 +42,13 @@ class _ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.colors.background,
         elevation: 0,
         title: Text(
           'PERFIL',
-          style: AppTextStyles.heading2.copyWith(letterSpacing: 2),
+          style: context.text.titleLarge?.copyWith(letterSpacing: 2),
         ),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(

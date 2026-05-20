@@ -10,7 +10,7 @@ void main() {
       late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.dark(),
           home: Scaffold(
             body: Builder(
               builder: (ctx) {

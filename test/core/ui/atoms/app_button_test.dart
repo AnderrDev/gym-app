@@ -4,7 +4,7 @@ import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-  theme: AppTheme.dark,
+  theme: AppTheme.dark(),
   home: Scaffold(
     body: Padding(padding: const EdgeInsets.all(16), child: child),
   ),

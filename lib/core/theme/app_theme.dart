@@ -1,40 +1,50 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/app_palette.dart';
 import 'package:gym_flutter/core/theme/app_text_theme.dart';
 import 'package:gym_flutter/core/theme/tokens/durations.dart';
 import 'package:gym_flutter/core/theme/tokens/elevations.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
-/// Tema canónico de la app. `MaterialApp.theme` debe consumir `AppTheme.dark`
-/// y nada más — los component themes aquí declarados deben cubrir todo el
-/// styling para que `lib/features/` no necesite literales visuales.
+/// Tema canónico de la app. `MaterialApp.router` consume `AppTheme.light()` y
+/// `AppTheme.dark()`; el `themeMode` se resuelve desde `SettingsBloc`. Los
+/// component themes aquí declarados deben cubrir todo el styling para que
+/// `lib/features/` no necesite literales visuales — cuando un widget necesite
+/// un color o text style debe leerlo vía `context.colors.*` / `context.text.*`
+/// (ver `theme_context.dart`).
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get dark {
-    final textTheme = AppTextTheme.dark;
-    const colorScheme = ColorScheme.light(
-      primary: AppColors.primary,
-      onPrimary: AppColors.background,
-      secondary: AppColors.accent,
-      onSecondary: AppColors.background,
-      surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
-      surfaceContainerHighest: AppColors.surfaceHighlight,
-      error: AppColors.error,
-      onError: AppColors.textPrimary,
-      outline: AppColors.divider,
-      outlineVariant: AppColors.surfaceOverlay,
+  /// Tema claro (clinical white). Default histórico de la app.
+  static ThemeData light() => _build(AppPalette.light(), Brightness.light);
+
+  /// Tema oscuro (iOS dark). Nuevo en Phase Theme.
+  static ThemeData dark() => _build(AppPalette.dark(), Brightness.dark);
+
+  static ThemeData _build(AppPalette palette, Brightness brightness) {
+    final textTheme = AppTextTheme.build(palette);
+    final colorScheme = ColorScheme(
+      brightness: brightness,
+      primary: palette.primary,
+      onPrimary: palette.onPrimary,
+      secondary: palette.accent,
+      onSecondary: palette.onPrimary,
+      surface: palette.surface,
+      onSurface: palette.textPrimary,
+      surfaceContainerHighest: palette.surfaceHighlight,
+      error: palette.error,
+      onError: palette.onPrimary,
+      outline: palette.divider,
+      outlineVariant: palette.surfaceOverlay,
     );
 
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
-      canvasColor: AppColors.background,
+      scaffoldBackgroundColor: palette.background,
+      canvasColor: palette.background,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
       splashFactory: InkSparkle.splashFactory,
@@ -43,20 +53,20 @@ class AppTheme {
 
     return base.copyWith(
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: palette.background,
+        foregroundColor: palette.textPrimary,
         elevation: Elevations.none,
-        // En light la AppBar blanca se funde con el scaffold blanco al hacer
-        // scroll; una sombra mínima la separa del contenido sin "pesar".
+        // Una sombra mínima separa la AppBar del contenido al hacer scroll
+        // sin "pesar". El divider del tema sirve también de shadow tint.
         scrolledUnderElevation: Elevations.card,
         surfaceTintColor: Colors.transparent,
-        shadowColor: AppColors.divider,
+        shadowColor: palette.divider,
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: palette.textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: palette.surface,
         surfaceTintColor: Colors.transparent,
         elevation: Elevations.card,
         margin: EdgeInsets.zero,
@@ -65,13 +75,13 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceHighlight,
-        selectedColor: AppColors.primary,
+        backgroundColor: palette.surfaceHighlight,
+        selectedColor: palette.primary,
         labelStyle: textTheme.labelMedium,
         secondaryLabelStyle: textTheme.labelMedium?.copyWith(
-          color: AppColors.background,
+          color: palette.onPrimary,
         ),
-        side: const BorderSide(color: AppColors.divider),
+        side: BorderSide(color: palette.divider),
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.md,
           vertical: Spacing.xs,
@@ -81,7 +91,7 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
         elevation: Elevations.overlay,
         titleTextStyle: textTheme.headlineSmall,
@@ -90,24 +100,24 @@ class AppTheme {
           borderRadius: BorderRadius.circular(Radii.xl),
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surface,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
-        modalBackgroundColor: AppColors.surface,
-        modalBarrierColor: AppColors.overlay,
+        modalBackgroundColor: palette.surface,
+        modalBarrierColor: palette.overlay,
         elevation: Elevations.overlay,
         showDragHandle: true,
-        dragHandleColor: AppColors.surfaceOverlay,
-        shape: RoundedRectangleBorder(
+        dragHandleColor: palette.surfaceOverlay,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.xxl)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceHighlight,
+        backgroundColor: palette.surfaceHighlight,
         contentTextStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.textPrimary,
+          color: palette.textPrimary,
         ),
-        actionTextColor: AppColors.primary,
+        actionTextColor: palette.primary,
         behavior: SnackBarBehavior.floating,
         elevation: Elevations.overlay,
         shape: RoundedRectangleBorder(
@@ -116,37 +126,37 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: palette.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: Spacing.lg,
           vertical: Spacing.md,
         ),
         hintStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.textDisabled,
+          color: palette.textDisabled,
         ),
         labelStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.textSecondary,
+          color: palette.textSecondary,
         ),
         floatingLabelStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.primary,
+          color: palette.primary,
         ),
         helperStyle: textTheme.bodySmall,
-        errorStyle: textTheme.bodySmall?.copyWith(color: AppColors.error),
-        prefixIconColor: AppColors.textSecondary,
-        suffixIconColor: AppColors.textSecondary,
-        border: _outlineBorder(AppColors.divider),
-        enabledBorder: _outlineBorder(AppColors.divider),
-        focusedBorder: _outlineBorder(AppColors.primary, width: 1.5),
-        errorBorder: _outlineBorder(AppColors.error),
-        focusedErrorBorder: _outlineBorder(AppColors.error, width: 1.5),
-        disabledBorder: _outlineBorder(AppColors.surfaceHighlight),
+        errorStyle: textTheme.bodySmall?.copyWith(color: palette.error),
+        prefixIconColor: palette.textSecondary,
+        suffixIconColor: palette.textSecondary,
+        border: _outlineBorder(palette.divider),
+        enabledBorder: _outlineBorder(palette.divider),
+        focusedBorder: _outlineBorder(palette.primary, width: 1.5),
+        errorBorder: _outlineBorder(palette.error),
+        focusedErrorBorder: _outlineBorder(palette.error, width: 1.5),
+        disabledBorder: _outlineBorder(palette.surfaceHighlight),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          foregroundColor: AppColors.background,
-          backgroundColor: AppColors.primary,
-          disabledForegroundColor: AppColors.textDisabled,
-          disabledBackgroundColor: AppColors.surfaceHighlight,
+          foregroundColor: palette.onPrimary,
+          backgroundColor: palette.primary,
+          disabledForegroundColor: palette.textDisabled,
+          disabledBackgroundColor: palette.surfaceHighlight,
           minimumSize: const Size(0, 52),
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.xl,
@@ -161,8 +171,8 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          foregroundColor: AppColors.background,
-          backgroundColor: AppColors.primary,
+          foregroundColor: palette.onPrimary,
+          backgroundColor: palette.primary,
           minimumSize: const Size(0, 52),
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.xl,
@@ -176,13 +186,13 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: palette.primary,
           minimumSize: const Size(0, 52),
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.xl,
             vertical: Spacing.md,
           ),
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          side: BorderSide(color: palette.primary, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(Radii.md),
           ),
@@ -191,7 +201,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: palette.primary,
           textStyle: textTheme.labelLarge,
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.md,
@@ -201,25 +211,25 @@ class AppTheme {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: palette.textPrimary,
           backgroundColor: Colors.transparent,
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
+      dividerTheme: DividerThemeData(
+        color: palette.divider,
         thickness: 1,
         space: 1,
       ),
-      iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: AppColors.surfaceHighlight,
-        circularTrackColor: AppColors.surfaceHighlight,
+      iconTheme: IconThemeData(color: palette.textPrimary, size: 24),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: palette.primary,
+        linearTrackColor: palette.surfaceHighlight,
+        circularTrackColor: palette.surfaceHighlight,
       ),
       tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.textSecondary,
-        indicatorColor: AppColors.primary,
+        labelColor: palette.primary,
+        unselectedLabelColor: palette.textSecondary,
+        indicatorColor: palette.primary,
         labelStyle: textTheme.labelLarge,
         unselectedLabelStyle: textTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.w500,
@@ -227,7 +237,7 @@ class AppTheme {
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: AppColors.surfaceHighlight,
+          color: palette.surfaceHighlight,
           borderRadius: BorderRadius.circular(Radii.sm),
         ),
         textStyle: textTheme.labelMedium,
@@ -241,31 +251,32 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
-          return AppColors.textSecondary;
+          if (states.contains(WidgetState.selected)) return palette.primary;
+          return palette.textSecondary;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withValues(alpha: 0.4);
+            return palette.primary.withValues(alpha: 0.4);
           }
-          return AppColors.surfaceHighlight;
+          return palette.surfaceHighlight;
         }),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return palette.primary;
           return Colors.transparent;
         }),
-        checkColor: const WidgetStatePropertyAll(AppColors.background),
-        side: const BorderSide(color: AppColors.divider),
+        checkColor: WidgetStatePropertyAll(palette.onPrimary),
+        side: BorderSide(color: palette.divider),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Radii.xs),
         ),
       ),
-      // Marker para sweeps de duración: tema lee siempre AppDurations.medium
-      // como referencia. Mantener el campo aunque Material no lo consuma.
-      extensions: const <ThemeExtension<dynamic>>[
-        _AppMotion(fast: AppDurations.fast, medium: AppDurations.medium),
+      // Extensions: AppPalette habilita acceso vía `context.colors`,
+      // `_AppMotion` expone duraciones para sweeps.
+      extensions: <ThemeExtension<dynamic>>[
+        palette,
+        const _AppMotion(fast: AppDurations.fast, medium: AppDurations.medium),
       ],
     );
   }
@@ -276,6 +287,12 @@ class AppTheme {
       borderSide: BorderSide(color: color, width: width),
     );
   }
+
+  /// Alias legacy. `MaterialApp.theme` lo consumía como `AppTheme.dark` antes
+  /// del refactor a builder dual. Mantener hasta que `main.dart` y otros
+  /// pocos call-sites migren a `AppTheme.light()/dark()`.
+  @Deprecated('Usar AppTheme.light() o AppTheme.dark()')
+  static ThemeData get darkLegacy => light();
 }
 
 /// Extensión de tema con duraciones de animación expuestas en `Theme.of`.

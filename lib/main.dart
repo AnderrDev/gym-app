@@ -18,7 +18,8 @@ import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/platform/url_strategy_stub.dart'
     if (dart.library.js_interop) 'package:gym_flutter/core/platform/url_strategy_web.dart';
 import 'package:gym_flutter/core/routes/app_router.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
+import 'package:gym_flutter/core/theme/app_palette.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
@@ -38,17 +39,9 @@ void main() {
         [DeviceOrientation.portraitUp],
       );
     }
-    if (Capabilities.supportsSystemUiStyling) {
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-          systemNavigationBarColor: AppColors.background,
-          systemNavigationBarIconBrightness: Brightness.dark,
-        ),
-      );
-    }
+    // El `SystemUiOverlayStyle` ya no se setea aquí: depende del brightness
+    // del tema activo, así que vive en `_SystemUiOverlayChrome` (montado en
+    // el `builder` de `MaterialApp.router`).
 
     await initializeDateFormatting('es', null);
 
@@ -100,12 +93,14 @@ class SmartGymTrackerApp extends StatefulWidget {
 
 class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
   late final AuthBloc _authBloc;
+  late final SettingsBloc _settingsBloc;
   late final AppRouter _appRouter;
 
   @override
   void initState() {
     super.initState();
     _authBloc = di.sl<AuthBloc>()..add(AppStarted());
+    _settingsBloc = di.sl<SettingsBloc>();
     _appRouter = AppRouter(_authBloc);
   }
 
@@ -119,20 +114,59 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>.value(
-      value: _authBloc,
-      child: MaterialApp.router(
-        title: 'Smart Gym Tracker',
-        theme: AppTheme.dark,
-        routerConfig: _appRouter.router,
-        // Nota: NO wrappear con SelectionArea acá. El `builder` del
-        // MaterialApp.router corre ANTES de que el Navigator monte su
-        // Overlay; SelectionArea necesita un Overlay ancestor y
-        // crashea (`No Overlay widget found`). En su lugar, el wrapper
-        // vive dentro de `TitledPage`, que se monta por route — ya
-        // dentro del subtree del Navigator.
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>.value(value: _authBloc),
+        BlocProvider<SettingsBloc>.value(value: _settingsBloc),
+      ],
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        buildWhen: (prev, curr) => prev.themeMode != curr.themeMode,
+        builder: (context, settings) {
+          return MaterialApp.router(
+            title: 'Smart Gym Tracker',
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: settings.themeMode,
+            routerConfig: _appRouter.router,
+            // `_SystemUiOverlayChrome` reacciona al brightness resuelto del
+            // tema activo (sin reconstruir el Navigator). Va aquí — el
+            // `builder` corre ANTES de que el Navigator monte su Overlay,
+            // por eso no envolvemos con `SelectionArea` (necesita Overlay
+            // ancestor; ese wrapper vive en `TitledPage` por route).
+            builder: (ctx, child) =>
+                _SystemUiOverlayChrome(child: child ?? const SizedBox.shrink()),
+          );
+        },
       ),
     );
+  }
+}
+
+/// Aplica `SystemUiOverlayStyle` (status/navigation bars) acorde al
+/// `Brightness` activo. Reacciona automáticamente cuando el tema cambia.
+class _SystemUiOverlayChrome extends StatelessWidget {
+  const _SystemUiOverlayChrome({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Capabilities.supportsSystemUiStyling) return child;
+    final brightness = Theme.of(context).brightness;
+    final palette = Theme.of(context).extension<AppPalette>();
+    final isDark = brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor:
+            palette?.background ?? (isDark ? Colors.black : Colors.white),
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+    return child;
   }
 }
 
@@ -171,38 +205,45 @@ class _BootstrapErrorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smart Gym Tracker',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  color: AppColors.error,
-                  size: 48,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      home: Builder(
+        builder: (context) {
+          final palette = Theme.of(context).extension<AppPalette>()!;
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: palette.error,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      msg.title,
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      msg.body,
+                      style: TextStyle(color: palette.textSecondary),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  msg.title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  msg.body,
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/core/ui/feedback/app_dialog.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-  theme: AppTheme.dark,
+  theme: AppTheme.dark(),
   home: Scaffold(body: child),
 );
 

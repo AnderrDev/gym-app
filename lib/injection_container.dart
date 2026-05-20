@@ -23,6 +23,8 @@ import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/active_session_service.dart';
 import 'core/services/routine_assignment_bus.dart';
+import 'core/settings/presentation/settings_bloc.dart';
+import 'core/settings/user_preferences_service.dart';
 import 'core/utils/clock.dart';
 import 'features/workout/data/datasources/exercise_catalog_remote_data_source.dart';
 import 'features/workout/data/datasources/routine_management_remote_data_source.dart';
@@ -240,6 +242,16 @@ Future<void> init() async {
   // ── EXTERNAL ──────────────────────────────────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
+
+  // ── SETTINGS ──────────────────────────────────────────────────────────────
+  // Global. `SettingsBloc` debe sobrevivir al ciclo de vida de cualquier
+  // pantalla — registramos como lazy singleton, no factory.
+  sl.registerLazySingleton<UserPreferencesService>(
+    () => UserPreferencesService(sl<SharedPreferences>()),
+  );
+  sl.registerLazySingleton<SettingsBloc>(
+    () => SettingsBloc(preferences: sl<UserPreferencesService>()),
+  );
 
   // Local database (drift): se abre eagerly y se valida con `ping()` para
   // detectar corrupción/migrations rotas en bootstrap. En web la persistencia
