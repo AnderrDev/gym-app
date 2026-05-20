@@ -72,6 +72,7 @@ abstract class WorkoutRemoteDataSource {
 
   Future<RoutineModel> saveRoutine(RoutineModel routine);
   Future<void> deleteRoutine(String routineId);
+  Future<String> forkRoutine(String sourceRoutineId, {String? newName});
   Future<RoutineDayModel> saveRoutineDay(RoutineDayModel day);
   Future<void> deleteRoutineDay(String dayId);
   Future<void> addExerciseToDay(

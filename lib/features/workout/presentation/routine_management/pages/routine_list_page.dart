@@ -83,6 +83,19 @@ class _RoutineListPageState extends State<RoutineListPage> {
     }
   }
 
+  void _onForkRoutine(String routineId) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is Authenticated) {
+      HapticFeedback.mediumImpact();
+      context.read<RoutineManagementBloc>().add(
+        ForkRoutine(
+          userId: authState.user.id,
+          sourceRoutineId: routineId,
+        ),
+      );
+    }
+  }
+
   void _refreshRoutines() {
     if (!mounted) return;
     _loadRoutines();
@@ -137,6 +150,17 @@ class _RoutineListPageState extends State<RoutineListPage> {
   ) {
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
       AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
+      // Tras un fork desde la lista: abrimos el editor de la copia recién
+      // creada para que el usuario pueda renombrar/ajustar inmediatamente.
+      if (state.lastAction == RoutineManagementAction.forkRoutine) {
+        final newId = state.lastForkedRoutineId;
+        context.read<RoutineManagementBloc>().add(const AcknowledgeFeedback());
+        if (newId != null) {
+          unawaited(pushRoutineEditor(context, routineId: newId)
+              .then((_) => _refreshRoutines()));
+        }
+        return;
+      }
       // Solo regresamos al dashboard tras un assign exitoso.
       final shouldPop =
           state.lastAction == RoutineManagementAction.assignRoutine;
@@ -194,6 +218,9 @@ class _RoutineListPageState extends State<RoutineListPage> {
               isMine: routine.creatorId == currentUserId,
               onActivate: _onAssignRoutine,
               onEdited: _refreshRoutines,
+              onFork: (routine.creatorId != currentUserId && routine.isPublic)
+                  ? _onForkRoutine
+                  : null,
             ),
           );
         },

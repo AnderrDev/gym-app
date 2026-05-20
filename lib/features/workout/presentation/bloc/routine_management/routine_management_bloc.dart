@@ -15,6 +15,8 @@ import 'package:gym_flutter/features/workout/domain/usecases/delete_routine.dart
     as uc_del_routine;
 import 'package:gym_flutter/features/workout/domain/usecases/delete_routine_day.dart'
     as uc_del_day;
+import 'package:gym_flutter/features/workout/domain/usecases/fork_routine.dart'
+    as uc_fork_routine;
 import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
@@ -56,6 +58,7 @@ class RoutineManagementBloc
     required this.getRoutineById,
     required this.saveRoutine,
     required this.deleteRoutine,
+    required this.forkRoutine,
     required this.saveRoutineDay,
     required this.deleteRoutineDay,
     required this.addExerciseToDay,
@@ -70,6 +73,7 @@ class RoutineManagementBloc
     on<AssignRoutineToUser>(handleAssign);
     on<SaveRoutine>(handleSaveRoutine);
     on<DeleteRoutine>(handleDeleteRoutine);
+    on<ForkRoutine>(handleForkRoutine);
     on<SaveDay>(handleSaveDay);
     on<DeleteDay>(handleDeleteDay);
     on<LoadExerciseCatalog>(handleLoadExerciseCatalog);
@@ -90,6 +94,7 @@ class RoutineManagementBloc
   final GetRoutineById getRoutineById;
   final uc_save_routine.SaveRoutine saveRoutine;
   final uc_del_routine.DeleteRoutine deleteRoutine;
+  final uc_fork_routine.ForkRoutine forkRoutine;
   final uc_save_day.SaveRoutineDay saveRoutineDay;
   final uc_del_day.DeleteRoutineDay deleteRoutineDay;
   final uc_add_one.AddExerciseToDay addExerciseToDay;

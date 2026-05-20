@@ -64,6 +64,24 @@ class SaveRoutine extends RoutineManagementEvent {
   List<Object?> get props => [userId, id, name, isPublic];
 }
 
+/// Crea una copia privada (fork) de una rutina visible (propia o pública).
+/// Tras éxito, `state.lastForkedRoutineId` contendrá el id de la nueva rutina
+/// para que la página pueda navegar directamente a su editor.
+class ForkRoutine extends RoutineManagementEvent {
+  const ForkRoutine({
+    required this.userId,
+    required this.sourceRoutineId,
+    this.newName,
+  });
+
+  final String userId;
+  final String sourceRoutineId;
+  final String? newName;
+
+  @override
+  List<Object?> get props => [userId, sourceRoutineId, newName];
+}
+
 /// Elimina una rutina del catálogo.
 class DeleteRoutine extends RoutineManagementEvent {
   const DeleteRoutine({required this.userId, required this.routineId});

@@ -10,9 +10,11 @@ class DayEditorAppBar extends StatelessWidget {
     required this.isDirty,
     required this.onBack,
     required this.onSave,
+    this.isOwner = true,
   });
 
   final bool isDirty;
+  final bool isOwner;
   final VoidCallback onBack;
   final VoidCallback onSave;
 
@@ -33,11 +35,11 @@ class DayEditorAppBar extends StatelessWidget {
         onPressed: onBack,
       ),
       title: Text(
-        'Editar día',
+        isOwner ? 'Editar día' : 'Vista previa',
         style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w800),
       ),
       actions: [
-        DayEditorSaveAction(isDirty: isDirty, onSave: onSave),
+        if (isOwner) DayEditorSaveAction(isDirty: isDirty, onSave: onSave),
         const SizedBox(width: 8),
       ],
     );

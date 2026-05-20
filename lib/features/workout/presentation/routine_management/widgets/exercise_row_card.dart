@@ -18,13 +18,16 @@ class ExerciseRowCard extends StatelessWidget {
     super.key,
     required this.exercise,
     required this.index,
-    required this.onRemove,
+    this.onRemove,
     this.onTap,
   });
 
   final Exercise exercise;
   final int index;
-  final VoidCallback onRemove;
+
+  /// `null` cuando la card se renderiza en read-only (vista previa de rutina
+  /// ajena). Sin remove implica también sin Dismissible.
+  final VoidCallback? onRemove;
   final VoidCallback? onTap;
 
   static String _formatWeight(double w) {
@@ -45,28 +48,7 @@ class ExerciseRowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = RoutineColor.byIndex(index);
 
-    return Dismissible(
-      key: ValueKey('dismiss_${exercise.id}_$index'),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) {
-        HapticFeedback.heavyImpact();
-        onRemove();
-      },
-      background: Container(
-        margin: const EdgeInsets.only(bottom: Spacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
-        child: const Icon(
-          Icons.delete_sweep_rounded,
-          color: AppColors.onPrimary,
-          size: 26,
-        ),
-      ),
-      child: Padding(
+    final body = Padding(
         padding: const EdgeInsets.only(bottom: Spacing.sm),
         child: Material(
           color: Colors.transparent,
@@ -143,17 +125,43 @@ class ExerciseRowCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Spacing.sm),
-                  const Icon(
-                    Icons.drag_indicator_rounded,
-                    color: AppColors.textDisabled,
-                    size: 22,
-                  ),
+                  if (onRemove != null)
+                    const Icon(
+                      Icons.drag_indicator_rounded,
+                      color: AppColors.textDisabled,
+                      size: 22,
+                    ),
                 ],
               ),
             ),
           ),
         ),
+      );
+
+    if (onRemove == null) return body;
+
+    return Dismissible(
+      key: ValueKey('dismiss_${exercise.id}_$index'),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) {
+        HapticFeedback.heavyImpact();
+        onRemove!();
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: Spacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
+        child: const Icon(
+          Icons.delete_sweep_rounded,
+          color: AppColors.onPrimary,
+          size: 26,
+        ),
       ),
+      child: body,
     );
   }
 }

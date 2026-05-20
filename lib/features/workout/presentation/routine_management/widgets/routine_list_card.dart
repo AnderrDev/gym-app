@@ -24,6 +24,7 @@ class RoutineListCard extends StatelessWidget {
     required this.isMine,
     required this.onActivate,
     this.onEdited,
+    this.onFork,
   });
 
   final Routine routine;
@@ -33,6 +34,10 @@ class RoutineListCard extends StatelessWidget {
 
   /// Callback cuando el editor pop-ea con cambios.
   final VoidCallback? onEdited;
+
+  /// Disparado al tocar "CREAR MI COPIA" para rutinas ajenas públicas.
+  /// `null` cuando el botón no aplica (rutina propia o privada ajena).
+  final ValueChanged<String>? onFork;
 
   Future<void> _openDetails(BuildContext context) async {
     unawaited(HapticFeedback.selectionClick());
@@ -100,6 +105,7 @@ class RoutineListCard extends StatelessWidget {
                           isActive: isActive,
                           accent: accent,
                           onActivate: () => onActivate(routine.id),
+                          onFork: onFork == null ? null : () => onFork!(routine.id),
                         ),
                       ],
                     ),

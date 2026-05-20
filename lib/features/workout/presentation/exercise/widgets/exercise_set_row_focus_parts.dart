@@ -56,44 +56,52 @@ class FocusChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: focused == SetRowFocusedField.none
-          ? const SizedBox(width: double.infinity)
-          : Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 2),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: focused == SetRowFocusedField.weight
-                        ? QuickStepStrip(
-                            steps: const [-2.5, -1, 1, 2.5],
-                            formatter: (v) =>
-                                v > 0 ? '+${_formatStep(v)}' : _formatStep(v),
-                            onTap: onBumpWeight,
-                          )
-                        : QuickStepStrip(
-                            steps: const [-1, 1, 2],
-                            formatter: (v) => v > 0
-                                ? '+${v.toInt()}'
-                                : v.toInt().toString(),
-                            onTap: (v) => onBumpReps(v.toInt()),
-                          ),
-                  ),
-                  const SizedBox(width: 6),
-                  // El tap normal en el campo solo muestra chips. El usuario
-                  // habilita el teclado del sistema tocando este chip.
-                  KeyboardToggleChip(
-                    isActive: keyboardField == focused,
-                    onTap: keyboardField == focused
-                        ? null
-                        : onOpenKeyboardForFocused,
-                  ),
-                ],
+    // TextFieldTapRegion: por defecto TextField desfoquea cuando detecta
+    // un tap fuera de su región (en web esto cierra el foco al tocar un
+    // chip, colapsa la fila y el handler nunca corre). Marcando los chips
+    // como parte de la misma "región de TextField", los taps acá quedan
+    // dentro del grupo y el campo no pierde foco.
+    return TextFieldTapRegion(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: focused == SetRowFocusedField.none
+            ? const SizedBox(width: double.infinity)
+            : Padding(
+                padding: const EdgeInsets.only(top: 6, bottom: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: focused == SetRowFocusedField.weight
+                          ? QuickStepStrip(
+                              steps: const [-2.5, -1, 1, 2.5],
+                              formatter: (v) => v > 0
+                                  ? '+${_formatStep(v)}'
+                                  : _formatStep(v),
+                              onTap: onBumpWeight,
+                            )
+                          : QuickStepStrip(
+                              steps: const [-1, 1, 2],
+                              formatter: (v) => v > 0
+                                  ? '+${v.toInt()}'
+                                  : v.toInt().toString(),
+                              onTap: (v) => onBumpReps(v.toInt()),
+                            ),
+                    ),
+                    const SizedBox(width: 6),
+                    // El tap normal en el campo solo muestra chips. El usuario
+                    // habilita el teclado del sistema tocando este chip.
+                    KeyboardToggleChip(
+                      isActive: keyboardField == focused,
+                      onTap: keyboardField == focused
+                          ? null
+                          : onOpenKeyboardForFocused,
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }

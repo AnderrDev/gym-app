@@ -45,6 +45,7 @@ import 'features/workout/domain/usecases/add_exercises_to_day.dart';
 import 'features/workout/domain/usecases/assign_routine.dart';
 import 'features/workout/domain/usecases/delete_routine.dart';
 import 'features/workout/domain/usecases/delete_routine_day.dart';
+import 'features/workout/domain/usecases/fork_routine.dart';
 import 'features/workout/domain/usecases/get_all_routines.dart';
 import 'features/workout/domain/usecases/get_exercises_catalog.dart';
 import 'features/workout/domain/usecases/get_routine_by_id.dart';
@@ -140,6 +141,7 @@ Future<void> init() async {
       getRoutineById: sl(),
       saveRoutine: sl(),
       deleteRoutine: sl(),
+      forkRoutine: sl(),
       saveRoutineDay: sl(),
       deleteRoutineDay: sl(),
       addExerciseToDay: sl(),
@@ -168,6 +170,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetRoutineById(sl()));
   sl.registerLazySingleton(() => SaveRoutine(sl()));
   sl.registerLazySingleton(() => DeleteRoutine(sl()));
+  sl.registerLazySingleton(() => ForkRoutine(sl()));
   sl.registerLazySingleton(() => SaveRoutineDay(sl()));
   sl.registerLazySingleton(() => DeleteRoutineDay(sl()));
   sl.registerLazySingleton(() => AddExerciseToDay(sl()));

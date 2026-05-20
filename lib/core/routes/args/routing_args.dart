@@ -20,10 +20,19 @@ class RoutineDayArgs {
 
 /// Argumentos para abrir el editor de un día específico.
 class DayEditorArgs {
-  const DayEditorArgs({required this.day, required this.routineId});
+  const DayEditorArgs({
+    required this.day,
+    required this.routineId,
+    this.isOwner = true,
+  });
 
   final RoutineDay day;
   final String routineId;
+
+  /// Cuando es `false`, el editor del día se renderiza en modo read-only
+  /// (sin GUARDAR, sin FAB del catálogo, sin reordenar ni borrar ejercicios).
+  /// Lo pasa el `routine_editor` al abrir un día de una rutina ajena.
+  final bool isOwner;
 }
 
 /// Argumentos para la pantalla de estadísticas de una rutina.

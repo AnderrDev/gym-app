@@ -11,10 +11,12 @@ class DayNameInput extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onChanged,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,8 @@ class DayNameInput extends StatelessWidget {
           TextField(
             controller: controller,
             onChanged: onChanged,
+            readOnly: readOnly,
+            enabled: !readOnly,
             style:
                 AppTextStyles.heading1.copyWith(fontSize: 22, letterSpacing: -0.4),
             decoration: InputDecoration(

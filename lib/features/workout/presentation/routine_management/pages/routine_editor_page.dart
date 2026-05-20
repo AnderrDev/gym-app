@@ -6,7 +6,9 @@ import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
+import 'package:gym_flutter/core/routes/app_routes.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
@@ -81,6 +83,23 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   ) {
     final bloc = context.read<RoutineManagementBloc>();
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
+      // Caso especial: fork. Antes de hacer ack capturamos el id de la nueva
+      // rutina para navegar a su editor. Sin la navegación quedaríamos en la
+      // vista previa de la rutina ajena después del fork — confuso.
+      if (state.lastAction == RoutineManagementAction.forkRoutine) {
+        final newId = state.lastForkedRoutineId;
+        AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
+        bloc.add(const AcknowledgeFeedback());
+        if (newId != null) {
+          // `pushReplacement` reemplaza el stack actual del editor: ya no
+          // tiene sentido volver a la vista previa de la ajena.
+          GoRouter.of(context).pushReplacement(
+            AppRoutes.routineEditor,
+            extra: newId,
+          );
+        }
+        return;
+      }
       // Si encadenamos "AÑADIR DÍA" sobre una rutina nueva, silenciamos el
       // toast del SaveRoutine — el siguiente success (SaveDay) lo mostrará.
       final isChainedSave = _addDayAfterSave &&
@@ -135,9 +154,19 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             // Días ordenados por day_of_week (no se reordena).
             final days = List<RoutineDay>.from(state.editingDays)
               ..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
-            final isDirty = state.isDirty;
             final activeRoutineId =
                 widget.routineId ?? state.editingRoutine?.id;
+
+            // `isOwner` se decide comparando el creator de la rutina cargada
+            // con el usuario actual. Sin routineId estamos creando nueva, así
+            // que es "owner" por definición. Mientras no haya llegado el
+            // `editingRoutine` consideramos owner=true para no flashear UI de
+            // read-only en el primer frame y luego cambiar.
+            final loadedCreatorId = state.editingRoutine?.creatorId;
+            final isOwner = widget.routineId == null ||
+                loadedCreatorId == null ||
+                loadedCreatorId == userId;
+            final isDirty = state.isDirty && isOwner;
 
             return PopScope(
               canPop: !isDirty,
@@ -156,6 +185,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                     RoutineEditorAppBar(
                       activeRoutineId: activeRoutineId,
                       isDirty: isDirty,
+                      isOwner: isOwner,
                       onClose: () => _onClosePressed(isDirty),
                       onDelete: () => _confirmDelete(userId),
                       onSave: () => _onSavePressed(userId, activeRoutineId),
@@ -171,6 +201,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                         child: RoutineInfoCard(
                           nameController: _nameController,
                           isPublic: _isPublic,
+                          readOnly: !isOwner,
+                          creatorName: state.editingRoutine?.creatorName,
                           onNameChanged: () => context
                               .read<RoutineManagementBloc>()
                               .add(const MarkRoutineDirty()),
@@ -184,6 +216,13 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                         ),
                       ),
                     ),
+                    if (!isOwner && activeRoutineId != null)
+                      SliverToBoxAdapter(
+                        child: _ForkBanner(
+                          submitting: state.isSubmitting,
+                          onTap: () => _onForkPressed(userId, activeRoutineId),
+                        ),
+                      ),
                     SliverToBoxAdapter(
                       child: RoutineEditorWeekHeader(dayCount: days.length),
                     ),
@@ -197,30 +236,32 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                             index: index,
                             day: days[index],
                             activeRoutineId: activeRoutineId,
+                            isOwner: isOwner,
                           ),
                           childCount: days.length,
                         ),
                       ),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          Spacing.lgPlus,
-                          Spacing.sm,
-                          Spacing.lgPlus,
-                          Spacing.sm,
-                        ),
-                        child: KineticButton(
-                          label: 'AÑADIR DÍA',
-                          icon: Icons.add_circle_outline_rounded,
-                          onTap: () => _onAddDayPressed(
-                            userId,
-                            activeRoutineId,
-                            days.length,
+                    if (isOwner)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Spacing.lgPlus,
+                            Spacing.sm,
+                            Spacing.lgPlus,
+                            Spacing.sm,
+                          ),
+                          child: KineticButton(
+                            label: 'AÑADIR DÍA',
+                            icon: Icons.add_circle_outline_rounded,
+                            onTap: () => _onAddDayPressed(
+                              userId,
+                              activeRoutineId,
+                              days.length,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
@@ -298,4 +339,113 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     bloc.add(DeleteRoutine(userId: userId, routineId: routineId));
   }
 
+  void _onForkPressed(String userId, String sourceRoutineId) {
+    HapticFeedback.mediumImpact();
+    context.read<RoutineManagementBloc>().add(
+      ForkRoutine(userId: userId, sourceRoutineId: sourceRoutineId),
+    );
+  }
+
+}
+
+/// Banner sticky que aparece cuando la rutina abierta no pertenece al
+/// usuario. CTA: "CREAR MI COPIA" → dispara `ForkRoutine` y navega al
+/// editor de la nueva (privada) rutina.
+class _ForkBanner extends StatelessWidget {
+  const _ForkBanner({required this.submitting, required this.onTap});
+
+  final bool submitting;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lgPlus,
+        0,
+        Spacing.lgPlus,
+        Spacing.lg,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(Spacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16),
+          border:
+              Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.lock_outline_rounded,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            const SizedBox(width: Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RUTINA AJENA',
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'No podés editarla. Creá tu copia para personalizarla.',
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Spacing.sm),
+            TextButton(
+              onPressed: submitting ? null : onTap,
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor:
+                    AppColors.primary.withValues(alpha: 0.4),
+                foregroundColor: AppColors.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: Spacing.sm,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: submitting
+                  ? const SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.onPrimary,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      'CREAR MI COPIA',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        fontSize: 11,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

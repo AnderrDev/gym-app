@@ -82,6 +82,40 @@ extension RoutineEditHandlers on RoutineManagementBloc {
     );
   }
 
+  Future<void> handleForkRoutine(
+    ForkRoutine event,
+    Emitter<RoutineManagementState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        submissionStatus: RoutineManagementSubmissionStatus.submitting,
+        clearErrorMessage: true,
+        clearLastForkedRoutineId: true,
+      ),
+    );
+    final result = await forkRoutine(
+      event.sourceRoutineId,
+      newName: event.newName,
+    );
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          submissionStatus: RoutineManagementSubmissionStatus.failure,
+          lastAction: RoutineManagementAction.forkRoutine,
+          errorMessage: failure.message,
+        ),
+      ),
+      (newRoutineId) => emit(
+        state.copyWith(
+          submissionStatus: RoutineManagementSubmissionStatus.success,
+          lastAction: RoutineManagementAction.forkRoutine,
+          feedbackMessage: 'Copia creada — ya es tuya',
+          lastForkedRoutineId: newRoutineId,
+        ),
+      ),
+    );
+  }
+
   Future<void> handleDeleteRoutine(
     DeleteRoutine event,
     Emitter<RoutineManagementState> emit,
@@ -145,6 +179,7 @@ extension RoutineEditHandlers on RoutineManagementBloc {
         lastAction: RoutineManagementAction.none,
         clearFeedbackMessage: true,
         clearErrorMessage: true,
+        clearLastForkedRoutineId: true,
       ),
     );
   }

@@ -8,6 +8,7 @@ class RoutineEditorAppBar extends StatelessWidget {
     super.key,
     required this.activeRoutineId,
     required this.isDirty,
+    required this.isOwner,
     required this.onClose,
     required this.onDelete,
     required this.onSave,
@@ -15,12 +16,21 @@ class RoutineEditorAppBar extends StatelessWidget {
 
   final String? activeRoutineId;
   final bool isDirty;
+
+  /// `false` cuando la rutina abierta no pertenece al usuario actual (vista
+  /// pública). En ese caso ocultamos GUARDAR/ELIMINAR — el CTA de copia vive
+  /// en el body para que sea inconfundible.
+  final bool isOwner;
   final VoidCallback onClose;
   final VoidCallback onDelete;
   final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
+    final isExisting = activeRoutineId != null;
+    final title = !isExisting
+        ? 'Nueva rutina'
+        : (isOwner ? 'Editar rutina' : 'Vista previa');
     return SliverAppBar(
       pinned: true,
       titleSpacing: 0,
@@ -35,11 +45,11 @@ class RoutineEditorAppBar extends StatelessWidget {
         onPressed: onClose,
       ),
       title: Text(
-        activeRoutineId == null ? 'Nueva rutina' : 'Editar rutina',
+        title,
         style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w800),
       ),
       actions: [
-        if (activeRoutineId != null)
+        if (isExisting && isOwner)
           IconButton(
             icon: const Icon(
               Icons.delete_outline_rounded,
@@ -48,22 +58,23 @@ class RoutineEditorAppBar extends StatelessWidget {
             tooltip: 'Eliminar rutina',
             onPressed: onDelete,
           ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: TextButton(
-            onPressed: isDirty ? onSave : null,
-            child: Text(
-              'GUARDAR',
-              style: AppTextStyles.label.copyWith(
-                color: isDirty
-                    ? AppColors.primary
-                    : AppColors.textSecondary.withValues(alpha: 0.5),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
+        if (isOwner)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: TextButton(
+              onPressed: isDirty ? onSave : null,
+              child: Text(
+                'GUARDAR',
+                style: AppTextStyles.label.copyWith(
+                  color: isDirty
+                      ? AppColors.primary
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

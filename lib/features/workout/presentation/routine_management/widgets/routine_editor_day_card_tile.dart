@@ -20,11 +20,13 @@ class RoutineEditorDayCardTile extends StatelessWidget {
     required this.index,
     required this.day,
     required this.activeRoutineId,
+    this.isOwner = true,
   });
 
   final int index;
   final RoutineDay day;
   final String? activeRoutineId;
+  final bool isOwner;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +34,9 @@ class RoutineEditorDayCardTile extends StatelessWidget {
       index: index,
       day: day,
       onTap: () => _openDayEditor(context),
-      confirmDelete: () => DeleteDayDialog.show(context, dayName: day.name),
-      onDelete: () => _deleteDay(context),
+      confirmDelete:
+          isOwner ? () => DeleteDayDialog.show(context, dayName: day.name) : null,
+      onDelete: isOwner ? () => _deleteDay(context) : null,
     );
   }
 
@@ -42,7 +45,7 @@ class RoutineEditorDayCardTile extends StatelessWidget {
     if (routineId == null) return;
     final changed = await pushDayEditor(
       context,
-      DayEditorArgs(day: day, routineId: routineId),
+      DayEditorArgs(day: day, routineId: routineId, isOwner: isOwner),
     );
     if (!context.mounted || changed != true) return;
     final authState = context.read<AuthBloc>().state;

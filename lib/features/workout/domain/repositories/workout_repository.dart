@@ -96,6 +96,14 @@ abstract class WorkoutRepository {
   /// Deletes a routine and all its dependencies
   Future<Either<Failure, void>> deleteRoutine(String routineId);
 
+  /// Crea una copia privada de una rutina visible (propia o pública). Devuelve
+  /// el id de la nueva rutina, que queda con `creator_id` = usuario actual e
+  /// `is_public = false`. Conserva días, ejercicios, targets y orden.
+  Future<Either<Failure, String>> forkRoutine(
+    String sourceRoutineId, {
+    String? newName,
+  });
+
   /// Saves (creates or updates) a routine day. Devuelve la entidad persistida
   /// con id real.
   Future<Either<Failure, RoutineDay>> saveRoutineDay(RoutineDay day);

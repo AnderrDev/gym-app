@@ -18,6 +18,7 @@ enum RoutineManagementAction {
   assignRoutine,
   saveRoutine,
   deleteRoutine,
+  forkRoutine,
   saveDay,
   deleteDay,
   addExercise,
@@ -45,6 +46,7 @@ class RoutineManagementState extends Equatable {
     this.isDirty = false,
     this.errorMessage,
     this.feedbackMessage,
+    this.lastForkedRoutineId,
   });
 
   final RoutineManagementStatus status;
@@ -63,6 +65,11 @@ class RoutineManagementState extends Equatable {
   final bool isDirty;
   final String? errorMessage;
   final String? feedbackMessage;
+
+  /// Id de la rutina recién forkeada. La página lo lee tras el success de
+  /// `ForkRoutine` para navegar al editor de la copia. Se limpia con
+  /// `AcknowledgeFeedback` para que no quede "pegado" entre reaperturas.
+  final String? lastForkedRoutineId;
 
   bool get isLoading => status == RoutineManagementStatus.loading;
   bool get isSubmitting =>
@@ -87,6 +94,8 @@ class RoutineManagementState extends Equatable {
     bool clearErrorMessage = false,
     String? feedbackMessage,
     bool clearFeedbackMessage = false,
+    String? lastForkedRoutineId,
+    bool clearLastForkedRoutineId = false,
   }) {
     return RoutineManagementState(
       status: status ?? this.status,
@@ -109,6 +118,9 @@ class RoutineManagementState extends Equatable {
       feedbackMessage: clearFeedbackMessage
           ? null
           : (feedbackMessage ?? this.feedbackMessage),
+      lastForkedRoutineId: clearLastForkedRoutineId
+          ? null
+          : (lastForkedRoutineId ?? this.lastForkedRoutineId),
     );
   }
 
@@ -126,5 +138,6 @@ class RoutineManagementState extends Equatable {
     isDirty,
     errorMessage,
     feedbackMessage,
+    lastForkedRoutineId,
   ];
 }

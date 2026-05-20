@@ -34,6 +34,15 @@ mixin WorkoutRepositoryRoutineMgmtMixin on WorkoutRepository {
       guard(() => remoteDataSource.deleteRoutine(routineId));
 
   @override
+  Future<Either<Failure, String>> forkRoutine(
+    String sourceRoutineId, {
+    String? newName,
+  }) =>
+      guard(
+        () => remoteDataSource.forkRoutine(sourceRoutineId, newName: newName),
+      );
+
+  @override
   Future<Either<Failure, RoutineDay>> saveRoutineDay(RoutineDay day) =>
       guard(() async {
         final saved = await remoteDataSource.saveRoutineDay(day.toModel());

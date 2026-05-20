@@ -15,12 +15,22 @@ class RoutineInfoCard extends StatefulWidget {
     required this.isPublic,
     required this.onNameChanged,
     required this.onPublicChanged,
+    this.readOnly = false,
+    this.creatorName,
   });
 
   final TextEditingController nameController;
   final bool isPublic;
   final VoidCallback onNameChanged;
   final ValueChanged<bool> onPublicChanged;
+
+  /// Cuando `true` deshabilita la edición del nombre y el switch público.
+  /// Se usa al abrir una rutina ajena (vista previa antes de forkear).
+  final bool readOnly;
+
+  /// Nombre del autor, sólo se muestra en modo `readOnly` como atribución
+  /// debajo del nombre.
+  final String? creatorName;
 
   @override
   State<RoutineInfoCard> createState() => _RoutineInfoCardState();
@@ -79,22 +89,43 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
-                child: TextField(
-                  controller: widget.nameController,
-                  onChanged: (_) => widget.onNameChanged(),
-                  style: AppTextStyles.heading1
-                      .copyWith(fontSize: 22, letterSpacing: -0.3),
-                  decoration: InputDecoration(
-                    hintText: 'Nombre de la rutina',
-                    hintStyle: AppTextStyles.heading1.copyWith(
-                      color: AppColors.textDisabled,
-                      fontSize: 22,
-                      letterSpacing: -0.3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: widget.nameController,
+                      readOnly: widget.readOnly,
+                      enabled: !widget.readOnly,
+                      onChanged: (_) => widget.onNameChanged(),
+                      style: AppTextStyles.heading1
+                          .copyWith(fontSize: 22, letterSpacing: -0.3),
+                      decoration: InputDecoration(
+                        hintText: 'Nombre de la rutina',
+                        hintStyle: AppTextStyles.heading1.copyWith(
+                          color: AppColors.textDisabled,
+                          fontSize: 22,
+                          letterSpacing: -0.3,
+                        ),
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 6),
+                        border: InputBorder.none,
+                      ),
                     ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                    border: InputBorder.none,
-                  ),
+                    if (widget.readOnly &&
+                        widget.creatorName != null &&
+                        widget.creatorName!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          'Por ${widget.creatorName}',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -134,7 +165,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
               Switch(
                 value: widget.isPublic,
                 activeThumbColor: accent,
-                onChanged: widget.onPublicChanged,
+                onChanged: widget.readOnly ? null : widget.onPublicChanged,
               ),
             ],
           ),

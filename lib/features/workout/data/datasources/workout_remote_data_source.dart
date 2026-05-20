@@ -75,6 +75,10 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
       _routines.deleteRoutine(routineId);
 
   @override
+  Future<String> forkRoutine(String sourceRoutineId, {String? newName}) =>
+      _routines.forkRoutine(sourceRoutineId, newName: newName);
+
+  @override
   Future<RoutineDayModel> saveRoutineDay(RoutineDayModel day) =>
       _routines.saveRoutineDay(day);
 

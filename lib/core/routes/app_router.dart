@@ -201,7 +201,11 @@ class AppRouter {
             title: 'Editar día',
             child: BlocProvider<RoutineManagementBloc>(
               create: (_) => sl<RoutineManagementBloc>(),
-              child: DayEditorPage(day: args.day, routineId: args.routineId),
+              child: DayEditorPage(
+                day: args.day,
+                routineId: args.routineId,
+                isOwner: args.isOwner,
+              ),
             ),
           );
         },

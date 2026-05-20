@@ -165,6 +165,25 @@ class RoutineManagementRemoteDataSource {
     await client.from('routines').delete().eq('id', routineId);
   }
 
+  /// Crea una copia privada de una rutina visible para el caller (propia o
+  /// pública) vía RPC `fork_routine_v1`. Devuelve el id de la nueva rutina.
+  ///
+  /// El RPC es `SECURITY DEFINER` y rechaza copias sobre rutinas a las que
+  /// el usuario no tenga visibilidad — la BD es la última línea de defensa,
+  /// la UI ya debería gatear la acción.
+  Future<String> forkRoutine(String sourceRoutineId, {String? newName}) async {
+    final dynamic res = await client.rpc<dynamic>(
+      'fork_routine_v1',
+      params: {
+        'p_source_routine_id': sourceRoutineId,
+        if (newName != null && newName.trim().isNotEmpty)
+          'p_new_name': newName.trim(),
+      },
+    );
+    if (res is String) return res;
+    throw StateError('fork_routine_v1: unexpected response shape: $res');
+  }
+
   Future<RoutineDayModel> saveRoutineDay(RoutineDayModel day) async {
     final payload = {'name': day.name, 'day_of_week': day.dayOfWeek};
     final isNew = _isNewId(day.id);

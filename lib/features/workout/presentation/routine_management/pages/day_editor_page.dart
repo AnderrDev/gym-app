@@ -29,7 +29,17 @@ class DayEditorPage extends StatefulWidget {
   final String routineId;
   final RoutineDay day;
 
-  const DayEditorPage({super.key, required this.routineId, required this.day});
+  /// `false` cuando se abre desde una rutina ajena (vista previa pública).
+  /// En ese caso todo el editor del día va en read-only: sin GUARDAR, sin
+  /// FAB del catálogo, sin reordenar, sin borrar ni editar targets.
+  final bool isOwner;
+
+  const DayEditorPage({
+    super.key,
+    required this.routineId,
+    required this.day,
+    this.isOwner = true,
+  });
 
   @override
   State<DayEditorPage> createState() => _DayEditorPageState();
@@ -163,7 +173,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
       builder: (context, state) {
         final currentDay = _resolveCurrentDay(state);
         final exercises = currentDay.exercises;
-        final isDirty = state.isDirty;
+        final isDirty = state.isDirty && widget.isOwner;
         return PopScope(
           canPop: !isDirty,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop, isDirty),
@@ -174,12 +184,14 @@ class _DayEditorPageState extends State<DayEditorPage> {
               slivers: [
                 DayEditorAppBar(
                   isDirty: isDirty,
+                  isOwner: widget.isOwner,
                   onBack: () => _onBackPressed(isDirty),
                   onSave: () => _onSavePressed(currentDay),
                 ),
                 SliverToBoxAdapter(
                   child: DayNameInput(
                     controller: _nameController,
+                    readOnly: !widget.isOwner,
                     onChanged: (_) => context
                         .read<RoutineManagementBloc>()
                         .add(const MarkRoutineDirty()),
@@ -194,7 +206,8 @@ class _DayEditorPageState extends State<DayEditorPage> {
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
-            floatingActionButton: _buildCatalogFab(currentDay, exercises),
+            floatingActionButton:
+                widget.isOwner ? _buildCatalogFab(currentDay, exercises) : null,
           ),
         );
       },
@@ -234,11 +247,34 @@ class _DayEditorPageState extends State<DayEditorPage> {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: DayEditorEmptyState(
-          onTap: () => DayEditorDialogs.showExerciseCatalog(
-            context,
-            routineId: widget.routineId,
-            day: currentDay,
-            currentExercises: exercises,
+          onTap: widget.isOwner
+              ? () => DayEditorDialogs.showExerciseCatalog(
+                    context,
+                    routineId: widget.routineId,
+                    day: currentDay,
+                    currentExercises: exercises,
+                  )
+              : null,
+        ),
+      );
+    }
+    // En modo read-only: lista plana sin reorder; tap abre el sheet de targets
+    // sólo si es propia (DayEditorDialogs ya respeta isOwner si lo pasamos).
+    if (!widget.isOwner) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final ex = exercises[index];
+              return ExerciseRowCard(
+                exercise: ex,
+                index: index,
+                onTap: null,
+                onRemove: null,
+              );
+            },
+            childCount: exercises.length,
           ),
         ),
       );

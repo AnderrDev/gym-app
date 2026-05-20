@@ -15,6 +15,8 @@ import 'package:gym_flutter/features/workout/domain/usecases/delete_routine.dart
     as uc_del_routine;
 import 'package:gym_flutter/features/workout/domain/usecases/delete_routine_day.dart'
     as uc_del_day;
+import 'package:gym_flutter/features/workout/domain/usecases/fork_routine.dart'
+    as uc_fork_routine;
 import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
@@ -48,6 +50,8 @@ class _MockSaveRoutine extends Mock implements uc_save_routine.SaveRoutine {}
 
 class _MockDeleteRoutine extends Mock implements uc_del_routine.DeleteRoutine {}
 
+class _MockForkRoutine extends Mock implements uc_fork_routine.ForkRoutine {}
+
 class _MockSaveRoutineDay extends Mock implements uc_save_day.SaveRoutineDay {}
 
 class _MockDeleteRoutineDay extends Mock
@@ -76,6 +80,7 @@ void main() {
   late _MockGetRoutineById getRoutineById;
   late _MockSaveRoutine saveRoutine;
   late _MockDeleteRoutine deleteRoutine;
+  late _MockForkRoutine forkRoutine;
   late _MockSaveRoutineDay saveRoutineDay;
   late _MockDeleteRoutineDay deleteRoutineDay;
   late _MockAddExerciseToDay addExerciseToDay;
@@ -110,6 +115,7 @@ void main() {
     getRoutineById = _MockGetRoutineById();
     saveRoutine = _MockSaveRoutine();
     deleteRoutine = _MockDeleteRoutine();
+    forkRoutine = _MockForkRoutine();
     saveRoutineDay = _MockSaveRoutineDay();
     deleteRoutineDay = _MockDeleteRoutineDay();
     addExerciseToDay = _MockAddExerciseToDay();
@@ -128,6 +134,7 @@ void main() {
     getRoutineById: getRoutineById,
     saveRoutine: saveRoutine,
     deleteRoutine: deleteRoutine,
+    forkRoutine: forkRoutine,
     saveRoutineDay: saveRoutineDay,
     deleteRoutineDay: deleteRoutineDay,
     addExerciseToDay: addExerciseToDay,
@@ -230,6 +237,71 @@ void main() {
           RoutineManagementSubmissionStatus.success,
         );
         expect(b.state.editingRoutine, tRoutine);
+      },
+    );
+  });
+
+  group('ForkRoutine', () {
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'éxito → success + lastForkedRoutineId con id de la copia',
+      build: () {
+        when(
+          () =>
+              forkRoutine(any(), newName: any(named: 'newName')),
+        ).thenAnswer((_) async => const Right('new-r1'));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1'),
+      ),
+      expect: () => [
+        isA<RoutineManagementState>().having(
+          (s) => s.submissionStatus,
+          'submissionStatus',
+          RoutineManagementSubmissionStatus.submitting,
+        ),
+        isA<RoutineManagementState>()
+            .having(
+              (s) => s.submissionStatus,
+              'submissionStatus',
+              RoutineManagementSubmissionStatus.success,
+            )
+            .having(
+              (s) => s.lastAction,
+              'lastAction',
+              RoutineManagementAction.forkRoutine,
+            )
+            .having(
+              (s) => s.lastForkedRoutineId,
+              'lastForkedRoutineId',
+              'new-r1',
+            ),
+      ],
+    );
+
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'failure → failure + errorMessage propagado',
+      build: () {
+        when(
+          () =>
+              forkRoutine(any(), newName: any(named: 'newName')),
+        ).thenAnswer((_) async => const Left(ServerFailure('rls')));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1'),
+      ),
+      verify: (b) {
+        expect(
+          b.state.submissionStatus,
+          RoutineManagementSubmissionStatus.failure,
+        );
+        expect(
+          b.state.lastAction,
+          RoutineManagementAction.forkRoutine,
+        );
+        expect(b.state.errorMessage, 'rls');
+        expect(b.state.lastForkedRoutineId, isNull);
       },
     );
   });
