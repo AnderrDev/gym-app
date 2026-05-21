@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -29,8 +29,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                DateFormat('EEEE, d MMMM yyyy', 'es')
-                    .format(session.sessionDate)
+                AppDateFormat.weekdayLongFull(session.sessionDate)
                     .toUpperCase(),
                 style: context.text.labelMedium?.copyWith(
                   fontSize: 10,

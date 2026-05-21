@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
@@ -45,8 +45,7 @@ class RoutineSessionCard extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  DateFormat('EEEE, d MMM', 'es')
-                      .format(session.sessionDate)
+                  AppDateFormat.weekdayLongDayMonth(session.sessionDate)
                       .toUpperCase(),
                   style: context.text.labelMedium?.copyWith(
                     fontSize: 10,

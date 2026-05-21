@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
@@ -237,8 +237,8 @@ class _WeekRangeLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('d MMM', 'es');
-    final text = '${fmt.format(weekStart)} – ${fmt.format(weekEnd)}';
+    final text =
+        '${AppDateFormat.dayMonthShort(weekStart)} – ${AppDateFormat.dayMonthShort(weekEnd)}';
     return Text(
       text,
       style: context.text.bodySmall?.copyWith(color: context.colors.textSecondary),

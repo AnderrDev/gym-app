@@ -281,20 +281,17 @@ class RoutineManagementRemoteDataSource {
         .eq('exercise_id', exerciseId);
   }
 
-  /// UPDATEs en paralelo: para una rutina de 8 ejercicios evita N round-trips
-  /// secuenciales (~8x latencia).
+  /// Una sola RPC en lugar de N UPDATEs paralelos. Cierra C8 del REMASTER_PLAN
+  /// y elimina la race condition de tener varios UPDATEs concurrentes contra
+  /// la misma fila si la unique constraint apretara.
   Future<void> reorderExercisesInDay(
     String dayId,
     List<String> exerciseIds,
   ) async {
-    await Future.wait([
-      for (var i = 0; i < exerciseIds.length; i++)
-        client
-            .from('routine_exercises')
-            .update({'order': i})
-            .eq('routine_day_id', dayId)
-            .eq('exercise_id', exerciseIds[i]),
-    ]);
+    await client.rpc<void>(
+      'reorder_routine_exercises',
+      params: {'p_day_id': dayId, 'p_ordered_ids': exerciseIds},
+    );
   }
 
   Future<void> updateExerciseTarget(

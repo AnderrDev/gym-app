@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
@@ -131,7 +131,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            DateFormat('d/M').format(
+                            AppDateFormat.dayMonth(
                               chronological[i].sessionDate,
                             ),
                             style: context.text.labelMedium?.copyWith(
@@ -166,7 +166,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                       return spots.map((s) {
                         final i = s.x.toInt();
                         if (i < 0 || i >= chronological.length) return null;
-                        final date = DateFormat('d MMM', 'es').format(
+                        final date = AppDateFormat.dayMonthShort(
                           chronological[i].sessionDate,
                         );
                         return LineTooltipItem(

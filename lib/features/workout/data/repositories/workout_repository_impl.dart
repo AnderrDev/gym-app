@@ -10,6 +10,7 @@ import 'package:gym_flutter/core/error/exceptions.dart' as core_ex;
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/core/sync/outbox_repository.dart';
 import 'package:gym_flutter/core/sync/sync_worker.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
@@ -58,6 +59,10 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   /// writes salen secuencialmente (suficiente para los tests que mockean).
   final LocalDatabase? localDatabase;
 
+  /// Reloj inyectable. Producción: [SystemClock] vía DI. Tests: [FakeClock].
+  /// Fallback a [SystemClock] para los tests legacy que no lo inyectan.
+  final Clock _clock;
+
   /// Resolver del usuario actual. Por defecto `Supabase.instance.client.auth`,
   /// inyectable para tests sin singleton.
   final String? Function() _currentUserId;
@@ -70,8 +75,10 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     this.syncWorker,
     this.uuid,
     this.localDatabase,
+    Clock? clock,
     String? Function()? currentUserIdResolver,
-  }) : _currentUserId = currentUserIdResolver ??
+  })  : _clock = clock ?? const SystemClock(),
+        _currentUserId = currentUserIdResolver ??
             (() => Supabase.instance.client.auth.currentUser?.id);
 
   bool get _isOnline => connectivity?.isOnline ?? true;
@@ -473,7 +480,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           if (localDataSource != null) {
             try {
               await localDataSource!
-                  .markSessionCompleted(sessionId, DateTime.now().toUtc());
+                  .markSessionCompleted(sessionId, _clock.now().toUtc());
             } catch (e) {
               AppLogger.instance
                   .warning('finishWorkoutSession: cache write failed: $e');
@@ -481,7 +488,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           }
           return;
         }
-        final completedAt = DateTime.now().toUtc();
+        final completedAt = _clock.now().toUtc();
         await _txn(() async {
           await localDataSource!.markSessionCompleted(sessionId, completedAt);
           await outbox!.enqueue(MutationKind.finalizeSession, {

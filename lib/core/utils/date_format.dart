@@ -37,6 +37,26 @@ class AppDateFormat {
     return DateFormat("d 'de' MMMM 'de' yyyy", 'es').format(date);
   }
 
+  /// `4 may 2026` — día + mes corto + año, para encabezados.
+  static String dayMonthShortYear(DateTime date) {
+    return DateFormat('d MMM yyyy', 'es').format(date);
+  }
+
+  /// `lunes, 4 may` — día completo + día + mes abreviado.
+  static String weekdayLongDayMonth(DateTime date) {
+    return DateFormat('EEEE, d MMM', 'es').format(date);
+  }
+
+  /// `lunes, 4 mayo 2026` — día completo + día + mes completo + año.
+  static String weekdayLongFull(DateTime date) {
+    return DateFormat('EEEE, d MMMM yyyy', 'es').format(date);
+  }
+
+  /// `lunes` — solo nombre del día de la semana.
+  static String weekdayLong(DateTime date) {
+    return DateFormat('EEEE', 'es').format(date);
+  }
+
   /// `18:30` — solo hora.
   static String time(DateTime date) {
     return DateFormat('HH:mm').format(date);

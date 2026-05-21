@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 /// Cabecera del [WorkoutHistoryBottomSheet]: badge + fecha + cierre.
 class WorkoutHistoryHeader extends StatelessWidget {
@@ -17,9 +17,8 @@ class WorkoutHistoryHeader extends StatelessWidget {
   final VoidCallback onClose;
 
   String _formatDate(DateTime d) {
-    // intl con locale es: `Lunes, 13 may 2026`.
-    final dayName = DateFormat('EEEE', 'es').format(d);
-    final rest = DateFormat('d MMM yyyy', 'es').format(d);
+    final dayName = AppDateFormat.weekdayLong(d);
+    final rest = AppDateFormat.dayMonthShortYear(d);
     final capDay = dayName[0].toUpperCase() + dayName.substring(1);
     return '$capDay · $rest';
   }

@@ -205,6 +205,7 @@ Future<void> init() async {
       localDatabase: sl.isRegistered<LocalDatabase>()
           ? sl<LocalDatabase>()
           : null,
+      clock: sl<Clock>(),
     ),
   );
 

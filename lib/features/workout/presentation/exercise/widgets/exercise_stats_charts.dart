@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -218,7 +218,7 @@ FlTitlesData _buildTitles(
           return Padding(
             padding: const EdgeInsets.only(top: Spacing.sm),
             child: Text(
-              DateFormat('d/M').format(sessions[i].sessionDate),
+              AppDateFormat.dayMonth(sessions[i].sessionDate),
               style: context.text.labelMedium?.copyWith(
                 color: colors.textSecondary,
                 fontSize: 9,
@@ -250,7 +250,7 @@ LineTouchData _buildTooltip(
         return spots.map((s) {
           final i = s.x.toInt();
           if (i < 0 || i >= sessions.length) return null;
-          final date = DateFormat('d MMM', 'es').format(sessions[i].sessionDate);
+          final date = AppDateFormat.dayMonthShort(sessions[i].sessionDate);
           return LineTooltipItem(
             '${formatter(s.y)} $unit',
             (context.text.bodySmall ?? const TextStyle()).copyWith(
