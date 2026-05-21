@@ -9,7 +9,7 @@ import 'package:gym_flutter/core/forms/inputs/password.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
@@ -77,11 +77,11 @@ class _LoginView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AuthStaggerEntrance(
+                      AuthStaggerEntrance(
                         child: Icon(
                           Icons.bolt_rounded,
                           size: 64,
-                          color: AppColors.primary,
+                          color: context.colors.primary,
                         ),
                       ),
                       const SizedBox(height: Spacing.xl),
@@ -105,7 +105,7 @@ class _LoginView extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: textTheme.labelMedium?.copyWith(
                             letterSpacing: 2,
-                            color: AppColors.primary.withValues(alpha: 0.7),
+                            color: context.colors.primary.withValues(alpha: 0.7),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -187,7 +187,7 @@ class _LoginView extends StatelessWidget {
                               '¿Olvidaste tu contraseña?',
                               style: textTheme.labelMedium?.copyWith(
                                 color:
-                                    AppColors.primary.withValues(alpha: 0.85),
+                                    context.colors.primary.withValues(alpha: 0.85),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -235,12 +235,12 @@ class _LoginView extends StatelessWidget {
                           child: RichText(
                             text: TextSpan(
                               style: textTheme.bodyMedium,
-                              children: const [
-                                TextSpan(text: '¿NUEVO AQUÍ? '),
+                              children: [
+                                const TextSpan(text: '¿NUEVO AQUÍ? '),
                                 TextSpan(
                                   text: 'REGÍSTRATE',
                                   style: TextStyle(
-                                    color: AppColors.primary,
+                                    color: context.colors.primary,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1,
                                   ),

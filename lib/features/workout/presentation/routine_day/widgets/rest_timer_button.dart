@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Snapshot inmutable del estado del timer de descanso. Lo entrega el
 /// `ValueNotifier` del padre (`_RoutineDayPageState`) para que solo este botón
@@ -95,7 +94,7 @@ class RestTimerButton extends StatelessWidget {
                     ),
                     child: Text(
                       _formatTime(value.secondsRemaining),
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.onPrimary,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
@@ -64,7 +63,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
         Spacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accent.withValues(alpha: 0.25)),
       ),
@@ -97,12 +96,12 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                       readOnly: widget.readOnly,
                       enabled: !widget.readOnly,
                       onChanged: (_) => widget.onNameChanged(),
-                      style: AppTextStyles.heading1
-                          .copyWith(fontSize: 22, letterSpacing: -0.3),
+                      style: context.text.displayLarge
+                          ?.copyWith(fontSize: 22, letterSpacing: -0.3),
                       decoration: InputDecoration(
                         hintText: 'Nombre de la rutina',
-                        hintStyle: AppTextStyles.heading1.copyWith(
-                          color: AppColors.textDisabled,
+                        hintStyle: context.text.displayLarge?.copyWith(
+                          color: context.colors.textDisabled,
                           fontSize: 22,
                           letterSpacing: -0.3,
                         ),
@@ -119,8 +118,8 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'Por ${widget.creatorName}',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.textSecondary,
+                          style: context.text.labelMedium?.copyWith(
+                            color: context.colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
@@ -131,7 +130,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
             ],
           ),
           const SizedBox(height: Spacing.sm),
-          const Divider(color: AppColors.divider, height: 1),
+          Divider(color: context.colors.divider, height: 1),
           const SizedBox(height: Spacing.xs),
           Row(
             children: [
@@ -141,10 +140,10 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                   children: [
                     Text(
                       widget.isPublic ? AppStrings.public : AppStrings.private,
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: widget.isPublic
                             ? accent
-                            : AppColors.textSecondary,
+                            : context.colors.textSecondary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                         fontSize: 11,
@@ -154,8 +153,8 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                       widget.isPublic
                           ? 'Visible para toda la comunidad'
                           : 'Solo vos podés usarla',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.textSecondary,
+                      style: context.text.labelMedium?.copyWith(
+                        color: context.colors.textSecondary,
                         fontSize: 10,
                       ),
                     ),

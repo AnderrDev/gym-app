@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 
@@ -29,12 +29,12 @@ class AppErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: AppColors.error),
+            Icon(icon, size: 48, color: context.colors.error),
             const SizedBox(height: Spacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(color: AppColors.error),
+              style: textTheme.bodyMedium?.copyWith(color: context.colors.error),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: Spacing.lg),

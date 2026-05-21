@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -97,7 +96,7 @@ class _ProgressPageState extends State<ProgressPage> {
         elevation: 0,
         title: Text(
           'PROGRESO',
-          style: AppTextStyles.heading2.copyWith(letterSpacing: 2),
+          style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
         ),
       ),
       body: BlocBuilder<ProgressBloc, ProgressState>(
@@ -112,7 +111,7 @@ class _ProgressPageState extends State<ProgressPage> {
             ),
             ProgressReady() => RefreshIndicator(
               onRefresh: _onRefresh,
-              color: AppColors.primary,
+              color: context.colors.primary,
               child: _ProgressReadyView(
                 state: state,
                 onOpenRoutine: _openRoutineStats,
@@ -143,16 +142,16 @@ class _ProgressErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
-              color: AppColors.error,
+              color: context.colors.error,
               size: 48,
             ),
             const SizedBox(height: Spacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: context.text.bodyMedium?.copyWith(color: context.colors.error),
             ),
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(
@@ -160,8 +159,8 @@ class _ProgressErrorView extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(
                 'REINTENTAR',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.onPrimary,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.onPrimary,
                   letterSpacing: 1.2,
                 ),
               ),
@@ -242,7 +241,7 @@ class _WeekRangeLabel extends StatelessWidget {
     final text = '${fmt.format(weekStart)} – ${fmt.format(weekEnd)}';
     return Text(
       text,
-      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+      style: context.text.bodySmall?.copyWith(color: context.colors.textSecondary),
     );
   }
 }
@@ -256,8 +255,8 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: AppTextStyles.label.copyWith(
-        color: AppColors.textSecondary,
+      style: context.text.labelMedium?.copyWith(
+        color: context.colors.textSecondary,
         letterSpacing: 1.5,
         fontWeight: FontWeight.w600,
       ),

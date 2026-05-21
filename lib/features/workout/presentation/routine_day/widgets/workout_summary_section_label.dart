@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Etiqueta compartida usada como header de cada sección del summary
 /// (Nuevos récords, Vs sesión anterior, Para la próxima…).
@@ -25,7 +24,7 @@ class WorkoutSummarySectionLabel extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           text.toUpperCase(),
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: context.colors.textSecondary,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w800,

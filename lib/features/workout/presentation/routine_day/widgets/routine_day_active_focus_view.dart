@@ -107,7 +107,7 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     if (widget.exercises.isEmpty) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.all(Spacing.xl),
+          padding: const EdgeInsets.all(Spacing.xl),
           child: Text(
             'No hay ejercicios para esta sesión',
             style: TextStyle(color: context.colors.textSecondary),

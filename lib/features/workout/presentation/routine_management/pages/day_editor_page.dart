@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_loader.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
@@ -72,6 +72,9 @@ class _DayEditorPageState extends State<DayEditorPage> {
     BuildContext context,
     RoutineManagementState state,
   ) {
+    // Si veníamos de un save (SaveDay) había overlay bloqueante; lo
+    // ocultamos. `hide` es no-op si nadie lo mostró.
+    AppLoader.hide(context);
     final wasSaveDay = state.lastAction == RoutineManagementAction.saveDay;
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
       AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
@@ -146,6 +149,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
   }
 
   void _onSavePressed(RoutineDay currentDay) {
+    AppLoader.show(context, message: 'Guardando día...');
     context.read<RoutineManagementBloc>().add(
       SaveDay(
         userId: _userId,
@@ -226,8 +230,8 @@ class _DayEditorPageState extends State<DayEditorPage> {
         label: 'Ejercicios',
         trailing: Text(
           '${exercises.length}',
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.primary,
+          style: context.text.labelMedium?.copyWith(
+            color: context.colors.primary,
             fontWeight: FontWeight.w900,
             fontSize: 12,
           ),
@@ -319,16 +323,16 @@ class _DayEditorPageState extends State<DayEditorPage> {
       ),
       elevation: 0,
       highlightElevation: 0,
-      backgroundColor: AppColors.primary,
-      icon: const Icon(
+      backgroundColor: context.colors.primary,
+      icon: Icon(
         Icons.search_rounded,
-        color: AppColors.onPrimary,
+        color: context.colors.onPrimary,
         size: 22,
       ),
       label: Text(
         'CATÁLOGO',
-        style: AppTextStyles.label.copyWith(
-          color: AppColors.onPrimary,
+        style: context.text.labelMedium?.copyWith(
+          color: context.colors.onPrimary,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.5,
         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/forms/inputs/email.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -123,14 +122,14 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                     children: [
                       Text(
                         'Recuperar contraseña',
-                        style: AppTextStyles.bodyLarge.copyWith(
+                        style: context.text.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Te mandamos un enlace para crear una nueva.',
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: context.text.bodySmall?.copyWith(
                           color: context.colors.textSecondary,
                         ),
                       ),
@@ -170,7 +169,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                     )
                   : Text(
                       'ENVIAR ENLACE',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.onPrimary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,

@@ -138,7 +138,11 @@ void main() {
       // En este punto hay dos matches (botón del body + botón del dialog);
       // el del dialog es el último renderizado.
       await tester.tap(find.text('CERRAR SESIÓN').last);
-      await tester.pumpAndSettle();
+      // No `pumpAndSettle`: tras el confirm el botón cambia a spinner
+      // (AppSpinner) y la animación nunca asienta. Un solo `pump()` deja
+      // procesar el dispatch + setState.
+      await tester.pump();
+      await tester.pump();
 
       final captured = verify(() => mockAuthBloc.add(captureAny())).captured;
       expect(captured.length, 1);

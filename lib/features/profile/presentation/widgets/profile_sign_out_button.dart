@@ -4,13 +4,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 
 /// CTA destructivo (error tint) que confirma con un AlertDialog antes de
-/// disparar `SignOutRequested` en el `AuthBloc`.
-class ProfileSignOutButton extends StatelessWidget {
+/// disparar `SignOutRequested` en el `AuthBloc`. Tras el confirm el botón
+/// queda deshabilitado mostrando un spinner mientras el bloc procesa — el
+/// widget se desmonta cuando el router redirige a `/login`, así que no
+/// hace falta resetear el flag manualmente.
+class ProfileSignOutButton extends StatefulWidget {
   const ProfileSignOutButton({super.key});
+
+  @override
+  State<ProfileSignOutButton> createState() => _ProfileSignOutButtonState();
+}
+
+class _ProfileSignOutButtonState extends State<ProfileSignOutButton> {
+  bool _submitting = false;
 
   Future<void> _confirmAndSignOut(BuildContext context) async {
     final authBloc = context.read<AuthBloc>();
@@ -66,9 +77,11 @@ class ProfileSignOutButton extends StatelessWidget {
         );
       },
     );
-    if (confirmed == true) {
-      authBloc.add(SignOutRequested());
-    }
+    if (confirmed != true || !mounted) return;
+    setState(() => _submitting = true);
+    authBloc.add(SignOutRequested());
+    // Cuando el AuthBloc emite Unauthenticated, el router navega a /login
+    // y este widget se desmonta — no hace falta resetear `_submitting`.
   }
 
   @override
@@ -90,23 +103,25 @@ class ProfileSignOutButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(Radii.md),
           ),
         ),
-        onPressed: () => _confirmAndSignOut(context),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.logout_rounded, size: 18, color: colors.error),
-            const SizedBox(width: Spacing.sm),
-            Text(
-              'CERRAR SESIÓN',
-              style: text.labelMedium?.copyWith(
-                color: colors.error,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+        onPressed: _submitting ? null : () => _confirmAndSignOut(context),
+        child: _submitting
+            ? AppSpinner.small(color: colors.error)
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.logout_rounded, size: 18, color: colors.error),
+                  const SizedBox(width: Spacing.sm),
+                  Text(
+                    'CERRAR SESIÓN',
+                    style: text.labelMedium?.copyWith(
+                      color: colors.error,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

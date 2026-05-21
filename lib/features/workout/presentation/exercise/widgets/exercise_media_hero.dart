@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
@@ -87,7 +86,7 @@ class _Placeholder extends StatelessWidget {
               muscleGroup.isEmpty
                   ? 'Sin imagen disponible'
                   : muscleGroup.toUpperCase(),
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: context.colors.textSecondary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.4,

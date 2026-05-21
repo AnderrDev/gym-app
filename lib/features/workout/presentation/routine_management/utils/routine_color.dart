@@ -10,7 +10,8 @@ class RoutineColor {
   RoutineColor._();
 
   /// Color de acento para una rutina dada. Si el nombre está vacío cae al
-  /// primario por defecto.
+  /// primario brand-stable (no varía con el tema — el acento de rutina debe
+  /// ser predecible cross-modo).
   static Color accentFor(String routineName) {
     if (routineName.isEmpty) return AppColors.primary;
     // 2^31-1: mantiene el acumulador positivo y dentro del rango int32.

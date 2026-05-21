@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
@@ -209,7 +209,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
-          title: Text('Smart Gym Tracker', style: AppTextStyles.heading2),
+          title: Text('Smart Gym Tracker', style: context.text.headlineMedium),
         ),
         body: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, dashState) {

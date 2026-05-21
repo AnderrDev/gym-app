@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -64,7 +63,7 @@ class RoutineDayAppBar extends StatelessWidget {
           routineDay.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyLarge.copyWith(
+          style: context.text.bodyLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -126,14 +125,14 @@ class RoutineDayAppBar extends StatelessWidget {
               routineDay.name.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.heading2.copyWith(
+              style: context.text.headlineMedium?.copyWith(
                 fontSize: 15,
                 letterSpacing: 1.2,
               ),
             ),
             Text(
               dateLabel,
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: context.colors.textSecondary,
                 fontSize: 10,
               ),
@@ -227,7 +226,7 @@ class _ActiveBottomBar extends StatelessWidget {
             children: [
               Text(
                 '$completedSets/$totalSets series',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
@@ -245,7 +244,7 @@ class _ActiveBottomBar extends StatelessWidget {
                 const SizedBox(width: Spacing.sm),
                 Text(
                   '${totalVolume.toStringAsFixed(0)} kg',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                   ),
                 ),
@@ -283,7 +282,7 @@ class _ActiveBottomBar extends StatelessWidget {
                   ),
                   child: Text(
                     'FINALIZAR',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       color: context.colors.primary,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.0,

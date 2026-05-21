@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_section_label.dart';
@@ -89,14 +88,14 @@ class _ComparisonRow extends StatelessWidget {
                   data.exerciseName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: context.text.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   '${data.currentAvgWeight.toStringAsFixed(1)} kg avg · '
                   '${data.currentSets} series',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     fontSize: 11,
                   ),
@@ -111,7 +110,7 @@ class _ComparisonRow extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 deltaStr,
-                style: AppTextStyles.bodyMedium.copyWith(
+                style: context.text.bodyMedium?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w800,
                 ),
@@ -119,7 +118,7 @@ class _ComparisonRow extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'kg',
-                style: AppTextStyles.label.copyWith(color: color, fontSize: 10),
+                style: context.text.labelMedium?.copyWith(color: color, fontSize: 10),
               ),
             ],
           ),

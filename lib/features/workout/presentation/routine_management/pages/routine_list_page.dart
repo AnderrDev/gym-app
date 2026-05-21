@@ -8,12 +8,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/app_routes.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/feedback/app_loader.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -78,6 +77,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       HapticFeedback.heavyImpact();
+      AppLoader.show(context, message: 'Activando rutina...');
       context.read<RoutineManagementBloc>().add(
         AssignRoutineToUser(userId: authState.user.id, routineId: routineId),
       );
@@ -88,6 +88,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       HapticFeedback.mediumImpact();
+      AppLoader.show(context, message: 'Creando tu copia...');
       context.read<RoutineManagementBloc>().add(
         ForkRoutine(
           userId: authState.user.id,
@@ -114,7 +115,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
       iconTheme: IconThemeData(color: colors.textPrimary),
       title: Text(
         'MIS RUTINAS',
-        style: AppTextStyles.heading2.copyWith(
+        style: context.text.headlineMedium?.copyWith(
           letterSpacing: 1.8,
           fontSize: 16,
           fontWeight: FontWeight.w900,
@@ -132,13 +133,13 @@ class _RoutineListPageState extends State<RoutineListPage> {
       },
       elevation: 0,
       highlightElevation: 0,
-      backgroundColor: AppColors.primary,
+      backgroundColor: context.colors.primary,
       icon:
-          const Icon(Icons.add_rounded, color: AppColors.onPrimary, size: 24),
+          Icon(Icons.add_rounded, color: context.colors.onPrimary, size: 24),
       label: Text(
         'CREAR PROPIA',
-        style: AppTextStyles.label.copyWith(
-          color: AppColors.onPrimary,
+        style: context.text.labelMedium?.copyWith(
+          color: context.colors.onPrimary,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.5,
         ),
@@ -150,6 +151,9 @@ class _RoutineListPageState extends State<RoutineListPage> {
     BuildContext context,
     RoutineManagementState state,
   ) {
+    // Si veníamos de un assign/fork mostramos overlay bloqueante; ahora que
+    // llegó la respuesta terminal lo escondemos. `hide` es no-op si no había.
+    AppLoader.hide(context);
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
       AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
       // Tras un fork desde la lista: abrimos el editor de la copia recién
@@ -245,8 +249,8 @@ class _RoutineListPageState extends State<RoutineListPage> {
           final routines = state.routines;
 
           return RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.surface,
+            color: context.colors.primary,
+            backgroundColor: context.colors.surface,
             onRefresh: _onRefresh,
             child: CustomScrollView(
             physics: AdaptiveScrollPhysics.preferred,

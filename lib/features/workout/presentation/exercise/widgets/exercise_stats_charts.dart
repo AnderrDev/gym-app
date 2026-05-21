@@ -2,9 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 
@@ -109,6 +107,7 @@ class _LineMetricChart extends StatelessWidget {
     final yRange = (yMax - yMin).abs();
     final yPad = yRange == 0 ? (yMax == 0 ? 1.0 : yMax * 0.1) : yRange * 0.15;
 
+    final colors = context.colors;
     return LineChart(
       LineChartData(
         minY: yMin - yPad,
@@ -118,13 +117,13 @@ class _LineMetricChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: yRange == 0 ? null : yRange / 3,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppColors.surfaceHighlight,
+            color: colors.surfaceHighlight,
             strokeWidth: 1,
           ),
         ),
-        titlesData: _buildTitles(sessions, unit, valueFormatter),
+        titlesData: _buildTitles(context, sessions, unit, valueFormatter),
         borderData: FlBorderData(show: false),
-        lineTouchData: _buildTooltip(sessions, unit, valueFormatter),
+        lineTouchData: _buildTooltip(context, sessions, unit, valueFormatter),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -181,10 +180,12 @@ Set<int> _computePrIndices(List<double> values) {
 }
 
 FlTitlesData _buildTitles(
+  BuildContext context,
   List<ExerciseHistorySession> sessions,
   String unit,
   String Function(double) formatter,
 ) {
+  final colors = context.colors;
   return FlTitlesData(
     leftTitles: AxisTitles(
       sideTitles: SideTitles(
@@ -199,8 +200,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               '${formatter(value)} $unit',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+              style: context.text.labelMedium?.copyWith(
+                color: colors.textSecondary,
                 fontSize: 9,
               ),
             ),
@@ -218,8 +219,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(top: Spacing.sm),
             child: Text(
               DateFormat('d/M').format(sessions[i].sessionDate),
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+              style: context.text.labelMedium?.copyWith(
+                color: colors.textSecondary,
                 fontSize: 9,
               ),
             ),
@@ -233,14 +234,16 @@ FlTitlesData _buildTitles(
 }
 
 LineTouchData _buildTooltip(
+  BuildContext context,
   List<ExerciseHistorySession> sessions,
   String unit,
   String Function(double) formatter,
 ) {
+  final colors = context.colors;
   return LineTouchData(
     handleBuiltInTouches: true,
     touchTooltipData: LineTouchTooltipData(
-      getTooltipColor: (_) => AppColors.surface,
+      getTooltipColor: (_) => colors.surface,
       tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       tooltipBorderRadius: const BorderRadius.all(Radius.circular(8)),
       getTooltipItems: (spots) {
@@ -250,15 +253,15 @@ LineTouchData _buildTooltip(
           final date = DateFormat('d MMM', 'es').format(sessions[i].sessionDate);
           return LineTooltipItem(
             '${formatter(s.y)} $unit',
-            AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textPrimary,
+            (context.text.bodySmall ?? const TextStyle()).copyWith(
+              color: colors.textPrimary,
               fontWeight: FontWeight.w800,
             ),
             children: [
               TextSpan(
                 text: '\n$date',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                style: context.text.labelMedium?.copyWith(
+                  color: colors.textSecondary,
                   fontSize: 10,
                 ),
               ),

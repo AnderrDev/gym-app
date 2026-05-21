@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -45,7 +44,7 @@ class DayCardWorkoutContent extends StatelessWidget {
           routineDay.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyLarge.copyWith(
+          style: context.text.bodyLarge?.copyWith(
             fontWeight: FontWeight.w800,
             color: context.colors.textPrimary,
             fontSize: isToday ? 16 : 14.5,
@@ -91,7 +90,7 @@ class DayCardInlineMeta extends StatelessWidget {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: context.colors.textSecondary,
               fontSize: emphasize ? 12 : 11,
             ),
@@ -99,7 +98,7 @@ class DayCardInlineMeta extends StatelessWidget {
         ),
         Text(
           '  ·  ',
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: context.colors.textSecondary.withValues(alpha: 0.5),
           ),
         ),
@@ -107,7 +106,7 @@ class DayCardInlineMeta extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           statusLabel,
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: accent,
             fontWeight: FontWeight.w700,
             fontSize: emphasize ? 12 : 11,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/sync/presentation/sync_status_bloc.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
 /// Badge compacto que comunica al usuario el estado del sync.
 ///
@@ -25,27 +26,20 @@ class SyncStatusBadge extends StatelessWidget {
         }
         return Padding(
           padding: padding,
-          child: _renderContent(state),
+          child: _renderContent(context, state),
         );
       },
     );
   }
 
-  Widget _renderContent(SyncStatusState state) {
+  Widget _renderContent(BuildContext context, SyncStatusState state) {
     if (state.draining) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.primary,
-            ),
-          ),
-          SizedBox(width: 6),
-          Text('Sincronizando…'),
+          AppSpinner(size: 14, color: context.colors.primary),
+          const SizedBox(width: 6),
+          const Text('Sincronizando…'),
         ],
       );
     }
@@ -54,7 +48,7 @@ class SyncStatusBadge extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 16, color: AppColors.textSecondary),
+          Icon(Icons.cloud_off_rounded, size: 16, color: context.colors.textSecondary),
           const SizedBox(width: 6),
           Text('$pending pendientes'),
         ],
@@ -64,7 +58,7 @@ class SyncStatusBadge extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.sync_rounded, size: 16, color: AppColors.textSecondary),
+          Icon(Icons.sync_rounded, size: 16, color: context.colors.textSecondary),
           const SizedBox(width: 6),
           Text('$pending pendientes'),
         ],

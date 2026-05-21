@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -21,7 +20,7 @@ class ProgressRoutineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(Radii.md),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.md),
@@ -33,14 +32,14 @@ class ProgressRoutineTile extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Radii.md),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.colors.divider),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.show_chart_rounded,
                 size: 20,
-                color: AppColors.primary,
+                color: context.colors.primary,
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
@@ -50,20 +49,20 @@ class ProgressRoutineTile extends StatelessWidget {
                   children: [
                     Text(
                       routine.name,
-                      style: AppTextStyles.bodyLarge
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style: context.text.bodyLarge
+                          ?.copyWith(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text('Ver progreso', style: AppTextStyles.bodySmall),
+                    Text('Ver progreso', style: context.text.bodySmall),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ],
           ),
@@ -85,28 +84,28 @@ class ProgressEmptyRoutines extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Spacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.local_fire_department_rounded,
             size: 40,
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
           ),
           const SizedBox(height: Spacing.md),
           Text(
             'Sin rutinas asignadas',
             style:
-                AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+                context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: Spacing.xs),
           Text(
             'Explorá el catálogo desde la pestaña Rutinas.',
-            style: AppTextStyles.bodySmall,
+            style: context.text.bodySmall,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: Spacing.lg),
@@ -114,8 +113,8 @@ class ProgressEmptyRoutines extends StatelessWidget {
             onPressed: onGoToRoutines,
             child: Text(
               'IR A RUTINAS',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.primary,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.primary,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w600,
               ),

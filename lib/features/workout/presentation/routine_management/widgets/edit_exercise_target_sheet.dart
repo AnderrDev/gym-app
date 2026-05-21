@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -103,7 +102,7 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
         children: [
           Text(
             widget.exercise.name.toUpperCase(),
-            style: AppTextStyles.heading2.copyWith(
+            style: context.text.headlineMedium?.copyWith(
               fontSize: 16,
               letterSpacing: 1.2,
             ),
@@ -113,8 +112,8 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
           const SizedBox(height: Spacing.xs),
           Text(
             widget.exercise.targetMuscle.toUpperCase(),
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.primary,
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.primary,
               letterSpacing: 1,
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.dark(),
@@ -30,7 +31,7 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(AppSpinner), findsOneWidget);
       await tester.tap(find.byType(AppButton));
       await tester.pump();
       expect(pressed, isFalse);

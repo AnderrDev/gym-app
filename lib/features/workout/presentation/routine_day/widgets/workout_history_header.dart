@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -55,7 +54,7 @@ class WorkoutHistoryHeader extends StatelessWidget {
               children: [
                 Text(
                   'Sesión anterior',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.w700,
@@ -66,7 +65,7 @@ class WorkoutHistoryHeader extends StatelessWidget {
                   _formatDate(date),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyLarge.copyWith(
+                  style: context.text.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),

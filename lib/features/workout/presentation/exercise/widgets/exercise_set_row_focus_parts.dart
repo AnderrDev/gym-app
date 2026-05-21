@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_parts.dart';
 
 /// Identifica cuál input está focuseado (peso vs reps) para decidir qué
@@ -20,7 +19,7 @@ class PrevPerformanceLabel extends StatelessWidget {
       width: 54,
       child: Text(
         label,
-        style: AppTextStyles.label.copyWith(
+        style: context.text.labelMedium?.copyWith(
           color: context.colors.textSecondary.withValues(alpha: 0.8),
           fontSize: 11,
         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 
 /// Wrapper de shimmer alineado con la paleta dark.
@@ -24,8 +24,8 @@ class AppSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: baseColor ?? AppColors.surfaceHighlight,
-      highlightColor: highlightColor ?? AppColors.surfaceOverlay,
+      baseColor: baseColor ?? context.colors.surfaceHighlight,
+      highlightColor: highlightColor ?? context.colors.surfaceOverlay,
       child: child,
     );
   }
@@ -55,7 +55,7 @@ class AppSkeletonTile extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight,
+        color: context.colors.surfaceHighlight,
         borderRadius: BorderRadius.all(
           radius ?? const Radius.circular(Radii.sm),
         ),

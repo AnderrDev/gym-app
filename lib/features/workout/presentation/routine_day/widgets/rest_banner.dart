@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
 
@@ -90,7 +89,7 @@ class _Body extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'DESCANSO',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.primary,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -100,7 +99,7 @@ class _Body extends StatelessWidget {
                 const Spacer(),
                 Text(
                   formattedTime,
-                  style: AppTextStyles.heading2.copyWith(
+                  style: context.text.headlineMedium?.copyWith(
                     color: context.colors.textPrimary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                     fontWeight: FontWeight.w800,
@@ -173,7 +172,7 @@ class _AdjustButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: context.colors.primary,
             fontWeight: FontWeight.w700,
           ),
@@ -202,7 +201,7 @@ class _SkipButton extends StatelessWidget {
         ),
         child: Text(
           'SALTAR',
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: context.colors.onPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,

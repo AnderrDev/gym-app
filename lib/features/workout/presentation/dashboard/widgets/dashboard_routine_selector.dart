@@ -2,7 +2,6 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 
@@ -25,7 +24,7 @@ class DashboardRoutineSelector extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text('Mis Rutinas', style: AppTextStyles.heading2),
+          child: Text('Mis Rutinas', style: context.text.headlineMedium),
         ),
         Expanded(
           child: ListView.builder(
@@ -54,7 +53,7 @@ class DashboardRoutineSelector extends StatelessWidget {
                         color: context.colors.primary,
                       ),
                     ),
-                    title: Text(routine.name, style: AppTextStyles.bodyLarge),
+                    title: Text(routine.name, style: context.text.bodyLarge),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

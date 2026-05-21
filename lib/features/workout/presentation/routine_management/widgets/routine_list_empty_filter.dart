@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_filter_chips.dart';
 
@@ -38,30 +37,30 @@ class RoutineListEmptyFilter extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.colors.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: context.colors.primary.withValues(alpha: 0.3),
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 32,
             ),
           ),
           const SizedBox(height: Spacing.lg),
           Text(
             _title,
-            style: AppTextStyles.heading2.copyWith(fontSize: 18),
+            style: context.text.headlineMedium?.copyWith(fontSize: 18),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: Spacing.sm),
           Text(
             _subtitle,
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+            style: context.text.bodyMedium?.copyWith(
+              color: context.colors.textSecondary,
             ),
           ),
         ],

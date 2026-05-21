@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 
@@ -36,7 +36,7 @@ class AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: iconSize, color: AppColors.textDisabled),
+            Icon(icon, size: iconSize, color: context.colors.textDisabled),
             const SizedBox(height: Spacing.lg),
             Text(
               title,

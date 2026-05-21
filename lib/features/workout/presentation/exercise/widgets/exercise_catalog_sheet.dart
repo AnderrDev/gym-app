@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
@@ -71,7 +70,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
         color: context.colors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         children: [
@@ -145,11 +144,11 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           ),
           child: Row(
             children: [
-              Text('Catálogo', style: AppTextStyles.heading2),
+              Text('Catálogo', style: context.text.headlineMedium),
               const Spacer(),
               Text(
                 '${_selectedIds.length} seleccionados',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textSecondary,
                 ),
               ),
@@ -172,7 +171,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         ),
         child: TextField(
           onChanged: (v) => setState(() => _searchQuery = v),
-          style: AppTextStyles.bodyLarge,
+          style: context.text.bodyLarge,
           decoration: InputDecoration(
             icon: Icon(Icons.search_rounded, color: context.colors.textDisabled, size: 20),
             hintText: 'Press banca, sentadilla...',

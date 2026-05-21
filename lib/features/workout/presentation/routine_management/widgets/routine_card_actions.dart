@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Footer del `RoutineListCard` con el botón ACTIVAR / ACTIVADA. El
@@ -26,7 +25,7 @@ class RoutineCardActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isActive ? accent.withValues(alpha: 0.15) : accent;
-    final fg = isActive ? accent : AppColors.background;
+    final fg = isActive ? accent : context.colors.background;
     final label = isActive ? 'ACTIVADA' : 'ACTIVAR';
     final icon = isActive
         ? Icons.check_circle_rounded
@@ -37,15 +36,15 @@ class RoutineCardActions extends StatelessWidget {
         if (onFork != null) ...[
           TextButton.icon(
             onPressed: onFork,
-            icon: const Icon(
+            icon: Icon(
               Icons.copy_all_rounded,
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
               size: 16,
             ),
             label: Text(
               'CREAR MI COPIA',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.textSecondary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,
                 fontSize: 11,
@@ -59,7 +58,7 @@ class RoutineCardActions extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: AppColors.divider.withValues(alpha: 0.6),
+                  color: context.colors.divider.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -71,7 +70,7 @@ class RoutineCardActions extends StatelessWidget {
           icon: Icon(icon, color: fg, size: 18),
           label: Text(
             label,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: fg,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,

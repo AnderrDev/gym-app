@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -60,7 +59,7 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
       builder: (_, scrollController) => Container(
         decoration: BoxDecoration(
           color: context.colors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           children: [
@@ -217,7 +216,7 @@ class _ActionRow extends StatelessWidget {
             ),
             child: Text(
               AppStrings.continueUpper,
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: context.colors.textSecondary,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
@@ -240,7 +239,7 @@ class _ActionRow extends StatelessWidget {
             ),
             child: Text(
               AppStrings.finishAndSaveUpper,
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: context.colors.onPrimary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.0,

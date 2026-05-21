@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/core/ui/feedback/app_dialog.dart';
@@ -91,7 +90,7 @@ class ExerciseRowCard extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       '${index + 1}',
-                      style: AppTextStyles.displayNumber.copyWith(
+                      style: context.text.displayLarge?.copyWith(
                         fontSize: 18,
                         color: accent,
                       ),
@@ -104,7 +103,7 @@ class ExerciseRowCard extends StatelessWidget {
                       children: [
                         Text(
                           exercise.name.toUpperCase(),
-                          style: AppTextStyles.heading2.copyWith(
+                          style: context.text.headlineMedium?.copyWith(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
@@ -244,7 +243,7 @@ class _StatTag extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               fontSize: 10.5,
               color: context.colors.textPrimary.withValues(alpha: 0.85),
               fontWeight: FontWeight.w700,

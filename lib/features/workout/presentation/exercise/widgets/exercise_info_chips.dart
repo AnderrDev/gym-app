@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Chips compactos con metadata del ejercicio: músculo, equipo y dificultad.
@@ -105,7 +104,7 @@ class _Chip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: color,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -63,7 +62,7 @@ class WorkoutHistoryEntryCard extends StatelessWidget {
                     exerciseName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyLarge.copyWith(
+                    style: context.text.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -71,7 +70,7 @@ class WorkoutHistoryEntryCard extends StatelessWidget {
                 Text(
                   '${logs.length} ${logs.length == 1 ? 'serie' : 'series'} · '
                   '${exerciseVolume.toStringAsFixed(0)} kg·reps',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     fontSize: 10,
                   ),
@@ -128,27 +127,27 @@ class _SetRow extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: _fmtWeight(log.actualWeight),
-                    style: AppTextStyles.bodyMedium.copyWith(
+                    style: context.text.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: context.colors.textPrimary,
                     ),
                   ),
                   TextSpan(
                     text: ' kg × ',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       color: context.colors.textSecondary,
                     ),
                   ),
                   TextSpan(
                     text: '${log.actualReps}',
-                    style: AppTextStyles.bodyMedium.copyWith(
+                    style: context.text.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: context.colors.textPrimary,
                     ),
                   ),
                   TextSpan(
                     text: ' reps',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       color: context.colors.textSecondary,
                     ),
                   ),
@@ -168,7 +167,7 @@ class _SetRow extends StatelessWidget {
               ),
               child: Text(
                 'TOP',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.warning,
                   fontWeight: FontWeight.w900,
                   fontSize: 9,
@@ -200,7 +199,7 @@ class _Circle extends StatelessWidget {
       child: Center(
         child: Text(
           label,
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: accent,
             fontWeight: FontWeight.w900,
             fontSize: 11,
@@ -241,7 +240,7 @@ class _CoachingAdvice extends StatelessWidget {
               WorkoutPerformanceAnalyzer.friendlyRecommendation(
                 coaching.recommendation,
               ),
-              style: AppTextStyles.bodySmall.copyWith(
+              style: context.text.bodySmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,
               ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Campo de formulario único. Sustituye a todos los `TextField` directos en
@@ -93,7 +93,7 @@ class _AppFormFieldState extends State<AppFormField> {
           style: textTheme.labelMedium?.copyWith(
             letterSpacing: 1.5,
             fontWeight: FontWeight.w900,
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
           ),
         ),
         const SizedBox(height: Spacing.sm),

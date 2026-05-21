@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_section_label.dart';
@@ -83,13 +82,13 @@ class _PrRow extends StatelessWidget {
                   pr.exerciseName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: context.text.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   '${_fmt(pr.currentWeight)} kg × ${pr.reps} reps',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     fontSize: 11,
                   ),
@@ -99,7 +98,7 @@ class _PrRow extends StatelessWidget {
           ),
           Text(
             '+${_fmt(pr.delta)} kg',
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: context.text.bodyMedium?.copyWith(
               color: context.colors.warning,
               fontWeight: FontWeight.w800,
             ),

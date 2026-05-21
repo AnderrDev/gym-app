@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -53,14 +52,14 @@ class _CoachingRow extends StatelessWidget {
         children: [
           Text(
             item.exerciseName,
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: context.text.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             item.recommendation,
-            style: AppTextStyles.bodySmall.copyWith(
+            style: context.text.bodySmall?.copyWith(
               color: context.colors.textSecondary,
               fontStyle: FontStyle.italic,
             ),

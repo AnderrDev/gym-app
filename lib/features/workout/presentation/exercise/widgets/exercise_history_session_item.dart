@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 
@@ -33,7 +32,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                 DateFormat('EEEE, d MMMM yyyy', 'es')
                     .format(session.sessionDate)
                     .toUpperCase(),
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   fontSize: 10,
                   color: context.colors.primary,
                   fontWeight: FontWeight.bold,
@@ -41,7 +40,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
               ),
               Text(
                 '${session.totalVolume.toStringAsFixed(0)} kg Vol.',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   fontSize: 10,
                   color: context.colors.textDisabled,
                 ),
@@ -65,7 +64,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                     ),
                     child: Text(
                       '${log.actualWeight.toStringAsFixed(0)}kg x ${log.actualReps}',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: context.text.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),

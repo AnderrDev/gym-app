@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
@@ -24,7 +23,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
     final hasActive = activeRoutine != null;
     final accent = hasActive
         ? RoutineColor.accentFor(activeRoutine!.name)
-        : AppColors.primary;
+        : context.colors.primary;
     return Padding(
       // Más aire arriba (después del AppBar) y abajo (antes del buscador)
       // para que el header no quede pegado a los bloques vecinos.
@@ -42,7 +41,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
           Spacing.lg,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: accent.withValues(alpha: hasActive ? 0.35 : 0.12),
@@ -73,7 +72,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
                     totalCount == 0
                         ? 'Aún no tenés rutinas'
                         : '$totalCount ${totalCount == 1 ? "rutina" : "rutinas"} disponibles',
-                    style: AppTextStyles.bodyLarge.copyWith(
+                    style: context.text.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
                     ),
@@ -83,8 +82,8 @@ class RoutineListSummaryHeader extends StatelessWidget {
                     hasActive
                         ? 'Activa: ${activeRoutine!.name}'
                         : 'Activá una para empezar a entrenar',
-                    style: AppTextStyles.label.copyWith(
-                      color: hasActive ? accent : AppColors.textSecondary,
+                    style: context.text.labelMedium?.copyWith(
+                      color: hasActive ? accent : context.colors.textSecondary,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),

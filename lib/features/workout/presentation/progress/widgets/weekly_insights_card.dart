@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
@@ -22,9 +21,9 @@ class WeeklyInsightsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decoration = BoxDecoration(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(Radii.md),
-      border: Border.all(color: AppColors.divider),
+      border: Border.all(color: context.colors.divider),
     );
 
     if (error != null) {
@@ -59,19 +58,19 @@ class WeeklyInsightsCard extends StatelessWidget {
             icon: Icons.local_fire_department_rounded,
             label: 'VOLUMEN',
             value: '${i.totalVolume.toStringAsFixed(0)} kg',
-            valueColor: AppColors.textPrimary,
+            valueColor: context.colors.textPrimary,
           ),
           _MetricCell(
             icon: Icons.event_available_rounded,
             label: 'SESIONES',
             value: '${i.completedSessions}/${i.plannedDays}',
-            valueColor: AppColors.primary,
+            valueColor: context.colors.primary,
           ),
           _MetricCell(
             icon: Icons.flag_circle_rounded,
             label: 'ADHERENCIA',
             value: '${i.adherenceRate.toStringAsFixed(0)}%',
-            valueColor: AppColors.success,
+            valueColor: context.colors.success,
           ),
           _MetricCell(
             icon: i.volumeTrendPercent >= 0
@@ -81,8 +80,8 @@ class WeeklyInsightsCard extends StatelessWidget {
             value:
                 '${i.volumeTrendPercent >= 0 ? '+' : ''}${i.volumeTrendPercent.toStringAsFixed(1)}%',
             valueColor: i.volumeTrendPercent >= 0
-                ? AppColors.success
-                : AppColors.error,
+                ? context.colors.success
+                : context.colors.error,
           ),
         ],
       ),
@@ -108,9 +107,9 @@ class _MessageRow extends StatelessWidget {
       decoration: decoration,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.textSecondary),
+          Icon(icon, size: 18, color: context.colors.textSecondary),
           const SizedBox(width: Spacing.sm),
-          Expanded(child: Text(message, style: AppTextStyles.bodySmall)),
+          Expanded(child: Text(message, style: context.text.bodySmall)),
         ],
       ),
     );
@@ -138,13 +137,13 @@ class _MetricCell extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: AppColors.primary, size: 20),
+            Icon(icon, color: context.colors.primary, size: 20),
             const SizedBox(width: Spacing.xs),
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
                   letterSpacing: 1,
                   fontSize: 11,
                 ),
@@ -156,7 +155,7 @@ class _MetricCell extends StatelessWidget {
         const SizedBox(height: Spacing.xs),
         Text(
           value,
-          style: AppTextStyles.heading2.copyWith(
+          style: context.text.headlineMedium?.copyWith(
             color: valueColor,
             fontWeight: FontWeight.w700,
           ),

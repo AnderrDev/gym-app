@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
@@ -22,7 +22,7 @@ class AppLoader {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor: AppColors.overlay,
+      barrierColor: context.colors.overlay,
       builder: (_) => _LoaderDialog(message: message),
     );
   }
@@ -42,7 +42,7 @@ class _LoaderDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(Radii.lg),
       ),

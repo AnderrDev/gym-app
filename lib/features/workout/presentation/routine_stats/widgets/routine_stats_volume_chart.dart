@@ -2,8 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
@@ -49,7 +48,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.show_chart_rounded, color: AppColors.primary, size: 20),
+              Icon(Icons.show_chart_rounded, color: context.colors.primary, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -57,15 +56,15 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                   children: [
                     Text(
                       'CARGA MOVIDA',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1,
                       ),
                     ),
                     Text(
                       'Suma de peso × reps de cada sesión',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textDisabled,
+                      style: context.text.bodySmall?.copyWith(
+                        color: context.colors.textDisabled,
                         fontSize: 10,
                       ),
                     ),
@@ -93,8 +92,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: yRange == 0 ? null : yRange / 3,
-                  getDrawingHorizontalLine: (_) => const FlLine(
-                    color: AppColors.surfaceHighlight,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: context.colors.surfaceHighlight,
                     strokeWidth: 1,
                   ),
                 ),
@@ -111,8 +110,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             fmt(value),
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.textSecondary,
+                            style: context.text.labelMedium?.copyWith(
+                              color: context.colors.textSecondary,
                               fontSize: 9,
                             ),
                           ),
@@ -135,8 +134,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                             DateFormat('d/M').format(
                               chronological[i].sessionDate,
                             ),
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.textSecondary,
+                            style: context.text.labelMedium?.copyWith(
+                              color: context.colors.textSecondary,
                               fontSize: 9,
                             ),
                           ),
@@ -155,7 +154,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => AppColors.surface,
+                    getTooltipColor: (_) => context.colors.surface,
                     tooltipBorderRadius: const BorderRadius.all(
                       Radius.circular(8),
                     ),
@@ -172,15 +171,15 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         );
                         return LineTooltipItem(
                           '${fmt(s.y)} kg·reps',
-                          AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
+                          (context.text.bodySmall ?? const TextStyle()).copyWith(
+                            color: context.colors.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                           children: [
                             TextSpan(
                               text: '\n$date',
-                              style: AppTextStyles.label.copyWith(
-                                color: AppColors.textSecondary,
+                              style: context.text.labelMedium?.copyWith(
+                                color: context.colors.textSecondary,
                                 fontSize: 10,
                               ),
                             ),
@@ -198,7 +197,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                     ],
                     isCurved: true,
                     curveSmoothness: 0.3,
-                    color: AppColors.primary,
+                    color: context.colors.primary,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -207,9 +206,9 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                       getDotPainter: (spot, xPercentage, bar, index) =>
                           FlDotCirclePainter(
                             radius: 4,
-                            color: AppColors.warning,
+                            color: context.colors.warning,
                             strokeWidth: 2,
-                            strokeColor: AppColors.background,
+                            strokeColor: context.colors.background,
                           ),
                     ),
                     belowBarData: BarAreaData(
@@ -218,8 +217,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.primary.withValues(alpha: 0.2),
-                          AppColors.primary.withValues(alpha: 0),
+                          context.colors.primary.withValues(alpha: 0.2),
+                          context.colors.primary.withValues(alpha: 0),
                         ],
                       ),
                     ),

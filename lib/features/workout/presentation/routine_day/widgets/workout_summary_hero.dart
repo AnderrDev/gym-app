@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Encabezado central del [WorkoutSummaryBottomSheet]: icono circular,
@@ -42,13 +41,13 @@ class WorkoutSummaryHero extends StatelessWidget {
         const SizedBox(height: Spacing.md),
         Text(
           title,
-          style: AppTextStyles.heading1.copyWith(fontSize: 22),
+          style: context.text.displayLarge?.copyWith(fontSize: 22),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: AppTextStyles.bodyMedium.copyWith(
+          style: context.text.bodyMedium?.copyWith(
             color: context.colors.textSecondary,
           ),
           textAlign: TextAlign.center,

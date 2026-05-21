@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -62,7 +62,7 @@ class AppCard extends StatelessWidget {
         child: GlassContainer(
           padding: effectivePadding,
           borderRadius: glassRadius,
-          borderColor: borderColor ?? AppColors.glassBorder,
+          borderColor: borderColor ?? context.colors.glassBorder,
           child: _wrapTap(child),
         ),
       );
@@ -71,7 +71,7 @@ class AppCard extends StatelessWidget {
     return Padding(
       padding: margin ?? EdgeInsets.zero,
       child: Material(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: effectiveRadius,
         child: InkWell(
           onTap: onTap,
@@ -83,7 +83,7 @@ class AppCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: effectiveRadius,
               border: Border.all(
-                color: borderColor ?? AppColors.divider,
+                color: borderColor ?? context.colors.divider,
                 width: 1,
               ),
             ),

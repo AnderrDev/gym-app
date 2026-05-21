@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Estado vacío del `DayEditorPage`: invita a buscar ejercicios en el
@@ -24,22 +23,22 @@ class DayEditorEmptyState extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.colors.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: context.colors.primary.withValues(alpha: 0.3),
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 32,
             ),
           ),
           const SizedBox(height: Spacing.lg),
           Text(
             'Sin ejercicios',
-            style: AppTextStyles.heading2.copyWith(fontSize: 18),
+            style: context.text.headlineMedium?.copyWith(fontSize: 18),
           ),
           const SizedBox(height: Spacing.sm),
           Text(
@@ -47,8 +46,8 @@ class DayEditorEmptyState extends StatelessWidget {
                 ? 'Este día todavía no tiene ejercicios.'
                 : 'Añadí ejercicios desde el catálogo para empezar a armar este día.',
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+            style: context.text.bodyMedium?.copyWith(
+              color: context.colors.textSecondary,
             ),
           ),
           if (onTap != null) ...[
@@ -58,15 +57,15 @@ class DayEditorEmptyState extends StatelessWidget {
               icon: const Icon(Icons.search_rounded, size: 18),
               label: Text(
                 'BUSCAR EJERCICIOS',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.colors.primary,
                 side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                  color: context.colors.primary.withValues(alpha: 0.5),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.lg,

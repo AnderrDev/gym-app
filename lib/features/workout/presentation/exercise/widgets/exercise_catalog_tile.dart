@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 
@@ -65,7 +64,7 @@ class ExerciseCatalogTile extends StatelessWidget {
         ),
         title: Text(
           exercise.name,
-          style: AppTextStyles.bodyLarge.copyWith(
+          style: context.text.bodyLarge?.copyWith(
             color: isAlreadyInDay
                 ? context.colors.textDisabled
                 : (isSelected ? context.colors.primary : context.colors.textPrimary),
@@ -74,7 +73,7 @@ class ExerciseCatalogTile extends StatelessWidget {
         ),
         subtitle: Text(
           isAlreadyInDay ? 'Ya en tu rutina' : exercise.muscleGroup,
-          style: AppTextStyles.label.copyWith(color: context.colors.textDisabled),
+          style: context.text.labelMedium?.copyWith(color: context.colors.textDisabled),
         ),
         trailing: isAlreadyInDay
             ? null

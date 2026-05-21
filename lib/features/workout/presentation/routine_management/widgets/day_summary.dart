@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 
@@ -35,9 +34,9 @@ class DaySummary extends StatelessWidget {
           Spacing.md,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider.withValues(alpha: 0.4)),
+          border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,13 +67,13 @@ class DaySummary extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
+                          color: context.colors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           m.toUpperCase(),
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
+                          style: context.text.labelMedium?.copyWith(
+                            color: context.colors.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
@@ -103,12 +102,12 @@ class _SummaryStat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppColors.primary, size: 14),
+        Icon(icon, color: context.colors.primary, size: 14),
         const SizedBox(width: 6),
         Text(
           label,
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.textPrimary,
+          style: context.text.labelMedium?.copyWith(
+            color: context.colors.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),

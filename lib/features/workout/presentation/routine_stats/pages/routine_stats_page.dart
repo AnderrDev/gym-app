@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
@@ -35,7 +34,7 @@ class RoutineStatsPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
-          title: Text('Historial: $routineName', style: AppTextStyles.heading2),
+          title: Text('Historial: $routineName', style: context.text.headlineMedium),
         ),
         body: BlocConsumer<RoutineStatsBloc, RoutineStatsState>(
           listenWhen: (previous, current) => current is RoutineStatsError,
@@ -56,7 +55,7 @@ class RoutineStatsPage extends StatelessWidget {
               return Center(
                 child: Text(
                   state.message,
-                  style: const TextStyle(color: AppColors.error),
+                  style: TextStyle(color: context.colors.error),
                 ),
               );
             }
@@ -81,17 +80,17 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.bar_chart_rounded,
             size: 64,
-            color: AppColors.surfaceHighlight,
+            color: context.colors.surfaceHighlight,
           ),
           const SizedBox(height: 16),
-          Text('Sin datos suficientes', style: AppTextStyles.heading2),
+          Text('Sin datos suficientes', style: context.text.headlineMedium),
           const SizedBox(height: 8),
           Text(
             'Completa sesiones para ver tu evolución.',
-            style: AppTextStyles.bodyMedium,
+            style: context.text.bodyMedium,
           ),
         ],
       ),
@@ -113,7 +112,7 @@ class _StatsContent extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'EVOLUCIÓN DE VOLUMEN',
-          style: AppTextStyles.label.copyWith(letterSpacing: 2),
+          style: context.text.labelMedium?.copyWith(letterSpacing: 2),
         ),
         const SizedBox(height: 16),
         ...stats.reversed.map((s) => RoutineSessionCard(session: s)),

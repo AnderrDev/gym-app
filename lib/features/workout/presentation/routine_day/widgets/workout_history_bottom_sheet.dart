@@ -48,7 +48,7 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
           color: context.colors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [

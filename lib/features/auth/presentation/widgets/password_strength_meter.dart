@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 
 /// Indicador de fuerza de contraseña: 3 segmentos que se rellenan según el
@@ -31,7 +30,7 @@ class PasswordStrengthMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = scoreFor(password);
     if (password.isEmpty) return const SizedBox.shrink();
-    final (color, label) = _resolve(score);
+    final (color, label) = _resolve(context, score);
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -44,7 +43,7 @@ class PasswordStrengthMeter extends StatelessWidget {
                 curve: Curves.easeOut,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: i < score ? color : AppColors.divider,
+                  color: i < score ? color : context.colors.divider,
                   borderRadius: BorderRadius.circular(Radii.xs),
                 ),
               ),
@@ -57,7 +56,7 @@ class PasswordStrengthMeter extends StatelessWidget {
             child: Text(
               label,
               key: ValueKey(label),
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
                 fontSize: 10,
@@ -70,17 +69,18 @@ class PasswordStrengthMeter extends StatelessWidget {
     );
   }
 
-  (Color, String) _resolve(int score) {
+  (Color, String) _resolve(BuildContext context, int score) {
+    final colors = context.colors;
     switch (score) {
       case 0:
-        return (AppColors.textSecondary, '');
+        return (colors.textSecondary, '');
       case 1:
-        return (AppColors.error, 'DÉBIL');
+        return (colors.error, 'DÉBIL');
       case 2:
-        return (AppColors.warning, 'OK');
+        return (colors.warning, 'OK');
       case 3:
       default:
-        return (AppColors.success, 'FUERTE');
+        return (colors.success, 'FUERTE');
     }
   }
 }

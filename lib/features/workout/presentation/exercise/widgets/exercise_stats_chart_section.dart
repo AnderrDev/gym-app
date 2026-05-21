@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_series.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
@@ -51,14 +50,14 @@ class ExerciseStatsChartSection extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: context.text.bodySmall?.copyWith(
                       color: context.colors.textDisabled,
                       fontSize: 10,
                     ),

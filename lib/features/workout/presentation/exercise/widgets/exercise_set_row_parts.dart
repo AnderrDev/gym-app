@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 /// Componentes leaf usados por `ExerciseSetRow`. Se extraen para mantener
 /// el archivo principal bajo 300 líneas. Todos son stateless.
@@ -34,13 +33,13 @@ class CompactNumberField extends StatelessWidget {
           ? TextInputType.none
           : TextInputType.numberWithOptions(decimal: decimal),
       textAlign: TextAlign.center,
-      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         isDense: true,
         filled: true,
         fillColor: context.colors.surface,
         suffixText: suffix,
-        suffixStyle: AppTextStyles.label.copyWith(
+        suffixStyle: context.text.labelMedium?.copyWith(
           color: context.colors.textSecondary,
           fontSize: 10,
         ),
@@ -228,7 +227,7 @@ class _QuickStepChipState extends State<QuickStepChip> {
             ),
             child: Text(
               widget.label,
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
                 fontSize: 12,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -63,9 +62,9 @@ class WorkoutMetricCard extends StatelessWidget {
         vertical: Spacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,8 +75,8 @@ class WorkoutMetricCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 metric.label,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
                   fontSize: 9,
                   letterSpacing: 0.8,
                   fontWeight: FontWeight.w700,
@@ -93,7 +92,7 @@ class WorkoutMetricCard extends StatelessWidget {
               children: [
                 TextSpan(
                   text: metric.value,
-                  style: AppTextStyles.heading2.copyWith(
+                  style: context.text.headlineMedium?.copyWith(
                     color: metric.accent,
                     fontWeight: FontWeight.w900,
                     fontSize: metric.valueFontSize,
@@ -102,8 +101,8 @@ class WorkoutMetricCard extends StatelessWidget {
                 if (metric.secondary != null)
                   TextSpan(
                     text: ' ${metric.secondary}',
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.textSecondary,
+                    style: context.text.labelMedium?.copyWith(
+                      color: context.colors.textSecondary,
                       fontSize: 10,
                     ),
                   ),

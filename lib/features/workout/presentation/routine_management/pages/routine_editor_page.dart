@@ -5,12 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/routes/app_routes.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -368,16 +368,16 @@ class _ForkBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(Spacing.md),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.10),
+          color: context.colors.primary.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(16),
           border:
-              Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+              Border.all(color: context.colors.primary.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.lock_outline_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 20,
             ),
             const SizedBox(width: Spacing.md),
@@ -387,8 +387,8 @@ class _ForkBanner extends StatelessWidget {
                 children: [
                   Text(
                     'RUTINA AJENA',
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.primary,
+                    style: context.text.labelMedium?.copyWith(
+                      color: context.colors.primary,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
                       fontSize: 10,
@@ -397,8 +397,8 @@ class _ForkBanner extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'No podés editarla. Creá tu copia para personalizarla.',
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.textSecondary,
+                    style: context.text.labelMedium?.copyWith(
+                      color: context.colors.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -409,10 +409,10 @@ class _ForkBanner extends StatelessWidget {
             TextButton(
               onPressed: submitting ? null : onTap,
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.colors.primary,
                 disabledBackgroundColor:
-                    AppColors.primary.withValues(alpha: 0.4),
-                foregroundColor: AppColors.onPrimary,
+                    context.colors.primary.withValues(alpha: 0.4),
+                foregroundColor: context.colors.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.md,
                   vertical: Spacing.sm,
@@ -422,20 +422,11 @@ class _ForkBanner extends StatelessWidget {
                 ),
               ),
               child: submitting
-                  ? const SizedBox(
-                      height: 14,
-                      width: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.onPrimary,
-                        ),
-                      ),
-                    )
+                  ? AppSpinner.small(color: context.colors.onPrimary)
                   : Text(
                       'CREAR MI COPIA',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.onPrimary,
+                      style: context.text.labelMedium?.copyWith(
+                        color: context.colors.onPrimary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                         fontSize: 11,

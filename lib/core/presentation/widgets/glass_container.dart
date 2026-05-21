@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_blur.dart';
 
 /// Card-style con efecto glass — wrapper de [AdaptiveBlur] que agrega
@@ -37,7 +37,7 @@ class GlassContainer extends StatelessWidget {
     // siempre contrasta con el fondo de la app.
     final card = AdaptiveBlur(
       blurSigma: blur,
-      tintColor: AppColors.textPrimary,
+      tintColor: context.colors.textPrimary,
       tintOpacity: opacity,
       borderRadius: radius,
       child: Container(
@@ -45,7 +45,7 @@ class GlassContainer extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: radius,
           border: Border.all(
-            color: (borderColor ?? AppColors.textPrimary).withValues(
+            color: (borderColor ?? context.colors.textPrimary).withValues(
               alpha: borderOpacity,
             ),
             width: 1.0,

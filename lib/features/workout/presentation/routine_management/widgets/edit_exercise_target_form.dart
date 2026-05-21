@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -29,17 +28,17 @@ class TargetStepperRow extends StatelessWidget {
         vertical: Spacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.textSecondary,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w700,
               ),
@@ -51,9 +50,9 @@ class TargetStepperRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.center,
-              style: AppTextStyles.displayNumber.copyWith(
+              style: context.text.displayLarge?.copyWith(
                 fontSize: 22,
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
               ),
             ),
           ),
@@ -80,10 +79,10 @@ class _StepperButton extends StatelessWidget {
         height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.12),
+          color: context.colors.primary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: AppColors.primary, size: 20),
+        child: Icon(icon, color: context.colors.primary, size: 20),
       ),
     );
   }
@@ -104,17 +103,17 @@ class TargetWeightField extends StatelessWidget {
         vertical: Spacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               'PESO',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.textSecondary,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w700,
               ),
@@ -132,16 +131,16 @@ class TargetWeightField extends StatelessWidget {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
-              style: AppTextStyles.displayNumber.copyWith(
+              style: context.text.displayLarge?.copyWith(
                 fontSize: 22,
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
               ),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 suffixText: AppStrings.kg,
-                suffixStyle: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                suffixStyle: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
                 ),
               ),
             ),

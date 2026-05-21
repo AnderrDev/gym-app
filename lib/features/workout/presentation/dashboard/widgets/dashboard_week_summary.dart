@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -243,7 +242,7 @@ class _NextWorkoutButton extends StatelessWidget {
                 children: [
                   Text(
                     'PRÓXIMO · $relativeLabel',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       color: accent,
                       letterSpacing: 1.3,
                       fontWeight: FontWeight.w800,
@@ -255,7 +254,7 @@ class _NextWorkoutButton extends StatelessWidget {
                     day.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyLarge.copyWith(
+                    style: context.text.bodyLarge?.copyWith(
                       color: context.colors.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,

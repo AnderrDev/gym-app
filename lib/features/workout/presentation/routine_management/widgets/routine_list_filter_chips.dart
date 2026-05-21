@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 enum RoutineListFilter { all, mine, community }
@@ -24,17 +23,18 @@ class RoutineListFilterChips extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _chip(RoutineListFilter.all, 'TODAS'),
+          _chip(context, RoutineListFilter.all, 'TODAS'),
           const SizedBox(width: 8),
-          _chip(RoutineListFilter.mine, 'MIS RUTINAS'),
+          _chip(context, RoutineListFilter.mine, 'MIS RUTINAS'),
           const SizedBox(width: 8),
-          _chip(RoutineListFilter.community, 'COMUNIDAD'),
+          _chip(context, RoutineListFilter.community, 'COMUNIDAD'),
         ],
       ),
     );
   }
 
-  Widget _chip(RoutineListFilter type, String label) {
+  Widget _chip(BuildContext context, RoutineListFilter type, String label) {
+    final colors = context.colors;
     final isSelected = selected == type;
     return InkWell(
       onTap: () => onChanged(type),
@@ -45,16 +45,16 @@ class RoutineListFilterChips extends StatelessWidget {
           vertical: Spacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.glassFill,
+          color: isSelected ? colors.primary : colors.glassFill,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.glassBorder,
+            color: isSelected ? colors.primary : colors.glassBorder,
           ),
         ),
         child: Text(
           label,
-          style: AppTextStyles.label.copyWith(
-            color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+          style: context.text.labelMedium?.copyWith(
+            color: isSelected ? colors.onPrimary : colors.textSecondary,
             fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
             fontSize: 11,
           ),

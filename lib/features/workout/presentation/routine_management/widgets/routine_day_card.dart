@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
@@ -79,7 +78,7 @@ class RoutineDayCard extends StatelessWidget {
                     children: [
                       Text(
                         day.name.toUpperCase(),
-                        style: AppTextStyles.heading2.copyWith(
+                        style: context.text.headlineMedium?.copyWith(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1,
@@ -92,7 +91,7 @@ class RoutineDayCard extends StatelessWidget {
                         exerciseCount == 0
                             ? 'Sin ejercicios · tocá para añadir'
                             : '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
-                        style: AppTextStyles.label.copyWith(
+                        style: context.text.labelMedium?.copyWith(
                           color: exerciseCount == 0
                               ? context.colors.primary
                               : context.colors.textSecondary,
@@ -103,7 +102,7 @@ class RoutineDayCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _buildPreview(day.exerciseNamesPreview),
-                          style: AppTextStyles.label.copyWith(
+                          style: context.text.labelMedium?.copyWith(
                             color: context.colors.textDisabled,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
@@ -204,7 +203,7 @@ class _IndexTile extends StatelessWidget {
         children: [
           Text(
             '${index + 1}',
-            style: AppTextStyles.displayNumber.copyWith(
+            style: context.text.displayLarge?.copyWith(
               fontSize: 20,
               color: color,
               height: 1,
@@ -213,7 +212,7 @@ class _IndexTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: color.withValues(alpha: 0.9),
               fontSize: 9,
               fontWeight: FontWeight.w900,

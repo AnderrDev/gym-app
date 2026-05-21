@@ -2,7 +2,6 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -26,7 +25,7 @@ class _HeaderMenuTile extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            style: AppTextStyles.bodyMedium,
+            style: context.text.bodyMedium,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -111,7 +110,7 @@ class ExerciseCardHeader extends StatelessWidget {
                     children: [
                       Text(
                         exercise.name,
-                        style: AppTextStyles.bodyLarge.copyWith(
+                        style: context.text.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -132,7 +131,7 @@ class ExerciseCardHeader extends StatelessWidget {
                             ),
                             child: Text(
                               'TARGET: ${exercise.targetWeight.toStringAsFixed(0)}kg x ${exercise.targetReps}',
-                              style: AppTextStyles.label.copyWith(
+                              style: context.text.labelMedium?.copyWith(
                                 color: context.colors.primary,
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
@@ -141,7 +140,7 @@ class ExerciseCardHeader extends StatelessWidget {
                           ),
                           Text(
                             '$targetSets series',
-                            style: AppTextStyles.label.copyWith(
+                            style: context.text.labelMedium?.copyWith(
                               color: context.colors.textSecondary,
                             ),
                           ),
@@ -159,7 +158,7 @@ class ExerciseCardHeader extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'Record: ${lastPerformance!.actualWeight.toStringAsFixed(0)}kg x ${lastPerformance!.actualReps}',
-                                  style: AppTextStyles.label.copyWith(
+                                  style: context.text.labelMedium?.copyWith(
                                     color: context.colors.primary.withValues(
                                       alpha: 0.8,
                                     ),
@@ -175,7 +174,7 @@ class ExerciseCardHeader extends StatelessWidget {
                 ),
                 Text(
                   '$doneCount/$targetSets',
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: context.text.bodyMedium?.copyWith(
                     color: readOnly
                         ? context.colors.textSecondary
                         : (allDone ? context.colors.success : context.colors.primary),

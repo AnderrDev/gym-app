@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_focus_parts.dart';
@@ -49,7 +48,7 @@ class ExerciseSetRowReadOnly extends StatelessWidget {
               log != null
                   ? '${_formatWeight(log.actualWeight)} kg × ${log.actualReps} reps'
                   : '— sin registro —',
-              style: AppTextStyles.bodyMedium.copyWith(
+              style: context.text.bodyMedium?.copyWith(
                 fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
                 color: isDone
                     ? context.colors.textPrimary

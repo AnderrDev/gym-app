@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Diálogo de confirmación para eliminar un día de una rutina.
 /// Devuelve `true` si el usuario confirma; `false`/`null` si cancela.
@@ -21,13 +20,13 @@ class DeleteDayDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('¿Eliminar día?', style: AppTextStyles.heading2),
+      title: Text('¿Eliminar día?', style: context.text.headlineMedium),
       content: Text(
         'Se borrará "$dayName" y todos sus ejercicios.',
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
+        style: context.text.bodyMedium?.copyWith(
+          color: context.colors.textSecondary,
         ),
       ),
       actions: [
@@ -36,14 +35,14 @@ class DeleteDayDialog extends StatelessWidget {
           child: Text(
             'CANCELAR',
             style:
-                AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+                context.text.labelMedium?.copyWith(color: context.colors.textSecondary),
           ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(
             'ELIMINAR',
-            style: AppTextStyles.label.copyWith(color: AppColors.error),
+            style: context.text.labelMedium?.copyWith(color: context.colors.error),
           ),
         ),
       ],

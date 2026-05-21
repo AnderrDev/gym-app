@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
@@ -47,8 +46,8 @@ class StatStripe extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actualColor = recordReached
-        ? AppColors.success
-        : AppColors.textPrimary;
+        ? context.colors.success
+        : context.colors.textPrimary;
     return Row(
       children: [
         Expanded(
@@ -65,7 +64,7 @@ class StatStripe extends StatelessWidget {
             caption: 'RÉCORD',
             value: recordLabel,
             unit: unit,
-            valueColor: AppColors.warning,
+            valueColor: context.colors.warning,
           ),
         ),
         const SizedBox(width: Spacing.xs),
@@ -93,9 +92,9 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.sm),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,8 +102,8 @@ class _Chip extends StatelessWidget {
         children: [
           Text(
             caption,
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textSecondary,
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.textSecondary,
               fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
@@ -118,7 +117,7 @@ class _Chip extends StatelessWidget {
               children: [
                 TextSpan(
                   text: value,
-                  style: AppTextStyles.bodyLarge.copyWith(
+                  style: context.text.bodyLarge?.copyWith(
                     color: valueColor,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
@@ -126,8 +125,8 @@ class _Chip extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                  style: context.text.labelMedium?.copyWith(
+                    color: context.colors.textSecondary,
                     fontSize: 10,
                   ),
                 ),
@@ -158,12 +157,12 @@ class _DeltaChip extends StatelessWidget {
     final isUp = !isNeutral && d > 0;
     final isDown = !isNeutral && d < 0;
     final color = isNeutral
-        ? AppColors.textSecondary
+        ? context.colors.textSecondary
         : isUp
-        ? AppColors.success
+        ? context.colors.success
         : isDown
-        ? AppColors.error
-        : AppColors.textSecondary;
+        ? context.colors.error
+        : context.colors.textSecondary;
     final icon = isNeutral
         ? Icons.remove_rounded
         : isUp
@@ -185,7 +184,7 @@ class _DeltaChip extends StatelessWidget {
         children: [
           Text(
             'VS ANTERIOR',
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: color,
               fontSize: 9,
               letterSpacing: 0.8,
@@ -205,7 +204,7 @@ class _DeltaChip extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: isNeutral ? '—' : formatter(d),
-                        style: AppTextStyles.bodyLarge.copyWith(
+                        style: context.text.bodyLarge?.copyWith(
                           color: color,
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
@@ -214,7 +213,7 @@ class _DeltaChip extends StatelessWidget {
                       if (!isNeutral)
                         TextSpan(
                           text: ' $unit',
-                          style: AppTextStyles.label.copyWith(
+                          style: context.text.labelMedium?.copyWith(
                             color: color,
                             fontSize: 10,
                           ),

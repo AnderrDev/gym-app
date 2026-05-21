@@ -8,7 +8,7 @@ import 'package:gym_flutter/core/forms/inputs/required_text.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
@@ -73,11 +73,11 @@ class _RegisterView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AuthStaggerEntrance(
+                      AuthStaggerEntrance(
                         child: Icon(
                           Icons.person_add_rounded,
                           size: 64,
-                          color: AppColors.primary,
+                          color: context.colors.primary,
                         ),
                       ),
                       const SizedBox(height: Spacing.xl),
@@ -101,7 +101,7 @@ class _RegisterView extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: textTheme.labelMedium?.copyWith(
                             letterSpacing: 2,
-                            color: AppColors.primary.withValues(alpha: 0.7),
+                            color: context.colors.primary.withValues(alpha: 0.7),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -232,12 +232,12 @@ class _RegisterView extends StatelessWidget {
                           child: RichText(
                             text: TextSpan(
                               style: textTheme.bodyMedium,
-                              children: const [
-                                TextSpan(text: '¿TIENES CUENTA? '),
+                              children: [
+                                const TextSpan(text: '¿TIENES CUENTA? '),
                                 TextSpan(
                                   text: 'INICIA SESIÓN',
                                   style: TextStyle(
-                                    color: AppColors.primary,
+                                    color: context.colors.primary,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1,
                                   ),

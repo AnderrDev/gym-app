@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 class RoutineListErrorCenter extends StatelessWidget {
   const RoutineListErrorCenter({super.key, required this.message});
@@ -14,9 +13,9 @@ class RoutineListErrorCenter extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
+          Icon(Icons.error_outline_rounded, color: context.colors.error, size: 48),
           const SizedBox(height: 12),
-          Text(message, style: AppTextStyles.bodyMedium),
+          Text(message, style: context.text.bodyMedium),
         ],
       ),
     );

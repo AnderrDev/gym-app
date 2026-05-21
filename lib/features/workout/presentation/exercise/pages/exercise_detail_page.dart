@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
@@ -54,7 +53,7 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
             ),
             title: Text(
               state.detail?.name ?? 'Detalle',
-              style: AppTextStyles.bodyLarge.copyWith(
+              style: context.text.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
               maxLines: 1,
@@ -111,14 +110,14 @@ class _Content extends StatelessWidget {
         const SizedBox(height: Spacing.lg),
         Text(
           detail.name,
-          style: AppTextStyles.heading1.copyWith(fontSize: 26),
+          style: context.text.displayLarge?.copyWith(fontSize: 26),
         ),
         if (detail.description != null && detail.description!.trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               detail.description!,
-              style: AppTextStyles.bodyMedium.copyWith(
+              style: context.text.bodyMedium?.copyWith(
                 color: context.colors.textSecondary,
               ),
             ),
@@ -182,7 +181,7 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: Spacing.sm),
         Text(
           label,
-          style: AppTextStyles.label.copyWith(
+          style: context.text.labelMedium?.copyWith(
             color: color,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.4,
@@ -238,7 +237,7 @@ class _VideoCTA extends StatelessWidget {
                   children: [
                     Text(
                       'VER VIDEO TUTORIAL',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.primary,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
@@ -248,7 +247,7 @@ class _VideoCTA extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Tocá para copiar el link',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.textSecondary,
                         fontSize: 11,
                       ),
@@ -290,7 +289,7 @@ class _EmptyContentHint extends StatelessWidget {
           Expanded(
             child: Text(
               'Todavía no hay contenido enriquecido para este ejercicio.',
-              style: AppTextStyles.bodyMedium.copyWith(
+              style: context.text.bodyMedium?.copyWith(
                 color: context.colors.textSecondary,
               ),
             ),
@@ -324,7 +323,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
+              style: context.text.bodyMedium?.copyWith(
                 color: context.colors.textSecondary,
               ),
             ),

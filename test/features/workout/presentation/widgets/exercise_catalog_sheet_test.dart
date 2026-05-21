@@ -106,6 +106,13 @@ void main() {
   testWidgets(
     'debe retornar la lista seleccionada al presionar el botón de añadir',
     (tester) async {
+      // Viewport más alto: el modal bottom sheet por default se monta ~50%
+      // del alto, y con el viewport default (800x600) la fila tappable de
+      // "Press de Banca Plano" cae fuera de los bounds del modal.
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       List<ExerciseCatalogItem>? result;
 
       await tester.pumpWidget(

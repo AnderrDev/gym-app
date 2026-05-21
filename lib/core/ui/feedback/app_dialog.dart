@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 
@@ -24,7 +24,7 @@ class AppDialog {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Radii.xl),
         ),

@@ -2,7 +2,6 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
 class RoutineDayStatusStrip extends StatelessWidget {
   final bool isWorkoutStarted;
@@ -37,14 +36,14 @@ class RoutineDayStatusStrip extends StatelessWidget {
                 children: [
                   Text(
                     'VOLUMEN ACTUAL',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       letterSpacing: 1.5,
                       fontSize: 10,
                     ),
                   ),
                   Text(
                     '${totalVolume.toStringAsFixed(0)} KG',
-                    style: AppTextStyles.displayNumber,
+                    style: context.text.displayLarge,
                   ),
                 ],
               ),
@@ -62,7 +61,7 @@ class RoutineDayStatusStrip extends StatelessWidget {
                 ),
                 child: Text(
                   isCompleted ? 'COMPLETADO' : 'LECTURA',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: isCompleted
                         ? context.colors.success
                         : context.colors.textSecondary,

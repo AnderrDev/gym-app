@@ -34,7 +34,7 @@ class AdaptiveBlur extends StatelessWidget {
   final double blurSigma;
 
   /// Tint que se superpone — null = `Colors.transparent`. En tema
-  /// claro suele ser `AppColors.textPrimary` con baja alpha para
+  /// claro suele ser `context.colors.textPrimary` con baja alpha para
   /// que el tinte vaya hacia oscuro sobre blanco.
   final Color? tintColor;
 

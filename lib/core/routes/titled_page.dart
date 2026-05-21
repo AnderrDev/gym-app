@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Wrappea una página con:
 ///   1. `Title` — en web propaga al `<title>` de la pestaña del browser.
@@ -23,7 +23,7 @@ class TitledPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Title(
       title: '$title — Smart Gym',
-      color: AppColors.primary,
+      color: context.colors.primary,
       child: SelectionArea(child: child),
     );
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Input grande del nombre del día dentro del editor — sin chrome extra,
@@ -32,8 +31,8 @@ class DayNameInput extends StatelessWidget {
         children: [
           Text(
             'NOMBRE DEL DÍA',
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textSecondary,
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.textSecondary,
               letterSpacing: 1.2,
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -46,22 +45,22 @@ class DayNameInput extends StatelessWidget {
             readOnly: readOnly,
             enabled: !readOnly,
             style:
-                AppTextStyles.heading1.copyWith(fontSize: 22, letterSpacing: -0.4),
+                context.text.displayLarge?.copyWith(fontSize: 22, letterSpacing: -0.4),
             decoration: InputDecoration(
               hintText: 'Pull Day · Espalda/Bíceps',
-              hintStyle: AppTextStyles.heading1.copyWith(
-                color: AppColors.textDisabled,
+              hintStyle: context.text.displayLarge?.copyWith(
+                color: context.colors.textDisabled,
                 fontSize: 22,
                 letterSpacing: -0.4,
               ),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 6),
               border: InputBorder.none,
-              enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.divider),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: context.colors.divider),
               ),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: context.colors.primary, width: 1.5),
               ),
             ),
           ),

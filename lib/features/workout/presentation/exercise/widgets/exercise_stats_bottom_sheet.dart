@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
@@ -75,11 +74,11 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                   children: [
                     Text(
                       exerciseName.toUpperCase(),
-                      style: AppTextStyles.heading1.copyWith(fontSize: 24),
+                      style: context.text.displayLarge?.copyWith(fontSize: 24),
                     ),
                     Text(
                       'ANÁLISIS DE PROGRESIÓN',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.primary,
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,
@@ -120,7 +119,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         state.message,
-                        style: AppTextStyles.bodyMedium.copyWith(
+                        style: context.text.bodyMedium?.copyWith(
                           color: context.colors.error,
                         ),
                       ),
@@ -141,7 +140,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           'Aún no hay datos para este ejercicio',
-                          style: AppTextStyles.bodyLarge.copyWith(
+                          style: context.text.bodyLarge?.copyWith(
                             color: context.colors.textDisabled,
                           ),
                         ),
@@ -203,7 +202,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                     const SizedBox(height: 40),
                     Text(
                       'HISTORIAL DETALLADO',
-                      style: AppTextStyles.label.copyWith(
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.textSecondary,
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Renderer mínimo de texto enriquecido para `instructions` y `tips`.
@@ -70,11 +68,8 @@ class ExerciseMarkdownLite extends StatelessWidget {
     }
     return Text(
       block.replaceAll('\n', ' '),
-      style: AppTextStyles.bodyMedium.copyWith(
-        // `_renderBlock` no recibe context; usamos AppColors. Si se
-        // necesita reactividad al tema en este texto, propagar context
-        // como argumento del método.
-        color: AppColors.textPrimary,
+      style: context.text.bodyMedium?.copyWith(
+        color: context.colors.textPrimary,
         height: 1.45,
       ),
     );
@@ -107,7 +102,7 @@ class _BulletRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: context.text.bodyMedium?.copyWith(
               color: context.colors.textPrimary,
               height: 1.45,
             ),

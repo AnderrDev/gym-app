@@ -2,7 +2,6 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 
@@ -63,7 +62,7 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'COACH',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: color,
                   fontSize: 8,
                   fontWeight: FontWeight.w900,
@@ -120,7 +119,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
                 coaching.recommendation.isEmpty
                     ? (coaching.feedback ?? '')
                     : recommendationText(coaching.recommendation),
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textPrimary,
                   fontStyle: FontStyle.italic,
                 ),
@@ -159,7 +158,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
           Expanded(
             child: Text(
               recommendationText(coaching.recommendation),
-              style: AppTextStyles.bodySmall.copyWith(
+              style: context.text.bodySmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,
               ),
@@ -192,7 +191,7 @@ class ExerciseCardLiveAdvice extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: context.text.bodySmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontStyle: FontStyle.italic,

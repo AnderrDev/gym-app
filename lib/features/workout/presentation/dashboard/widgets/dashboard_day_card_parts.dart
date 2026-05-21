@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -118,7 +117,7 @@ class DayCardRestRow extends StatelessWidget {
             children: [
               Text(
                 initial,
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textDisabled,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -128,7 +127,7 @@ class DayCardRestRow extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$dayNumber',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textDisabled,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -149,7 +148,7 @@ class DayCardRestRow extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Descanso',
-                style: AppTextStyles.label.copyWith(
+                style: context.text.labelMedium?.copyWith(
                   color: context.colors.textSecondary,
                   letterSpacing: 0.4,
                   fontWeight: FontWeight.w600,
@@ -206,7 +205,7 @@ class DayCardDateBlock extends StatelessWidget {
           children: [
             Text(
               initial,
-              style: AppTextStyles.label.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: context.colors.onPrimary.withValues(alpha: 0.85),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
@@ -216,7 +215,7 @@ class DayCardDateBlock extends StatelessWidget {
             const SizedBox(height: 1),
             Text(
               '$dayNumber',
-              style: AppTextStyles.bodyLarge.copyWith(
+              style: context.text.bodyLarge?.copyWith(
                 color: context.colors.onPrimary,
                 fontWeight: FontWeight.w800,
                 fontSize: 19,
@@ -238,7 +237,7 @@ class DayCardDateBlock extends StatelessWidget {
         children: [
           Text(
             initial,
-            style: AppTextStyles.label.copyWith(
+            style: context.text.labelMedium?.copyWith(
               color: initialColor,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -248,7 +247,7 @@ class DayCardDateBlock extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '$dayNumber',
-            style: AppTextStyles.bodyLarge.copyWith(
+            style: context.text.bodyLarge?.copyWith(
               color: numberColor,
               fontWeight: FontWeight.w800,
               fontSize: 19,

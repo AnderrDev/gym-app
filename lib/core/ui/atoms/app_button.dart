@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
 /// Variantes semánticas del botón. La paleta y radii vienen del tema, así
 /// que solo necesitamos discriminar el rol (primary, secondary, ghost,
@@ -85,14 +86,7 @@ class AppButton extends StatelessWidget {
               variant == AppButtonVariant.destructive
           ? colors.onPrimary
           : colors.primary;
-      return SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: spinnerColor,
-        ),
-      );
+      return AppSpinner(size: 18, color: spinnerColor);
     }
     final text = Text(label.toUpperCase());
     if (icon == null) return text;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Label de sección en mayúsculas con contador opcional a la derecha y un
 /// hint terciario (microcopy para gestos: "Mantén para reordenar", etc).
@@ -33,8 +32,8 @@ class SectionHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 label.toUpperCase(),
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
                   letterSpacing: 1.3,
                   fontWeight: FontWeight.w800,
                   fontSize: 11,
@@ -48,16 +47,16 @@ class SectionHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.info_outline_rounded,
                 size: 12,
-                color: AppColors.textDisabled,
+                color: context.colors.textDisabled,
               ),
               const SizedBox(width: 4),
               Text(
                 hint!,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textDisabled,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textDisabled,
                   fontSize: 10,
                 ),
               ),

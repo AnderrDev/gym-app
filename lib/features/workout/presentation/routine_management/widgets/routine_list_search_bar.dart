@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Buscador de rutinas por nombre. Renderiza el frame con borde + un
@@ -34,33 +33,33 @@ class RoutineListSearchBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+          border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
         ),
         child: TextField(
           controller: controller,
           onChanged: onChanged,
-          style: AppTextStyles.bodyMedium
-              .copyWith(color: AppColors.textPrimary),
+          style: context.text.bodyMedium
+              ?.copyWith(color: context.colors.textPrimary),
           decoration: InputDecoration(
-            icon: const Icon(
+            icon: Icon(
               Icons.search_rounded,
-              color: AppColors.textDisabled,
+              color: context.colors.textDisabled,
               size: 20,
             ),
             hintText: 'Buscar rutina por nombre…',
             hintStyle:
-                AppTextStyles.bodyMedium.copyWith(color: AppColors.textDisabled),
+                context.text.bodyMedium?.copyWith(color: context.colors.textDisabled),
             border: InputBorder.none,
             isDense: true,
             suffixIcon: query.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: AppColors.textDisabled,
+                      color: context.colors.textDisabled,
                     ),
                     onPressed: onClear,
                   ),

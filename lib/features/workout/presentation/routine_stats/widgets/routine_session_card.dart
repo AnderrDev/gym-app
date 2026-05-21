@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
@@ -26,12 +25,12 @@ class RoutineSessionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.colors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department_rounded,
-              color: AppColors.primary,
+              color: context.colors.primary,
               size: 20,
             ),
           ),
@@ -42,16 +41,16 @@ class RoutineSessionCard extends StatelessWidget {
               children: [
                 Text(
                   session.routineDayName,
-                  style: AppTextStyles.bodyLarge
-                      .copyWith(fontWeight: FontWeight.bold),
+                  style: context.text.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   DateFormat('EEEE, d MMM', 'es')
                       .format(session.sessionDate)
                       .toUpperCase(),
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     fontSize: 10,
-                    color: AppColors.textDisabled,
+                    color: context.colors.textDisabled,
                   ),
                 ),
               ],
@@ -62,14 +61,14 @@ class RoutineSessionCard extends StatelessWidget {
             children: [
               Text(
                 '${session.totalVolume.toStringAsFixed(0)} kg',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.primary,
+                style: context.text.bodyLarge?.copyWith(
+                  color: context.colors.primary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               Text(
                 'VOL. TOTAL',
-                style: AppTextStyles.label.copyWith(fontSize: 8),
+                style: context.text.labelMedium?.copyWith(fontSize: 8),
               ),
             ],
           ),

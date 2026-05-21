@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -50,7 +49,7 @@ class RoutineListCard extends StatelessWidget {
     final accent = RoutineColor.accentFor(routine.name);
     final borderColor = isActive
         ? accent.withValues(alpha: 0.6)
-        : AppColors.divider.withValues(alpha: 0.4);
+        : context.colors.divider.withValues(alpha: 0.4);
 
     return Material(
       color: Colors.transparent,
@@ -59,7 +58,7 @@ class RoutineListCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor, width: isActive ? 1.6 : 1),
           ),
@@ -139,7 +138,7 @@ class _Header extends StatelessWidget {
         Expanded(
           child: Text(
             name.toUpperCase(),
-            style: AppTextStyles.heading2.copyWith(
+            style: context.text.headlineMedium?.copyWith(
               fontSize: 16,
               letterSpacing: 1.1,
               fontWeight: FontWeight.w800,
@@ -161,8 +160,8 @@ class _Header extends StatelessWidget {
             ),
             child: Text(
               'ACTIVA',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.background,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.background,
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,
@@ -246,8 +245,8 @@ class _StatChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textPrimary.withValues(alpha: 0.85),
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.textPrimary.withValues(alpha: 0.85),
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
