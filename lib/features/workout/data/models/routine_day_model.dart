@@ -75,11 +75,12 @@ class RoutineDayModel {
     );
   }
 
-  /// Las columnas escribibles son `id`, `routine_id`, `day_of_week`, `name`.
-  /// Los campos derivados (`exercises`, `target_sets_count`, `status`) se
-  /// incluyen también para que el round-trip `toJson → fromJson` preserve
-  /// el estado en memoria (cache, tests, debug); el datasource ignora esas
-  /// keys al hacer insert/update.
+  /// Las columnas escribibles son `id`, `routine_id`, `day_of_week`, `name`;
+  /// el datasource ignora el resto al hacer insert/update. Los campos
+  /// derivados (`exercises`, `target_sets_count`, `status`) se incluyen sólo
+  /// para inspección/debug — `fromJson` NO los re-lee (espera el join
+  /// `routine_exercises`), así que el round-trip `toJson → fromJson` no es
+  /// idempotente para esos campos ni para `exercise_names_preview`.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -53,6 +53,7 @@ extension RoutineDayEntityMapper on RoutineDay {
         exercises: exercises,
         targetSetsCount: targetSetsCount,
         status: status,
+        exerciseNamesPreview: exerciseNamesPreview,
       );
 }
 

@@ -17,10 +17,6 @@ class UserModel {
     );
   }
 
-  factory UserModel.fromEntity(User user) {
-    return UserModel(id: user.id, email: user.email, fullName: user.fullName);
-  }
-
   Map<String, dynamic> toJson() {
     return {'id': id, 'email': email, 'full_name': fullName};
   }

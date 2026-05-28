@@ -69,19 +69,6 @@ class WorkoutSessionModel {
     );
   }
 
-  factory WorkoutSessionModel.fromEntity(WorkoutSession entity) {
-    return WorkoutSessionModel(
-      id: entity.id,
-      userId: entity.userId,
-      routineDayId: entity.routineDayId,
-      sessionDate: entity.sessionDate,
-      completedAt: entity.completedAt,
-      completedSetsCount: entity.completedSetsCount,
-      totalTargetSets: entity.totalTargetSets,
-      coachingAnalysis: entity.coachingAnalysis,
-    );
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
