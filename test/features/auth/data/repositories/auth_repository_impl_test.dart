@@ -6,6 +6,7 @@ import 'package:gym_flutter/features/auth/data/datasources/auth_local_data_sourc
 import 'package:gym_flutter/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:gym_flutter/features/auth/data/models/user_model.dart';
 import 'package:gym_flutter/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAuthRemoteDataSource extends Mock implements AuthRemoteDataSource {}
@@ -48,7 +49,7 @@ void main() {
         final result = await repository.signInWithEmail(tEmail, tPassword);
 
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, tUserModel));
+        result.fold((l) => fail('L'), (r) => expect(r, tUserModel.toEntity()));
         verify(
           () => mockRemoteDataSource.signInWithEmail(tEmail, tPassword),
         ).called(1);
@@ -82,7 +83,7 @@ void main() {
 
       final result = await repository.getCurrentUser();
 
-      expect(result, const Right(tUserModel));
+      expect(result, Right<Failure, User?>(tUserModel.toEntity()));
       verify(() => mockLocalDataSource.cacheUser(tUserModel)).called(1);
     });
 
@@ -98,7 +99,7 @@ void main() {
 
         final result = await repository.getCurrentUser();
 
-        expect(result, const Right(tUserModel));
+        expect(result, Right<Failure, User?>(tUserModel.toEntity()));
         verify(() => mockLocalDataSource.getLastCachedUser()).called(1);
       },
     );

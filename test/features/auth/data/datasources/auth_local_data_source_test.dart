@@ -52,7 +52,8 @@ void main() {
 
       final result = await dataSource.getLastCachedUser();
 
-      expect(result, tUserModel);
+      // UserModel ya no tiene `==` (no es Equatable); comparamos el JSON.
+      expect(result?.toJson(), tUserModel.toJson());
       verify(() => mockSharedPreferences.getString(cachedUserKey)).called(1);
     });
 
