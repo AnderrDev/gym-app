@@ -3,16 +3,28 @@ import 'package:gym_flutter/core/observability/app_logger.dart';
 import '../../domain/entities/coaching_analysis.dart';
 import '../../domain/entities/workout_session.dart';
 
-class WorkoutSessionModel extends WorkoutSession {
+/// Modelo de datos para `WorkoutSession`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON de `workout_sessions` /
+/// `view_workout_sessions_summary` y convierte hacia/desde la entidad.
+class WorkoutSessionModel {
+  final String id;
+  final String userId;
+  final String routineDayId;
+  final DateTime sessionDate;
+  final DateTime? completedAt;
+  final int completedSetsCount;
+  final int totalTargetSets;
+  final List<CoachingAnalysis>? coachingAnalysis;
+
   const WorkoutSessionModel({
-    required super.id,
-    required super.userId,
-    required super.routineDayId,
-    required super.sessionDate,
-    super.completedAt,
-    super.completedSetsCount = 0,
-    super.totalTargetSets = 0,
-    super.coachingAnalysis,
+    required this.id,
+    required this.userId,
+    required this.routineDayId,
+    required this.sessionDate,
+    this.completedAt,
+    this.completedSetsCount = 0,
+    this.totalTargetSets = 0,
+    this.coachingAnalysis,
   });
 
   /// La fuente canónica es la vista `view_workout_sessions_summary` (provee
@@ -57,6 +69,19 @@ class WorkoutSessionModel extends WorkoutSession {
     );
   }
 
+  factory WorkoutSessionModel.fromEntity(WorkoutSession entity) {
+    return WorkoutSessionModel(
+      id: entity.id,
+      userId: entity.userId,
+      routineDayId: entity.routineDayId,
+      sessionDate: entity.sessionDate,
+      completedAt: entity.completedAt,
+      completedSetsCount: entity.completedSetsCount,
+      totalTargetSets: entity.totalTargetSets,
+      coachingAnalysis: entity.coachingAnalysis,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -70,4 +95,15 @@ class WorkoutSessionModel extends WorkoutSession {
       'coaching_analysis': coachingAnalysis?.map((e) => e.toJson()).toList(),
     };
   }
+
+  WorkoutSession toEntity() => WorkoutSession(
+        id: id,
+        userId: userId,
+        routineDayId: routineDayId,
+        sessionDate: sessionDate,
+        completedAt: completedAt,
+        completedSetsCount: completedSetsCount,
+        totalTargetSets: totalTargetSets,
+        coachingAnalysis: coachingAnalysis,
+      );
 }

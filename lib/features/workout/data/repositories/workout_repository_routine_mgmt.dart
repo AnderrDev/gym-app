@@ -151,12 +151,15 @@ mixin WorkoutRepositoryRoutineMgmtMixin on WorkoutRepository {
       guard(() => remoteDataSource.getExerciseDetail(exerciseId));
 
   @override
-  Future<Either<Failure, List<Routine>>> getAllRoutines() =>
-      guard(() => remoteDataSource.getAllRoutines());
+  Future<Either<Failure, List<Routine>>> getAllRoutines() => guard(
+        () async => (await remoteDataSource.getAllRoutines())
+            .map((m) => m.toEntity())
+            .toList(),
+      );
 
   @override
   Future<Either<Failure, Routine>> getRoutineById(String routineId) =>
-      guard(() => remoteDataSource.getRoutineById(routineId));
+      guard(() async => (await remoteDataSource.getRoutineById(routineId)).toEntity());
 
   @override
   Future<Either<Failure, String?>> getRoutineDayNameById(

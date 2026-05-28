@@ -1,32 +1,17 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class SetLog extends Equatable {
-  final String? id; // Nullable because we create it before sending to DB
-  final String sessionId;
-  final String exerciseId;
-  final double actualWeight;
-  final int actualReps;
-  final int setIndex;
-  final DateTime? createdAt;
+part 'set_log.freezed.dart';
 
-  const SetLog({
-    this.id,
-    required this.sessionId,
-    required this.exerciseId,
-    required this.actualWeight,
-    required this.actualReps,
-    required this.setIndex,
-    this.createdAt,
-  });
-
-  @override
-  List<Object?> get props => [
-    id,
-    sessionId,
-    exerciseId,
-    actualWeight,
-    actualReps,
-    setIndex,
-    createdAt,
-  ];
+@freezed
+abstract class SetLog with _$SetLog {
+  const factory SetLog({
+    // Nullable porque lo creamos antes de mandarlo a la DB.
+    String? id,
+    required String sessionId,
+    required String exerciseId,
+    required double actualWeight,
+    required int actualReps,
+    required int setIndex,
+    DateTime? createdAt,
+  }) = _SetLog;
 }

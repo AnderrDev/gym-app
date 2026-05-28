@@ -1,13 +1,21 @@
-import '../../domain/entities/routine.dart';
+/// Modelo de datos para `Routine`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON de `routines_view`. La conversión
+/// hacia/desde la entidad vive en `workout_repository_mappers.dart`.
+class RoutineModel {
+  final String id;
+  final String name;
+  final int exerciseCount;
+  final bool isPublic;
+  final String? creatorId;
+  final String? creatorName;
 
-class RoutineModel extends Routine {
   const RoutineModel({
-    required super.id,
-    required super.name,
-    required super.exerciseCount,
-    super.isPublic = false,
-    super.creatorId,
-    super.creatorName,
+    required this.id,
+    required this.name,
+    required this.exerciseCount,
+    this.isPublic = false,
+    this.creatorId,
+    this.creatorName,
   });
 
   factory RoutineModel.fromJson(Map<String, dynamic> json) {

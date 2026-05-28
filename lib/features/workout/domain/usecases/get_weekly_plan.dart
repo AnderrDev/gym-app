@@ -2,7 +2,6 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/routine_day.dart';
 import '../repositories/workout_repository.dart';
-import '../../data/models/routine_day_model.dart';
 
 class GetWeeklyPlan {
   final WorkoutRepository repository;
@@ -61,10 +60,7 @@ class GetWeeklyPlan {
         }
       }
 
-      if (day is RoutineDayModel) {
-        return day.copyWithStatus(status);
-      }
-      return day;
+      return day.copyWith(status: status);
     }).toList();
 
     return Right(enrichedDays);

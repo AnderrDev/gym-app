@@ -206,7 +206,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           fetchRemote: () async {
             final fresh =
                 await remoteDataSource.getAssignedRoutines(userId);
-            return List<Routine>.from(fresh);
+            return fresh.map((m) => m.toEntity()).toList();
           },
           writeCache: (routines) async {
             if (localDataSource == null) return;
@@ -227,7 +227,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           label: 'routineDays',
           fetchRemote: () async {
             final fresh = await remoteDataSource.getRoutineDays(routineId);
-            return List<RoutineDay>.from(fresh);
+            return fresh.map((m) => m.toEntity()).toList();
           },
           writeCache: (days) =>
               localDataSource!.cacheRoutineDays(routineId, days),
@@ -246,7 +246,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           fetchRemote: () async {
             final fresh =
                 await remoteDataSource.getExercisesForDay(routineDayId);
-            return List<Exercise>.from(fresh);
+            return fresh.map((m) => m.toEntity()).toList();
           },
           writeCache: (exercises) =>
               localDataSource!.cacheExercisesForDay(routineDayId, exercises),
@@ -271,7 +271,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
               weekStart,
               weekEnd,
             );
-            return List<WorkoutSession>.from(fresh);
+            return fresh.map((m) => m.toEntity()).toList();
           },
           writeCache: (sessions) async {
             if (localDataSource == null) return;
@@ -296,11 +296,12 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     DateTime sessionDate,
   ) =>
       guard(
-        () => remoteDataSource.getExistingSession(
+        () async => (await remoteDataSource.getExistingSession(
           userId,
           routineDayId,
           sessionDate,
-        ),
+        ))
+            ?.toEntity(),
       );
 
   @override
@@ -317,11 +318,12 @@ class WorkoutRepositoryImpl extends WorkoutRepository
         // SyncWorker quedaba atascado con backoffs / RLS auth-pause, dejando
         // los POST sin enviarse "ahí mismo".
         if (!_offlineCapable || _isOnline) {
-          final session = await remoteDataSource.startWorkoutForDay(
+          final session = (await remoteDataSource.startWorkoutForDay(
             userId,
             routineDayId,
             sessionDate,
-          );
+          ))
+              .toEntity();
           if (localDataSource != null) {
             try {
               await localDataSource!.saveCachedSession(session);
@@ -403,7 +405,11 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   Future<Either<Failure, SetLog?>> getLastExercisePerformance(
     String exerciseId,
   ) =>
-      guard(() => remoteDataSource.getLastExercisePerformance(exerciseId));
+      guard(
+        () async =>
+            (await remoteDataSource.getLastExercisePerformance(exerciseId))
+                ?.toEntity(),
+      );
 
   @override
   Future<Either<Failure, Map<String, SetLog?>>> getLastExercisePerformances(
@@ -421,7 +427,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
                 await remoteDataSource.getLastExercisePerformances(
               exerciseIds,
             );
-            return result.map((k, v) => MapEntry(k, v as SetLog?));
+            return result.map((k, v) => MapEntry(k, v?.toEntity()));
           },
           writeCache: (map) async {
             if (!canCache) return;
@@ -441,13 +447,22 @@ class WorkoutRepositoryImpl extends WorkoutRepository
 
   @override
   Future<Either<Failure, List<SetLog>>> getSessionSetLogs(String sessionId) =>
-      guard(() => remoteDataSource.getSessionSetLogs(sessionId));
+      guard(
+        () async => (await remoteDataSource.getSessionSetLogs(sessionId))
+            .map((m) => m.toEntity())
+            .toList(),
+      );
 
   @override
   Future<Either<Failure, Map<String, List<SetLog>>>> getSetLogsForSessions(
     List<String> sessionIds,
   ) =>
-      guard(() => remoteDataSource.getSetLogsForSessions(sessionIds));
+      guard(() async {
+        final raw = await remoteDataSource.getSetLogsForSessions(sessionIds);
+        return raw.map(
+          (k, v) => MapEntry(k, v.map((m) => m.toEntity()).toList()),
+        );
+      });
 
   @override
   Future<Either<Failure, List<WorkoutSession>>> getRecentSessionsForDay(
@@ -457,12 +472,14 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     int limit = 3,
   }) =>
       guard(
-        () => remoteDataSource.getRecentSessionsForDay(
+        () async => (await remoteDataSource.getRecentSessionsForDay(
           userId,
           routineDayId,
           beforeDate,
           limit: limit,
-        ),
+        ))
+            .map((m) => m.toEntity())
+            .toList(),
       );
 
   @override
@@ -581,7 +598,8 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   ) =>
       guard(() async {
         try {
-          return await remoteDataSource.getActiveSessionForUser(userId);
+          return (await remoteDataSource.getActiveSessionForUser(userId))
+              ?.toEntity();
         } catch (e) {
           // Fallback offline-capable: ante errores de red caemos al cache
           // local. Mantenemos el throw para todos los demás errores —

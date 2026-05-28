@@ -40,6 +40,7 @@ extension RoutineDayModelMapper on RoutineDayModel {
         exercises: exercises,
         targetSetsCount: targetSetsCount,
         status: status,
+        exerciseNamesPreview: exerciseNamesPreview,
       );
 }
 
@@ -80,7 +81,7 @@ List<ExerciseHistorySession> mapExerciseLogsToHistory(
       .map(
         (entry) => ExerciseHistorySession(
           sessionDate: DateTime.parse(entry.key),
-          logs: entry.value,
+          logs: entry.value.map((m) => m.toEntity()).toList(),
         ),
       )
       .toList()

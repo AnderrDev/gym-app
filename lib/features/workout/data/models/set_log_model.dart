@@ -1,14 +1,25 @@
 import '../../domain/entities/set_log.dart';
 
-class SetLogModel extends SetLog {
+/// Modelo de datos para `SetLog`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON de Supabase/SQLite y convierte hacia/desde
+/// la entidad de dominio.
+class SetLogModel {
+  final String? id;
+  final String sessionId;
+  final String exerciseId;
+  final double actualWeight;
+  final int actualReps;
+  final int setIndex;
+  final DateTime? createdAt;
+
   const SetLogModel({
-    super.id,
-    required super.sessionId,
-    required super.exerciseId,
-    required super.actualWeight,
-    required super.actualReps,
-    required super.setIndex,
-    super.createdAt,
+    this.id,
+    required this.sessionId,
+    required this.exerciseId,
+    required this.actualWeight,
+    required this.actualReps,
+    required this.setIndex,
+    this.createdAt,
   });
 
   factory SetLogModel.fromJson(Map<String, dynamic> json) {
@@ -54,4 +65,14 @@ class SetLogModel extends SetLog {
     // Let database handle created_at generally to guarantee server time
     return data;
   }
+
+  SetLog toEntity() => SetLog(
+        id: id,
+        sessionId: sessionId,
+        exerciseId: exerciseId,
+        actualWeight: actualWeight,
+        actualReps: actualReps,
+        setIndex: setIndex,
+        createdAt: createdAt,
+      );
 }

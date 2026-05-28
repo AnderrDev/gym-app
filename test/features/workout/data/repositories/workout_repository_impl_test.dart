@@ -7,8 +7,10 @@ import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
 import 'package:gym_flutter/features/workout/data/models/exercise_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/data/repositories/workout_repository_impl.dart';
+import 'package:gym_flutter/features/workout/data/repositories/workout_repository_mappers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -107,7 +109,10 @@ void main() {
         ).thenAnswer((_) async => [tRoutineModel]);
         final result = await repository.getAssignedRoutines(tUserId);
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, [tRoutineModel]));
+        result.fold(
+          (l) => fail('L'),
+          (r) => expect(r, [tRoutineModel.toEntity()]),
+        );
       },
     );
   });
@@ -129,7 +134,10 @@ void main() {
         ).thenAnswer((_) async => tDays);
         final result = await repository.getRoutineDays(tRoutineId);
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, tDays));
+        result.fold(
+          (l) => fail('L'),
+          (r) => expect(r, tDays.map((m) => m.toEntity()).toList()),
+        );
       },
     );
   });
@@ -155,7 +163,10 @@ void main() {
         ).thenAnswer((_) async => tExercises);
         final result = await repository.getExercisesForDay('d1');
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, tExercises));
+        result.fold(
+          (l) => fail('L'),
+          (r) => expect(r, tExercises.map((m) => m.toEntity()).toList()),
+        );
       },
     );
   });
@@ -179,7 +190,7 @@ void main() {
           DateTime(2026, 4, 5),
         );
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, tSession));
+        result.fold((l) => fail('L'), (r) => expect(r, tSession.toEntity()));
       },
     );
   });
@@ -237,10 +248,16 @@ void main() {
         name: 'Lunes',
         dayOfWeek: 1,
       );
+      const tDay = RoutineDay(
+        id: 'd1',
+        routineId: 'r1',
+        name: 'Lunes',
+        dayOfWeek: 1,
+      );
       when(
         () => mockRemoteDataSource.saveRoutineDay(any()),
       ).thenAnswer((_) async => tDayModel);
-      final result = await repository.saveRoutineDay(tDayModel);
+      final result = await repository.saveRoutineDay(tDay);
       expect(result.isRight(), isTrue);
       verify(() => mockRemoteDataSource.saveRoutineDay(any())).called(1);
     });
@@ -253,7 +270,7 @@ void main() {
       ).thenAnswer((_) async => tRoutineModel);
       final result = await repository.getRoutineById('r1');
       expect(result.isRight(), isTrue);
-      result.fold((l) => fail('L'), (r) => expect(r, tRoutineModel));
+      result.fold((l) => fail('L'), (r) => expect(r, tRoutineModel.toEntity()));
     });
   });
 
@@ -266,7 +283,10 @@ void main() {
         ).thenAnswer((_) async => [tRoutineModel]);
         final result = await repository.getAllRoutines();
         expect(result.isRight(), isTrue);
-        result.fold((l) => fail('L'), (r) => expect(r, [tRoutineModel]));
+        result.fold(
+          (l) => fail('L'),
+          (r) => expect(r, [tRoutineModel.toEntity()]),
+        );
       },
     );
   });
