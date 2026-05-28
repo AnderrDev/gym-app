@@ -10,7 +10,6 @@ import 'package:gym_flutter/features/workout/data/models/workout_session_model.d
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/data/repositories/workout_repository_impl.dart';
-import 'package:gym_flutter/features/workout/data/repositories/workout_repository_mappers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 

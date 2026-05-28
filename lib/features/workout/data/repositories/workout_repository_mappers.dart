@@ -1,61 +1,10 @@
-import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
-import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
-import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
-import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 
-/// Conversiones entre modelos de `data/` y entidades de `domain/`.
-/// Centraliza el mapping para que el repositorio no repita ctors largos
-/// dos veces por método (a la ida y a la vuelta).
-extension RoutineModelMapper on RoutineModel {
-  Routine toEntity() => Routine(
-        id: id,
-        name: name,
-        exerciseCount: exerciseCount,
-        isPublic: isPublic,
-        creatorId: creatorId,
-        creatorName: creatorName,
-      );
-}
-
-extension RoutineEntityMapper on Routine {
-  RoutineModel toModel() => RoutineModel(
-        id: id,
-        name: name,
-        exerciseCount: exerciseCount,
-        isPublic: isPublic,
-        creatorId: creatorId,
-        creatorName: creatorName,
-      );
-}
-
-extension RoutineDayModelMapper on RoutineDayModel {
-  RoutineDay toEntity() => RoutineDay(
-        id: id,
-        routineId: routineId,
-        dayOfWeek: dayOfWeek,
-        name: name,
-        exercises: exercises,
-        targetSetsCount: targetSetsCount,
-        status: status,
-        exerciseNamesPreview: exerciseNamesPreview,
-      );
-}
-
-extension RoutineDayEntityMapper on RoutineDay {
-  RoutineDayModel toModel() => RoutineDayModel(
-        id: id,
-        routineId: routineId,
-        name: name,
-        dayOfWeek: dayOfWeek,
-        exercises: exercises,
-        targetSetsCount: targetSetsCount,
-        status: status,
-        exerciseNamesPreview: exerciseNamesPreview,
-      );
-}
+/// Mappers de **agregación** que convierten filas crudas (joins de varias
+/// tablas) en entidades de historial. La conversión 1:1 model↔entity vive
+/// como `fromEntity`/`toEntity` en cada `XModel`.
 
 /// Agrupa filas de `set_logs` (con join a `workout_sessions.session_date`) por
 /// fecha y devuelve `ExerciseHistorySession`s ordenadas descendentes.

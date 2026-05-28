@@ -3,7 +3,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/error/error_mapper.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
-import 'package:gym_flutter/features/workout/data/repositories/workout_repository_mappers.dart';
+import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
+import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -26,7 +27,8 @@ mixin WorkoutRepositoryRoutineMgmtMixin on WorkoutRepository {
   @override
   Future<Either<Failure, Routine>> saveRoutine(Routine routine) =>
       guard(() async {
-        final saved = await remoteDataSource.saveRoutine(routine.toModel());
+        final saved =
+            await remoteDataSource.saveRoutine(RoutineModel.fromEntity(routine));
         return saved.toEntity();
       });
 
@@ -46,7 +48,8 @@ mixin WorkoutRepositoryRoutineMgmtMixin on WorkoutRepository {
   @override
   Future<Either<Failure, RoutineDay>> saveRoutineDay(RoutineDay day) =>
       guard(() async {
-        final saved = await remoteDataSource.saveRoutineDay(day.toModel());
+        final saved =
+            await remoteDataSource.saveRoutineDay(RoutineDayModel.fromEntity(day));
         return saved.toEntity();
       });
 

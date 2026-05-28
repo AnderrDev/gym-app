@@ -1,6 +1,8 @@
+import '../../domain/entities/routine.dart';
+
 /// Modelo de datos para `Routine`. Clase hermana (no extiende la entity
-/// freezed): (de)serializa el JSON de `routines_view`. La conversión
-/// hacia/desde la entidad vive en `workout_repository_mappers.dart`.
+/// freezed): (de)serializa el JSON de `routines_view` y convierte
+/// hacia/desde la entidad en el boundary del repositorio.
 class RoutineModel {
   final String id;
   final String name;
@@ -30,6 +32,15 @@ class RoutineModel {
     );
   }
 
+  factory RoutineModel.fromEntity(Routine entity) => RoutineModel(
+        id: entity.id,
+        name: entity.name,
+        exerciseCount: entity.exerciseCount,
+        isPublic: entity.isPublic,
+        creatorId: entity.creatorId,
+        creatorName: entity.creatorName,
+      );
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -40,4 +51,13 @@ class RoutineModel {
       'creator_name': creatorName,
     };
   }
+
+  Routine toEntity() => Routine(
+        id: id,
+        name: name,
+        exerciseCount: exerciseCount,
+        isPublic: isPublic,
+        creatorId: creatorId,
+        creatorName: creatorName,
+      );
 }

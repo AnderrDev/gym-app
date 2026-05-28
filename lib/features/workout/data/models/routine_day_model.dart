@@ -3,8 +3,8 @@ import '../../domain/entities/exercise.dart';
 import 'exercise_model.dart';
 
 /// Modelo de datos para `RoutineDay`. Clase hermana (no extiende la entity
-/// freezed): (de)serializa el JSON anidado de la DB. La conversión hacia/desde
-/// la entidad vive en `workout_repository_mappers.dart`.
+/// freezed): (de)serializa el JSON anidado de la DB y convierte hacia/desde
+/// la entidad en el boundary del repositorio.
 class RoutineDayModel {
   final String id;
   final String routineId;
@@ -94,6 +94,28 @@ class RoutineDayModel {
           .toList(),
     };
   }
+
+  factory RoutineDayModel.fromEntity(RoutineDay entity) => RoutineDayModel(
+        id: entity.id,
+        routineId: entity.routineId,
+        name: entity.name,
+        dayOfWeek: entity.dayOfWeek,
+        exercises: entity.exercises,
+        targetSetsCount: entity.targetSetsCount,
+        status: entity.status,
+        exerciseNamesPreview: entity.exerciseNamesPreview,
+      );
+
+  RoutineDay toEntity() => RoutineDay(
+        id: id,
+        routineId: routineId,
+        dayOfWeek: dayOfWeek,
+        name: name,
+        exercises: exercises,
+        targetSetsCount: targetSetsCount,
+        status: status,
+        exerciseNamesPreview: exerciseNamesPreview,
+      );
 
   static WorkoutDayStatus _statusFromName(String? name) {
     if (name == null) return WorkoutDayStatus.pending;
