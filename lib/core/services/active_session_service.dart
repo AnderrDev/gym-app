@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:gym_flutter/core/observability/app_logger.dart';
+
 /// Persiste el contexto de la sesión activa en SharedPreferences.
 /// Esto permite reanudación automática si el usuario cierra o pone en
 /// segundo plano la app durante un entrenamiento.
@@ -52,11 +54,23 @@ class ActiveSessionService {
       return null;
     }
 
+    final sessionDate = DateTime.tryParse(sessionDateStr);
+    if (sessionDate == null) {
+      // SharedPreferences corrupto: limpiamos para no quedar en loop. La
+      // siguiente llamada devolverá null y la app re-detecta vía repo.
+      AppLogger.instance.warning(
+        'ActiveSessionService: sessionDate inválido "$sessionDateStr", limpiando',
+      );
+      // ignore: discarded_futures
+      clear();
+      return null;
+    }
+
     return ActiveSessionContext(
       sessionId: sessionId,
       routineDayId: routineDayId,
       userId: userId,
-      sessionDate: DateTime.parse(sessionDateStr),
+      sessionDate: sessionDate,
       routineDayName: routineDayName,
     );
   }

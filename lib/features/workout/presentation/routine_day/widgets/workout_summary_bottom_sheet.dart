@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/i18n/app_strings.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_coaching_section.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_comparison_section.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_hero.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_pr_section.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/widgets/workout_metric_grid.dart';
 
+/// Bottom sheet de cierre de sesión. Rediseñado con jerarquía clara:
+/// hero centrado, métricas en grilla, sección de PRs, comparación vs
+/// anterior y coaching para la próxima. Cierra con un par de CTAs;
+/// `FINALIZAR Y GUARDAR` dispara el commit al backend (el loader vive
+/// en el page padre vía `RoutineDayLoadingPhase`).
 class WorkoutSummaryBottomSheet extends StatelessWidget {
   final int totalTargetSets;
   final int totalCompletedSets;
@@ -32,194 +45,87 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isStrictlyCompleted = totalCompletedSets >= totalTargetSets;
+    final isStrictlyCompleted =
+        totalTargetSets > 0 && totalCompletedSets >= totalTargetSets;
+    final prs = _computePrs();
+    final comparisons = _computeComparisons();
+    final coaching =
+        analysis.where((a) => a.recommendation.isNotEmpty).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (_, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: context.colors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceHighlight,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Icon(
-                    isStrictlyCompleted
-                        ? Icons.check_circle_rounded
-                        : Icons.pending_actions_rounded,
-                    color: isStrictlyCompleted
-                        ? AppColors.success
-                        : AppColors.primary,
-                    size: 52,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    isStrictlyCompleted
-                        ? '¡RUTINA COMPLETADA!'
-                        : 'SESIÓN FINALIZADA',
-                    style: AppTextStyles.heading1.copyWith(fontSize: 22),
-                  ),
-                  Text(
-                    isStrictlyCompleted
-                        ? 'Has cumplido con todo el volumen programado.'
-                        : 'Faltan ${totalTargetSets - totalCompletedSets} series para el objetivo completo.',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _StatItem(
-                        label: 'SERIES',
-                        value: '$totalCompletedSets/$totalTargetSets',
-                      ),
-                      _StatItem(
-                        label: 'VOLUMEN',
-                        value: '${totalVolume.toStringAsFixed(0)} kg',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Divider(height: 24, color: AppColors.surfaceHighlight),
-                ],
-              ),
+            const BottomSheetHandle(
+              topPadding: Spacing.sm,
+              bottomPadding: Spacing.sm,
             ),
             Expanded(
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.xl,
+                  Spacing.sm,
+                  Spacing.xl,
+                  Spacing.xxxl,
+                ),
                 children: [
-                  if (lastLogs.isNotEmpty) ...[
-                    Text(
-                      'ACTUAL VS. SESIÓN ANTERIOR',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        fontSize: 10,
+                  WorkoutSummaryHero(
+                    isStrictlyCompleted: isStrictlyCompleted,
+                    missingSets: totalTargetSets - totalCompletedSets,
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  WorkoutMetricGrid(
+                    metrics: [
+                      WorkoutMetric(
+                        label: 'SERIES',
+                        value: '$totalCompletedSets',
+                        secondary:
+                            totalTargetSets > 0 ? '/ $totalTargetSets' : null,
+                        accent: context.colors.primary,
+                        icon: Icons.task_alt_rounded,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...exercises.map((ex) {
-                      final currExerciseLogs = currentLogs
-                          .where((l) => l.exerciseId == ex.id)
-                          .toList();
-                      final prevExerciseLogs = lastLogs
-                          .where((l) => l.exerciseId == ex.id)
-                          .toList();
-
-                      return _ExerciseComparisonRow(
-                        exercise: ex,
-                        currentLogs: currExerciseLogs,
-                        previousLogs: prevExerciseLogs,
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    const Divider(
-                      height: 24,
-                      color: AppColors.surfaceHighlight,
-                    ),
-                  ],
-                  if (analysis.any((a) => a.recommendation.isNotEmpty)) ...[
-                    Text(
-                      'COACHING & AJUSTES PARA LA PRÓXIMA SESIÓN',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                        fontSize: 10,
+                      WorkoutMetric(
+                        label: 'CARGA',
+                        value: totalVolume.toStringAsFixed(0),
+                        secondary: AppStrings.kgReps,
+                        accent: context.colors.textPrimary,
+                        icon: Icons.local_fire_department_rounded,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...analysis
-                        .where((a) => a.recommendation.isNotEmpty)
-                        .map(
-                          (item) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.surfaceHighlight,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.exerciseName,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  item.recommendation,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    const SizedBox(height: 16),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: onContinue,
-                          child: Text(
-                            'CONTINUAR',
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: onFinishAndSave,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            'FINALIZAR Y GUARDAR',
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.background,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      WorkoutMetric(
+                        label: 'RÉCORDS',
+                        value: '${prs.length}',
+                        secondary: prs.length == 1 ? 'nuevo' : 'nuevos',
+                        accent: prs.isNotEmpty
+                            ? context.colors.warning
+                            : context.colors.textSecondary,
+                        icon: Icons.emoji_events_rounded,
                       ),
                     ],
+                  ),
+                  if (prs.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.xl),
+                    WorkoutSummaryPrSection(prs: prs),
+                  ],
+                  if (comparisons.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.xl),
+                    WorkoutSummaryComparisonSection(comparisons: comparisons),
+                  ],
+                  if (coaching.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.xl),
+                    WorkoutSummaryCoachingSection(coaching: coaching),
+                  ],
+                  const SizedBox(height: Spacing.xl),
+                  _ActionRow(
+                    onContinue: onContinue,
+                    onFinishAndSave: onFinishAndSave,
                   ),
                 ],
               ),
@@ -229,172 +135,117 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
       ),
     );
   }
-}
 
-class _ExerciseComparisonRow extends StatelessWidget {
-  final Exercise exercise;
-  final List<SetLog> currentLogs;
-  final List<SetLog> previousLogs;
-
-  const _ExerciseComparisonRow({
-    required this.exercise,
-    required this.currentLogs,
-    required this.previousLogs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final currSets = currentLogs.length;
-    final prevSets = previousLogs.length;
-    final currAvgW = currSets > 0
-        ? currentLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) /
-              currSets
-        : 0.0;
-    final currAvgR = currSets > 0
-        ? currentLogs
-                  .map((l) => l.actualReps.toDouble())
-                  .reduce((a, b) => a + b) /
-              currSets
-        : 0.0;
-    final prevAvgW = prevSets > 0
-        ? previousLogs.map((l) => l.actualWeight).reduce((a, b) => a + b) /
-              prevSets
-        : 0.0;
-    final prevAvgR = prevSets > 0
-        ? previousLogs
-                  .map((l) => l.actualReps.toDouble())
-                  .reduce((a, b) => a + b) /
-              prevSets
-        : 0.0;
-
-    IconData trendIcon = Icons.remove_rounded;
-    Color trendColor = AppColors.textSecondary;
-    if (currSets > 0 && prevSets > 0) {
-      if (currAvgW > prevAvgW || currAvgR > prevAvgR) {
-        trendIcon = Icons.trending_up_rounded;
-        trendColor = AppColors.success;
-      } else if (currAvgW < prevAvgW || currAvgR < prevAvgR) {
-        trendIcon = Icons.trending_down_rounded;
-        trendColor = AppColors.error;
+  List<WorkoutSummaryPr> _computePrs() {
+    final out = <WorkoutSummaryPr>[];
+    for (final ex in exercises) {
+      final curr = currentLogs.where((l) => l.exerciseId == ex.id);
+      if (curr.isEmpty) continue;
+      final currMax = curr.fold<double>(
+        0,
+        (m, l) => l.actualWeight > m ? l.actualWeight : m,
+      );
+      final prev = lastLogs.where((l) => l.exerciseId == ex.id);
+      final prevMax = prev.isEmpty
+          ? 0.0
+          : prev.fold<double>(
+              0,
+              (m, l) => l.actualWeight > m ? l.actualWeight : m,
+            );
+      if (currMax > prevMax && currMax > 0) {
+        // Reps usadas en la serie que rompió récord (la más pesada).
+        final prSet =
+            curr.reduce((a, b) => a.actualWeight >= b.actualWeight ? a : b);
+        out.add(
+          WorkoutSummaryPr(
+            exerciseName: ex.name,
+            currentWeight: currMax,
+            previousWeight: prevMax,
+            reps: prSet.actualReps,
+          ),
+        );
       }
     }
+    return out;
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.surfaceHighlight.withValues(alpha: 0.5),
+  List<WorkoutSummaryComparison> _computeComparisons() {
+    if (lastLogs.isEmpty) return const [];
+    final out = <WorkoutSummaryComparison>[];
+    for (final ex in exercises) {
+      final curr = currentLogs.where((l) => l.exerciseId == ex.id).toList();
+      final prev = lastLogs.where((l) => l.exerciseId == ex.id).toList();
+      if (curr.isEmpty && prev.isEmpty) continue;
+      final currAvgW = _avgWeight(curr);
+      final prevAvgW = _avgWeight(prev);
+      out.add(
+        WorkoutSummaryComparison(
+          exerciseName: ex.name,
+          currentSets: curr.length,
+          previousSets: prev.length,
+          currentAvgWeight: currAvgW,
+          previousAvgWeight: prevAvgW,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  exercise.name,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Icon(trendIcon, color: trendColor, size: 18),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'HOY',
-                      style: AppTextStyles.label.copyWith(
-                        fontSize: 9,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currSets > 0
-                          ? '$currSets series — ${currAvgW.toStringAsFixed(1)} kg × ${currAvgR.toStringAsFixed(0)}r'
-                          : 'Sin datos',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: currSets > 0
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 32,
-                color: AppColors.surfaceHighlight,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ANTERIOR',
-                        style: AppTextStyles.label.copyWith(
-                          fontSize: 9,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        prevSets > 0
-                            ? '$prevSets series — ${prevAvgW.toStringAsFixed(1)} kg × ${prevAvgR.toStringAsFixed(0)}r'
-                            : 'Sin datos',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+      );
+    }
+    return out;
+  }
+
+  static double _avgWeight(List<SetLog> logs) {
+    if (logs.isEmpty) return 0.0;
+    final total = logs.fold<double>(0, (s, l) => s + l.actualWeight);
+    return total / logs.length;
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.onContinue, required this.onFinishAndSave});
 
-  const _StatItem({required this.label, required this.value});
+  final VoidCallback onContinue;
+  final VoidCallback onFinishAndSave;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Text(
-          label,
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.textDisabled,
-            fontSize: 10,
+        Expanded(
+          child: TextButton(
+            onPressed: onContinue,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
+            ),
+            child: Text(
+              AppStrings.continueUpper,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.textSecondary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: AppTextStyles.heading2.copyWith(color: AppColors.textPrimary),
+        const SizedBox(width: Spacing.md),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: onFinishAndSave,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.primary,
+              foregroundColor: context.colors.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(Radii.md),
+              ),
+            ),
+            child: Text(
+              AppStrings.finishAndSaveUpper,
+              style: context.text.labelMedium?.copyWith(
+                color: context.colors.onPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
         ),
       ],
     );

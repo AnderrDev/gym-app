@@ -1,85 +1,84 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
 
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_tile.dart';
+
+/// Bottom sheet de selección de ejercicios desde el catálogo real (Supabase).
+///
+/// Devuelve `List<ExerciseCatalogItem>` con los seleccionados (no incluye los
+/// que ya estaban en el día). Filtros por grupo muscular y búsqueda libre.
 class ExerciseCatalogSheet extends StatefulWidget {
-  final List<String> selectedExerciseIds;
-  const ExerciseCatalogSheet({super.key, this.selectedExerciseIds = const []});
+  const ExerciseCatalogSheet({
+    super.key,
+    required this.catalog,
+    this.alreadySelectedIds = const {},
+  });
+
+  /// Catálogo cargado desde el bloc.
+  final List<ExerciseCatalogItem> catalog;
+
+  /// Ids de ejercicios ya presentes en el día (se muestran bloqueados).
+  final Set<String> alreadySelectedIds;
 
   @override
   State<ExerciseCatalogSheet> createState() => _ExerciseCatalogSheetState();
 }
 
 class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
-  String _selectedCategory = 'Todos';
-  final List<String> _categories = [
-    'Todos',
-    'Pecho',
-    'Espalda',
-    'Pierna',
-    'Hombro',
-    'Brazo',
-    'Abs',
-  ];
+  static const String _allCategory = 'Todos';
+  String _selectedCategory = _allCategory;
   String _searchQuery = '';
 
-  // Mock global list of exercises
-  final List<Map<String, String>> _allExercises = [
-    {'name': 'Press de Banca Plano', 'target': 'Pecho'},
-    {'name': 'Press Inclinado Manc.', 'target': 'Pecho'},
-    {'name': 'Aperturas en Polea', 'target': 'Pecho'},
-    {'name': 'Dominadas Pronas', 'target': 'Espalda'},
-    {'name': 'Remo con Barra', 'target': 'Espalda'},
-    {'name': 'Jalón al Pecho', 'target': 'Espalda'},
-    {'name': 'Sentadilla Libre', 'target': 'Pierna'},
-    {'name': 'Prensa de Piernas', 'target': 'Pierna'},
-    {'name': 'Extensión Cuádriceps', 'target': 'Pierna'},
-    {'name': 'Curl de Bíceps Barra', 'target': 'Brazo'},
-    {'name': 'Martillo Mancuernas', 'target': 'Brazo'},
-    {'name': 'Extensión de Tríceps', 'target': 'Brazo'},
-    {'name': 'Press Militar Barra', 'target': 'Hombro'},
-    {'name': 'Elevaciones Laterales', 'target': 'Hombro'},
-    {'name': 'Crunch Abdominal', 'target': 'Abs'},
-    {'name': 'Elevación de Piernas', 'target': 'Abs'},
-  ];
+  /// Items seleccionados (no incluidos en `alreadySelectedIds`).
+  final Set<String> _selectedIds = <String>{};
 
-  final List<Map<String, String>> _selectedExercises = [];
+  List<String> get _categories {
+    final muscles = widget.catalog
+        .map((e) => e.muscleGroup)
+        .where((m) => m.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return [_allCategory, ...muscles];
+  }
 
-  List<Map<String, String>> get _filteredExercises {
-    return _allExercises.where((e) {
+  List<ExerciseCatalogItem> get _filteredExercises {
+    final query = _searchQuery.toLowerCase();
+    return widget.catalog.where((e) {
       final matchesCategory =
-          _selectedCategory == 'Todos' || e['target'] == _selectedCategory;
-      final matchesSearch = e['name']!.toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
+          _selectedCategory == _allCategory ||
+          e.muscleGroup == _selectedCategory;
+      final matchesSearch =
+          query.isEmpty || e.name.toLowerCase().contains(query);
       return matchesCategory && matchesSearch;
     }).toList();
+  }
+
+  List<ExerciseCatalogItem> _buildResult() {
+    return widget.catalog
+        .where((e) => _selectedIds.contains(e.id))
+        .toList(growable: false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         children: [
-          // ── Handle & Header ──────────────────────────────────────
           _buildHeader(context),
-
-          // ── Search Bar ───────────────────────────────────────────
           _buildSearchBar(),
-
-          // ── Categories ───────────────────────────────────────────
           _buildCategoryFilter(),
-
           const SizedBox(height: 8),
-          const Divider(color: AppColors.surfaceHighlight, height: 1),
-
-          // ── Exercise list ────────────────────────────────────────
+          Divider(color: context.colors.surfaceHighlight, height: 1),
           Expanded(
             child: _filteredExercises.isEmpty
                 ? _buildEmptyState()
@@ -91,25 +90,33 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
                     itemCount: _filteredExercises.length,
                     itemBuilder: (context, index) {
                       final exercise = _filteredExercises[index];
-                      final isAlreadyInDay = widget.selectedExerciseIds
-                          .contains(
-                            exercise['name'],
-                          ); // Simplificación por ahora
+                      final isAlreadyInDay = widget.alreadySelectedIds.contains(
+                        exercise.id,
+                      );
                       final isSelected =
-                          isAlreadyInDay ||
-                          _selectedExercises.any(
-                            (e) => e['name'] == exercise['name'],
-                          );
-                      return _buildExerciseTile(
-                        exercise,
-                        isSelected,
-                        isAlreadyInDay,
+                          isAlreadyInDay || _selectedIds.contains(exercise.id);
+                      return ExerciseCatalogTile(
+                        exercise: exercise,
+                        isSelected: isSelected,
+                        isAlreadyInDay: isAlreadyInDay,
+                        onTap: () {
+                          setState(() {
+                            if (_selectedIds.contains(exercise.id)) {
+                              _selectedIds.remove(exercise.id);
+                            } else {
+                              _selectedIds.add(exercise.id);
+                            }
+                          });
+                          HapticFeedback.lightImpact();
+                        },
+                        onLongPress: () {
+                          HapticFeedback.mediumImpact();
+                          pushExerciseDetail(context, exercise.id);
+                        },
                       );
                     },
                   ),
           ),
-
-          // ── Bottom Action ────────────────────────────────────────
           _buildBottomAction(context),
         ],
       ),
@@ -124,20 +131,25 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           width: 36,
           height: 4,
           decoration: BoxDecoration(
-            color: AppColors.textDisabled,
+            color: context.colors.textDisabled,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.xl,
+            Spacing.lgPlus,
+            Spacing.xl,
+            Spacing.sm,
+          ),
           child: Row(
             children: [
-              Text('Catálogo', style: AppTextStyles.heading2),
+              Text('Catálogo', style: context.text.headlineMedium),
               const Spacer(),
               Text(
-                '${_selectedExercises.length} seleccionados',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecondary,
+                '${_selectedIds.length} seleccionados',
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],
@@ -151,23 +163,19 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.surfaceHighlight, width: 0.5),
+          border: Border.all(color: context.colors.surfaceHighlight, width: 0.5),
         ),
         child: TextField(
           onChanged: (v) => setState(() => _searchQuery = v),
-          style: AppTextStyles.bodyLarge,
+          style: context.text.bodyLarge,
           decoration: InputDecoration(
-            icon: const Icon(
-              Icons.search,
-              color: AppColors.textDisabled,
-              size: 20,
-            ),
+            icon: Icon(Icons.search_rounded, color: context.colors.textDisabled, size: 20),
             hintText: 'Press banca, sentadilla...',
-            hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 14),
+            hintStyle: TextStyle(color: context.colors.textDisabled, fontSize: 14),
             border: InputBorder.none,
           ),
         ),
@@ -176,14 +184,15 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
   }
 
   Widget _buildCategoryFilter() {
+    final cats = _categories;
     return SizedBox(
       height: 48,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
+        itemCount: cats.length,
         itemBuilder: (context, index) {
-          final cat = _categories[index];
+          final cat = cats[index];
           final isSelected = _selectedCategory == cat;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -196,18 +205,18 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
                   HapticFeedback.selectionClick();
                 }
               },
-              backgroundColor: AppColors.surface,
-              selectedColor: AppColors.primary,
+              backgroundColor: context.colors.surface,
+              selectedColor: context.colors.primary,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.black : AppColors.textSecondary,
+                color: isSelected ? context.colors.onPrimary : context.colors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
                   color: isSelected
-                      ? AppColors.primary
-                      : AppColors.surfaceHighlight,
+                      ? context.colors.primary
+                      : context.colors.surfaceHighlight,
                   width: 0.5,
                 ),
               ),
@@ -219,93 +228,18 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
     );
   }
 
-  Widget _buildExerciseTile(
-    Map<String, String> exercise,
-    bool isSelected,
-    bool isAlreadyInDay,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isAlreadyInDay
-            ? AppColors.textDisabled.withValues(alpha: 0.1)
-            : (isSelected
-                  ? AppColors.primary.withValues(alpha: 0.05)
-                  : Colors.transparent),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        enabled: !isAlreadyInDay,
-        onTap: isAlreadyInDay
-            ? null
-            : () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedExercises.removeWhere(
-                      (e) => e['name'] == exercise['name'],
-                    );
-                  } else {
-                    _selectedExercises.add(exercise);
-                  }
-                });
-                HapticFeedback.lightImpact();
-              },
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isAlreadyInDay
-                ? AppColors.surfaceHighlight
-                : (isSelected ? AppColors.primary : AppColors.surface),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isAlreadyInDay
-                ? Icons.lock_outline
-                : (isSelected ? Icons.check : Icons.fitness_center_outlined),
-            color: isSelected && !isAlreadyInDay
-                ? Colors.black
-                : AppColors.textDisabled,
-            size: 18,
-          ),
-        ),
-        title: Text(
-          exercise['name']!,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: isAlreadyInDay
-                ? AppColors.textDisabled
-                : (isSelected ? AppColors.primary : AppColors.textPrimary),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: Text(
-          isAlreadyInDay ? 'Ya en tu rutina' : exercise['target']!,
-          style: AppTextStyles.label.copyWith(color: AppColors.textDisabled),
-        ),
-        trailing: isAlreadyInDay
-            ? null
-            : (isSelected
-                  ? const Icon(
-                      Icons.check_circle,
-                      color: AppColors.primary,
-                      size: 20,
-                    )
-                  : null),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 48, color: AppColors.textDisabled),
+          Icon(Icons.search_off_rounded, size: 48, color: context.colors.textDisabled),
           const SizedBox(height: 16),
           Text(
-            'No encontramos nada para "$_searchQuery"',
-            style: TextStyle(color: AppColors.textDisabled),
+            _searchQuery.isEmpty
+                ? 'No hay ejercicios en esta categoría'
+                : 'No encontramos nada para "$_searchQuery"',
+            style: TextStyle(color: context.colors.textDisabled),
           ),
         ],
       ),
@@ -313,7 +247,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
   }
 
   Widget _buildBottomAction(BuildContext context) {
-    bool hasSelection = _selectedExercises.isNotEmpty;
+    final hasSelection = _selectedIds.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -323,18 +257,18 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.colors.background,
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10),
         ],
       ),
       child: ElevatedButton(
         onPressed: hasSelection
-            ? () => Navigator.pop(context, _selectedExercises)
+            ? () => Navigator.pop(context, _buildResult())
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.surface,
+          backgroundColor: context.colors.primary,
+          disabledBackgroundColor: context.colors.surface,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -343,10 +277,10 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         ),
         child: Text(
           hasSelection
-              ? 'Añadir ${_selectedExercises.length} ejercicios'
+              ? 'Añadir ${_selectedIds.length} ejercicios'
               : 'Selecciona ejercicios',
           style: TextStyle(
-            color: hasSelection ? Colors.black : AppColors.textDisabled,
+            color: hasSelection ? context.colors.onPrimary : context.colors.textDisabled,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),

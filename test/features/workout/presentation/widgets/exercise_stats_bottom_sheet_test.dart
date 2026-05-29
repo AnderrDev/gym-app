@@ -7,6 +7,7 @@ import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_state.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,7 +25,9 @@ void main() {
 
   setUp(() {
     mockExerciseStatsBloc = MockExerciseStatsBloc();
-    when(() => mockExerciseStatsBloc.stream).thenAnswer((_) => Stream.empty());
+    when(
+      () => mockExerciseStatsBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
     when(() => mockExerciseStatsBloc.close()).thenAnswer((_) async {});
   });
 
@@ -48,7 +51,7 @@ void main() {
 
     await tester.pumpWidget(createWidgetUnderTest());
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppSpinner), findsOneWidget);
   });
 
   testWidgets('debe mostrar mensaje de error cuando falla la carga', (
@@ -63,7 +66,7 @@ void main() {
     await tester.pump();
 
     expect(find.text(tMessage), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
   });
 
   testWidgets('debe mostrar estado vacío cuando no hay historial', (
@@ -109,11 +112,11 @@ void main() {
     expect(find.text('PESO MÁXIMO'), findsOneWidget);
     expect(find.text('1RM ESTIMADO'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('VOLUMEN TOTAL'),
+      find.text('CARGA MOVIDA'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('VOLUMEN TOTAL'), findsOneWidget);
+    expect(find.text('CARGA MOVIDA'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('HISTORIAL DETALLADO'),

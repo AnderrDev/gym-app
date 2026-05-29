@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_text_styles.dart';
+
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 
 class KineticButton extends StatefulWidget {
   final String label;
@@ -35,9 +36,10 @@ class _KineticButtonState extends State<KineticButton>
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -78,37 +80,32 @@ class _KineticButtonState extends State<KineticButton>
           width: widget.fullWidth ? double.infinity : null,
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: context.colors.primary,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: context.colors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: widget.isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
+              ? Center(
+                  child: AppSpinner.small(color: context.colors.onPrimary),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.black, size: 20),
+                      Icon(widget.icon, color: context.colors.onPrimary, size: 20),
                       const SizedBox(width: 12),
                     ],
                     Text(
                       widget.label.toUpperCase(),
-                      style: AppTextStyles.heading2.copyWith(
-                        color: Colors.black,
+                      style: context.text.headlineMedium?.copyWith(
+                        color: context.colors.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,

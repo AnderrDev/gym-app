@@ -6,20 +6,20 @@ import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockWorkoutBloc extends Mock implements WorkoutBloc {}
+class MockActiveWorkoutBloc extends Mock implements ActiveWorkoutBloc {}
 
 class MockAuthBloc extends Mock implements AuthBloc {}
 
 void main() {
-  late MockWorkoutBloc mockWorkoutBloc;
+  late MockActiveWorkoutBloc mockActiveWorkoutBloc;
   late MockAuthBloc mockAuthBloc;
 
-  final tExercise = Exercise(
+  final tExercise = const Exercise(
     id: 'e1',
     routineDayId: 'd1',
     name: 'Press Banca',
@@ -30,18 +30,22 @@ void main() {
     restTimerSeconds: 1,
   );
 
-  final tUser = User(id: 'u1', email: 'test@test.com', fullName: 'Test User');
+  final tUser = const User(
+    id: 'u1',
+    email: 'test@test.com',
+    fullName: 'Test User',
+  );
 
   setUpAll(() {
     registerFallbackValue(
-      const UpdateExerciseTarget(
+      const UpdateActiveExerciseTarget(
         exerciseId: 'e1',
         targetWeight: 70,
         targetReps: 12,
       ),
     );
     registerFallbackValue(
-      AddSetLogEvent(
+      const SaveActiveSetLog(
         SetLog(
           sessionId: 's1',
           exerciseId: 'e1',
@@ -54,13 +58,15 @@ void main() {
   });
 
   setUp(() {
-    mockWorkoutBloc = MockWorkoutBloc();
+    mockActiveWorkoutBloc = MockActiveWorkoutBloc();
     mockAuthBloc = MockAuthBloc();
 
-    when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.empty());
-    when(() => mockWorkoutBloc.close()).thenAnswer((_) async {});
+    when(
+      () => mockActiveWorkoutBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(() => mockActiveWorkoutBloc.close()).thenAnswer((_) async {});
     when(() => mockAuthBloc.state).thenReturn(Authenticated(tUser));
-    when(() => mockAuthBloc.stream).thenAnswer((_) => Stream.empty());
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
   });
 
   Widget createWidgetUnderTest({
@@ -69,6 +75,7 @@ void main() {
     List<SetLog> initialCompletedSets = const [],
     SetLog? lastPerformance,
     bool readOnly = false,
+    void Function(SetLog)? onSetAdded,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -78,7 +85,9 @@ void main() {
               width: 1000,
               child: MultiBlocProvider(
                 providers: [
-                  BlocProvider<WorkoutBloc>.value(value: mockWorkoutBloc),
+                  BlocProvider<ActiveWorkoutBloc>.value(
+                    value: mockActiveWorkoutBloc,
+                  ),
                   BlocProvider<AuthBloc>.value(value: mockAuthBloc),
                 ],
                 child: ExerciseCard(
@@ -87,6 +96,7 @@ void main() {
                   initialCompletedSets: initialCompletedSets,
                   lastPerformance: lastPerformance,
                   readOnly: readOnly,
+                  onSetAdded: onSetAdded,
                 ),
               ),
             ),
@@ -120,49 +130,44 @@ void main() {
     expect(find.byKey(const ValueKey('sets_list')), findsOneWidget);
   });
 
-  testWidgets('debe permitir registrar una serie y activar el descanso', (
-    tester,
-  ) async {
-    await tester.pumpWidget(createWidgetUnderTest());
+  testWidgets(
+    'debe permitir registrar una serie con un tap (inputs siempre visibles)',
+    (tester) async {
+      SetLog? captured;
+      await tester.pumpWidget(
+        createWidgetUnderTest(onSetAdded: (log) => captured = log),
+      );
 
-    await tester.enterText(find.widgetWithText(TextField, 'Peso (kg)'), '65');
-    await tester.enterText(find.widgetWithText(TextField, 'Reps'), '12');
+      // Los inputs usan `TextInputType.none` por defecto (tap → chips,
+      // sin teclado del sistema). Pero `enterText` simula entrada vía la
+      // conexión de input directamente, así que funciona sin tocar ✎.
+      await tester.enterText(
+        find.byKey(const ValueKey('weight_e1_1')),
+        '65',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('reps_e1_1')),
+        '12',
+      );
 
-    await tester.tap(find.byIcon(Icons.check));
-    await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.byKey(const ValueKey('save_e1_1')));
+      await tester.pump(const Duration(milliseconds: 100));
 
-    verify(
-      () => mockWorkoutBloc.add(any(that: isA<AddSetLogEvent>())),
-    ).called(1);
+      expect(captured, isNotNull);
+      expect(captured!.actualWeight, 65);
+      expect(captured!.actualReps, 12);
+      expect(captured!.setIndex, 1);
 
-    expect(find.text('DESCANSO'), findsOneWidget);
-    expect(find.byKey(const ValueKey('rest_timer')), findsOneWidget);
+      // La serie 2 sigue editable e independiente.
+      expect(find.byKey(const ValueKey('save_e1_2')), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 10));
-  });
-
-  testWidgets('debe permitir saltar el descanso', (tester) async {
-    await tester.pumpWidget(createWidgetUnderTest());
-
-    await tester.tap(find.byIcon(Icons.check));
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('DESCANSO'), findsOneWidget);
-
-    await tester.tap(find.text('Saltar descanso'));
-    // El widget usa AnimatedSwitcher y Timer.periodic
-    // Bombeamos lo suficiente para procesar el callback del timer o el skip
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('DESCANSO'), findsNothing);
-    expect(find.text('Serie 2'), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 10));
-  });
+      // Drenar el Future.delayed del live advice (8s).
+      await tester.pump(const Duration(seconds: 9));
+    },
+  );
 
   testWidgets('debe mostrar record histórico si existe', (tester) async {
-    final lastPerf = SetLog(
+    final lastPerf = const SetLog(
       sessionId: 'old_s',
       exerciseId: 'e1',
       actualWeight: 70,
@@ -184,33 +189,34 @@ void main() {
     expect(find.textContaining('Record: 70kg x 8'), findsOneWidget);
   });
 
-  testWidgets('debe mostrar diálogo de cambio de objetivo remoto', (
-    tester,
-  ) async {
+  testWidgets('abre el bottom sheet de objetivo remoto', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1100, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(createWidgetUnderTest());
 
-    await tester.tap(find.byIcon(Icons.settings_remote));
-    await tester.pump(const Duration(milliseconds: 500));
+    // Las acciones del header viven ahora en un PopupMenu (⋯).
+    // pumpAndSettle no termina por el _pulseController repeat — pumpeo
+    // varios frames para que la animación de apertura del popup termine y
+    // se desactive el AbsorbPointer de la ruta.
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Cambiar objetivo'), findsOneWidget);
 
-    expect(find.text('Cambiar Objetivo Remoto'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('menu_target')));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Nuevo Peso (kg)'),
-      '75',
-    );
-    await tester.enterText(find.widgetWithText(TextField, 'Nuevas Reps'), '15');
-
-    await tester.tap(find.text('Actualizar'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    verify(
-      () => mockWorkoutBloc.add(
-        const UpdateExerciseTarget(
-          exerciseId: 'e1',
-          targetWeight: 75,
-          targetReps: 15,
-        ),
-      ),
-    ).called(1);
+    expect(find.text('Cambiar objetivo remoto'), findsOneWidget);
+    expect(find.text('Actualizar'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+    expect(find.text('Nuevo peso (kg)'.toUpperCase()), findsOneWidget);
+    expect(find.text('Nuevas reps'.toUpperCase()), findsOneWidget);
   });
 }

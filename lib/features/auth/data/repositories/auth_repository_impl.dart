@@ -1,12 +1,11 @@
 import 'package:fpdart/fpdart.dart';
-import '../../../../core/error/failures.dart';
+
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/error/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_local_data_source.dart';
-
-// NetworkInfo desactivado temporalmente — todo va a Supabase directo
+import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -18,11 +17,22 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> signInWithEmail(String email, String password) async {
+  Stream<bool> get authStateChanges => remoteDataSource.authStateChanges;
+
+  @override
+  Future<Either<Failure, User>> signInWithEmail(
+    String email,
+    String password,
+  ) async {
     try {
-      final remoteUser = await remoteDataSource.signInWithEmail(email, password);
+      final remoteUser = await remoteDataSource.signInWithEmail(
+        email,
+        password,
+      );
       await localDataSource.cacheUser(remoteUser);
       return Right(remoteUser);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message ?? 'Error al iniciar sesión'));
     } catch (e) {
@@ -37,9 +47,15 @@ class AuthRepositoryImpl implements AuthRepository {
     String fullName,
   ) async {
     try {
-      final remoteUser = await remoteDataSource.signUpWithEmail(email, password, fullName);
+      final remoteUser = await remoteDataSource.signUpWithEmail(
+        email,
+        password,
+        fullName,
+      );
       await localDataSource.cacheUser(remoteUser);
       return Right(remoteUser);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message ?? 'Error al registrarse'));
     } catch (e) {
@@ -53,6 +69,10 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.signOut();
       await localDataSource.clearCache();
       return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message ?? 'Error al cerrar sesión'));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -66,10 +86,24 @@ class AuthRepositoryImpl implements AuthRepository {
         await localDataSource.cacheUser(user);
       }
       return Right(user);
-    } catch (e) {
+    } catch (_) {
       // Fallback a SharedPreferences si Supabase falla (token caducado, etc.)
       final cachedUser = await localDataSource.getLastCachedUser();
       return Right(cachedUser);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email) async {
+    try {
+      await remoteDataSource.sendPasswordResetEmail(email);
+      return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message ?? 'Error al solicitar reset'));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

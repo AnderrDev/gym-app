@@ -36,11 +36,28 @@ class WeeklyInsights extends Equatable {
       completedSessions: (json['completed_sessions'] as num?)?.toInt() ?? 0,
       adherenceRate: (json['adherence_rate'] as num?)?.toDouble() ?? 0,
       totalVolume: (json['total_volume'] as num?)?.toDouble() ?? 0,
-      previousWeekVolume: (json['previous_week_volume'] as num?)?.toDouble() ?? 0,
-      volumeTrendPercent: (json['volume_trend_percent'] as num?)?.toDouble() ?? 0,
+      previousWeekVolume:
+          (json['previous_week_volume'] as num?)?.toDouble() ?? 0,
+      volumeTrendPercent:
+          (json['volume_trend_percent'] as num?)?.toDouble() ?? 0,
       personalRecords: (json['personal_records'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Simétrico a [`fromJson`]. Usado por la caché local (Phase 4) para
+  /// persistir el snapshot del Edge Function sin perder fidelidad.
+  Map<String, dynamic> toJson() => {
+        'week_start': weekStart.toIso8601String(),
+        'week_end': weekEnd.toIso8601String(),
+        'planned_days': plannedDays,
+        'completed_days': completedDays,
+        'completed_sessions': completedSessions,
+        'adherence_rate': adherenceRate,
+        'total_volume': totalVolume,
+        'previous_week_volume': previousWeekVolume,
+        'volume_trend_percent': volumeTrendPercent,
+        'personal_records': personalRecords,
+      };
 
   @override
   List<Object?> get props => [

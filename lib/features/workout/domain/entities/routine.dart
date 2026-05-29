@@ -18,5 +18,12 @@ class Routine extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, name, exerciseCount, isPublic, creatorId, creatorName];
+  List<Object?> get props => [
+    id,
+    name,
+    exerciseCount,
+    isPublic,
+    creatorId,
+    creatorName,
+  ];
 }

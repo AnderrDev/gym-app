@@ -72,16 +72,19 @@ void main() {
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthSubmitting] al iniciar sesion con exito',
+    'emite [AuthSubmitting, Authenticated] al iniciar sesion con exito',
     build: buildBloc,
     setUp: () {
       when(
         () => mockSignInWithEmail('test@example.com', 'password'),
       ).thenAnswer((_) async => const Right(testUser));
+      when(
+        () => mockGetCurrentUser(),
+      ).thenAnswer((_) async => const Right(testUser));
     },
     act: (bloc) =>
         bloc.add(const SignInRequested('test@example.com', 'password')),
-    expect: () => [AuthSubmitting()],
+    expect: () => [AuthSubmitting(), const Authenticated(testUser)],
   );
 
   blocTest<AuthBloc, AuthState>(
@@ -98,17 +101,20 @@ void main() {
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthSubmitting] al registrarse con exito',
+    'emite [AuthSubmitting, Authenticated] al registrarse con exito',
     build: buildBloc,
     setUp: () {
       when(
         () => mockSignUpWithEmail('test@example.com', 'password', 'Test User'),
       ).thenAnswer((_) async => const Right(testUser));
+      when(
+        () => mockGetCurrentUser(),
+      ).thenAnswer((_) async => const Right(testUser));
     },
     act: (bloc) => bloc.add(
       const SignUpRequested('test@example.com', 'password', 'Test User'),
     ),
-    expect: () => [AuthSubmitting()],
+    expect: () => [AuthSubmitting(), const Authenticated(testUser)],
   );
 
   blocTest<AuthBloc, AuthState>(
@@ -126,13 +132,13 @@ void main() {
   );
 
   blocTest<AuthBloc, AuthState>(
-    'emite [AuthSubmitting] al cerrar sesion con exito',
+    'emite [AuthSubmitting, Unauthenticated] al cerrar sesion con exito',
     build: buildBloc,
     setUp: () {
       when(() => mockSignOut()).thenAnswer((_) async => const Right(null));
     },
     act: (bloc) => bloc.add(SignOutRequested()),
-    expect: () => [AuthSubmitting()],
+    expect: () => [AuthSubmitting(), Unauthenticated()],
   );
 
   blocTest<AuthBloc, AuthState>(

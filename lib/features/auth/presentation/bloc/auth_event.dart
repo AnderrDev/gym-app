@@ -11,9 +11,9 @@ final class AppStarted extends AuthEvent {}
 
 final class AuthStateChanged extends AuthEvent {
   final bool isAuthenticated;
-  
+
   const AuthStateChanged({required this.isAuthenticated});
-  
+
   @override
   List<Object> get props => [isAuthenticated];
 }
@@ -40,3 +40,15 @@ final class SignUpRequested extends AuthEvent {
 }
 
 final class SignOutRequested extends AuthEvent {}
+
+/// Notifica que el profile del user fue editado (típicamente desde la
+/// pestaña PERFIL). Permite refrescar el `User` global sin re-pedir el
+/// `getCurrentUser` al backend.
+final class UserProfileUpdated extends AuthEvent {
+  final String? fullName;
+
+  const UserProfileUpdated({this.fullName});
+
+  @override
+  List<Object> get props => [fullName ?? ''];
+}

@@ -1,6 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/ui/adaptive/adaptive_blur.dart';
+
+/// Card-style con efecto glass — wrapper de [AdaptiveBlur] que agrega
+/// padding/margin/border al estilo "tarjeta". En mobile usa
+/// `BackdropFilter` real, en web cae a un tint sólido (ver
+/// [AdaptiveBlur]). Los call sites no se enteran del switch.
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final double blur;
@@ -16,7 +22,7 @@ class GlassContainer extends StatelessWidget {
     super.key,
     required this.child,
     this.blur = 20.0,
-    this.opacity = 0.15, 
+    this.opacity = 0.15,
     this.borderRadius,
     this.padding,
     this.margin,
@@ -26,32 +32,29 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultBorderRadius = borderRadius ?? BorderRadius.circular(16);
-
-    return margin != null ? Padding(
-      padding: margin!,
-      child: _buildGlass(defaultBorderRadius),
-    ) : _buildGlass(defaultBorderRadius);
-  }
-
-  Widget _buildGlass(BorderRadius radius) {
-    return ClipRRect(
+    final radius = borderRadius ?? BorderRadius.circular(16);
+    // `textPrimary` se invierte entre light/dark, así el tinte del glass
+    // siempre contrasta con el fondo de la app.
+    final card = AdaptiveBlur(
+      blurSigma: blur,
+      tintColor: context.colors.textPrimary,
+      tintOpacity: opacity,
       borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: opacity),
-            borderRadius: radius,
-            border: Border.all(
-              color: (borderColor ?? Colors.white).withValues(alpha: borderOpacity),
-              width: 1.0,
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(
+            color: (borderColor ?? context.colors.textPrimary).withValues(
+              alpha: borderOpacity,
             ),
+            width: 1.0,
           ),
-          child: child,
         ),
+        child: child,
       ),
     );
+    if (margin == null) return card;
+    return Padding(padding: margin!, child: card);
   }
 }

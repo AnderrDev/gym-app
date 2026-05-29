@@ -1,4 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+
+import 'package:gym_flutter/core/error/exceptions.dart';
+import 'package:gym_flutter/core/observability/app_logger.dart';
+
 import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -10,26 +14,51 @@ abstract class AuthRemoteDataSource {
   );
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
+  Future<void> sendPasswordResetEmail(String email);
+
+  /// Domain-level stream: `true` when an authenticated session is active.
+  /// Filters Supabase events down to the ones that affect auth state
+  /// (initialSession, signedIn, userUpdated, signedOut) so consumers in
+  /// upper layers don't depend on the SDK enum.
+  Stream<bool> get authStateChanges;
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final SupabaseClient client;
+  final supabase.SupabaseClient client;
 
   AuthRemoteDataSourceImpl({required this.client});
 
   @override
-  Future<UserModel> signInWithEmail(String email, String password) async {
-    final response = await client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-    if (response.user == null) {
-      throw Exception('Login failed');
-    }
-    final user = response.user!;
+  Stream<bool> get authStateChanges => client.auth.onAuthStateChange
+      .where(
+        (data) =>
+            data.event == supabase.AuthChangeEvent.initialSession ||
+            data.event == supabase.AuthChangeEvent.signedIn ||
+            data.event == supabase.AuthChangeEvent.userUpdated ||
+            data.event == supabase.AuthChangeEvent.signedOut,
+      )
+      .map((data) => data.session != null);
 
-    // Verificamos si podemos sincronizar el profile desde el Auth metadata en caso
-    // de que el trigger en base de datos no exista o la inserción del signup fallara.
+  @override
+  Future<UserModel> signInWithEmail(String email, String password) async {
+    final supabase.AuthResponse response;
+    try {
+      response = await client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on supabase.AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      throw ServerException('signIn failed: $e');
+    }
+    final user = response.user;
+    if (user == null) {
+      throw AuthException('No se pudo iniciar sesión.');
+    }
+
+    // Best-effort upsert del perfil. Si falla, lo logueamos como warning
+    // y seguimos — el sign-in sigue siendo válido.
     final metaFullName = user.userMetadata?['full_name'] as String?;
     if (metaFullName != null) {
       try {
@@ -37,12 +66,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'id': user.id,
           'full_name': metaFullName,
         });
-      } catch (_) {
-        // Ignorar falla de upsert si el perfil ya existe
+      } catch (e) {
+        AppLogger.instance.warning(
+          'profiles upsert (signIn) falló para ${user.id}: $e',
+        );
       }
     }
 
-    return await _getUserProfile(user.id, user.email!);
+    // user.email puede venir null en flujos OTP/admin import: caemos al param
+    // recibido (que es el email con el que se autenticó).
+    return _getUserProfile(user.id, user.email ?? email);
   }
 
   @override
@@ -51,39 +84,53 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String password,
     String fullName,
   ) async {
-    final response = await client.auth.signUp(
-      email: email,
-      password: password,
-      data: {'full_name': fullName},
-    );
-    if (response.user == null) {
-      throw Exception('Registration failed');
+    final supabase.AuthResponse response;
+    try {
+      response = await client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName},
+      );
+    } on supabase.AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      throw ServerException('signUp failed: $e');
+    }
+    final user = response.user;
+    if (user == null) {
+      throw AuthException('No se pudo registrar la cuenta.');
     }
 
     try {
-      // Intentamos insertar o actualizar el perfil de inmediato.
-      // Si la confirmación de email está habilitada en Supabase, esto fallará
-      // por RLS porque la sesión no ha sido iniciada.
-      // Si está deshabilitada, insertará el registro con éxito.
+      // Intentamos insertar/actualizar el perfil. Si la confirmación de email
+      // está habilitada, esto puede fallar por RLS porque aún no hay sesión.
+      // En ese caso lo retomamos en signIn.
       await client.from('profiles').upsert({
-        'id': response.user!.id,
+        'id': user.id,
         'full_name': fullName,
       });
-    } catch (_) {
-      // Ignorar el error (normalmente falla por RLS si no hay sesión).
-      // Actualizaremos el perfil cuando el usuario inicie sesión en signInWithEmail.
+    } catch (e) {
+      AppLogger.instance.warning(
+        'profiles upsert (signUp) falló para ${user.id}: $e',
+      );
     }
 
     return UserModel(
-      id: response.user!.id,
-      email: response.user!.email!,
+      id: user.id,
+      email: user.email ?? email,
       fullName: fullName,
     );
   }
 
   @override
   Future<void> signOut() async {
-    await client.auth.signOut();
+    try {
+      await client.auth.signOut();
+    } on supabase.AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      throw ServerException('signOut failed: $e');
+    }
   }
 
   @override
@@ -92,7 +139,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     // Usamos currentSession?.user como fallback (misma sesión en memoria).
     final user = client.auth.currentUser ?? client.auth.currentSession?.user;
     if (user == null) return null;
-    return await _getUserProfile(user.id, user.email ?? '');
+    return _getUserProfile(user.id, user.email ?? '');
   }
 
   Future<UserModel> _getUserProfile(String userId, String email) async {
@@ -109,8 +156,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         fullName: profileData?['full_name'] as String?,
       );
     } catch (e) {
-      // Return basic user if profile fails
+      AppLogger.instance.warning(
+        'getUserProfile fallback (sin full_name) para $userId: $e',
+      );
       return UserModel(id: userId, email: email);
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await client.auth.resetPasswordForEmail(email);
+    } on supabase.AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      throw ServerException('resetPassword failed: $e');
     }
   }
 }

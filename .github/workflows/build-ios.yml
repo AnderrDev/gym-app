@@ -1,0 +1,61 @@
+name: Build iOS (sideload IPA)
+
+# Construye un IPA sin firmar para uso personal en iPhone vía SideStore.
+# El Apple ID gratis caduca cada 7 días; SideStore lo re-firma solo por
+# WiFi usando un anisette server público, así que tras el setup inicial
+# no requiere Mac encendida.
+#
+# Trigger:
+#   - push a main: build automático tras cada merge
+#   - workflow_dispatch: build manual desde la pestaña Actions
+#
+# Secrets requeridos en el repo:
+#   SUPABASE_URL
+#   SUPABASE_ANON_KEY
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ipa:
+    name: Build unsigned IPA
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Package as .ipa
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -qr gym-flutter.ipa Payload
+          ls -lh gym-flutter.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-flutter-ios-${{ github.sha }}
+          path: build/ios/iphoneos/gym-flutter.ipa
+          retention-days: 30
+          if-no-files-found: error

@@ -1,78 +1,110 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
-class RestTimerButton extends StatelessWidget {
-  final bool isResting;
-  final int secondsRemaining;
-  final int totalRestSeconds;
-  final VoidCallback onTap;
-  final String Function(int seconds) formatTime;
-
-  const RestTimerButton({
-    super.key,
+/// Snapshot inmutable del estado del timer de descanso. Lo entrega el
+/// `ValueNotifier` del padre (`_RoutineDayPageState`) para que solo este botón
+/// se rebuildee cada segundo en lugar del scaffold completo.
+@immutable
+class RestTimerSnapshot {
+  const RestTimerSnapshot({
     required this.isResting,
     required this.secondsRemaining,
     required this.totalRestSeconds,
-    required this.onTap,
-    required this.formatTime,
   });
+
+  const RestTimerSnapshot.idle()
+    : isResting = false,
+      secondsRemaining = 0,
+      totalRestSeconds = 60;
+
+  final bool isResting;
+  final int secondsRemaining;
+  final int totalRestSeconds;
+}
+
+class RestTimerButton extends StatelessWidget {
+  const RestTimerButton({
+    super.key,
+    required this.snapshot,
+    required this.onTap,
+  });
+
+  final ValueListenable<RestTimerSnapshot> snapshot;
+  final VoidCallback onTap;
+
+  static String _formatTime(int seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = seconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final progress = totalRestSeconds > 0
-        ? secondsRemaining / totalRestSeconds
-        : 0.0;
-
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 54,
-            height: 54,
-            child: CircularProgressIndicator(
-              value: isResting ? progress : 0,
-              strokeWidth: 3,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              color: AppColors.primary,
-            ),
-          ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isResting ? AppColors.primary : AppColors.surfaceHighlight,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isResting ? Icons.timer_rounded : Icons.play_arrow_rounded,
-              color: isResting ? Colors.black : AppColors.textPrimary,
-              size: 20,
-            ),
-          ),
-          if (isResting)
-            Positioned(
-              bottom: -15,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  formatTime(secondsRemaining),
-                  style: AppTextStyles.label.copyWith(
-                    color: Colors.black,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
+      child: ValueListenableBuilder<RestTimerSnapshot>(
+        valueListenable: snapshot,
+        builder: (context, value, _) {
+          final progress = value.totalRestSeconds > 0
+              ? value.secondsRemaining / value.totalRestSeconds
+              : 0.0;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 54,
+                height: 54,
+                child: CircularProgressIndicator(
+                  value: value.isResting ? progress : 0,
+                  strokeWidth: 3,
+                  backgroundColor: context.colors.primary.withValues(alpha: 0.1),
+                  color: context.colors.primary,
                 ),
               ),
-            ),
-        ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: value.isResting
+                      ? context.colors.primary
+                      : context.colors.surfaceHighlight,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  value.isResting
+                      ? Icons.timer_rounded
+                      : Icons.play_arrow_rounded,
+                  color: value.isResting ? context.colors.onPrimary : context.colors.textPrimary,
+                  size: 20,
+                ),
+              ),
+              if (value.isResting)
+                Positioned(
+                  bottom: -15,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.colors.primary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _formatTime(value.secondsRemaining),
+                      style: context.text.labelMedium?.copyWith(
+                        color: context.colors.onPrimary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

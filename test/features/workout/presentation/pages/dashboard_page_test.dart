@@ -1,67 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
+import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
-import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_state.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_event.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/pages/dashboard_page.dart';
-import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_weekly_view.dart';
+import 'package:gym_flutter/injection_container.dart' show sl;
 import 'package:mocktail/mocktail.dart';
 
-class MockWorkoutBloc extends Mock implements WorkoutBloc {}
+class MockDashboardBloc extends Mock implements DashboardBloc {}
+
+class MockActiveSessionWatcherBloc extends Mock
+    implements ActiveSessionWatcherBloc {}
 
 class MockAuthBloc extends Mock implements AuthBloc {}
 
 class MockGoRouter extends Mock implements GoRouter {}
 
 void main() {
-  late MockWorkoutBloc mockWorkoutBloc;
+  late MockDashboardBloc mockDashboardBloc;
+  late MockActiveSessionWatcherBloc mockWatcherBloc;
   late MockAuthBloc mockAuthBloc;
   late MockGoRouter mockGoRouter;
 
   setUpAll(() {
-    registerFallbackValue(WorkoutInitial());
+    registerFallbackValue(const LoadAssignedRoutines('user123'));
     registerFallbackValue(const CheckActiveSession('user123'));
-    registerFallbackValue(const FetchAssignedRoutines('user123'));
+    registerFallbackValue(const DashboardState());
+    registerFallbackValue(const ActiveSessionWatcherState());
   });
 
   setUp(() {
-    mockWorkoutBloc = MockWorkoutBloc();
+    mockDashboardBloc = MockDashboardBloc();
+    mockWatcherBloc = MockActiveSessionWatcherBloc();
     mockAuthBloc = MockAuthBloc();
     mockGoRouter = MockGoRouter();
+
+    // `DashboardPage.initState` resuelve el bus por GetIt; en test
+    // registramos una instancia real (es un `ChangeNotifier` trivial).
+    if (!sl.isRegistered<RoutineAssignmentBus>()) {
+      sl.registerLazySingleton<RoutineAssignmentBus>(
+        () => RoutineAssignmentBus(),
+      );
+    }
 
     when(() => mockAuthBloc.state).thenReturn(
       const Authenticated(
         User(id: 'user123', email: 'test@test.com', fullName: 'Tester'),
       ),
     );
-    when(() => mockAuthBloc.stream).thenAnswer((_) => Stream.empty());
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
-    when(() => mockWorkoutBloc.state).thenReturn(WorkoutInitial());
-    when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.empty());
+    when(
+      () => mockWatcherBloc.state,
+    ).thenReturn(const ActiveSessionWatcherState());
+    when(() => mockWatcherBloc.stream).thenAnswer((_) => const Stream.empty());
 
     when(() => mockGoRouter.push<bool>(any())).thenAnswer((_) async => null);
     when(
       () => mockGoRouter.push<bool>(any(), extra: any(named: 'extra')),
     ).thenAnswer((_) async => null);
-    when(() => mockGoRouter.push<Object?>(any())).thenAnswer((_) async => null);
-    when(
-      () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
-    ).thenAnswer((_) async => null);
   });
 
   Widget createWidgetUnderTest() {
+    // Nota: el banner de sesión activa y el `ActiveSessionWatcherBloc` ahora
+    // viven en el `AppShellPage`, no en el dashboard. Igual seguimos
+    // proveyendo el watcher acá porque `DashboardPage._handleWorkoutFinished`
+    // lo consume vía `context.read` cuando el push de routine-day finaliza
+    // — en producción ese provider es ancestral (lo pone el shell).
     return MaterialApp(
       home: InheritedGoRouter(
         goRouter: mockGoRouter,
         child: MultiBlocProvider(
           providers: [
-            BlocProvider<WorkoutBloc>.value(value: mockWorkoutBloc),
+            BlocProvider<DashboardBloc>.value(value: mockDashboardBloc),
+            BlocProvider<ActiveSessionWatcherBloc>.value(
+              value: mockWatcherBloc,
+            ),
             BlocProvider<AuthBloc>.value(value: mockAuthBloc),
           ],
           child: const DashboardPage(),
@@ -70,94 +96,71 @@ void main() {
     );
   }
 
-  testWidgets('debe mostrar estado vacío cuando no hay rutinas asignadas', (
-    tester,
-  ) async {
-    when(() => mockWorkoutBloc.state).thenReturn(const RoutinesLoaded([]));
-
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Sin Rutina Activa'), findsOneWidget);
-  });
-
-  testWidgets(
-    'debe mostrar el plan semanal cuando hay una sola rutina cargada',
-    (tester) async {
-      final now = DateTime.now();
-      final monday = now.subtract(Duration(days: now.weekday - 1));
-      final tRoutine = Routine(
-        id: 'r1',
-        creatorId: 'u1',
-        name: 'MY ROUTINE',
-        exerciseCount: 3,
-        isPublic: true,
-      );
-      final tDays = [
-        RoutineDay(
-          id: 'd1',
-          routineId: 'r1',
-          name: 'PUSH DAY',
-          dayOfWeek: now.weekday,
-          exercises: const [],
-        ),
-      ];
-
-      final state = WeeklyPlanLoaded(tDays, monday, routine: tRoutine);
-
-      when(() => mockWorkoutBloc.state).thenReturn(state);
-      when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.value(state));
-
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pump();
-      await tester.pump();
-
-      // Verificamos por widget type y contenido si el texto falla
-      expect(find.byType(ListTile), findsWidgets);
-    },
-  );
-
-  testWidgets('debe navegar a RoutineListPage al pulsar el icono de lista', (
-    tester,
-  ) async {
-    when(() => mockWorkoutBloc.state).thenReturn(const RoutinesLoaded([]));
-
-    await tester.pumpWidget(createWidgetUnderTest());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.list_alt));
-    verify(() => mockGoRouter.push<bool>('/routine-list')).called(1);
-  });
-
-  testWidgets('debe mostrar banner de sesión activa y permitir retomar', (
-    tester,
-  ) async {
-    final session = ActiveSessionDetected(
-      sessionId: 's1',
-      userId: 'user123',
-      routineDayId: 'd1',
-      routineDayName: 'Active Day',
-      sessionDate: DateTime.now(),
-    );
-
-    when(() => mockWorkoutBloc.state).thenReturn(const RoutinesLoaded([]));
-    when(() => mockWorkoutBloc.stream).thenAnswer((_) => Stream.value(session));
+  testWidgets('estado vacío muestra DashboardEmptyState', (tester) async {
+    when(
+      () => mockDashboardBloc.state,
+    ).thenReturn(const DashboardState(status: DashboardStatus.ready));
+    when(
+      () => mockDashboardBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.textContaining('Active Day'), findsOneWidget);
-
-    await tester.tap(find.text('Retomar'));
-
-    verify(
-      () => mockWorkoutBloc.add(any(that: isA<LoadDayInfo>())),
-    ).called(greaterThanOrEqualTo(1));
-    verify(
-      () => mockGoRouter.push<Object?>(
-        '/routine-day',
-        extra: any(named: 'extra'),
-      ),
-    ).called(greaterThanOrEqualTo(1));
+    expect(find.text('Sin Rutina Activa'), findsOneWidget);
   });
+
+  testWidgets('plan semanal listo renderiza DashboardWeeklyView', (
+    tester,
+  ) async {
+    final monday = DateTime(2026, 5, 4);
+    const routine = Routine(id: 'r1', name: 'MY ROUTINE', exerciseCount: 3);
+    final days = [
+      const RoutineDay(
+        id: 'd1',
+        routineId: 'r1',
+        name: 'PUSH DAY',
+        dayOfWeek: 1,
+        exercises: [],
+      ),
+    ];
+    when(() => mockDashboardBloc.state).thenReturn(
+      DashboardState(
+        status: DashboardStatus.ready,
+        routines: const [routine],
+        selectedRoutine: routine,
+        weeklyDays: days,
+        weekStart: monday,
+      ),
+    );
+    when(
+      () => mockDashboardBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(DashboardWeeklyView), findsOneWidget);
+  });
+
+  testWidgets(
+    'AppBar del dashboard NO contiene icons de lista ni logout '
+    '(ahora viven en el shell / pestaña perfil)',
+    (tester) async {
+      when(
+        () => mockDashboardBloc.state,
+      ).thenReturn(const DashboardState(status: DashboardStatus.ready));
+      when(
+        () => mockDashboardBloc.stream,
+      ).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      // La AppBar ya no tiene acciones: ni `list_alt` (catálogo) ni `logout`.
+      expect(find.byIcon(Icons.list_alt), findsNothing);
+      expect(find.byIcon(Icons.logout), findsNothing);
+    },
+  );
 }

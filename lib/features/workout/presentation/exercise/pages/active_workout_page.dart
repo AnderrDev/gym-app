@@ -1,7 +1,6 @@
 // Este archivo se mantiene por compatibilidad pero la funcionalidad
 // fue migrada a RoutineDayPage. Ver /routine-day route.
 import 'package:flutter/material.dart';
-import 'package:gym_flutter/core/constants/app_colors.dart';
 
 class ActiveWorkoutPage extends StatelessWidget {
   final String userId;
@@ -9,9 +8,8 @@ class ActiveWorkoutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: const Center(child: Text('Redirigiendo a RoutineDayPage...')),
+    return const Scaffold(
+      body: Center(child: Text('Redirigiendo a RoutineDayPage...')),
     );
   }
 }

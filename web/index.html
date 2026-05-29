@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,19 +18,82 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+  <!-- theme-color con media query: iOS Safari adapta el color de la URL
+       bar al esquema activo del usuario. Sin media query, el navegador
+       siempre usa el último meta tag y la status bar no matchea el dark
+       mode in-app. -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0A0A0B">
+
+  <meta name="description" content="Smart Gym Tracker — entrena con sobrecarga progresiva.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="gym_flutter">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Smart Gym">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>gym_flutter</title>
+  <title>Smart Gym Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Prefetch (no preload) del runtime de drift en web. La app abre la
+       base local lazy en el primer query (LazyDatabase), pero estos
+       binarios pesan ~1.8 MB combinados. `prefetch` hace que el browser
+       los baje en idle después del primer paint, así el render inicial
+       no compite por bandwidth y cuando el usuario interactúa con datos
+       locales ya están cacheados. Combinado con Cache-Control immutable
+       en firebase.json, en visitas siguientes son 0 bytes. -->
+  <link rel="prefetch" href="sqlite3.wasm" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="drift_worker.dart.js" as="script">
+
+  <style>
+    /* Fondo pre-paint: adaptado al esquema activo del usuario para que
+       no haya flash blanco→oscuro (o viceversa) entre el bootstrap del
+       browser y el primer paint de Flutter. */
+    html, body {
+      background-color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+
+      /* M2 — bloquea el "pull-to-refresh" del browser y el bounce de
+         iOS al hacer scroll en los bordes. Sin esto, si el usuario
+         scrollea hacia abajo en pleno workout, Chrome/Safari pueden
+         recargar la página y perder la sesión activa. */
+      overscroll-behavior: contain;
+
+      /* M1 — desactiva el flash gris que iOS Safari pinta sobre todo
+         tap. En Flutter canvas se ve mal porque el rectángulo gris
+         queda visible un frame después del tap. */
+      -webkit-tap-highlight-color: transparent;
+
+      /* M1 — `manipulation` permite zoom con pinch pero saca el delay
+         de 300 ms del double-tap-to-zoom legacy. Hace que cada tap se
+         sienta inmediato. */
+      touch-action: manipulation;
+    }
+
+    /* M3 — evita el auto-zoom de iOS Safari cuando un input toma focus.
+       Flutter crea inputs HTML ocultos para capturar el teclado; iOS
+       hace zoom si su font-size es <16 px. Forzarlo a 16 px no altera
+       el render del TextField (que sigue siendo canvas) — solo le
+       miente al heurístico del browser. */
+    input, textarea {
+      font-size: 16px;
+    }
+
+    /* Dark mode pre-paint bg: matchea AppPalette.dark.background. */
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background-color: #0A0A0B;
+      }
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
+import 'package:gym_flutter/core/settings/user_preferences_service.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
+import 'package:gym_flutter/features/auth/domain/entities/user.dart';
+import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
+import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
+import 'package:gym_flutter/features/profile/presentation/pages/profile_page.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockAuthBloc extends Mock implements AuthBloc {}
+
+void main() {
+  late _MockAuthBloc mockAuthBloc;
+  late SettingsBloc settingsBloc;
+
+  const tUser = User(
+    id: 'user-123',
+    email: 'ander@example.com',
+    fullName: 'Ander Cifuentes',
+  );
+
+  setUpAll(() {
+    registerFallbackValue(SignOutRequested());
+  });
+
+  setUp(() async {
+    mockAuthBloc = _MockAuthBloc();
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    settingsBloc = SettingsBloc(preferences: UserPreferencesService(prefs));
+  });
+
+  tearDown(() async {
+    await settingsBloc.close();
+  });
+
+  Widget pumpProfile() {
+    return MaterialApp(
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<SettingsBloc>.value(value: settingsBloc),
+        ],
+        child: const ProfilePage(),
+      ),
+    );
+  }
+
+  testWidgets(
+    'renderiza datos del usuario, preferencias y CTA de cerrar sesión cuando '
+    'Authenticated',
+    (tester) async {
+      when(() => mockAuthBloc.state).thenReturn(const Authenticated(tUser));
+
+      // Viewport más alto para que el `ListView` materialice todo el
+      // contenido (sign-out incluido) sin necesidad de scroll.
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(pumpProfile());
+      await tester.pump();
+
+      // Tanto el nombre como el email aparecen dos veces: una en el
+      // avatar-header y otra como `value` de su `_InfoRow` en CUENTA.
+      expect(find.text('Ander Cifuentes'), findsNWidgets(2));
+      expect(find.text('ander@example.com'), findsNWidgets(2));
+
+      // Sección CUENTA
+      expect(find.text('CUENTA'), findsOneWidget);
+      expect(find.text('Nombre'), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
+
+      // Sección PREFERENCIAS (con valores)
+      expect(find.text('PREFERENCIAS'), findsOneWidget);
+      expect(find.text('Tema'), findsOneWidget);
+      // Default = system → "Sistema".
+      expect(find.text('Sistema'), findsOneWidget);
+      expect(find.text('Idioma'), findsOneWidget);
+      expect(find.text('Español'), findsOneWidget);
+      expect(find.text('Unidades'), findsOneWidget);
+      expect(find.text('Kilogramos (kg)'), findsOneWidget);
+
+      // Idioma y Unidades siguen como "PRÓXIMAMENTE"; Tema ya es interactivo
+      // (chevron en vez de tag). El segundo chevron corresponde a "Nombre".
+      expect(find.text('PRÓXIMAMENTE'), findsNWidgets(2));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+
+      // CTA sign-out
+      expect(find.text('CERRAR SESIÓN'), findsOneWidget);
+    },
+  );
+
+  testWidgets('muestra AppSpinner cuando AuthLoading', (tester) async {
+    when(() => mockAuthBloc.state).thenReturn(AuthLoading());
+
+    await tester.pumpWidget(pumpProfile());
+    await tester.pump();
+
+    expect(find.byType(AppSpinner), findsOneWidget);
+    // Sin contenido del perfil.
+    expect(find.text('CUENTA'), findsNothing);
+  });
+
+  testWidgets(
+    'tap en CERRAR SESIÓN abre dialog de confirmación y al confirmar dispara '
+    'SignOutRequested',
+    (tester) async {
+      when(() => mockAuthBloc.state).thenReturn(const Authenticated(tUser));
+
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(pumpProfile());
+      await tester.pump();
+
+      // El primer "CERRAR SESIÓN" es el botón del body.
+      await tester.tap(find.text('CERRAR SESIÓN').first);
+      await tester.pumpAndSettle();
+
+      // Dialog visible.
+      expect(find.text('¿Cerrar sesión?'), findsOneWidget);
+      expect(
+        find.text(
+          'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
+        ),
+        findsOneWidget,
+      );
+
+      // Confirmar — el botón filled del dialog también dice "CERRAR SESIÓN".
+      // En este punto hay dos matches (botón del body + botón del dialog);
+      // el del dialog es el último renderizado.
+      await tester.tap(find.text('CERRAR SESIÓN').last);
+      // No `pumpAndSettle`: tras el confirm el botón cambia a spinner
+      // (AppSpinner) y la animación nunca asienta. Un solo `pump()` deja
+      // procesar el dispatch + setState.
+      await tester.pump();
+      await tester.pump();
+
+      final captured = verify(() => mockAuthBloc.add(captureAny())).captured;
+      expect(captured.length, 1);
+      expect(captured.single, isA<SignOutRequested>());
+    },
+  );
+
+  testWidgets('cancelar el dialog no dispara SignOutRequested', (tester) async {
+    when(() => mockAuthBloc.state).thenReturn(const Authenticated(tUser));
+
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(pumpProfile());
+    await tester.pump();
+
+    await tester.tap(find.text('CERRAR SESIÓN').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('¿Cerrar sesión?'), findsOneWidget);
+
+    await tester.tap(find.text('CANCELAR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('¿Cerrar sesión?'), findsNothing);
+    verifyNever(() => mockAuthBloc.add(any()));
+  });
+}

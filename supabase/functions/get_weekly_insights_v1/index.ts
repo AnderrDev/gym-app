@@ -1,23 +1,18 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { jsonResponse, preflight } from "../_shared/cors.ts";
+import { logError, logInfo, requireUser, userClient } from "../_shared/auth.ts";
+import { enforceRateLimit } from "../_shared/rate_limit.ts";
+
+const RATE_LIMIT = {
+  functionName: "get_weekly_insights_v1",
+  windowSeconds: 60,
+  maxCalls: 60,
+} as const;
 
 type WeekPayload = {
   routine_id?: string;
   week_start?: string;
 };
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
 
 function toDateOnly(input: Date): string {
   const y = input.getUTCFullYear().toString().padStart(4, "0");
@@ -34,75 +29,50 @@ function toUTCDate(input: string): Date | null {
   return parsed;
 }
 
-function logInfo(code: string, details: Record<string, unknown>): void {
-  console.log(JSON.stringify({ level: "info", code, ...details }));
-}
-
-function logError(code: string, details: Record<string, unknown>): void {
-  console.error(JSON.stringify({ level: "error", code, ...details }));
-}
-
-// Extract user_id from JWT without validation (already validated by client)
-function extractUserIdFromJWT(token: string): string | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const payload = JSON.parse(atob(parts[1]));
-    // Try 'sub' field (standard JWT), or 'id' field (Supabase custom)
-    return payload.sub ?? payload.id ?? null;
-  } catch (error) {
-    console.error("Error decoding JWT:", error);
-    return null;
-  }
-}
-
 Deno.serve(async (req: Request) => {
-  // Handle CORS pre-flight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return preflight();
 
   if (req.method !== "POST") {
-    return json(405, { success: false, code: "METHOD_NOT_ALLOWED", error: { message: "Use POST" } });
+    return jsonResponse(405, {
+      success: false,
+      code: "METHOD_NOT_ALLOWED",
+      error: { message: "Use POST" },
+    });
   }
 
-  // Try to get token from Authorization header OR from custom X-User-Token header
-  let token = req.headers.get("Authorization");
-  if (token?.startsWith("Bearer ")) {
-    token = token.substring(7);
-  } else {
-    token = req.headers.get("X-User-Token") ?? null;
-  }
+  const auth = await requireUser(req);
+  if (!auth.ok) return auth.response;
+  const { userId, admin, token } = auth;
 
-  let userId = "unknown";
-  if (token) {
-    const extracted = extractUserIdFromJWT(token);
-    if (extracted) {
-      userId = extracted;
-      logInfo("USER_FROM_JWT", { user_id: userId });
-    }
-  }
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
+  const rate = await enforceRateLimit(admin, userId, RATE_LIMIT);
+  if (!rate.ok) return rate.response;
 
   let payload: WeekPayload;
   try {
     payload = await req.json();
   } catch {
-    return json(400, { success: false, code: "INVALID_JSON", error: { message: "Invalid request body" } });
+    return jsonResponse(400, {
+      success: false,
+      code: "INVALID_JSON",
+      error: { message: "Invalid request body" },
+    });
   }
 
   if (!payload.routine_id) {
-    return json(400, { success: false, code: "VALIDATION_ERROR", error: { message: "routine_id is required" } });
+    return jsonResponse(400, {
+      success: false,
+      code: "VALIDATION_ERROR",
+      error: { message: "routine_id is required" },
+    });
   }
 
   const weekStartDate = payload.week_start ? toUTCDate(payload.week_start) : null;
   if (payload.week_start && weekStartDate == null) {
-    return json(400, { success: false, code: "VALIDATION_ERROR", error: { message: "week_start must be YYYY-MM-DD" } });
+    return jsonResponse(400, {
+      success: false,
+      code: "VALIDATION_ERROR",
+      error: { message: "week_start must be YYYY-MM-DD" },
+    });
   }
 
   const weekStartStr = weekStartDate ? toDateOnly(weekStartDate) : null;
@@ -113,7 +83,9 @@ Deno.serve(async (req: Request) => {
     week_start: weekStartStr,
   });
 
-  const { data: rpcRows, error: rpcError } = await supabase
+  // La RPC valida `p_user_id = auth.uid()` (IDOR hardening) y eso sólo
+  // resuelve al uid real si la llamada viaja con el JWT del usuario.
+  const { data: rpcRows, error: rpcError } = await userClient(token)
     .rpc("compute_weekly_insights_v1", {
       p_user_id: userId,
       p_routine_id: payload.routine_id,
@@ -128,7 +100,7 @@ Deno.serve(async (req: Request) => {
       routine_id: payload.routine_id,
       message: rpcError.message,
     });
-    return json(500, {
+    return jsonResponse(500, {
       success: false,
       code: "INSIGHTS_RPC_ERROR",
       error: { message: rpcError.message },
@@ -151,10 +123,9 @@ Deno.serve(async (req: Request) => {
   logInfo("INSIGHTS_READY", {
     user_id: userId,
     routine_id: payload.routine_id,
-    ...responseData,
   });
 
-  return json(200, {
+  return jsonResponse(200, {
     success: true,
     code: "WEEKLY_INSIGHTS_READY",
     data: responseData,

@@ -22,7 +22,11 @@ class GetWeeklyPlan {
 
     // 2. Obtener las sesiones de la semana
     final weekEnd = weekStart.add(const Duration(days: 6));
-    final sessionsResult = await repository.getWeekSessions(userId, weekStart, weekEnd);
+    final sessionsResult = await repository.getWeekSessions(
+      userId,
+      weekStart,
+      weekEnd,
+    );
     final sessions = sessionsResult.getOrElse((_) => []);
 
     // 3. Mapear cada día con su estado semanal:
@@ -31,13 +35,17 @@ class GetWeeklyPlan {
     // - completedPartial: sesión cerrada sin cumplir objetivo completo
     // - pending: sin sesiones
     final enrichedDays = days.map((day) {
-      final sessionsForDay = sessions.where((s) => s.routineDayId == day.id).toList();
+      final sessionsForDay = sessions
+          .where((s) => s.routineDayId == day.id)
+          .toList();
 
       WorkoutDayStatus status;
       if (sessionsForDay.isEmpty) {
         status = WorkoutDayStatus.pending;
       } else {
-        final activeSession = sessionsForDay.where((s) => s.completedAt == null).toList();
+        final activeSession = sessionsForDay
+            .where((s) => s.completedAt == null)
+            .toList();
 
         if (activeSession.isNotEmpty) {
           status = WorkoutDayStatus.inProgress;
@@ -45,7 +53,8 @@ class GetWeeklyPlan {
           sessionsForDay.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
           final latestClosedSession = sessionsForDay.first;
 
-          final isFullyCompleted = latestClosedSession.completedSetsCount >= day.targetSetsCount;
+          final isFullyCompleted =
+              latestClosedSession.completedSetsCount >= day.targetSetsCount;
           status = isFullyCompleted
               ? WorkoutDayStatus.completed
               : WorkoutDayStatus.completedPartial;
