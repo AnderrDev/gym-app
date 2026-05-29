@@ -48,6 +48,11 @@ end;
 $$;
 
 revoke all on function public.reorder_routine_exercises(uuid, uuid[]) from public;
+-- `anon` recibe EXECUTE vía default privileges del proyecto; lo revocamos
+-- explícitamente para dejar la función authenticated-only, igual que el resto
+-- de RPCs (fork_routine_v1, get_*). El gate de auth.uid() ya bloquea a anon,
+-- pero mantenemos la convención + defensa en profundidad.
+revoke execute on function public.reorder_routine_exercises(uuid, uuid[]) from anon;
 grant execute on function public.reorder_routine_exercises(uuid, uuid[]) to authenticated;
 
 comment on function public.reorder_routine_exercises(uuid, uuid[]) is
