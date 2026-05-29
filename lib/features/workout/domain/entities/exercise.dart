@@ -1,57 +1,17 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Exercise extends Equatable {
-  final String id;
-  final String routineDayId;
-  final String name;
-  final String targetMuscle;
-  final double targetWeight;
-  final int targetReps;
-  final int targetSets;
-  final int restTimerSeconds;
+part 'exercise.freezed.dart';
 
-  const Exercise({
-    required this.id,
-    required this.routineDayId,
-    required this.name,
-    required this.targetMuscle,
-    required this.targetWeight,
-    required this.targetReps,
-    this.targetSets = 3,
-    this.restTimerSeconds = 90,
-  });
-
-  Exercise copyWith({
-    String? id,
-    String? routineDayId,
-    String? name,
-    String? targetMuscle,
-    double? targetWeight,
-    int? targetReps,
-    int? targetSets,
-    int? restTimerSeconds,
-  }) {
-    return Exercise(
-      id: id ?? this.id,
-      routineDayId: routineDayId ?? this.routineDayId,
-      name: name ?? this.name,
-      targetMuscle: targetMuscle ?? this.targetMuscle,
-      targetWeight: targetWeight ?? this.targetWeight,
-      targetReps: targetReps ?? this.targetReps,
-      targetSets: targetSets ?? this.targetSets,
-      restTimerSeconds: restTimerSeconds ?? this.restTimerSeconds,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-    id,
-    routineDayId,
-    name,
-    targetMuscle,
-    targetWeight,
-    targetReps,
-    targetSets,
-    restTimerSeconds,
-  ];
+@freezed
+abstract class Exercise with _$Exercise {
+  const factory Exercise({
+    required String id,
+    required String routineDayId,
+    required String name,
+    required String targetMuscle,
+    required double targetWeight,
+    required int targetReps,
+    @Default(3) int targetSets,
+    @Default(90) int restTimerSeconds,
+  }) = _Exercise;
 }

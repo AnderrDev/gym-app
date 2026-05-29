@@ -1,29 +1,15 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Routine extends Equatable {
-  final String id;
-  final String name;
-  final int exerciseCount;
-  final bool isPublic;
-  final String? creatorId;
-  final String? creatorName;
+part 'routine.freezed.dart';
 
-  const Routine({
-    required this.id,
-    required this.name,
-    required this.exerciseCount,
-    this.isPublic = false,
-    this.creatorId,
-    this.creatorName,
-  });
-
-  @override
-  List<Object?> get props => [
-    id,
-    name,
-    exerciseCount,
-    isPublic,
-    creatorId,
-    creatorName,
-  ];
+@freezed
+abstract class Routine with _$Routine {
+  const factory Routine({
+    required String id,
+    required String name,
+    required int exerciseCount,
+    @Default(false) bool isPublic,
+    String? creatorId,
+    String? creatorName,
+  }) = _Routine;
 }

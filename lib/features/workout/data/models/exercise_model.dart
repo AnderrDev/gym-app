@@ -2,16 +2,27 @@ import 'package:gym_flutter/core/observability/app_logger.dart';
 
 import '../../domain/entities/exercise.dart';
 
-class ExerciseModel extends Exercise {
+/// Modelo de datos para `Exercise`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON de la DB y convierte hacia/desde la entidad.
+class ExerciseModel {
+  final String id;
+  final String routineDayId;
+  final String name;
+  final String targetMuscle;
+  final double targetWeight;
+  final int targetReps;
+  final int targetSets;
+  final int restTimerSeconds;
+
   const ExerciseModel({
-    required super.id,
-    required super.routineDayId,
-    required super.name,
-    required super.targetMuscle,
-    required super.targetWeight,
-    required super.targetReps,
-    super.targetSets,
-    super.restTimerSeconds,
+    required this.id,
+    required this.routineDayId,
+    required this.name,
+    required this.targetMuscle,
+    required this.targetWeight,
+    required this.targetReps,
+    this.targetSets = 3,
+    this.restTimerSeconds = 90,
   });
 
   factory ExerciseModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +55,19 @@ class ExerciseModel extends Exercise {
     );
   }
 
+  factory ExerciseModel.fromEntity(Exercise entity) {
+    return ExerciseModel(
+      id: entity.id,
+      routineDayId: entity.routineDayId,
+      name: entity.name,
+      targetMuscle: entity.targetMuscle,
+      targetWeight: entity.targetWeight,
+      targetReps: entity.targetReps,
+      targetSets: entity.targetSets,
+      restTimerSeconds: entity.restTimerSeconds,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -56,4 +80,15 @@ class ExerciseModel extends Exercise {
       'rest_timer_seconds': restTimerSeconds,
     };
   }
+
+  Exercise toEntity() => Exercise(
+        id: id,
+        routineDayId: routineDayId,
+        name: name,
+        targetMuscle: targetMuscle,
+        targetWeight: targetWeight,
+        targetReps: targetReps,
+        targetSets: targetSets,
+        restTimerSeconds: restTimerSeconds,
+      );
 }

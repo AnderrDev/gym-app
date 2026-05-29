@@ -1,36 +1,18 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'coaching_analysis.dart';
 
-class WorkoutSession extends Equatable {
-  final String id;
-  final String userId;
-  final String routineDayId;
-  final DateTime sessionDate;
-  final DateTime? completedAt;
-  final int completedSetsCount;
-  final int totalTargetSets;
-  final List<CoachingAnalysis>? coachingAnalysis;
+part 'workout_session.freezed.dart';
 
-  const WorkoutSession({
-    required this.id,
-    required this.userId,
-    required this.routineDayId,
-    required this.sessionDate,
-    this.completedAt,
-    this.completedSetsCount = 0,
-    this.totalTargetSets = 0,
-    this.coachingAnalysis,
-  });
-
-  @override
-  List<Object?> get props => [
-    id,
-    userId,
-    routineDayId,
-    sessionDate,
-    completedAt,
-    completedSetsCount,
-    totalTargetSets,
-    coachingAnalysis,
-  ];
+@freezed
+abstract class WorkoutSession with _$WorkoutSession {
+  const factory WorkoutSession({
+    required String id,
+    required String userId,
+    required String routineDayId,
+    required DateTime sessionDate,
+    DateTime? completedAt,
+    @Default(0) int completedSetsCount,
+    @Default(0) int totalTargetSets,
+    List<CoachingAnalysis>? coachingAnalysis,
+  }) = _WorkoutSession;
 }

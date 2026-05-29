@@ -5,7 +5,6 @@ import 'package:gym_flutter/features/workout/domain/usecases/get_weekly_plan.dar
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
-import 'package:gym_flutter/features/workout/data/models/routine_day_model.dart';
 
 import '../../../../helpers/mocks.dart';
 
@@ -33,7 +32,7 @@ void main() {
   });
 
   test('marca inProgress cuando hay sesion abierta', () async {
-    final day = const RoutineDayModel(
+    final day = const RoutineDay(
       id: 'd1',
       routineId: 'r1',
       dayOfWeek: 1,
@@ -74,7 +73,7 @@ void main() {
   });
 
   test('marca completed cuando la sesion cerrada cumple objetivo', () async {
-    final day = const RoutineDayModel(
+    final day = const RoutineDay(
       id: 'd1',
       routineId: 'r1',
       dayOfWeek: 1,
@@ -117,7 +116,7 @@ void main() {
   test(
     'marca completedPartial cuando la sesion cerrada no cumple objetivo',
     () async {
-      final day = const RoutineDayModel(
+      final day = const RoutineDay(
         id: 'd1',
         routineId: 'r1',
         dayOfWeek: 1,

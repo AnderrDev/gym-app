@@ -30,7 +30,7 @@ class AuthRepositoryImpl implements AuthRepository {
         password,
       );
       await localDataSource.cacheUser(remoteUser);
-      return Right(remoteUser);
+      return Right(remoteUser.toEntity());
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));
     } on ServerException catch (e) {
@@ -53,7 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
         fullName,
       );
       await localDataSource.cacheUser(remoteUser);
-      return Right(remoteUser);
+      return Right(remoteUser.toEntity());
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));
     } on ServerException catch (e) {
@@ -85,11 +85,11 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user != null) {
         await localDataSource.cacheUser(user);
       }
-      return Right(user);
+      return Right(user?.toEntity());
     } catch (_) {
       // Fallback a SharedPreferences si Supabase falla (token caducado, etc.)
       final cachedUser = await localDataSource.getLastCachedUser();
-      return Right(cachedUser);
+      return Right(cachedUser?.toEntity());
     }
   }
 

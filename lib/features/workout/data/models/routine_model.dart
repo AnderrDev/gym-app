@@ -1,13 +1,23 @@
 import '../../domain/entities/routine.dart';
 
-class RoutineModel extends Routine {
+/// Modelo de datos para `Routine`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON de `routines_view` y convierte
+/// hacia/desde la entidad en el boundary del repositorio.
+class RoutineModel {
+  final String id;
+  final String name;
+  final int exerciseCount;
+  final bool isPublic;
+  final String? creatorId;
+  final String? creatorName;
+
   const RoutineModel({
-    required super.id,
-    required super.name,
-    required super.exerciseCount,
-    super.isPublic = false,
-    super.creatorId,
-    super.creatorName,
+    required this.id,
+    required this.name,
+    required this.exerciseCount,
+    this.isPublic = false,
+    this.creatorId,
+    this.creatorName,
   });
 
   factory RoutineModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +32,15 @@ class RoutineModel extends Routine {
     );
   }
 
+  factory RoutineModel.fromEntity(Routine entity) => RoutineModel(
+        id: entity.id,
+        name: entity.name,
+        exerciseCount: entity.exerciseCount,
+        isPublic: entity.isPublic,
+        creatorId: entity.creatorId,
+        creatorName: entity.creatorName,
+      );
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -32,4 +51,13 @@ class RoutineModel extends Routine {
       'creator_name': creatorName,
     };
   }
+
+  Routine toEntity() => Routine(
+        id: id,
+        name: name,
+        exerciseCount: exerciseCount,
+        isPublic: isPublic,
+        creatorId: creatorId,
+        creatorName: creatorName,
+      );
 }

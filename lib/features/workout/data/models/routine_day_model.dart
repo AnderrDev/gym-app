@@ -2,16 +2,28 @@ import '../../domain/entities/routine_day.dart';
 import '../../domain/entities/exercise.dart';
 import 'exercise_model.dart';
 
-class RoutineDayModel extends RoutineDay {
+/// Modelo de datos para `RoutineDay`. Clase hermana (no extiende la entity
+/// freezed): (de)serializa el JSON anidado de la DB y convierte hacia/desde
+/// la entidad en el boundary del repositorio.
+class RoutineDayModel {
+  final String id;
+  final String routineId;
+  final int dayOfWeek;
+  final String name;
+  final List<Exercise> exercises;
+  final int targetSetsCount;
+  final WorkoutDayStatus status;
+  final List<String> exerciseNamesPreview;
+
   const RoutineDayModel({
-    required super.id,
-    required super.routineId,
-    required super.dayOfWeek,
-    required super.name,
-    super.exercises,
-    super.targetSetsCount,
-    super.status,
-    super.exerciseNamesPreview,
+    required this.id,
+    required this.routineId,
+    required this.dayOfWeek,
+    required this.name,
+    this.exercises = const [],
+    this.targetSetsCount = 0,
+    this.status = WorkoutDayStatus.pending,
+    this.exerciseNamesPreview = const [],
   });
 
   factory RoutineDayModel.fromJson(
@@ -38,7 +50,7 @@ class RoutineDayModel extends RoutineDay {
       final exId = exerciseJoin?['id'] as String?;
       if (exId == null || name == null || name.isEmpty) continue;
       hydrated.add(
-        ExerciseModel(
+        Exercise(
           id: exId,
           routineDayId: dayId,
           name: name,
@@ -46,8 +58,7 @@ class RoutineDayModel extends RoutineDay {
           targetWeight: (exMap['target_weight'] as num?)?.toDouble() ?? 0.0,
           targetReps: (exMap['target_reps'] as num?)?.toInt() ?? 0,
           targetSets: (exMap['target_sets'] as num?)?.toInt() ?? 3,
-          restTimerSeconds:
-              (exMap['rest_timer_seconds'] as num?)?.toInt() ?? 90,
+          restTimerSeconds: (exMap['rest_timer_seconds'] as num?)?.toInt() ?? 90,
         ),
       );
     }
@@ -64,11 +75,12 @@ class RoutineDayModel extends RoutineDay {
     );
   }
 
-  /// Las columnas escribibles son `id`, `routine_id`, `day_of_week`, `name`.
-  /// Los campos derivados (`exercises`, `target_sets_count`, `status`) se
-  /// incluyen también para que el round-trip `toJson → fromJson` preserve
-  /// el estado en memoria (cache, tests, debug); el datasource ignora esas
-  /// keys al hacer insert/update.
+  /// Las columnas escribibles son `id`, `routine_id`, `day_of_week`, `name`;
+  /// el datasource ignora el resto al hacer insert/update. Los campos
+  /// derivados (`exercises`, `target_sets_count`, `status`) se incluyen sólo
+  /// para inspección/debug — `fromJson` NO los re-lee (espera el join
+  /// `routine_exercises`), así que el round-trip `toJson → fromJson` no es
+  /// idempotente para esos campos ni para `exercise_names_preview`.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -78,21 +90,32 @@ class RoutineDayModel extends RoutineDay {
       'target_sets_count': targetSetsCount,
       'status': status.name,
       'exercises': exercises
-          .map((e) => e is ExerciseModel
-              ? e.toJson()
-              : ExerciseModel(
-                  id: e.id,
-                  routineDayId: e.routineDayId,
-                  name: e.name,
-                  targetMuscle: e.targetMuscle,
-                  targetWeight: e.targetWeight,
-                  targetReps: e.targetReps,
-                  targetSets: e.targetSets,
-                  restTimerSeconds: e.restTimerSeconds,
-                ).toJson())
+          .map((e) => ExerciseModel.fromEntity(e).toJson())
           .toList(),
     };
   }
+
+  factory RoutineDayModel.fromEntity(RoutineDay entity) => RoutineDayModel(
+        id: entity.id,
+        routineId: entity.routineId,
+        name: entity.name,
+        dayOfWeek: entity.dayOfWeek,
+        exercises: entity.exercises,
+        targetSetsCount: entity.targetSetsCount,
+        status: entity.status,
+        exerciseNamesPreview: entity.exerciseNamesPreview,
+      );
+
+  RoutineDay toEntity() => RoutineDay(
+        id: id,
+        routineId: routineId,
+        dayOfWeek: dayOfWeek,
+        name: name,
+        exercises: exercises,
+        targetSetsCount: targetSetsCount,
+        status: status,
+        exerciseNamesPreview: exerciseNamesPreview,
+      );
 
   static WorkoutDayStatus _statusFromName(String? name) {
     if (name == null) return WorkoutDayStatus.pending;
@@ -100,33 +123,5 @@ class RoutineDayModel extends RoutineDay {
       if (v.name == name) return v;
     }
     return WorkoutDayStatus.pending;
-  }
-
-  RoutineDayModel copyWithStatus(WorkoutDayStatus newStatus) {
-    return RoutineDayModel(
-      id: id,
-      routineId: routineId,
-      dayOfWeek: dayOfWeek,
-      name: name,
-      exercises: exercises,
-      targetSetsCount: targetSetsCount,
-      status: newStatus,
-    );
-  }
-
-  RoutineDayModel copyWithExercises(List<ExerciseModel> newExercises) {
-    int totalTargetSets = 0;
-    for (var ex in newExercises) {
-      totalTargetSets += ex.targetSets;
-    }
-    return RoutineDayModel(
-      id: id,
-      routineId: routineId,
-      dayOfWeek: dayOfWeek,
-      name: name,
-      exercises: newExercises,
-      targetSetsCount: totalTargetSets,
-      status: status,
-    );
   }
 }
