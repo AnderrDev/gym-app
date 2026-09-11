@@ -13,26 +13,23 @@ abstract class ActiveWorkoutEvent extends Equatable {
 }
 
 /// El usuario confirma iniciar la sesión. Crea la sesión en backend.
+///
+/// No lleva fecha: una sesión nueva siempre se registra con la fecha de hoy
+/// (la decide el bloc vía `Clock`), aunque se haya abierto desde un día
+/// anterior del calendario.
 class StartActiveWorkout extends ActiveWorkoutEvent {
   const StartActiveWorkout({
     required this.userId,
     required this.routineDayId,
-    required this.sessionDate,
     required this.routineDayName,
   });
 
   final String userId;
   final String routineDayId;
-  final DateTime sessionDate;
   final String routineDayName;
 
   @override
-  List<Object?> get props => [
-    userId,
-    routineDayId,
-    sessionDate,
-    routineDayName,
-  ];
+  List<Object?> get props => [userId, routineDayId, routineDayName];
 }
 
 /// Se detectó una sesión preexistente al cargar `RoutineDayBloc` y queremos

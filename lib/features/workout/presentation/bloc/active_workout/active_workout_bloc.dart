@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
@@ -16,7 +17,9 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     required this.repository,
     required this.activeSessionService,
     required this.notifier,
-  }) : super(const ActiveWorkoutState()) {
+    Clock clock = const SystemClock(),
+  }) : _clock = clock,
+       super(const ActiveWorkoutState()) {
     on<StartActiveWorkout>(_onStart);
     on<ResumeActiveWorkout>(_onResume);
     on<SaveActiveSetLog>(_onSaveSet);
@@ -32,6 +35,12 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
   final WorkoutRepository repository;
   final ActiveSessionService activeSessionService;
   final ActiveWorkoutNotifier notifier;
+  final Clock _clock;
+
+  DateTime _today() {
+    final now = _clock.now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   int _totalTargetSetsFor(List<Exercise> exercises) =>
       exercises.fold<int>(0, (sum, e) => sum + e.targetSets);
@@ -47,10 +56,12 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       ),
     );
     try {
+      // Siempre hoy: iniciar desde un día pasado del calendario no debe
+      // registrar el entrenamiento con esa fecha.
       final session = (await repository.startWorkoutForDay(
         event.userId,
         event.routineDayId,
-        event.sessionDate,
+        _today(),
       )).getOrElse((_) => throw Exception('No se pudo iniciar la sesión'));
 
       // El backend puede devolver una sesión existente cuyo `routineDayId`

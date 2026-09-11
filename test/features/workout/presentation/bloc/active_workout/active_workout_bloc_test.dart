@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -85,10 +86,15 @@ void main() {
     when(() => notifier.onEnded()).thenAnswer((_) async {});
   });
 
+  // Mediodía de un día distinto a `sessionDate`: el bloc debe fechar la
+  // sesión con "hoy" (sin hora), no con la fecha del día abierto.
+  final clock = FakeClock(DateTime(2026, 5, 6, 13, 45));
+
   ActiveWorkoutBloc buildBloc() => ActiveWorkoutBloc(
     repository: repository,
     activeSessionService: activeSessionService,
     notifier: notifier,
+    clock: clock,
   );
 
   group('StartActiveWorkout', () {
@@ -121,10 +127,9 @@ void main() {
         return buildBloc();
       },
       act: (b) => b.add(
-        StartActiveWorkout(
+        const StartActiveWorkout(
           userId: userId,
           routineDayId: routineDayId,
-          sessionDate: sessionDate,
           routineDayName: 'Push Day',
         ),
       ),
@@ -133,6 +138,50 @@ void main() {
         expect(b.state.status, ActiveWorkoutStatus.running);
         expect(b.state.session?.id, sessionId);
         expect(b.state.exercises, hasLength(1));
+      },
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'crea la sesión con la fecha de hoy aunque se abra un día anterior',
+      build: () {
+        when(
+          () => repository.startWorkoutForDay(any(), any(), any()),
+        ).thenAnswer((_) async => Right(session));
+        when(
+          () => repository.getExercisesForDay(any()),
+        ).thenAnswer((_) async => const Right(<Exercise>[]));
+        when(
+          () => repository.getRecentSessionsForDay(
+            any(),
+            any(),
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => const Right(<WorkoutSession>[]));
+        when(
+          () => repository.getSessionSetLogs(any()),
+        ).thenAnswer((_) async => const Right(<SetLog>[]));
+        when(
+          () => repository.getSetLogsForSessions(any()),
+        ).thenAnswer((_) async => const Right(<String, List<SetLog>>{}));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const StartActiveWorkout(
+          userId: userId,
+          routineDayId: routineDayId,
+          routineDayName: 'Push Day',
+        ),
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (_) {
+        verify(
+          () => repository.startWorkoutForDay(
+            userId,
+            routineDayId,
+            DateTime(2026, 5, 6),
+          ),
+        ).called(1);
       },
     );
 
@@ -151,10 +200,9 @@ void main() {
         return buildBloc();
       },
       act: (b) => b.add(
-        StartActiveWorkout(
+        const StartActiveWorkout(
           userId: userId,
           routineDayId: routineDayId,
-          sessionDate: sessionDate,
           routineDayName: 'Push Day',
         ),
       ),

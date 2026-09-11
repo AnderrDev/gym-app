@@ -73,10 +73,9 @@ void main() {
     );
     registerFallbackValue(const ResetRoutineDay());
     registerFallbackValue(
-      StartActiveWorkout(
+      const StartActiveWorkout(
         userId: 'u1',
         routineDayId: 'd1',
-        sessionDate: DateTime(2023),
         routineDayName: 'Pecho',
       ),
     );

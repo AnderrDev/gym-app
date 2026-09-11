@@ -100,7 +100,6 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       StartActiveWorkout(
         userId: routineState.userId ?? widget.userId,
         routineDayId: routineState.routineDayId ?? widget.routineDay.id,
-        sessionDate: routineState.sessionDate ?? widget.sessionDate,
         routineDayName: widget.routineDay.name,
       ),
     );
@@ -257,7 +256,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 return RoutineDayViewScaffold(
                   phase: phase,
                   routineDay: widget.routineDay,
-                  dateLabel: formatRoutineDayDateLabel(widget.sessionDate),
+                  // Con sesión, la fecha real (hoy si se inició desde un día
+                  // pasado); sin sesión, el día elegido en el calendario.
+                  dateLabel: formatRoutineDayDateLabel(
+                    session?.sessionDate ?? widget.sessionDate,
+                  ),
                   effectiveReadOnly: isCompleted,
                   isCompleted: isCompleted,
                   currentSessionLogs: activeState.setLogs,

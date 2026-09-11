@@ -135,6 +135,7 @@ Future<void> init() async {
       repository: sl(),
       activeSessionService: sl(),
       notifier: sl(),
+      clock: sl<Clock>(),
     ),
   );
 
