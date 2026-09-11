@@ -6,14 +6,19 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Garantía mecánica de que ningún archivo bajo `lib/features/` introduce
-/// un color hex literal. La paleta vive en `core/theme/app_colors.dart` y los
-/// features deben consumirla vía `AppColors.*`.
+/// un color hex literal ni un color estático de Material (`Colors.amber`,
+/// `Colors.black`, etc.). La paleta vive en `core/theme/app_palette.dart`
+/// (`context.colors.*`, theme-aware) y `core/theme/app_colors.dart`
+/// (`AppColors.*`, brand-stable). Los features deben consumir siempre esos
+/// tokens — un `Colors.*` estático no se adapta a dark mode.
 ///
-/// Si este test rompe: añadí el color faltante a `AppColors` y reemplazá el
-/// literal por el token. Nunca añadas excepciones aquí.
+/// Si este test rompe: añadí el color faltante a `AppPalette`/`AppColors` y
+/// reemplazá el literal por el token. Nunca añadas excepciones aquí.
+/// `Colors.transparent` está exento — es brightness-agnostic por definición.
 void main() {
-  test('lib/features no contiene literales hex', () {
+  test('lib/features no contiene literales hex ni Colors.* estáticos', () {
     final hexLiteral = RegExp(r'0x[0-9A-Fa-f]{8}');
+    final staticMaterialColor = RegExp(r'\bColors\.(?!transparent\b)\w+');
     final featuresDir = Directory('lib/features');
     expect(
       featuresDir.existsSync(),
@@ -31,7 +36,7 @@ void main() {
       final lines = file.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
-        if (hexLiteral.hasMatch(line)) {
+        if (hexLiteral.hasMatch(line) || staticMaterialColor.hasMatch(line)) {
           offenders.add('${file.path}:${i + 1}: $line');
         }
       }
@@ -41,8 +46,9 @@ void main() {
       offenders,
       isEmpty,
       reason:
-          'Se encontraron literales hex en lib/features/. Reemplazá por '
-          'AppColors.* o agregá un token nuevo:\n${offenders.join('\n')}',
+          'Se encontraron literales de color en lib/features/. Reemplazá '
+          'por context.colors.* / AppColors.* o agregá un token nuevo:\n'
+          '${offenders.join('\n')}',
     );
   });
 }

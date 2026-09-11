@@ -259,7 +259,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       decoration: BoxDecoration(
         color: context.colors.background,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10),
+          BoxShadow(color: context.colors.overlay.withValues(alpha: 0.2), blurRadius: 10),
         ],
       ),
       child: ElevatedButton(

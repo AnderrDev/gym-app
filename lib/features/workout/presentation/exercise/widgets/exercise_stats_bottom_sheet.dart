@@ -236,7 +236,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.85,
-              color: Colors.black.withValues(alpha: 0.4),
+              color: context.colors.overlay.withValues(alpha: 0.4),
               child: inner,
             ),
           );

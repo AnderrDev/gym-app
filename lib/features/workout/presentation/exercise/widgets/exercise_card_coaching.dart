@@ -18,12 +18,9 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = coaching.performanceScore ?? 1.0;
-    final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
 
-    final color = isGreat
-        ? context.colors.success
-        : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
+    final color = isGreat ? context.colors.success : context.colors.warning;
 
     IconData trendIcon = Icons.psychology_rounded;
     switch (coaching.recommendation) {
@@ -92,12 +89,9 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = coaching.performanceScore ?? 1.0;
-    final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
 
-    final accentColor = isGreat
-        ? context.colors.success
-        : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
+    final accentColor = isGreat ? context.colors.success : context.colors.warning;
 
     if (compact) {
       return Container(

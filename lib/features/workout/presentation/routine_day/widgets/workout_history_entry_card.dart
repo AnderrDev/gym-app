@@ -217,11 +217,8 @@ class _CoachingAdvice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = coaching.performanceScore ?? 1.0;
-    final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
-    final accent = isGreat
-        ? context.colors.success
-        : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
+    final accent = isGreat ? context.colors.success : context.colors.warning;
 
     return Container(
       padding: const EdgeInsets.all(Spacing.md),
