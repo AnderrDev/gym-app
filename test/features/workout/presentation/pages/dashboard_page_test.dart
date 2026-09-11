@@ -144,23 +144,20 @@ void main() {
     expect(find.byType(DashboardWeeklyView), findsOneWidget);
   });
 
-  testWidgets(
-    'AppBar del dashboard NO contiene icons de lista ni logout '
-    '(ahora viven en el shell / pestaña perfil)',
-    (tester) async {
-      when(
-        () => mockDashboardBloc.state,
-      ).thenReturn(const DashboardState(status: DashboardStatus.ready));
-      when(
-        () => mockDashboardBloc.stream,
-      ).thenAnswer((_) => const Stream.empty());
+  testWidgets('AppBar del dashboard NO contiene icons de lista ni logout '
+      '(ahora viven en el shell / pestaña perfil)', (tester) async {
+    when(
+      () => mockDashboardBloc.state,
+    ).thenReturn(const DashboardState(status: DashboardStatus.ready));
+    when(
+      () => mockDashboardBloc.stream,
+    ).thenAnswer((_) => const Stream.empty());
 
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pump();
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
 
-      // La AppBar ya no tiene acciones: ni `list_alt` (catálogo) ni `logout`.
-      expect(find.byIcon(Icons.list_alt), findsNothing);
-      expect(find.byIcon(Icons.logout), findsNothing);
-    },
-  );
+    // La AppBar ya no tiene acciones: ni `list_alt` (catálogo) ni `logout`.
+    expect(find.byIcon(Icons.list_alt), findsNothing);
+    expect(find.byIcon(Icons.logout), findsNothing);
+  });
 }

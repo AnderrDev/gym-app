@@ -38,10 +38,7 @@ class _CoachingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 10),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),

@@ -13,7 +13,10 @@ import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 /// - `!online && pending > 0`: icono nube-tachada + "$pending pendientes".
 /// - cualquier otro caso con `pending > 0`: "$pending pendientes".
 class SyncStatusBadge extends StatelessWidget {
-  const SyncStatusBadge({super.key, this.padding = const EdgeInsets.symmetric(horizontal: 8)});
+  const SyncStatusBadge({
+    super.key,
+    this.padding = const EdgeInsets.symmetric(horizontal: 8),
+  });
 
   final EdgeInsetsGeometry padding;
 
@@ -24,10 +27,7 @@ class SyncStatusBadge extends StatelessWidget {
         if (state.pending == 0 && state.isOnline && !state.draining) {
           return const SizedBox.shrink();
         }
-        return Padding(
-          padding: padding,
-          child: _renderContent(context, state),
-        );
+        return Padding(padding: padding, child: _renderContent(context, state));
       },
     );
   }
@@ -48,7 +48,11 @@ class SyncStatusBadge extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.cloud_off_rounded, size: 16, color: context.colors.textSecondary),
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 16,
+            color: context.colors.textSecondary,
+          ),
           const SizedBox(width: 6),
           Text('$pending pendientes'),
         ],
@@ -58,7 +62,11 @@ class SyncStatusBadge extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.sync_rounded, size: 16, color: context.colors.textSecondary),
+          Icon(
+            Icons.sync_rounded,
+            size: 16,
+            color: context.colors.textSecondary,
+          ),
           const SizedBox(width: 6),
           Text('$pending pendientes'),
         ],

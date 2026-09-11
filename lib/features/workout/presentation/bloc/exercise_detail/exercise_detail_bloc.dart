@@ -7,7 +7,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/exercise_detail/e
 class ExerciseDetailBloc
     extends Bloc<ExerciseDetailEvent, ExerciseDetailState> {
   ExerciseDetailBloc({required this.getExerciseDetail})
-      : super(const ExerciseDetailState()) {
+    : super(const ExerciseDetailState()) {
     on<LoadExerciseDetail>(_onLoad);
   }
 
@@ -32,10 +32,7 @@ class ExerciseDetailBloc
         ),
       ),
       (detail) => emit(
-        state.copyWith(
-          status: ExerciseDetailStatus.ready,
-          detail: detail,
-        ),
+        state.copyWith(status: ExerciseDetailStatus.ready, detail: detail),
       ),
     );
   }

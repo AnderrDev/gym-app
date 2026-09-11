@@ -82,13 +82,13 @@ class ExerciseModel {
   }
 
   Exercise toEntity() => Exercise(
-        id: id,
-        routineDayId: routineDayId,
-        name: name,
-        targetMuscle: targetMuscle,
-        targetWeight: targetWeight,
-        targetReps: targetReps,
-        targetSets: targetSets,
-        restTimerSeconds: restTimerSeconds,
-      );
+    id: id,
+    routineDayId: routineDayId,
+    name: name,
+    targetMuscle: targetMuscle,
+    targetWeight: targetWeight,
+    targetReps: targetReps,
+    targetSets: targetSets,
+    restTimerSeconds: restTimerSeconds,
+  );
 }

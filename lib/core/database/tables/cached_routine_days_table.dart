@@ -12,8 +12,7 @@ class CachedRoutineDays extends Table {
   IntColumn get dayOfWeek => integer()();
   TextColumn get name => text()();
   IntColumn get targetSetsCount => integer().withDefault(const Constant(0))();
-  TextColumn get status =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
 
   /// Epoch ms (UTC) del último write desde remote. Usado para invalidar / TTL.
   IntColumn get fetchedAt => integer()();

@@ -5,5 +5,6 @@
 /// El consumidor (`LocalDatabase.open`) importa solo desde acá; nunca
 /// referencia las dos impls directamente.
 library;
+
 export 'open_connection_io.dart'
     if (dart.library.js_interop) 'open_connection_web.dart';

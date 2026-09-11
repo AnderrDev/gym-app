@@ -17,12 +17,15 @@ class WorkoutSummaryHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isStrictlyCompleted ? context.colors.success : context.colors.primary;
+    final color = isStrictlyCompleted
+        ? context.colors.success
+        : context.colors.primary;
     final icon = isStrictlyCompleted
         ? Icons.check_circle_rounded
         : Icons.pending_actions_rounded;
-    final title =
-        isStrictlyCompleted ? '¡Rutina completada!' : 'Sesión finalizada';
+    final title = isStrictlyCompleted
+        ? '¡Rutina completada!'
+        : 'Sesión finalizada';
     final subtitle = isStrictlyCompleted
         ? 'Cumpliste todo el volumen programado'
         : 'Faltan $missingSets series para el objetivo completo';

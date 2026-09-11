@@ -33,9 +33,9 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context
-          .read<ExerciseDetailBloc>()
-          .add(LoadExerciseDetail(widget.exerciseId));
+      context.read<ExerciseDetailBloc>().add(
+        LoadExerciseDetail(widget.exerciseId),
+      );
     });
   }
 
@@ -73,9 +73,9 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
     if (state.status == ExerciseDetailStatus.failure) {
       return _ErrorView(
         message: state.errorMessage ?? 'Error',
-        onRetry: () => context
-            .read<ExerciseDetailBloc>()
-            .add(LoadExerciseDetail(widget.exerciseId)),
+        onRetry: () => context.read<ExerciseDetailBloc>().add(
+          LoadExerciseDetail(widget.exerciseId),
+        ),
       );
     }
     final detail = state.detail;
@@ -162,11 +162,7 @@ class _Content extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.icon,
-    required this.label,
-    this.accent,
-  });
+  const _SectionHeader({required this.icon, required this.label, this.accent});
 
   final IconData icon;
   final String label;

@@ -44,12 +44,11 @@ Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
     repository.getSessionSetLogs(session.id),
   ]);
 
-  final exercises = (results[0] as Either<Failure, List<Exercise>>)
-      .getOrElse((_) => const []);
-  final recentSessions =
-      (results[1] as Either<Failure, List<WorkoutSession>>).getOrElse(
+  final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse(
     (_) => const [],
   );
+  final recentSessions = (results[1] as Either<Failure, List<WorkoutSession>>)
+      .getOrElse((_) => const []);
   final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse(
     (_) => const [],
   );

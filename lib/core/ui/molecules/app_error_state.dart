@@ -34,7 +34,9 @@ class AppErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(color: context.colors.error),
+              style: textTheme.bodyMedium?.copyWith(
+                color: context.colors.error,
+              ),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: Spacing.lg),

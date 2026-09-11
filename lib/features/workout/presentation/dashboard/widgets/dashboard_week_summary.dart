@@ -29,7 +29,9 @@ class DashboardWeekSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final planned = days.where((d) => d.status != WorkoutDayStatus.rest).toList();
+    final planned = days
+        .where((d) => d.status != WorkoutDayStatus.rest)
+        .toList();
     final completed = planned
         .where(
           (d) =>
@@ -41,15 +43,17 @@ class DashboardWeekSummary extends StatelessWidget {
         .where((d) => d.status == WorkoutDayStatus.inProgress)
         .length;
     final remaining = planned.length - completed - inProgress;
-    final totalSetsPlanned =
-        planned.fold<int>(0, (sum, d) => sum + d.targetSetsCount);
+    final totalSetsPlanned = planned.fold<int>(
+      0,
+      (sum, d) => sum + d.targetSetsCount,
+    );
     final ratio = planned.isEmpty ? 0.0 : completed / planned.length;
 
     final accent = ratio >= 1.0
         ? context.colors.success
         : ratio >= 0.5
-            ? context.colors.primary
-            : context.colors.warning;
+        ? context.colors.primary
+        : context.colors.warning;
 
     // Próximo día con workout pendiente (hoy o futuro dentro de la semana).
     final next = _findNextWorkout();
@@ -59,7 +63,9 @@ class DashboardWeekSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,10 +77,10 @@ class DashboardWeekSummary extends StatelessWidget {
               Text(
                 'RESUMEN DE LA SEMANA',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: context.colors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                    ),
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
               ),
             ],
           ),
@@ -115,8 +121,8 @@ class DashboardWeekSummary extends StatelessWidget {
           Text(
             _statusMessage(completed, planned.length, inProgress),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.colors.textSecondary,
-                ),
+              color: context.colors.textSecondary,
+            ),
           ),
           if (next != null && onTapNext != null) ...[
             const SizedBox(height: Spacing.md),
@@ -142,12 +148,8 @@ class DashboardWeekSummary extends StatelessWidget {
       // dayOfWeek: 1..7 (Lun..Dom). Buscamos el día en la lista que matchea.
       final candidate = days.firstWhere(
         (d) => d.dayOfWeek == date.weekday,
-        orElse: () => const RoutineDay(
-          id: '',
-          routineId: '',
-          dayOfWeek: 0,
-          name: '',
-        ),
+        orElse: () =>
+            const RoutineDay(id: '', routineId: '', dayOfWeek: 0, name: ''),
       );
       if (candidate.id.isEmpty) continue;
       if (candidate.status == WorkoutDayStatus.rest) continue;
@@ -155,8 +157,8 @@ class DashboardWeekSummary extends StatelessWidget {
       final label = dateOnly == todayDateOnly
           ? 'HOY'
           : dateOnly == todayDateOnly.add(const Duration(days: 1))
-              ? 'MAÑANA'
-              : _shortDayLabel(date);
+          ? 'MAÑANA'
+          : _shortDayLabel(date);
       return _NextWorkout(day: candidate, date: date, relativeLabel: label);
     }
     return null;
@@ -263,11 +265,7 @@ class _NextWorkoutButton extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: accent,
-              size: 22,
-            ),
+            Icon(Icons.chevron_right_rounded, color: accent, size: 22),
           ],
         ),
       ),

@@ -36,8 +36,9 @@ class AppRouter {
   /// re-evalúe `redirect`. Lo guardamos como campo para poder llamar
   /// `dispose()` desde el `StatefulWidget` que crea este `AppRouter` —
   /// antes se construía inline y nunca se cancelaba la suscripción.
-  late final GoRouterRefreshStream _refreshListenable =
-      GoRouterRefreshStream(authBloc.stream);
+  late final GoRouterRefreshStream _refreshListenable = GoRouterRefreshStream(
+    authBloc.stream,
+  );
 
   // Keys separadas para el root (auth pages) y para cada branch del shell:
   // así `StatefulShellRoute.indexedStack` preserva el stack de cada tab.
@@ -217,7 +218,9 @@ class AppRouter {
         path: AppRoutes.routineDay,
         builder: (context, state) {
           final args = state.extra;
-          if (args is! RoutineDayArgs) return _invalidArgs(AppRoutes.routineDay);
+          if (args is! RoutineDayArgs) {
+            return _invalidArgs(AppRoutes.routineDay);
+          }
           return TitledPage(
             title: args.routineDay.name,
             child: MultiBlocProvider(

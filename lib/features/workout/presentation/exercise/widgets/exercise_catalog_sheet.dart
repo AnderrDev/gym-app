@@ -37,12 +37,13 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
   final Set<String> _selectedIds = <String>{};
 
   List<String> get _categories {
-    final muscles = widget.catalog
-        .map((e) => e.muscleGroup)
-        .where((m) => m.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final muscles =
+        widget.catalog
+            .map((e) => e.muscleGroup)
+            .where((m) => m.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     return [_allCategory, ...muscles];
   }
 
@@ -167,15 +168,25 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.colors.surfaceHighlight, width: 0.5),
+          border: Border.all(
+            color: context.colors.surfaceHighlight,
+            width: 0.5,
+          ),
         ),
         child: TextField(
           onChanged: (v) => setState(() => _searchQuery = v),
           style: context.text.bodyLarge,
           decoration: InputDecoration(
-            icon: Icon(Icons.search_rounded, color: context.colors.textDisabled, size: 20),
+            icon: Icon(
+              Icons.search_rounded,
+              color: context.colors.textDisabled,
+              size: 20,
+            ),
             hintText: 'Press banca, sentadilla...',
-            hintStyle: TextStyle(color: context.colors.textDisabled, fontSize: 14),
+            hintStyle: TextStyle(
+              color: context.colors.textDisabled,
+              fontSize: 14,
+            ),
             border: InputBorder.none,
           ),
         ),
@@ -208,7 +219,9 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
               backgroundColor: context.colors.surface,
               selectedColor: context.colors.primary,
               labelStyle: TextStyle(
-                color: isSelected ? context.colors.onPrimary : context.colors.textSecondary,
+                color: isSelected
+                    ? context.colors.onPrimary
+                    : context.colors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               shape: RoundedRectangleBorder(
@@ -233,7 +246,11 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 48, color: context.colors.textDisabled),
+          Icon(
+            Icons.search_off_rounded,
+            size: 48,
+            color: context.colors.textDisabled,
+          ),
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty
@@ -259,7 +276,10 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
       decoration: BoxDecoration(
         color: context.colors.background,
         boxShadow: [
-          BoxShadow(color: context.colors.overlay.withValues(alpha: 0.2), blurRadius: 10),
+          BoxShadow(
+            color: context.colors.overlay.withValues(alpha: 0.2),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: ElevatedButton(
@@ -280,7 +300,9 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
               ? 'Añadir ${_selectedIds.length} ejercicios'
               : 'Selecciona ejercicios',
           style: TextStyle(
-            color: hasSelection ? context.colors.onPrimary : context.colors.textDisabled,
+            color: hasSelection
+                ? context.colors.onPrimary
+                : context.colors.textDisabled,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),

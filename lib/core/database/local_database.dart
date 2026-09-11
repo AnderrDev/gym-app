@@ -64,9 +64,9 @@ class LocalDatabase extends _$LocalDatabase {
   /// devuelve como [`DateTime`] (UTC). Lanza [`StateError`] si la fila no
   /// existe — eso indicaría que `onCreate` no corrió o que la BD está corrupta.
   Future<DateTime> ping() async {
-    final row =
-        await (select(appMeta)..where((t) => t.key.equals('schema_initialized_at')))
-            .getSingleOrNull();
+    final row = await (select(
+      appMeta,
+    )..where((t) => t.key.equals('schema_initialized_at'))).getSingleOrNull();
 
     if (row == null) {
       throw StateError(

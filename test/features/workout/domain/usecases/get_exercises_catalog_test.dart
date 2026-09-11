@@ -30,7 +30,11 @@ void main() {
       ),
     ).thenAnswer((_) async => const Right(tItems));
 
-    final result = await usecase(muscleGroup: 'Pecho', search: 'pre', limit: 50);
+    final result = await usecase(
+      muscleGroup: 'Pecho',
+      search: 'pre',
+      limit: 50,
+    );
 
     expect(result.isRight(), isTrue);
     verify(

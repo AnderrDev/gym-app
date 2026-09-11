@@ -34,7 +34,10 @@ class RoutineStatsPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
-          title: Text('Historial: $routineName', style: context.text.headlineMedium),
+          title: Text(
+            'Historial: $routineName',
+            style: context.text.headlineMedium,
+          ),
         ),
         body: BlocConsumer<RoutineStatsBloc, RoutineStatsState>(
           listenWhen: (previous, current) => current is RoutineStatsError,

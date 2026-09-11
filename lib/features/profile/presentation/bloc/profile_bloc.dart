@@ -66,10 +66,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ProfileBloc({required this.repository}) : super(const ProfileState()) {
     on<UpdateFullNameRequested>(_onUpdateFullName);
     on<AcknowledgeProfileFeedback>(
-      (_, emit) => emit(state.copyWith(
-        status: ProfileSubmissionStatus.idle,
-        clearError: true,
-      )),
+      (_, emit) => emit(
+        state.copyWith(status: ProfileSubmissionStatus.idle, clearError: true),
+      ),
     );
   }
 
@@ -79,23 +78,29 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     UpdateFullNameRequested event,
     Emitter<ProfileState> emit,
   ) async {
-    emit(state.copyWith(
-      status: ProfileSubmissionStatus.submitting,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: ProfileSubmissionStatus.submitting,
+        clearError: true,
+      ),
+    );
     final result = await repository.updateFullName(
       userId: event.userId,
       fullName: event.fullName.trim(),
     );
     result.fold(
-      (failure) => emit(state.copyWith(
-        status: ProfileSubmissionStatus.failure,
-        errorMessage: failure.message,
-      )),
-      (savedName) => emit(state.copyWith(
-        status: ProfileSubmissionStatus.success,
-        lastSavedFullName: savedName ?? event.fullName.trim(),
-      )),
+      (failure) => emit(
+        state.copyWith(
+          status: ProfileSubmissionStatus.failure,
+          errorMessage: failure.message,
+        ),
+      ),
+      (savedName) => emit(
+        state.copyWith(
+          status: ProfileSubmissionStatus.success,
+          lastSavedFullName: savedName ?? event.fullName.trim(),
+        ),
+      ),
     );
   }
 }

@@ -19,10 +19,8 @@ import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress
 /// primera rutina asignada del usuario como proxy del "weekly snapshot".
 /// Si el usuario tiene 0 rutinas no hay insights que mostrar.
 class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
-  ProgressBloc({
-    required this.getAssignedRoutines,
-    required this.repository,
-  }) : super(const ProgressInitial()) {
+  ProgressBloc({required this.getAssignedRoutines, required this.repository})
+    : super(const ProgressInitial()) {
     on<LoadProgress>(_onLoad);
     on<RefreshProgress>(_onRefresh);
   }

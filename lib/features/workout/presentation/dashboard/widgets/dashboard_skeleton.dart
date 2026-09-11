@@ -97,7 +97,9 @@ class _WeekSummarySkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.4),
+        ),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -89,10 +89,12 @@ void main() {
     when(() => conn.isOnline).thenReturn(true);
 
     when(() => local.cacheRoutineDays(any(), any())).thenAnswer((_) async {});
-    when(() => local.cacheExercisesForDay(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => local.cacheLastPerformances(any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => local.cacheExercisesForDay(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => local.cacheLastPerformances(any(), any()),
+    ).thenAnswer((_) async {});
 
     repo = WorkoutRepositoryImpl(
       remoteDataSource: remote,
@@ -106,10 +108,12 @@ void main() {
 
   group('getRoutineDays SWR', () {
     test('online + remote ok → devuelve fresh y escribe cache', () async {
-      when(() => remote.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const [tDayModel]);
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => remote.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const [tDayModel]);
+      when(
+        () => local.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getRoutineDays(tRoutineId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -126,10 +130,12 @@ void main() {
         dayOfWeek: 1,
         name: 'Stale',
       );
-      when(() => remote.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const [tDayModel]);
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const [cached]);
+      when(
+        () => remote.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const [tDayModel]);
+      when(
+        () => local.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const [cached]);
 
       final result = await repo.getRoutineDays(tRoutineId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -138,10 +144,12 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → devuelve cache', () async {
-      when(() => remote.getRoutineDays(tRoutineId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const [tDay]);
+      when(
+        () => remote.getRoutineDays(tRoutineId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const [tDay]);
 
       final result = await repo.getRoutineDays(tRoutineId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -150,10 +158,12 @@ void main() {
     });
 
     test('online + remote falla + cache vacío → NetworkFailure', () async {
-      when(() => remote.getRoutineDays(tRoutineId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => remote.getRoutineDays(tRoutineId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getRoutineDays(tRoutineId);
       result.fold(
@@ -162,23 +172,27 @@ void main() {
       );
     });
 
-    test('offline + cache con datos → devuelve cache (sin llamar remote)',
-        () async {
-      when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const [tDay]);
+    test(
+      'offline + cache con datos → devuelve cache (sin llamar remote)',
+      () async {
+        when(() => conn.isOnline).thenReturn(false);
+        when(
+          () => local.getRoutineDays(tRoutineId),
+        ).thenAnswer((_) async => const [tDay]);
 
-      final result = await repo.getRoutineDays(tRoutineId);
-      result.fold((l) => fail('expected Right'), (r) {
-        expect(r.single.id, tDayId);
-      });
-      verifyNever(() => remote.getRoutineDays(any()));
-    });
+        final result = await repo.getRoutineDays(tRoutineId);
+        result.fold((l) => fail('expected Right'), (r) {
+          expect(r.single.id, tDayId);
+        });
+        verifyNever(() => remote.getRoutineDays(any()));
+      },
+    );
 
     test('offline + cache vacío → NetworkFailure', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getRoutineDays(tRoutineId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => local.getRoutineDays(tRoutineId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getRoutineDays(tRoutineId);
       result.fold(
@@ -192,10 +206,12 @@ void main() {
 
   group('getExercisesForDay SWR', () {
     test('online + remote ok → fresh + escribe cache', () async {
-      when(() => remote.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const [tExerciseModel]);
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => remote.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const [tExerciseModel]);
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -213,10 +229,12 @@ void main() {
         targetWeight: 0,
         targetReps: 0,
       );
-      when(() => remote.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const [tExerciseModel]);
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const [stale]);
+      when(
+        () => remote.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const [tExerciseModel]);
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const [stale]);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -225,10 +243,12 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → cache', () async {
-      when(() => remote.getExercisesForDay(tDayId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const [tExercise]);
+      when(
+        () => remote.getExercisesForDay(tDayId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const [tExercise]);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -237,10 +257,12 @@ void main() {
     });
 
     test('online + remote falla + cache vacío → NetworkFailure', () async {
-      when(() => remote.getExercisesForDay(tDayId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => remote.getExercisesForDay(tDayId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold(
@@ -251,8 +273,9 @@ void main() {
 
     test('offline + cache con datos → cache, sin tocar remote', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const [tExercise]);
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const [tExercise]);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -263,8 +286,9 @@ void main() {
 
     test('offline + cache vacío → NetworkFailure', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getExercisesForDay(tDayId))
-          .thenAnswer((_) async => const []);
+      when(
+        () => local.getExercisesForDay(tDayId),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getExercisesForDay(tDayId);
       result.fold(
@@ -278,10 +302,12 @@ void main() {
 
   group('getLastExercisePerformances SWR', () {
     test('online + remote ok → fresh + escribe cache', () async {
-      when(() => remote.getLastExercisePerformances(['e1']))
-          .thenAnswer((_) async => {'e1': tSetLogModel});
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => const {'e1': null});
+      when(
+        () => remote.getLastExercisePerformances(['e1']),
+      ).thenAnswer((_) async => {'e1': tSetLogModel});
+      when(
+        () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+      ).thenAnswer((_) async => const {'e1': null});
 
       final result = await repo.getLastExercisePerformances(['e1']);
       result.fold((l) => fail('expected Right'), (r) {
@@ -291,10 +317,12 @@ void main() {
     });
 
     test('online + remote ok + cache stale → fresh gana', () async {
-      when(() => remote.getLastExercisePerformances(['e1']))
-          .thenAnswer((_) async => {'e1': tSetLogModel});
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => {'e1': tSetLogCached});
+      when(
+        () => remote.getLastExercisePerformances(['e1']),
+      ).thenAnswer((_) async => {'e1': tSetLogModel});
+      when(
+        () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+      ).thenAnswer((_) async => {'e1': tSetLogCached});
 
       final result = await repo.getLastExercisePerformances(['e1']);
       result.fold((l) => fail('expected Right'), (r) {
@@ -304,10 +332,12 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → cache', () async {
-      when(() => remote.getLastExercisePerformances(['e1']))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => {'e1': tSetLogCached});
+      when(
+        () => remote.getLastExercisePerformances(['e1']),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+      ).thenAnswer((_) async => {'e1': tSetLogCached});
 
       final result = await repo.getLastExercisePerformances(['e1']);
       result.fold((l) => fail('expected Right'), (r) {
@@ -315,24 +345,29 @@ void main() {
       });
     });
 
-    test('online + remote falla + cache vacío (todo null) → NetworkFailure',
-        () async {
-      when(() => remote.getLastExercisePerformances(['e1']))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => const {'e1': null});
+    test(
+      'online + remote falla + cache vacío (todo null) → NetworkFailure',
+      () async {
+        when(
+          () => remote.getLastExercisePerformances(['e1']),
+        ).thenThrow(const SocketException('down'));
+        when(
+          () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+        ).thenAnswer((_) async => const {'e1': null});
 
-      final result = await repo.getLastExercisePerformances(['e1']);
-      result.fold(
-        (f) => expect(f, isA<NetworkFailure>()),
-        (_) => fail('expected Left'),
-      );
-    });
+        final result = await repo.getLastExercisePerformances(['e1']);
+        result.fold(
+          (f) => expect(f, isA<NetworkFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
 
     test('offline + cache con datos → cache, sin tocar remote', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => {'e1': tSetLogCached});
+      when(
+        () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+      ).thenAnswer((_) async => {'e1': tSetLogCached});
 
       final result = await repo.getLastExercisePerformances(['e1']);
       result.fold((l) => fail('expected Right'), (r) {
@@ -343,8 +378,9 @@ void main() {
 
     test('offline + cache todo null → NetworkFailure', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getLastPerformancesForExercises(tUserId, ['e1']))
-          .thenAnswer((_) async => const {'e1': null});
+      when(
+        () => local.getLastPerformancesForExercises(tUserId, ['e1']),
+      ).thenAnswer((_) async => const {'e1': null});
 
       final result = await repo.getLastExercisePerformances(['e1']);
       result.fold(
@@ -357,8 +393,7 @@ void main() {
       final result = await repo.getLastExercisePerformances(const []);
       result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
       verifyNever(() => remote.getLastExercisePerformances(any()));
-      verifyNever(() =>
-          local.getLastPerformancesForExercises(any(), any()));
+      verifyNever(() => local.getLastPerformancesForExercises(any(), any()));
     });
   });
 }

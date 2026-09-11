@@ -81,9 +81,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
-    context
-        .read<DashboardBloc>()
-        .add(LoadAssignedRoutines(authState.user.id));
+    context.read<DashboardBloc>().add(LoadAssignedRoutines(authState.user.id));
   }
 
   void _handleWorkoutFinished(String userId) {
@@ -95,11 +93,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final weekStart = dashboardState.weekStart;
     if (routine != null && weekStart != null) {
       context.read<DashboardBloc>().add(
-        LoadWeeklyPlan(
-          userId: userId,
-          routine: routine,
-          weekStart: weekStart,
-        ),
+        LoadWeeklyPlan(userId: userId, routine: routine, weekStart: weekStart),
       );
     }
     AppSnackBar.success(context, '¡Entrenamiento completado!');

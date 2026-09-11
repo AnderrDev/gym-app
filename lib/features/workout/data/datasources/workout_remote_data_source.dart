@@ -26,17 +26,17 @@ export 'package:gym_flutter/features/workout/data/datasources/workout_remote_dat
 /// archivo bajo control de complejidad.
 class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   WorkoutRemoteDataSourceImpl({required SupabaseClient client})
-      : _sessions = WorkoutSessionRemoteDataSource(client: client),
-        _routines = RoutineManagementRemoteDataSource(client: client),
-        _catalog = ExerciseCatalogRemoteDataSource(client: client);
+    : _sessions = WorkoutSessionRemoteDataSource(client: client),
+      _routines = RoutineManagementRemoteDataSource(client: client),
+      _catalog = ExerciseCatalogRemoteDataSource(client: client);
 
   WorkoutRemoteDataSourceImpl.fromParts({
     required WorkoutSessionRemoteDataSource sessions,
     required RoutineManagementRemoteDataSource routines,
     required ExerciseCatalogRemoteDataSource catalog,
-  })  : _sessions = sessions,
-        _routines = routines,
-        _catalog = catalog;
+  }) : _sessions = sessions,
+       _routines = routines,
+       _catalog = catalog;
 
   final WorkoutSessionRemoteDataSource _sessions;
   final RoutineManagementRemoteDataSource _routines;
@@ -95,22 +95,20 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     required int targetReps,
     required double targetWeight,
     int restSeconds = 90,
-  }) =>
-      _routines.addExerciseToDay(
-        dayId,
-        exerciseId,
-        targetSets: targetSets,
-        targetReps: targetReps,
-        targetWeight: targetWeight,
-        restSeconds: restSeconds,
-      );
+  }) => _routines.addExerciseToDay(
+    dayId,
+    exerciseId,
+    targetSets: targetSets,
+    targetReps: targetReps,
+    targetWeight: targetWeight,
+    restSeconds: restSeconds,
+  );
 
   @override
   Future<void> addExercisesToDay(
     String dayId,
     List<AddExerciseToDayItem> items,
-  ) =>
-      _routines.addExercisesToDay(dayId, items);
+  ) => _routines.addExercisesToDay(dayId, items);
 
   @override
   Future<void> removeExerciseFromDay(String dayId, String exerciseId) =>
@@ -128,19 +126,20 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     int targetReps, {
     int? targetSets,
     int? restSeconds,
-  }) =>
-      _routines.updateExerciseTarget(
-        routineDayId,
-        exerciseId,
-        targetWeight,
-        targetReps,
-        targetSets: targetSets,
-        restSeconds: restSeconds,
-      );
+  }) => _routines.updateExerciseTarget(
+    routineDayId,
+    exerciseId,
+    targetWeight,
+    targetReps,
+    targetSets: targetSets,
+    restSeconds: restSeconds,
+  );
 
   @override
-  Future<List<RoutineModel>> getAllRoutines({int limit = 100, int offset = 0}) =>
-      _routines.getAllRoutines(limit: limit, offset: offset);
+  Future<List<RoutineModel>> getAllRoutines({
+    int limit = 100,
+    int offset = 0,
+  }) => _routines.getAllRoutines(limit: limit, offset: offset);
 
   // ─── Sessions / set_logs / edge functions ─────────────────────────────
   @override
@@ -148,8 +147,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     String userId,
     DateTime weekStart,
     DateTime weekEnd,
-  ) =>
-      _sessions.getWeekSessions(userId, weekStart, weekEnd);
+  ) => _sessions.getWeekSessions(userId, weekStart, weekEnd);
 
   @override
   Future<WorkoutSessionModel> startWorkoutForDay(
@@ -157,21 +155,14 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     String routineDayId,
     DateTime sessionDate, {
     String? id,
-  }) =>
-      _sessions.startWorkoutForDay(
-        userId,
-        routineDayId,
-        sessionDate,
-        id: id,
-      );
+  }) => _sessions.startWorkoutForDay(userId, routineDayId, sessionDate, id: id);
 
   @override
   Future<WorkoutSessionModel?> getExistingSession(
     String userId,
     String routineDayId,
     DateTime sessionDate,
-  ) =>
-      _sessions.getExistingSession(userId, routineDayId, sessionDate);
+  ) => _sessions.getExistingSession(userId, routineDayId, sessionDate);
 
   @override
   Future<void> saveSetLog(SetLogModel setLog) => _sessions.saveSetLog(setLog);
@@ -181,12 +172,11 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     required String sessionId,
     required String exerciseId,
     required int setIndex,
-  }) =>
-      _sessions.deleteSetLog(
-        sessionId: sessionId,
-        exerciseId: exerciseId,
-        setIndex: setIndex,
-      );
+  }) => _sessions.deleteSetLog(
+    sessionId: sessionId,
+    exerciseId: exerciseId,
+    setIndex: setIndex,
+  );
 
   @override
   Future<WorkoutSessionModel?> getActiveSessionForUser(String userId) =>
@@ -199,8 +189,7 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   @override
   Future<Map<String, List<SetLogModel>>> getSetLogsForSessions(
     List<String> sessionIds,
-  ) =>
-      _sessions.getSetLogsForSessions(sessionIds);
+  ) => _sessions.getSetLogsForSessions(sessionIds);
 
   @override
   Future<List<WorkoutSessionModel>> getRecentSessionsForDay(
@@ -208,44 +197,39 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     String routineDayId,
     DateTime beforeDate, {
     int limit = 3,
-  }) =>
-      _sessions.getRecentSessionsForDay(
-        userId,
-        routineDayId,
-        beforeDate,
-        limit: limit,
-      );
+  }) => _sessions.getRecentSessionsForDay(
+    userId,
+    routineDayId,
+    beforeDate,
+    limit: limit,
+  );
 
   @override
   Future<void> finishWorkoutSession(
     String sessionId, {
     List<CoachingAnalysis>? coachingAnalysis,
-  }) =>
-      _sessions.finishWorkoutSession(
-        sessionId,
-        coachingAnalysis: coachingAnalysis,
-      );
+  }) => _sessions.finishWorkoutSession(
+    sessionId,
+    coachingAnalysis: coachingAnalysis,
+  );
 
   @override
   Future<WeeklyInsights> getWeeklyInsights({
     required String routineId,
     required DateTime weekStart,
-  }) =>
-      _sessions.getWeeklyInsights(routineId: routineId, weekStart: weekStart);
+  }) => _sessions.getWeeklyInsights(routineId: routineId, weekStart: weekStart);
 
   @override
   Future<List<Map<String, dynamic>>> getExerciseLogsHistory(
     String userId,
     String exerciseId,
-  ) =>
-      _sessions.getExerciseLogsHistory(userId, exerciseId);
+  ) => _sessions.getExerciseLogsHistory(userId, exerciseId);
 
   @override
   Future<List<Map<String, dynamic>>> getRoutineStats(
     String userId,
     String routineId,
-  ) =>
-      _sessions.getRoutineStats(userId, routineId);
+  ) => _sessions.getRoutineStats(userId, routineId);
 
   // ─── Exercise catalog + performances ──────────────────────────────────
   @override
@@ -255,20 +239,18 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   @override
   Future<Map<String, SetLogModel?>> getLastExercisePerformances(
     List<String> exerciseIds,
-  ) =>
-      _catalog.getLastExercisePerformances(exerciseIds);
+  ) => _catalog.getLastExercisePerformances(exerciseIds);
 
   @override
   Future<List<ExerciseCatalogItem>> getExercisesCatalog({
     String? muscleGroup,
     String? search,
     int limit = 200,
-  }) =>
-      _catalog.getExercisesCatalog(
-        muscleGroup: muscleGroup,
-        search: search,
-        limit: limit,
-      );
+  }) => _catalog.getExercisesCatalog(
+    muscleGroup: muscleGroup,
+    search: search,
+    limit: limit,
+  );
 
   @override
   Future<ExerciseDetail> getExerciseDetail(String exerciseId) =>

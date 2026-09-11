@@ -59,7 +59,9 @@ class RestTimerButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: value.isResting ? progress : 0,
                   strokeWidth: 3,
-                  backgroundColor: context.colors.primary.withValues(alpha: 0.1),
+                  backgroundColor: context.colors.primary.withValues(
+                    alpha: 0.1,
+                  ),
                   color: context.colors.primary,
                 ),
               ),
@@ -76,7 +78,9 @@ class RestTimerButton extends StatelessWidget {
                   value.isResting
                       ? Icons.timer_rounded
                       : Icons.play_arrow_rounded,
-                  color: value.isResting ? context.colors.onPrimary : context.colors.textPrimary,
+                  color: value.isResting
+                      ? context.colors.onPrimary
+                      : context.colors.textPrimary,
                   size: 20,
                 ),
               ),

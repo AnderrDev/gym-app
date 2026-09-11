@@ -18,8 +18,7 @@ class EdgeFunctionInvoker {
   Future<String> _requireAccessToken() async {
     final current = client.auth.currentSession?.accessToken;
     if (current != null && current.isNotEmpty) return current;
-    final refreshed =
-        (await client.auth.refreshSession()).session?.accessToken;
+    final refreshed = (await client.auth.refreshSession()).session?.accessToken;
     if (refreshed != null && refreshed.isNotEmpty) return refreshed;
     throw const WorkoutFunctionException(
       code: 'UNAUTHORIZED',

@@ -24,11 +24,7 @@ class SyncStatusState extends Equatable {
   final int pending;
   final bool draining;
 
-  SyncStatusState copyWith({
-    bool? isOnline,
-    int? pending,
-    bool? draining,
-  }) {
+  SyncStatusState copyWith({bool? isOnline, int? pending, bool? draining}) {
     return SyncStatusState(
       isOnline: isOnline ?? this.isOnline,
       pending: pending ?? this.pending,
@@ -67,26 +63,18 @@ class SyncStatusBloc extends Bloc<_SyncStatusEvent, SyncStatusState> {
     required ConnectivityService connectivity,
     required OutboxRepository outbox,
     required SyncWorker syncWorker,
-  })  : _connectivity = connectivity,
-        _outbox = outbox,
-        _syncWorker = syncWorker,
-        super(SyncStatusState(isOnline: connectivity.isOnline)) {
-    on<_OnlineChanged>(
-      (e, emit) => emit(state.copyWith(isOnline: e.value)),
-    );
-    on<_PendingChanged>(
-      (e, emit) => emit(state.copyWith(pending: e.value)),
-    );
-    on<_DrainingChanged>(
-      (e, emit) => emit(state.copyWith(draining: e.value)),
-    );
+  }) : _connectivity = connectivity,
+       _outbox = outbox,
+       _syncWorker = syncWorker,
+       super(SyncStatusState(isOnline: connectivity.isOnline)) {
+    on<_OnlineChanged>((e, emit) => emit(state.copyWith(isOnline: e.value)));
+    on<_PendingChanged>((e, emit) => emit(state.copyWith(pending: e.value)));
+    on<_DrainingChanged>((e, emit) => emit(state.copyWith(draining: e.value)));
 
-    _connSub = _connectivity.isOnline$.listen(
-      (v) => add(_OnlineChanged(v)),
-    );
+    _connSub = _connectivity.isOnline$.listen((v) => add(_OnlineChanged(v)));
     _pendingSub = _outbox.watchPendingCount().listen(
-          (v) => add(_PendingChanged(v)),
-        );
+      (v) => add(_PendingChanged(v)),
+    );
     _eventsSub = _syncWorker.events$.listen((ev) {
       if (ev is SyncDrainStarted) {
         add(const _DrainingChanged(true));

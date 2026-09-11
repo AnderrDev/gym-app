@@ -54,10 +54,7 @@ abstract class WorkoutLocalDataSource {
 
   /// Persiste un set log local. La PK compuesta `(sessionId, exerciseId,
   /// setIndex)` garantiza que un mismo set se actualice y no duplique.
-  Future<void> upsertCachedSetLog(
-    SetLog log, {
-    String syncStatus = 'pending',
-  });
+  Future<void> upsertCachedSetLog(SetLog log, {String syncStatus = 'pending'});
 
   /// Marca una sesión como completada (escribe `completedAt`).
   Future<void> markSessionCompleted(String id, DateTime completedAt);

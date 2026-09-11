@@ -36,7 +36,9 @@ class AppColors {
 
   // — Structural
   static const Color divider = Color(0xFFDCE3EE);
-  static const Color overlay = Color(0x99000000); // 60% black scrim (más liviano en light)
+  static const Color overlay = Color(
+    0x99000000,
+  ); // 60% black scrim (más liviano en light)
 
   // — Glass surfaces (auth pages, hero cards) — tinte oscuro sobre claro
   static const Color glassFill = Color(0x0F000000); // ~6% black

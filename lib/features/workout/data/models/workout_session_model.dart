@@ -62,8 +62,7 @@ class WorkoutSessionModel {
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,
-      completedSetsCount:
-          (json['total_completed_sets'] as num?)?.toInt() ?? 0,
+      completedSetsCount: (json['total_completed_sets'] as num?)?.toInt() ?? 0,
       totalTargetSets: (json['total_target_sets'] as num?)?.toInt() ?? 0,
       coachingAnalysis: coaching,
     );
@@ -84,13 +83,13 @@ class WorkoutSessionModel {
   }
 
   WorkoutSession toEntity() => WorkoutSession(
-        id: id,
-        userId: userId,
-        routineDayId: routineDayId,
-        sessionDate: sessionDate,
-        completedAt: completedAt,
-        completedSetsCount: completedSetsCount,
-        totalTargetSets: totalTargetSets,
-        coachingAnalysis: coachingAnalysis,
-      );
+    id: id,
+    userId: userId,
+    routineDayId: routineDayId,
+    sessionDate: sessionDate,
+    completedAt: completedAt,
+    completedSetsCount: completedSetsCount,
+    totalTargetSets: totalTargetSets,
+    coachingAnalysis: coachingAnalysis,
+  );
 }

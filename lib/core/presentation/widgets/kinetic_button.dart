@@ -91,15 +91,17 @@ class _KineticButtonState extends State<KineticButton>
             ],
           ),
           child: widget.isLoading
-              ? Center(
-                  child: AppSpinner.small(color: context.colors.onPrimary),
-                )
+              ? Center(child: AppSpinner.small(color: context.colors.onPrimary))
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (widget.icon != null) ...[
-                      Icon(widget.icon, color: context.colors.onPrimary, size: 20),
+                      Icon(
+                        widget.icon,
+                        color: context.colors.onPrimary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                     ],
                     Text(

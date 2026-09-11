@@ -36,9 +36,7 @@ RoutineDayPhase resolveRoutineDayPhase({
     case RoutineDayStatus.loading:
       return const RoutineDayLoadingPhase();
     case RoutineDayStatus.failure:
-      return RoutineDayErrorPhase(
-        routine.errorMessage ?? 'Error desconocido',
-      );
+      return RoutineDayErrorPhase(routine.errorMessage ?? 'Error desconocido');
     case RoutineDayStatus.ready:
       return RoutineDayPrestartPhase(
         exercises: routine.exercises,

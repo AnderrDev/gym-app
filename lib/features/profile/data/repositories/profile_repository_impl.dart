@@ -14,6 +14,5 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<Either<Failure, String?>> updateFullName({
     required String userId,
     required String fullName,
-  }) =>
-      guard(() => remote.updateFullName(userId, fullName));
+  }) => guard(() => remote.updateFullName(userId, fullName));
 }

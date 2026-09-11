@@ -13,7 +13,11 @@ class RoutineListErrorCenter extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline_rounded, color: context.colors.error, size: 48),
+          Icon(
+            Icons.error_outline_rounded,
+            color: context.colors.error,
+            size: 48,
+          ),
           const SizedBox(height: 12),
           Text(message, style: context.text.bodyMedium),
         ],

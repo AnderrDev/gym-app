@@ -149,16 +149,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSubmitting());
     }
     final result = await signOut();
-    await result.fold(
-      (failure) async => emit(AuthError(failure.message)),
-      (_) async {
-        // Limpiamos la sesión activa local antes de emitir Unauthenticated:
-        // evita que `ActiveSessionWatcherBloc` reanude un entrenamiento del
-        // usuario anterior al volver a entrar.
-        await activeSessionService?.clear();
-        emit(Unauthenticated());
-      },
-    );
+    await result.fold((failure) async => emit(AuthError(failure.message)), (
+      _,
+    ) async {
+      // Limpiamos la sesión activa local antes de emitir Unauthenticated:
+      // evita que `ActiveSessionWatcherBloc` reanude un entrenamiento del
+      // usuario anterior al volver a entrar.
+      await activeSessionService?.clear();
+      emit(Unauthenticated());
+    });
   }
 
   @override

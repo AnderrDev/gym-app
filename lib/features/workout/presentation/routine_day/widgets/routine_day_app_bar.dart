@@ -63,9 +63,7 @@ class RoutineDayAppBar extends StatelessWidget {
           routineDay.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: context.text.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(54),
@@ -182,12 +180,7 @@ class _ActiveBottomBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: context.colors.divider)),
       ),
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
-        0,
-        Spacing.sm,
-        Spacing.sm,
-      ),
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.sm, Spacing.sm),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

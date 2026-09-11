@@ -20,10 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Stream<bool> get authStateChanges => remoteDataSource.authStateChanges;
 
   @override
-  Future<Either<Failure, User>> signInWithEmail(
-    String email,
-    String password,
-  ) {
+  Future<Either<Failure, User>> signInWithEmail(String email, String password) {
     return guard(() async {
       final remoteUser = await remoteDataSource.signInWithEmail(
         email,

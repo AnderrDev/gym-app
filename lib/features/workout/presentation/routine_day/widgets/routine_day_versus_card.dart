@@ -50,10 +50,7 @@ class RoutineDayVersusCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _SetsChip(
-                sets: exercise.targetSets,
-                reps: exercise.targetReps,
-              ),
+              _SetsChip(sets: exercise.targetSets, reps: exercise.targetReps),
             ],
           ),
           const SizedBox(height: Spacing.md),
@@ -104,7 +101,10 @@ class _SetsChip extends StatelessWidget {
 }
 
 class _WeightVersusBar extends StatelessWidget {
-  const _WeightVersusBar({required this.targetWeight, required this.prevWeight});
+  const _WeightVersusBar({
+    required this.targetWeight,
+    required this.prevWeight,
+  });
 
   final double targetWeight;
   final double? prevWeight;
@@ -119,9 +119,7 @@ class _WeightVersusBar extends StatelessWidget {
         ? (prevWeight! > targetWeight ? prevWeight! : targetWeight)
         : targetWeight;
     final targetRatio = (targetWeight / maxScale).clamp(0.0, 1.0);
-    final prevRatio = hasPrev
-        ? (prevWeight! / maxScale).clamp(0.0, 1.0)
-        : 0.0;
+    final prevRatio = hasPrev ? (prevWeight! / maxScale).clamp(0.0, 1.0) : 0.0;
 
     final delta = hasPrev ? targetWeight - prevWeight! : 0.0;
     final isUp = delta > 0;
@@ -129,8 +127,8 @@ class _WeightVersusBar extends StatelessWidget {
     final fillColor = !hasPrev
         ? context.colors.textDisabled
         : (isDown
-            ? context.colors.error
-            : (isUp ? context.colors.primary : context.colors.success));
+              ? context.colors.error
+              : (isUp ? context.colors.primary : context.colors.success));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

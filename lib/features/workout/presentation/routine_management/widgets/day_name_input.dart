@@ -44,8 +44,10 @@ class DayNameInput extends StatelessWidget {
             onChanged: onChanged,
             readOnly: readOnly,
             enabled: !readOnly,
-            style:
-                context.text.displayLarge?.copyWith(fontSize: 22, letterSpacing: -0.4),
+            style: context.text.displayLarge?.copyWith(
+              fontSize: 22,
+              letterSpacing: -0.4,
+            ),
             decoration: InputDecoration(
               hintText: 'Pull Day · Espalda/Bíceps',
               hintStyle: context.text.displayLarge?.copyWith(
@@ -60,7 +62,10 @@ class DayNameInput extends StatelessWidget {
                 borderSide: BorderSide(color: context.colors.divider),
               ),
               focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+                borderSide: BorderSide(
+                  color: context.colors.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),

@@ -49,8 +49,9 @@ class ProgressRoutineTile extends StatelessWidget {
                   children: [
                     Text(
                       routine.name,
-                      style: context.text.bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: context.text.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -99,8 +100,9 @@ class ProgressEmptyRoutines extends StatelessWidget {
           const SizedBox(height: Spacing.md),
           Text(
             'Sin rutinas asignadas',
-            style:
-                context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+            style: context.text.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: Spacing.xs),
           Text(

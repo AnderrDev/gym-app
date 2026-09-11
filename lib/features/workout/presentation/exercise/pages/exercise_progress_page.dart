@@ -25,10 +25,7 @@ class ExerciseProgressPage extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: colors.textPrimary,
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
           tooltip: 'Volver',
           onPressed: () => Navigator.of(context).maybePop(),
         ),

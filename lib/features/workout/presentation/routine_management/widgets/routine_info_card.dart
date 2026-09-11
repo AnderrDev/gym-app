@@ -96,8 +96,10 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                       readOnly: widget.readOnly,
                       enabled: !widget.readOnly,
                       onChanged: (_) => widget.onNameChanged(),
-                      style: context.text.displayLarge
-                          ?.copyWith(fontSize: 22, letterSpacing: -0.3),
+                      style: context.text.displayLarge?.copyWith(
+                        fontSize: 22,
+                        letterSpacing: -0.3,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Nombre de la rutina',
                         hintStyle: context.text.displayLarge?.copyWith(
@@ -106,8 +108,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                           letterSpacing: -0.3,
                         ),
                         isDense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 6),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 6),
                         border: InputBorder.none,
                       ),
                     ),

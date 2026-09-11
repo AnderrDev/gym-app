@@ -91,7 +91,9 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
     final score = coaching.performanceScore ?? 1.0;
     final isGreat = score >= 1.0;
 
-    final accentColor = isGreat ? context.colors.success : context.colors.warning;
+    final accentColor = isGreat
+        ? context.colors.success
+        : context.colors.warning;
 
     if (compact) {
       return Container(
@@ -176,7 +178,9 @@ class ExerciseCardLiveAdvice extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: context.colors.primary.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [

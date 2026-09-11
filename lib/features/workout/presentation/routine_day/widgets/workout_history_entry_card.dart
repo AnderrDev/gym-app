@@ -108,13 +108,12 @@ class _SetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = isTopSet ? context.colors.warning : context.colors.primary;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.lg,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 10),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5)),
+          bottom: BorderSide(
+            color: context.colors.divider.withValues(alpha: 0.5),
+          ),
         ),
       ),
       child: Row(

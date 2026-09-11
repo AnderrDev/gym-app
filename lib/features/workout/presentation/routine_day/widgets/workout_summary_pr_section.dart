@@ -57,14 +57,13 @@ class _PrRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 10),
       decoration: BoxDecoration(
         color: context.colors.warning.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: context.colors.warning.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: context.colors.warning.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [

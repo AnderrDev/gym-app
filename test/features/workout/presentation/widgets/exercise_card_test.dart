@@ -141,14 +141,8 @@ void main() {
       // Los inputs usan `TextInputType.none` por defecto (tap → chips,
       // sin teclado del sistema). Pero `enterText` simula entrada vía la
       // conexión de input directamente, así que funciona sin tocar ✎.
-      await tester.enterText(
-        find.byKey(const ValueKey('weight_e1_1')),
-        '65',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey('reps_e1_1')),
-        '12',
-      );
+      await tester.enterText(find.byKey(const ValueKey('weight_e1_1')), '65');
+      await tester.enterText(find.byKey(const ValueKey('reps_e1_1')), '12');
 
       await tester.tap(find.byKey(const ValueKey('save_e1_1')));
       await tester.pump(const Duration(milliseconds: 100));

@@ -29,8 +29,9 @@ class ExerciseHistorySessionItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                AppDateFormat.weekdayLongFull(session.sessionDate)
-                    .toUpperCase(),
+                AppDateFormat.weekdayLongFull(
+                  session.sessionDate,
+                ).toUpperCase(),
                 style: context.text.labelMedium?.copyWith(
                   fontSize: 10,
                   color: context.colors.primary,

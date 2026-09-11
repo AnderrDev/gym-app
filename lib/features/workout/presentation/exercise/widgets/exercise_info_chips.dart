@@ -69,20 +69,12 @@ class ExerciseInfoChips extends StatelessWidget {
 
     if (chips.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(
-      spacing: Spacing.sm,
-      runSpacing: Spacing.sm,
-      children: chips,
-    );
+    return Wrap(spacing: Spacing.sm, runSpacing: Spacing.sm, children: chips);
   }
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  const _Chip({required this.icon, required this.label, required this.color});
 
   final IconData icon;
   final String label;

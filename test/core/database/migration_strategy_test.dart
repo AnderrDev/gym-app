@@ -29,10 +29,7 @@ void main() {
         expect(byKey['schema_version']!.value, '4');
 
         // schema_initialized_at debe parsear como int (epoch ms).
-        expect(
-          int.tryParse(byKey['schema_initialized_at']!.value),
-          isNotNull,
-        );
+        expect(int.tryParse(byKey['schema_initialized_at']!.value), isNotNull);
       },
     );
   });

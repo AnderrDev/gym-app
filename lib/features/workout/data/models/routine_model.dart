@@ -33,13 +33,13 @@ class RoutineModel {
   }
 
   factory RoutineModel.fromEntity(Routine entity) => RoutineModel(
-        id: entity.id,
-        name: entity.name,
-        exerciseCount: entity.exerciseCount,
-        isPublic: entity.isPublic,
-        creatorId: entity.creatorId,
-        creatorName: entity.creatorName,
-      );
+    id: entity.id,
+    name: entity.name,
+    exerciseCount: entity.exerciseCount,
+    isPublic: entity.isPublic,
+    creatorId: entity.creatorId,
+    creatorName: entity.creatorName,
+  );
 
   Map<String, dynamic> toJson() {
     return {
@@ -53,11 +53,11 @@ class RoutineModel {
   }
 
   Routine toEntity() => Routine(
-        id: id,
-        name: name,
-        exerciseCount: exerciseCount,
-        isPublic: isPublic,
-        creatorId: creatorId,
-        creatorName: creatorName,
-      );
+    id: id,
+    name: name,
+    exerciseCount: exerciseCount,
+    isPublic: isPublic,
+    creatorId: creatorId,
+    creatorName: creatorName,
+  );
 }

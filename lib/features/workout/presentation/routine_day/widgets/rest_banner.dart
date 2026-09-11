@@ -79,73 +79,73 @@ class _Body extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.timer_rounded,
-                  size: 20,
-                  color: context.colors.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'DESCANSO',
-                  style: context.text.labelMedium?.copyWith(
-                    color: context.colors.primary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    fontSize: 10,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  formattedTime,
-                  style: context.text.headlineMedium?.copyWith(
-                    color: context.colors.textPrimary,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 3,
-                backgroundColor: context.colors.primary.withValues(alpha: 0.18),
+          Row(
+            children: [
+              Icon(
+                Icons.timer_rounded,
+                size: 20,
                 color: context.colors.primary,
               ),
+              const SizedBox(width: 8),
+              Text(
+                'DESCANSO',
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.primary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  fontSize: 10,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                formattedTime,
+                style: context.text.headlineMedium?.copyWith(
+                  color: context.colors.textPrimary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 3,
+              backgroundColor: context.colors.primary.withValues(alpha: 0.18),
+              color: context.colors.primary,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _AdjustButton(
-                  label: '−15s',
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _AdjustButton(
+                label: '−15s',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onAdjust(-15);
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SkipButton(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    onAdjust(-15);
+                    onSkip();
                   },
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _SkipButton(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      onSkip();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _AdjustButton(
-                  label: '+15s',
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onAdjust(15);
-                  },
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              _AdjustButton(
+                label: '+15s',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onAdjust(15);
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -168,7 +168,9 @@ class _AdjustButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: context.colors.primary.withValues(alpha: 0.4),
+          ),
         ),
         child: Text(
           label,

@@ -22,8 +22,7 @@ class CachedWorkoutSessions extends Table {
   /// Epoch ms (UTC). `null` mientras la sesión esté abierta.
   IntColumn get completedAt => integer().nullable()();
 
-  IntColumn get totalTargetSets =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get totalTargetSets => integer().withDefault(const Constant(0))();
   IntColumn get completedSetsCount =>
       integer().withDefault(const Constant(0))();
 
@@ -32,8 +31,7 @@ class CachedWorkoutSessions extends Table {
   TextColumn get coachingAnalysisJson => text().nullable()();
 
   /// Estado de sincronización: `pending`, `syncing`, `synced`, `error`.
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
 
   /// Epoch ms (UTC) del último write local (insert o update).
   IntColumn get fetchedAt => integer()();

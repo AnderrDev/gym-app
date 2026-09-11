@@ -246,14 +246,12 @@ void main() {
       'éxito → success + lastForkedRoutineId con id de la copia',
       build: () {
         when(
-          () =>
-              forkRoutine(any(), newName: any(named: 'newName')),
+          () => forkRoutine(any(), newName: any(named: 'newName')),
         ).thenAnswer((_) async => const Right('new-r1'));
         return buildBloc();
       },
-      act: (b) => b.add(
-        const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1'),
-      ),
+      act: (b) =>
+          b.add(const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1')),
       expect: () => [
         isA<RoutineManagementState>().having(
           (s) => s.submissionStatus,
@@ -283,23 +281,18 @@ void main() {
       'failure → failure + errorMessage propagado',
       build: () {
         when(
-          () =>
-              forkRoutine(any(), newName: any(named: 'newName')),
+          () => forkRoutine(any(), newName: any(named: 'newName')),
         ).thenAnswer((_) async => const Left(ServerFailure('rls')));
         return buildBloc();
       },
-      act: (b) => b.add(
-        const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1'),
-      ),
+      act: (b) =>
+          b.add(const ForkRoutine(userId: 'u1', sourceRoutineId: 'src-1')),
       verify: (b) {
         expect(
           b.state.submissionStatus,
           RoutineManagementSubmissionStatus.failure,
         );
-        expect(
-          b.state.lastAction,
-          RoutineManagementAction.forkRoutine,
-        );
+        expect(b.state.lastAction, RoutineManagementAction.forkRoutine);
         expect(b.state.errorMessage, 'rls');
         expect(b.state.lastForkedRoutineId, isNull);
       },
@@ -325,12 +318,7 @@ void main() {
         const SaveDay(
           userId: 'u1',
           routineId: 'r1',
-          day: RoutineDay(
-            id: '',
-            routineId: 'r1',
-            dayOfWeek: 1,
-            name: 'Día 1',
-          ),
+          day: RoutineDay(id: '', routineId: 'r1', dayOfWeek: 1, name: 'Día 1'),
         ),
       ),
       verify: (b) {
@@ -516,8 +504,10 @@ void main() {
           b.state.submissionStatus,
           RoutineManagementSubmissionStatus.success,
         );
-        expect(b.state.lastAction,
-            RoutineManagementAction.updateExerciseTarget);
+        expect(
+          b.state.lastAction,
+          RoutineManagementAction.updateExerciseTarget,
+        );
         expect(b.state.isDirty, isTrue);
         verify(
           () => updateExerciseTarget(

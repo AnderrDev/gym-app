@@ -116,10 +116,8 @@ class _LineMetricChart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: yRange == 0 ? null : yRange / 3,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: colors.surfaceHighlight,
-            strokeWidth: 1,
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: colors.surfaceHighlight, strokeWidth: 1),
         ),
         titlesData: _buildTitles(context, sessions, unit, valueFormatter),
         borderData: FlBorderData(show: false),
@@ -272,4 +270,3 @@ LineTouchData _buildTooltip(
     ),
   );
 }
-

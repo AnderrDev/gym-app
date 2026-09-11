@@ -27,8 +27,9 @@ void main() {
     eventsCtrl = StreamController<SyncWorkerEvent>.broadcast();
     when(() => conn.isOnline).thenReturn(true);
     when(() => conn.isOnline$).thenAnswer((_) => onlineCtrl.stream);
-    when(() => outbox.watchPendingCount())
-        .thenAnswer((_) => pendingCtrl.stream);
+    when(
+      () => outbox.watchPendingCount(),
+    ).thenAnswer((_) => pendingCtrl.stream);
     when(() => worker.events$).thenAnswer((_) => eventsCtrl.stream);
   });
 
@@ -53,11 +54,8 @@ void main() {
 
   blocTest<SyncStatusBloc, SyncStatusState>(
     'reacciona a connectivity online/offline',
-    build: () => SyncStatusBloc(
-      connectivity: conn,
-      outbox: outbox,
-      syncWorker: worker,
-    ),
+    build: () =>
+        SyncStatusBloc(connectivity: conn, outbox: outbox, syncWorker: worker),
     act: (b) async {
       onlineCtrl.add(false);
       await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -72,11 +70,8 @@ void main() {
 
   blocTest<SyncStatusBloc, SyncStatusState>(
     'pending count actualiza tras emisión de outbox',
-    build: () => SyncStatusBloc(
-      connectivity: conn,
-      outbox: outbox,
-      syncWorker: worker,
-    ),
+    build: () =>
+        SyncStatusBloc(connectivity: conn, outbox: outbox, syncWorker: worker),
     act: (b) async {
       pendingCtrl.add(3);
       await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -91,11 +86,8 @@ void main() {
 
   blocTest<SyncStatusBloc, SyncStatusState>(
     'draining se actualiza por SyncDrainStarted / SyncDrainEnded',
-    build: () => SyncStatusBloc(
-      connectivity: conn,
-      outbox: outbox,
-      syncWorker: worker,
-    ),
+    build: () =>
+        SyncStatusBloc(connectivity: conn, outbox: outbox, syncWorker: worker),
     act: (b) async {
       eventsCtrl.add(const SyncDrainStarted());
       await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -110,22 +102,20 @@ void main() {
 
   blocTest<SyncStatusBloc, SyncStatusState>(
     'eventos sin impacto (Applied/Failed) no cambian el state',
-    build: () => SyncStatusBloc(
-      connectivity: conn,
-      outbox: outbox,
-      syncWorker: worker,
-    ),
+    build: () =>
+        SyncStatusBloc(connectivity: conn, outbox: outbox, syncWorker: worker),
     act: (b) async {
-      eventsCtrl.add(const SyncMutationApplied(
-        kind: MutationKind.upsertSetLog,
-        id: 1,
-      ));
-      eventsCtrl.add(const SyncMutationFailed(
-        kind: MutationKind.upsertSetLog,
-        id: 2,
-        error: 'transient',
-        nextAttempt: Duration(seconds: 1),
-      ));
+      eventsCtrl.add(
+        const SyncMutationApplied(kind: MutationKind.upsertSetLog, id: 1),
+      );
+      eventsCtrl.add(
+        const SyncMutationFailed(
+          kind: MutationKind.upsertSetLog,
+          id: 2,
+          error: 'transient',
+          nextAttempt: Duration(seconds: 1),
+        ),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 30));
     },
     expect: () => <SyncStatusState>[],

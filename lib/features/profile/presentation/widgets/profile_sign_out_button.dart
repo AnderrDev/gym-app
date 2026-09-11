@@ -35,10 +35,7 @@ class _ProfileSignOutButtonState extends State<ProfileSignOutButton> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(Radii.md),
           ),
-          title: Text(
-            '¿Cerrar sesión?',
-            style: text.headlineSmall,
-          ),
+          title: Text('¿Cerrar sesión?', style: text.headlineSmall),
           content: Text(
             'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
             style: text.bodyMedium?.copyWith(color: colors.textSecondary),

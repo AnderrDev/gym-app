@@ -161,8 +161,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     return AppPalette(
       background: Color.lerp(background, other.background, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
-      surfaceHighlight:
-          Color.lerp(surfaceHighlight, other.surfaceHighlight, t)!,
+      surfaceHighlight: Color.lerp(
+        surfaceHighlight,
+        other.surfaceHighlight,
+        t,
+      )!,
       surfaceOverlay: Color.lerp(surfaceOverlay, other.surfaceOverlay, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,

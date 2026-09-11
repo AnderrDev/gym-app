@@ -59,18 +59,15 @@ class _RoutineListPageState extends State<RoutineListPage> {
     _loadRoutines();
     // Esperamos a que el bloc deje de estar loading para que el indicator
     // se cierre cuando los datos lleguen y no instantáneamente.
-    await bloc.stream.firstWhere((s) => !s.isLoading).timeout(
-          const Duration(seconds: 8),
-          onTimeout: () => bloc.state,
-        );
+    await bloc.stream
+        .firstWhere((s) => !s.isLoading)
+        .timeout(const Duration(seconds: 8), onTimeout: () => bloc.state);
   }
 
   void _loadRoutines() {
     final authState = context.read<AuthBloc>().state;
     final userId = authState is Authenticated ? authState.user.id : null;
-    context.read<RoutineManagementBloc>().add(
-      LoadAllRoutines(userId: userId),
-    );
+    context.read<RoutineManagementBloc>().add(LoadAllRoutines(userId: userId));
   }
 
   void _onAssignRoutine(String routineId) {
@@ -90,10 +87,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
       HapticFeedback.mediumImpact();
       AppLoader.show(context, message: 'Creando tu copia...');
       context.read<RoutineManagementBloc>().add(
-        ForkRoutine(
-          userId: authState.user.id,
-          sourceRoutineId: routineId,
-        ),
+        ForkRoutine(userId: authState.user.id, sourceRoutineId: routineId),
       );
     }
   }
@@ -134,8 +128,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
       elevation: 0,
       highlightElevation: 0,
       backgroundColor: context.colors.primary,
-      icon:
-          Icon(Icons.add_rounded, color: context.colors.onPrimary, size: 24),
+      icon: Icon(Icons.add_rounded, color: context.colors.onPrimary, size: 24),
       label: Text(
         'CREAR PROPIA',
         style: context.text.labelMedium?.copyWith(
@@ -162,8 +155,12 @@ class _RoutineListPageState extends State<RoutineListPage> {
         final newId = state.lastForkedRoutineId;
         context.read<RoutineManagementBloc>().add(const AcknowledgeFeedback());
         if (newId != null) {
-          unawaited(pushRoutineEditor(context, routineId: newId)
-              .then((_) => _refreshRoutines()));
+          unawaited(
+            pushRoutineEditor(
+              context,
+              routineId: newId,
+            ).then((_) => _refreshRoutines()),
+          );
         }
         return;
       }
@@ -213,25 +210,22 @@ class _RoutineListPageState extends State<RoutineListPage> {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final routine = filteredRoutines[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: Spacing.lgPlus),
-            child: RoutineListCard(
-              routine: routine,
-              isActive: state.activeRoutineId == routine.id,
-              isMine: routine.creatorId == currentUserId,
-              onActivate: _onAssignRoutine,
-              onEdited: _refreshRoutines,
-              onFork: (routine.creatorId != currentUserId && routine.isPublic)
-                  ? _onForkRoutine
-                  : null,
-            ),
-          );
-        },
-        childCount: filteredRoutines.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final routine = filteredRoutines[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: Spacing.lgPlus),
+          child: RoutineListCard(
+            routine: routine,
+            isActive: state.activeRoutineId == routine.id,
+            isMine: routine.creatorId == currentUserId,
+            onActivate: _onAssignRoutine,
+            onEdited: _refreshRoutines,
+            onFork: (routine.creatorId != currentUserId && routine.isPublic)
+                ? _onForkRoutine
+                : null,
+          ),
+        );
+      }, childCount: filteredRoutines.length),
     );
   }
 
@@ -253,83 +247,83 @@ class _RoutineListPageState extends State<RoutineListPage> {
             backgroundColor: context.colors.surface,
             onRefresh: _onRefresh,
             child: CustomScrollView(
-            physics: AdaptiveScrollPhysics.preferred,
-            slivers: [
-              _buildAppBar(),
+              physics: AdaptiveScrollPhysics.preferred,
+              slivers: [
+                _buildAppBar(),
 
-              // Summary header. `firstWhereOrNull` evita el orElse y rompe
-              // covarianza con `RoutineModel`; null = sin rutina activa.
-              SliverToBoxAdapter(
-                child: RoutineListSummaryHeader(
-                  totalCount: routines.length,
-                  activeRoutine: state.activeRoutineId == null
-                      ? null
-                      : routines.firstWhereOrNull(
-                          (r) => r.id == state.activeRoutineId,
-                        ),
-                ),
-              ),
-
-              // ── Buscador ─────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: RoutineListSearchBar(
-                  controller: _searchController,
-                  query: _searchQuery,
-                  onChanged: (v) => setState(() => _searchQuery = v),
-                  onClear: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                ),
-              ),
-
-              // ── Filtros ──────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  // `md` arriba y abajo: separa visualmente el buscador y el
-                  // primer card sin amontonar.
-                  padding: const EdgeInsets.fromLTRB(
-                    Spacing.lgPlus,
-                    Spacing.md,
-                    Spacing.lgPlus,
-                    Spacing.md,
-                  ),
-                  child: RoutineListFilterChips(
-                    selected: _selectedFilter,
-                    onChanged: (f) => setState(() => _selectedFilter = f),
+                // Summary header. `firstWhereOrNull` evita el orElse y rompe
+                // covarianza con `RoutineModel`; null = sin rutina activa.
+                SliverToBoxAdapter(
+                  child: RoutineListSummaryHeader(
+                    totalCount: routines.length,
+                    activeRoutine: state.activeRoutineId == null
+                        ? null
+                        : routines.firstWhereOrNull(
+                            (r) => r.id == state.activeRoutineId,
+                          ),
                   ),
                 ),
-              ),
 
-              if (state.isLoading && routines.isEmpty)
-                const SliverFillRemaining(child: RoutineListSkeleton())
-              else if (routines.isNotEmpty)
-                SliverPadding(
-                  // Vertical 0 acá; cada card ya trae `bottom: lgPlus`.
-                  padding: const EdgeInsets.fromLTRB(
-                    Spacing.lgPlus,
-                    0,
-                    Spacing.lgPlus,
-                    0,
+                // ── Buscador ─────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: RoutineListSearchBar(
+                    controller: _searchController,
+                    query: _searchQuery,
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
                   ),
-                  sliver: Builder(
-                    builder: (context) => _buildFilteredList(context, state),
-                  ),
-                )
-              else if (state.status == RoutineManagementStatus.failure)
-                SliverFillRemaining(
-                  child: RoutineListErrorCenter(
-                    message: state.errorMessage ?? 'Error',
-                  ),
-                )
-              else
-                const SliverToBoxAdapter(child: SizedBox.shrink()),
+                ),
 
-              // Buffer abajo: el FAB ocupa ~56px de alto, dejamos 96 total
-              // para que la última card no quede tapada sin sobrar tanto.
-              const SliverToBoxAdapter(child: SizedBox(height: 96)),
-            ],
-          ),
+                // ── Filtros ──────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    // `md` arriba y abajo: separa visualmente el buscador y el
+                    // primer card sin amontonar.
+                    padding: const EdgeInsets.fromLTRB(
+                      Spacing.lgPlus,
+                      Spacing.md,
+                      Spacing.lgPlus,
+                      Spacing.md,
+                    ),
+                    child: RoutineListFilterChips(
+                      selected: _selectedFilter,
+                      onChanged: (f) => setState(() => _selectedFilter = f),
+                    ),
+                  ),
+                ),
+
+                if (state.isLoading && routines.isEmpty)
+                  const SliverFillRemaining(child: RoutineListSkeleton())
+                else if (routines.isNotEmpty)
+                  SliverPadding(
+                    // Vertical 0 acá; cada card ya trae `bottom: lgPlus`.
+                    padding: const EdgeInsets.fromLTRB(
+                      Spacing.lgPlus,
+                      0,
+                      Spacing.lgPlus,
+                      0,
+                    ),
+                    sliver: Builder(
+                      builder: (context) => _buildFilteredList(context, state),
+                    ),
+                  )
+                else if (state.status == RoutineManagementStatus.failure)
+                  SliverFillRemaining(
+                    child: RoutineListErrorCenter(
+                      message: state.errorMessage ?? 'Error',
+                    ),
+                  )
+                else
+                  const SliverToBoxAdapter(child: SizedBox.shrink()),
+
+                // Buffer abajo: el FAB ocupa ~56px de alto, dejamos 96 total
+                // para que la última card no quede tapada sin sobrar tanto.
+                const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              ],
+            ),
           );
         },
       ),
@@ -338,4 +332,3 @@ class _RoutineListPageState extends State<RoutineListPage> {
     );
   }
 }
-

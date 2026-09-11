@@ -16,7 +16,8 @@ import '../../../../../helpers/mocks.dart';
 
 class _MockActiveSessionService extends Mock implements ActiveSessionService {}
 
-class _MockActiveWorkoutNotifier extends Mock implements ActiveWorkoutNotifier {}
+class _MockActiveWorkoutNotifier extends Mock
+    implements ActiveWorkoutNotifier {}
 
 void main() {
   late MockWorkoutRepository repository;

@@ -98,9 +98,13 @@ class ExerciseCardHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    allDone ? Icons.check_circle_rounded : Icons.local_fire_department_rounded,
+                    allDone
+                        ? Icons.check_circle_rounded
+                        : Icons.local_fire_department_rounded,
                     size: 20,
-                    color: allDone ? context.colors.success : context.colors.primary,
+                    color: allDone
+                        ? context.colors.success
+                        : context.colors.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -126,7 +130,9 @@ class ExerciseCardHeader extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: context.colors.primary.withValues(alpha: 0.1),
+                              color: context.colors.primary.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -177,14 +183,18 @@ class ExerciseCardHeader extends StatelessWidget {
                   style: context.text.bodyMedium?.copyWith(
                     color: readOnly
                         ? context.colors.textSecondary
-                        : (allDone ? context.colors.success : context.colors.primary),
+                        : (allDone
+                              ? context.colors.success
+                              : context.colors.primary),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(width: 4),
                 if (showExpandChevron)
                   Icon(
-                    isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    isExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
                     color: context.colors.textSecondary,
                   ),
                 PopupMenuButton<_HeaderMenuAction>(

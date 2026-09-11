@@ -78,9 +78,7 @@ class ExerciseCardBody extends StatelessWidget {
                         sessionId: sessionId,
                         exerciseId: exercise.id,
                         readOnly: readOnly,
-                        onSaved: readOnly
-                            ? (_) {}
-                            : (log) => onSaveSet(log, n),
+                        onSaved: readOnly ? (_) {} : (log) => onSaveSet(log, n),
                         onUnsaved: readOnly ? null : onUnsaveSet,
                       );
                     }),

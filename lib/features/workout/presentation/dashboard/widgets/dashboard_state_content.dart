@@ -102,12 +102,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded, color: context.colors.error, size: 48),
+            Icon(
+              Icons.error_outline_rounded,
+              color: context.colors.error,
+              size: 48,
+            ),
             const SizedBox(height: Spacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: context.text.bodyMedium?.copyWith(color: context.colors.error),
+              style: context.text.bodyMedium?.copyWith(
+                color: context.colors.error,
+              ),
             ),
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(

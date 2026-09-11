@@ -24,17 +24,19 @@ void main() {
     usecase = SaveRoutine(repository);
   });
 
-  test('delega en repository.saveRoutine y devuelve Routine persistida',
-      () async {
-    when(
-      () => repository.saveRoutine(any()),
-    ).thenAnswer((_) async => const Right(tSaved));
+  test(
+    'delega en repository.saveRoutine y devuelve Routine persistida',
+    () async {
+      when(
+        () => repository.saveRoutine(any()),
+      ).thenAnswer((_) async => const Right(tSaved));
 
-    final result = await usecase(tRoutine);
+      final result = await usecase(tRoutine);
 
-    expect(result, const Right<Failure, Routine>(tSaved));
-    verify(() => repository.saveRoutine(tRoutine)).called(1);
-  });
+      expect(result, const Right<Failure, Routine>(tSaved));
+      verify(() => repository.saveRoutine(tRoutine)).called(1);
+    },
+  );
 
   test('propaga Failure desde el repositorio', () async {
     when(

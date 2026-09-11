@@ -24,24 +24,22 @@ class RoutineListSearchBar extends StatelessWidget {
     return Padding(
       // Vertical 0/0 — los containers vecinos (summary header arriba, filtros
       // abajo) aportan su propio padding. Evita acumular separaciones.
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lgPlus,
-        0,
-        Spacing.lgPlus,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(Spacing.lgPlus, 0, Spacing.lgPlus, 0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.colors.divider.withValues(alpha: 0.5),
+          ),
         ),
         child: TextField(
           controller: controller,
           onChanged: onChanged,
-          style: context.text.bodyMedium
-              ?.copyWith(color: context.colors.textPrimary),
+          style: context.text.bodyMedium?.copyWith(
+            color: context.colors.textPrimary,
+          ),
           decoration: InputDecoration(
             icon: Icon(
               Icons.search_rounded,
@@ -49,8 +47,9 @@ class RoutineListSearchBar extends StatelessWidget {
               size: 20,
             ),
             hintText: 'Buscar rutina por nombre…',
-            hintStyle:
-                context.text.bodyMedium?.copyWith(color: context.colors.textDisabled),
+            hintStyle: context.text.bodyMedium?.copyWith(
+              color: context.colors.textDisabled,
+            ),
             border: InputBorder.none,
             isDense: true,
             suffixIcon: query.isEmpty

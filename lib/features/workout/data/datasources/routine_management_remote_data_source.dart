@@ -124,16 +124,13 @@ class RoutineManagementRemoteDataSource {
   }
 
   Future<void> assignRoutineToUser(String userId, String routineId) =>
-      client.from('user_routines').upsert(
-        {'user_id': userId, 'routine_id': routineId},
-        onConflict: 'user_id',
-      );
+      client.from('user_routines').upsert({
+        'user_id': userId,
+        'routine_id': routineId,
+      }, onConflict: 'user_id');
 
   Future<RoutineModel> saveRoutine(RoutineModel routine) async {
-    final payload = {
-      'name': routine.name,
-      'is_public': routine.isPublic,
-    };
+    final payload = {'name': routine.name, 'is_public': routine.isPublic};
     final isNew = _isNewId(routine.id);
     final query = isNew
         ? client.from('routines').insert({
@@ -232,19 +229,21 @@ class RoutineManagementRemoteDataSource {
     // upsert con ignoreDuplicates evita romper si el ejercicio ya está en el
     // día (race entre catálogo y reload, doble-tap, etc.). El constraint
     // `routine_exercises_day_exercise_uniq` sigue siendo la red de seguridad.
-    await client.from('routine_exercises').upsert(
-      {
-        'routine_day_id': dayId,
-        'exercise_id': exerciseId,
-        'order': await _nextOrder(dayId),
-        'target_sets': targetSets,
-        'target_reps': targetReps,
-        'target_weight': targetWeight,
-        'rest_timer_seconds': restSeconds,
-      },
-      onConflict: 'routine_day_id,exercise_id',
-      ignoreDuplicates: true,
-    );
+    await client
+        .from('routine_exercises')
+        .upsert(
+          {
+            'routine_day_id': dayId,
+            'exercise_id': exerciseId,
+            'order': await _nextOrder(dayId),
+            'target_sets': targetSets,
+            'target_reps': targetReps,
+            'target_weight': targetWeight,
+            'rest_timer_seconds': restSeconds,
+          },
+          onConflict: 'routine_day_id,exercise_id',
+          ignoreDuplicates: true,
+        );
   }
 
   Future<void> addExercisesToDay(
@@ -266,11 +265,13 @@ class RoutineManagementRemoteDataSource {
       nextOrder++;
       return row;
     }).toList();
-    await client.from('routine_exercises').upsert(
-      payload,
-      onConflict: 'routine_day_id,exercise_id',
-      ignoreDuplicates: true,
-    );
+    await client
+        .from('routine_exercises')
+        .upsert(
+          payload,
+          onConflict: 'routine_day_id,exercise_id',
+          ignoreDuplicates: true,
+        );
   }
 
   Future<void> removeExerciseFromDay(String dayId, String exerciseId) async {
@@ -323,7 +324,9 @@ class RoutineManagementRemoteDataSource {
     final response = await client
         .from('routines_view')
         .select(_routineViewSelect)
-        .or('is_public.eq.true${userId != null ? ",creator_id.eq.$userId" : ""}')
+        .or(
+          'is_public.eq.true${userId != null ? ",creator_id.eq.$userId" : ""}',
+        )
         .order('name', ascending: true)
         .range(offset, offset + limit - 1);
     return response.map((json) => RoutineModel.fromJson(json)).toList();

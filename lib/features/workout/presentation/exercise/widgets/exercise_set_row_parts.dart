@@ -43,8 +43,7 @@ class CompactNumberField extends StatelessWidget {
           color: context.colors.textSecondary,
           fontSize: 10,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -147,8 +146,9 @@ class _KeyboardToggleChipState extends State<KeyboardToggleChip> {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        widget.isActive ? context.colors.primary : context.colors.textSecondary;
+    final color = widget.isActive
+        ? context.colors.primary
+        : context.colors.textSecondary;
     // Focus(canRequestFocus: false) evita que en web el chip robe el focus
     // del TextField al hacer click — preserva la fila de chips visible.
     // MouseRegion: cursor pointer + tint en hover (no-op en touch puro).
@@ -163,8 +163,7 @@ class _KeyboardToggleChipState extends State<KeyboardToggleChip> {
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
-          onTapDown:
-              widget.onTap == null ? null : (_) => widget.onTap!(),
+          onTapDown: widget.onTap == null ? null : (_) => widget.onTap!(),
           behavior: HitTestBehavior.opaque,
           child: Container(
             height: 28,
@@ -204,8 +203,9 @@ class _QuickStepChipState extends State<QuickStepChip> {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        widget.positive ? context.colors.primary : context.colors.textSecondary;
+    final color = widget.positive
+        ? context.colors.primary
+        : context.colors.textSecondary;
     final bg = color.withValues(alpha: _hovered ? 0.2 : 0.1);
     return Focus(
       canRequestFocus: false,
@@ -239,4 +239,3 @@ class _QuickStepChipState extends State<QuickStepChip> {
     );
   }
 }
-

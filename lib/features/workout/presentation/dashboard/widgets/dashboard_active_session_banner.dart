@@ -32,17 +32,11 @@ class DashboardActiveSessionBanner extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.35)),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.timelapse_rounded,
-                color: colors.primary,
-                size: 18,
-              ),
+              Icon(Icons.timelapse_rounded, color: colors.primary, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(

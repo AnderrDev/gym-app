@@ -10,8 +10,7 @@ class CachedRoutineExercises extends Table {
   IntColumn get targetSets => integer()();
   IntColumn get targetReps => integer()();
   RealColumn get targetWeight => real()();
-  IntColumn get restTimerSeconds =>
-      integer().withDefault(const Constant(90))();
+  IntColumn get restTimerSeconds => integer().withDefault(const Constant(90))();
 
   /// Epoch ms (UTC) del último write desde remote.
   IntColumn get fetchedAt => integer()();

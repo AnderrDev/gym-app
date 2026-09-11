@@ -48,21 +48,21 @@ class DayEditorDialogs {
       context,
       builder: (_) =>
           BlocBuilder<RoutineManagementBloc, RoutineManagementState>(
-        bloc: bloc,
-        builder: (_, state) {
-          if (state.catalogStatus == ExerciseCatalogStatus.loading &&
-              state.exerciseCatalog.isEmpty) {
-            return const SizedBox(
-              height: 200,
-              child: Center(child: AppSpinner.large()),
-            );
-          }
-          return ExerciseCatalogSheet(
-            catalog: state.exerciseCatalog,
-            alreadySelectedIds: currentExercises.map((e) => e.id).toSet(),
-          );
-        },
-      ),
+            bloc: bloc,
+            builder: (_, state) {
+              if (state.catalogStatus == ExerciseCatalogStatus.loading &&
+                  state.exerciseCatalog.isEmpty) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: AppSpinner.large()),
+                );
+              }
+              return ExerciseCatalogSheet(
+                catalog: state.exerciseCatalog,
+                alreadySelectedIds: currentExercises.map((e) => e.id).toSet(),
+              );
+            },
+          ),
     );
 
     if (!context.mounted || result == null || result.isEmpty) return;

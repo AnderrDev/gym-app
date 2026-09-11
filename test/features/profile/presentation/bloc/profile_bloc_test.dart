@@ -23,10 +23,12 @@ void main() {
     blocTest<ProfileBloc, ProfileState>(
       'emite submitting → success con el nombre persistido',
       build: () {
-        when(() => repository.updateFullName(
-              userId: any(named: 'userId'),
-              fullName: any(named: 'fullName'),
-            )).thenAnswer((_) async => const Right(tFullName));
+        when(
+          () => repository.updateFullName(
+            userId: any(named: 'userId'),
+            fullName: any(named: 'fullName'),
+          ),
+        ).thenAnswer((_) async => const Right(tFullName));
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -40,40 +42,42 @@ void main() {
         ),
       ],
       verify: (_) {
-        verify(() => repository.updateFullName(
-              userId: tUserId,
-              fullName: tFullName,
-            )).called(1);
+        verify(
+          () => repository.updateFullName(userId: tUserId, fullName: tFullName),
+        ).called(1);
       },
     );
 
     blocTest<ProfileBloc, ProfileState>(
       'trimea el nombre antes de delegar al repositorio',
       build: () {
-        when(() => repository.updateFullName(
-              userId: any(named: 'userId'),
-              fullName: any(named: 'fullName'),
-            )).thenAnswer((_) async => const Right(null));
+        when(
+          () => repository.updateFullName(
+            userId: any(named: 'userId'),
+            fullName: any(named: 'fullName'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
         return buildBloc();
       },
       act: (bloc) => bloc.add(
         const UpdateFullNameRequested(userId: tUserId, fullName: '   Ander  '),
       ),
       verify: (_) {
-        verify(() => repository.updateFullName(
-              userId: tUserId,
-              fullName: 'Ander',
-            )).called(1);
+        verify(
+          () => repository.updateFullName(userId: tUserId, fullName: 'Ander'),
+        ).called(1);
       },
     );
 
     blocTest<ProfileBloc, ProfileState>(
       'cuando la API devuelve null usa el trimmed input como lastSavedFullName',
       build: () {
-        when(() => repository.updateFullName(
-              userId: any(named: 'userId'),
-              fullName: any(named: 'fullName'),
-            )).thenAnswer((_) async => const Right(null));
+        when(
+          () => repository.updateFullName(
+            userId: any(named: 'userId'),
+            fullName: any(named: 'fullName'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -91,12 +95,12 @@ void main() {
     blocTest<ProfileBloc, ProfileState>(
       'emite submitting → failure con el mensaje cuando el repo devuelve Left',
       build: () {
-        when(() => repository.updateFullName(
-              userId: any(named: 'userId'),
-              fullName: any(named: 'fullName'),
-            )).thenAnswer(
-          (_) async => const Left(ServerFailure('boom')),
-        );
+        when(
+          () => repository.updateFullName(
+            userId: any(named: 'userId'),
+            fullName: any(named: 'fullName'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('boom')));
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -121,9 +125,7 @@ void main() {
         errorMessage: 'algo falló',
       ),
       act: (bloc) => bloc.add(const AcknowledgeProfileFeedback()),
-      expect: () => const [
-        ProfileState(status: ProfileSubmissionStatus.idle),
-      ],
+      expect: () => const [ProfileState(status: ProfileSubmissionStatus.idle)],
     );
   });
 }

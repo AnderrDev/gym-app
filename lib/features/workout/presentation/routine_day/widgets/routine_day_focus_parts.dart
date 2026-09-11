@@ -203,10 +203,7 @@ class FocusViewNextStepCta extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: context.colors.onPrimary,
-            ),
+            Icon(Icons.chevron_right_rounded, color: context.colors.onPrimary),
           ],
         ),
       ),

@@ -58,7 +58,10 @@ class ConflictException implements Exception {
 /// (`SESSION_NOT_FOUND`, `UNAUTHORIZED`, `VALIDATION_ERROR`, ...); el bloc/UI
 /// puede ramificar por código en lugar de parsear el mensaje.
 class WorkoutFunctionException implements Exception {
-  const WorkoutFunctionException({required this.code, required this.userMessage});
+  const WorkoutFunctionException({
+    required this.code,
+    required this.userMessage,
+  });
   final String code;
   final String userMessage;
 

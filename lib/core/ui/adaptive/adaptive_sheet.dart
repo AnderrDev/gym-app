@@ -102,10 +102,7 @@ class AdaptiveSheet {
       barrierColor: context.colors.overlay,
       builder: (ctx) => Dialog(
         backgroundColor: backgroundColor ?? Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 32,
-        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         clipBehavior: Clip.antiAlias,
         // Ancho confortable de lectura en desktop sin estirar a la ventana
         // entera. En móvil-web (viewport angosto) el `min()` cae al
@@ -154,7 +151,8 @@ class _ChromedContainer extends StatelessWidget {
         color: backgroundColor ?? colors.surface,
         borderRadius: radius,
       ),
-      padding: padding ??
+      padding:
+          padding ??
           const EdgeInsets.fromLTRB(
             Spacing.xl,
             Spacing.md,
