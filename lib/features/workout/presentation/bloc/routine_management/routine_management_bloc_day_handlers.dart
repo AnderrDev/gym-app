@@ -76,8 +76,9 @@ extension RoutineDayHandlers on RoutineManagementBloc {
           submissionStatus: RoutineManagementSubmissionStatus.success,
           lastAction: RoutineManagementAction.deleteDay,
           feedbackMessage: 'Día eliminado correctamente',
-          editingDays:
-              state.editingDays.where((d) => d.id != event.dayId).toList(),
+          editingDays: state.editingDays
+              .where((d) => d.id != event.dayId)
+              .toList(),
         ),
       ),
     );

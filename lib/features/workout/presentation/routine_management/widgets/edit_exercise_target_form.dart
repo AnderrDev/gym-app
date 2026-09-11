@@ -30,7 +30,9 @@ class TargetStepperRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -105,7 +107,9 @@ class TargetWeightField extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.divider.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [

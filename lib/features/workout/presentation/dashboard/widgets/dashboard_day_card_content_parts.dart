@@ -150,7 +150,8 @@ class DayCardTrailingIndicator extends StatelessWidget {
     // Hoy + sesión actionable → CTA play prominente con sombra. `completedPartial`
     // NO es actionable: la sesión ya se cerró aunque no se alcanzó el target
     // completo — mostrar play sugería re-arrancar y confundía la UX.
-    final isActionable = isToday &&
+    final isActionable =
+        isToday &&
         (status == WorkoutDayStatus.pending ||
             status == WorkoutDayStatus.inProgress);
 
@@ -195,11 +196,7 @@ class DayCardTrailingIndicator extends StatelessWidget {
           color: color.withValues(alpha: 0.14),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          Icons.check_rounded,
-          color: color,
-          size: 18,
-        ),
+        child: Icon(Icons.check_rounded, color: color, size: 18),
       );
     }
 

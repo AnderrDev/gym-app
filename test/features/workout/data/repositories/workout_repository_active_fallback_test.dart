@@ -47,10 +47,12 @@ void main() {
   });
 
   test('remote falla con SocketException → fallback cache', () async {
-    when(() => remote.getActiveSessionForUser(tUserId))
-        .thenThrow(const SocketException('down'));
-    when(() => local.getOpenSessionForUser(tUserId))
-        .thenAnswer((_) async => tCachedSession);
+    when(
+      () => remote.getActiveSessionForUser(tUserId),
+    ).thenThrow(const SocketException('down'));
+    when(
+      () => local.getOpenSessionForUser(tUserId),
+    ).thenAnswer((_) async => tCachedSession);
 
     final result = await repo.getActiveSessionForUser(tUserId);
     result.fold((l) => fail('expected Right, got $l'), (session) {
@@ -60,8 +62,9 @@ void main() {
   });
 
   test('remote OK con valor → no toca cache', () async {
-    when(() => remote.getActiveSessionForUser(tUserId))
-        .thenAnswer((_) async => null);
+    when(
+      () => remote.getActiveSessionForUser(tUserId),
+    ).thenAnswer((_) async => null);
 
     final result = await repo.getActiveSessionForUser(tUserId);
     result.fold((l) => fail('expected Right'), (s) => expect(s, isNull));
@@ -69,8 +72,9 @@ void main() {
   });
 
   test('remote falla con AuthException (no-network) → no fallback', () async {
-    when(() => remote.getActiveSessionForUser(tUserId))
-        .thenThrow(Exception('auth boom'));
+    when(
+      () => remote.getActiveSessionForUser(tUserId),
+    ).thenThrow(Exception('auth boom'));
 
     final result = await repo.getActiveSessionForUser(tUserId);
     expect(result.isLeft(), isTrue);

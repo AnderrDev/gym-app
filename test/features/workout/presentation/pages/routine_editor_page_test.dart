@@ -142,8 +142,7 @@ void main() {
       // debe primero disparar SaveRoutine. Cuando el bloc emite success con
       // editingRoutine seteada, el listener tiene que disparar SaveDay con
       // el id real — sin que el usuario tenga que tocar de nuevo.
-      final stateCtrl =
-          StreamController<RoutineManagementState>.broadcast();
+      final stateCtrl = StreamController<RoutineManagementState>.broadcast();
       addTearDown(stateCtrl.close);
 
       when(() => bloc.stream).thenAnswer((_) => stateCtrl.stream);
@@ -186,8 +185,9 @@ void main() {
       await tester.pump();
 
       // Segundo dispatch: el SaveDay encadenado.
-      final captured = verify(() => bloc.add(captureAny(that: isA<SaveDay>())))
-          .captured;
+      final captured = verify(
+        () => bloc.add(captureAny(that: isA<SaveDay>())),
+      ).captured;
       expect(captured.length, 1);
       final saveDay = captured.first as SaveDay;
       expect(saveDay.routineId, 'r-new');

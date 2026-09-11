@@ -25,16 +25,15 @@ void main() {
     DateTime? completedAt,
     int total = 9,
     int completed = 0,
-  }) =>
-      WorkoutSession(
-        id: id,
-        userId: userId,
-        routineDayId: routineDayId,
-        sessionDate: date ?? DateTime.utc(2026, 5, 18),
-        completedAt: completedAt,
-        totalTargetSets: total,
-        completedSetsCount: completed,
-      );
+  }) => WorkoutSession(
+    id: id,
+    userId: userId,
+    routineDayId: routineDayId,
+    sessionDate: date ?? DateTime.utc(2026, 5, 18),
+    completedAt: completedAt,
+    totalTargetSets: total,
+    completedSetsCount: completed,
+  );
 
   group('saveCachedSession', () {
     test('insert + idempotente (segundo write reemplaza por id)', () async {
@@ -62,30 +61,32 @@ void main() {
   });
 
   group('upsertCachedSetLog', () {
-    test('PK compuesta: re-upsert mismo (session,exercise,setIndex) reemplaza',
-        () async {
-      const log = SetLog(
-        sessionId: 'sess-1',
-        exerciseId: 'e1',
-        actualWeight: 60,
-        actualReps: 10,
-        setIndex: 0,
-      );
-      await local.upsertCachedSetLog(log);
+    test(
+      'PK compuesta: re-upsert mismo (session,exercise,setIndex) reemplaza',
+      () async {
+        const log = SetLog(
+          sessionId: 'sess-1',
+          exerciseId: 'e1',
+          actualWeight: 60,
+          actualReps: 10,
+          setIndex: 0,
+        );
+        await local.upsertCachedSetLog(log);
 
-      // Segundo upsert con datos distintos pero la misma PK.
-      const updated = SetLog(
-        sessionId: 'sess-1',
-        exerciseId: 'e1',
-        actualWeight: 65,
-        actualReps: 8,
-        setIndex: 0,
-      );
-      await local.upsertCachedSetLog(updated);
+        // Segundo upsert con datos distintos pero la misma PK.
+        const updated = SetLog(
+          sessionId: 'sess-1',
+          exerciseId: 'e1',
+          actualWeight: 65,
+          actualReps: 8,
+          setIndex: 0,
+        );
+        await local.upsertCachedSetLog(updated);
 
-      // No expone API de read directa de set logs; verificamos via DAO
-      // crudo. Reuse del dao asociado a la misma DB.
-    });
+        // No expone API de read directa de set logs; verificamos via DAO
+        // crudo. Reuse del dao asociado a la misma DB.
+      },
+    );
   });
 
   group('markSessionCompleted', () {
@@ -101,27 +102,29 @@ void main() {
   });
 
   group('applyCoachingForSession', () {
-    test('persiste la lista coaching y luego getOpenSessionForUser la trae',
-        () async {
-      await local.saveCachedSession(buildSession());
-      const coaching = [
-        CoachingAnalysis(
-          exerciseName: 'Press Banca',
-          recommendation: 'subir peso',
-        ),
-        CoachingAnalysis(
-          exerciseName: 'Sentadilla',
-          recommendation: 'mantener',
-        ),
-      ];
-      await local.applyCoachingForSession('sess-1', coaching);
+    test(
+      'persiste la lista coaching y luego getOpenSessionForUser la trae',
+      () async {
+        await local.saveCachedSession(buildSession());
+        const coaching = [
+          CoachingAnalysis(
+            exerciseName: 'Press Banca',
+            recommendation: 'subir peso',
+          ),
+          CoachingAnalysis(
+            exerciseName: 'Sentadilla',
+            recommendation: 'mantener',
+          ),
+        ];
+        await local.applyCoachingForSession('sess-1', coaching);
 
-      final open = await local.getOpenSessionForUser('u1');
-      expect(open, isNotNull);
-      expect(open!.coachingAnalysis, isNotNull);
-      expect(open.coachingAnalysis!.length, 2);
-      expect(open.coachingAnalysis!.first.exerciseName, 'Press Banca');
-    });
+        final open = await local.getOpenSessionForUser('u1');
+        expect(open, isNotNull);
+        expect(open!.coachingAnalysis, isNotNull);
+        expect(open.coachingAnalysis!.length, 2);
+        expect(open.coachingAnalysis!.first.exerciseName, 'Press Banca');
+      },
+    );
 
     test('lista vacía → no-op', () async {
       await local.saveCachedSession(buildSession());
@@ -141,10 +144,7 @@ void main() {
 
       // Aplicamos coaching → segunda emisión esperada.
       await local.applyCoachingForSession('sess-1', const [
-        CoachingAnalysis(
-          exerciseName: 'X',
-          recommendation: 'r',
-        ),
+        CoachingAnalysis(exerciseName: 'X', recommendation: 'r'),
       ]);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 

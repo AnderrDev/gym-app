@@ -71,9 +71,9 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
   void _submit() {
     final weight = double.tryParse(_weightController.text.replaceAll(',', '.'));
     if (weight == null || weight < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Peso inválido')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Peso inválido')));
       return;
     }
     Navigator.pop<EditExerciseTargetResult>(
@@ -121,15 +121,39 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
           TargetStepperRow(
             label: 'SERIES',
             value: '$_sets',
-            onMinus: () => _bump(-1, min: 1, max: 20, get: () => _sets, set: (v) => _sets = v),
-            onPlus: () => _bump(1, min: 1, max: 20, get: () => _sets, set: (v) => _sets = v),
+            onMinus: () => _bump(
+              -1,
+              min: 1,
+              max: 20,
+              get: () => _sets,
+              set: (v) => _sets = v,
+            ),
+            onPlus: () => _bump(
+              1,
+              min: 1,
+              max: 20,
+              get: () => _sets,
+              set: (v) => _sets = v,
+            ),
           ),
           const SizedBox(height: Spacing.md),
           TargetStepperRow(
             label: 'REPETICIONES',
             value: '$_reps',
-            onMinus: () => _bump(-1, min: 1, max: 50, get: () => _reps, set: (v) => _reps = v),
-            onPlus: () => _bump(1, min: 1, max: 50, get: () => _reps, set: (v) => _reps = v),
+            onMinus: () => _bump(
+              -1,
+              min: 1,
+              max: 50,
+              get: () => _reps,
+              set: (v) => _reps = v,
+            ),
+            onPlus: () => _bump(
+              1,
+              min: 1,
+              max: 50,
+              get: () => _reps,
+              set: (v) => _reps = v,
+            ),
           ),
           const SizedBox(height: Spacing.md),
           TargetWeightField(controller: _weightController),
@@ -137,8 +161,20 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
           TargetStepperRow(
             label: 'DESCANSO',
             value: _formatRest(_rest),
-            onMinus: () => _bump(-15, min: 0, max: 600, get: () => _rest, set: (v) => _rest = v),
-            onPlus: () => _bump(15, min: 0, max: 600, get: () => _rest, set: (v) => _rest = v),
+            onMinus: () => _bump(
+              -15,
+              min: 0,
+              max: 600,
+              get: () => _rest,
+              set: (v) => _rest = v,
+            ),
+            onPlus: () => _bump(
+              15,
+              min: 0,
+              max: 600,
+              get: () => _rest,
+              set: (v) => _rest = v,
+            ),
           ),
           const SizedBox(height: Spacing.xl),
           KineticButton(

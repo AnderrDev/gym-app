@@ -59,139 +59,139 @@ class ExerciseRowCard extends StatelessWidget {
     final accent = RoutineColor.byIndex(index);
 
     final body = Padding(
-        padding: const EdgeInsets.only(bottom: Spacing.sm),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(18),
-            child: Ink(
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: context.colors.divider.withValues(alpha: 0.4),
+      padding: const EdgeInsets.only(bottom: Spacing.sm),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: context.colors.divider.withValues(alpha: 0.4),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.md,
+              vertical: Spacing.md,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${index + 1}',
+                    style: context.text.displayLarge?.copyWith(
+                      fontSize: 18,
+                      color: accent,
+                    ),
+                  ),
                 ),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.md,
-                vertical: Spacing.md,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${index + 1}',
-                      style: context.text.displayLarge?.copyWith(
-                        fontSize: 18,
-                        color: accent,
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise.name.toUpperCase(),
+                        style: context.text.headlineMedium?.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          exercise.name.toUpperCase(),
-                          style: context.text.headlineMedium?.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          _StatTag(
+                            icon: Icons.repeat_rounded,
+                            label:
+                                '${exercise.targetSets}×${exercise.targetReps}',
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            _StatTag(
-                              icon: Icons.repeat_rounded,
-                              label:
-                                  '${exercise.targetSets}×${exercise.targetReps}',
-                            ),
-                            _StatTag(
-                              icon: Icons.local_fire_department_rounded,
-                              label: _formatWeight(exercise.targetWeight),
-                            ),
-                            _StatTag(
-                              icon: Icons.timer_rounded,
-                              label: _formatRest(exercise.restTimerSeconds),
-                            ),
-                          ],
-                        ),
-                      ],
+                          _StatTag(
+                            icon: Icons.local_fire_department_rounded,
+                            label: _formatWeight(exercise.targetWeight),
+                          ),
+                          _StatTag(
+                            icon: Icons.timer_rounded,
+                            label: _formatRest(exercise.restTimerSeconds),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: Spacing.sm),
+                if (onInfo != null)
+                  IconButton(
+                    onPressed: onInfo,
+                    icon: Icon(
+                      Icons.info_outline_rounded,
+                      color: context.colors.textSecondary,
+                      size: 20,
+                    ),
+                    tooltip: 'Ver detalle del ejercicio',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
                     ),
                   ),
-                  const SizedBox(width: Spacing.sm),
-                  if (onInfo != null)
-                    IconButton(
-                      onPressed: onInfo,
+                if (onRemove != null)
+                  Builder(
+                    builder: (ctx) => IconButton(
+                      onPressed: () async {
+                        final ok = await AppDialog.confirm(
+                          ctx,
+                          title: 'Quitar ejercicio',
+                          message:
+                              'Vas a quitar "${exercise.name}" del día. Podés volver a añadirlo desde el catálogo.',
+                          confirmLabel: 'Quitar',
+                          confirmVariant: AppButtonVariant.destructive,
+                        );
+                        if (ok == true) {
+                          unawaited(HapticFeedback.heavyImpact());
+                          onRemove!();
+                        }
+                      },
                       icon: Icon(
-                        Icons.info_outline_rounded,
-                        color: context.colors.textSecondary,
+                        Icons.delete_outline_rounded,
+                        color: context.colors.error,
                         size: 20,
                       ),
-                      tooltip: 'Ver detalle del ejercicio',
+                      tooltip: 'Quitar ejercicio',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(
                         minWidth: 32,
                         minHeight: 32,
                       ),
                     ),
-                  if (onRemove != null)
-                    Builder(
-                      builder: (ctx) => IconButton(
-                        onPressed: () async {
-                          final ok = await AppDialog.confirm(
-                            ctx,
-                            title: 'Quitar ejercicio',
-                            message:
-                                'Vas a quitar "${exercise.name}" del día. Podés volver a añadirlo desde el catálogo.',
-                            confirmLabel: 'Quitar',
-                            confirmVariant: AppButtonVariant.destructive,
-                          );
-                          if (ok == true) {
-                            unawaited(HapticFeedback.heavyImpact());
-                            onRemove!();
-                          }
-                        },
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          color: context.colors.error,
-                          size: 20,
-                        ),
-                        tooltip: 'Quitar ejercicio',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ),
-                  if (onRemove != null)
-                    Icon(
-                      Icons.drag_indicator_rounded,
-                      color: context.colors.textDisabled,
-                      size: 22,
-                    ),
-                ],
-              ),
+                  ),
+                if (onRemove != null)
+                  Icon(
+                    Icons.drag_indicator_rounded,
+                    color: context.colors.textDisabled,
+                    size: 22,
+                  ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
 
     if (onRemove == null) return body;
 
@@ -234,7 +234,9 @@ class _StatTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.background.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

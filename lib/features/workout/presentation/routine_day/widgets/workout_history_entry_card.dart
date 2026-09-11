@@ -108,13 +108,12 @@ class _SetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = isTopSet ? context.colors.warning : context.colors.primary;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.lg,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 10),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5)),
+          bottom: BorderSide(
+            color: context.colors.divider.withValues(alpha: 0.5),
+          ),
         ),
       ),
       child: Row(
@@ -217,11 +216,8 @@ class _CoachingAdvice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = coaching.performanceScore ?? 1.0;
-    final isGood = score >= 0.85;
     final isGreat = score >= 1.0;
-    final accent = isGreat
-        ? context.colors.success
-        : (isGood ? Colors.amber[400]! : Colors.orange[400]!);
+    final accent = isGreat ? context.colors.success : context.colors.warning;
 
     return Container(
       padding: const EdgeInsets.all(Spacing.md),

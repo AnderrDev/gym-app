@@ -6,17 +6,16 @@ import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/core/ui/molecules/app_card.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.dark(),
-      home: Scaffold(body: child),
-    );
+  theme: AppTheme.dark(),
+  home: Scaffold(body: child),
+);
 
 void main() {
   group('AppCard', () {
-    testWidgets('surface por defecto usa Material + InkWell + Container',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(const AppCard(child: Text('contenido'))),
-      );
+    testWidgets('surface por defecto usa Material + InkWell + Container', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const AppCard(child: Text('contenido'))));
       expect(find.text('contenido'), findsOneWidget);
       expect(find.byType(Material), findsWidgets);
       expect(find.byType(InkWell), findsOneWidget);
@@ -34,10 +33,12 @@ void main() {
     testWidgets('onTap invoca callback al tappear', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
-        _wrap(AppCard(
-          onTap: () => taps++,
-          child: const SizedBox(width: 100, height: 100, child: Text('tap')),
-        )),
+        _wrap(
+          AppCard(
+            onTap: () => taps++,
+            child: const SizedBox(width: 100, height: 100, child: Text('tap')),
+          ),
+        ),
       );
       await tester.tap(find.text('tap'));
       await tester.pump();

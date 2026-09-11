@@ -115,10 +115,7 @@ class _AppShellViewState extends State<_AppShellView> {
     final shell = widget.navigationShell;
     // Si tap-eo la pestaña actual, volvemos al root de ese branch (popea
     // cualquier ruta apilada). Si es otra pestaña, switch normal.
-    shell.goBranch(
-      index,
-      initialLocation: index == shell.currentIndex,
-    );
+    shell.goBranch(index, initialLocation: index == shell.currentIndex);
   }
 
   @override
@@ -163,8 +160,7 @@ class _AppShellViewState extends State<_AppShellView> {
             ActiveSessionWatcherState,
             ActiveSessionInfo?
           >(
-            selector: (state) =>
-                state.hasActiveSession ? state.session : null,
+            selector: (state) => state.hasActiveSession ? state.session : null,
             builder: (context, session) {
               if (session == null) return const SizedBox.shrink();
               return DashboardActiveSessionBanner(

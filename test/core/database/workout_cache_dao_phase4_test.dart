@@ -24,50 +24,52 @@ void main() {
   // ─── cached_assigned_routines ─────────────────────────────────────────
 
   group('replaceAssignedRoutines / readAssignedRoutines', () {
-    test('replace reemplaza el contenido del userId y deja al resto intacto',
-        () async {
-      await dao.replaceAssignedRoutines('u1', [
-        CachedAssignedRoutinesCompanion.insert(
-          userId: 'u1',
-          routineId: 'r1',
-          routineName: 'Push',
-          fetchedAt: 1,
-        ),
-        CachedAssignedRoutinesCompanion.insert(
-          userId: 'u1',
-          routineId: 'r2',
-          routineName: 'Pull',
-          fetchedAt: 2,
-        ),
-      ]);
-      // Otro usuario debe sobrevivir.
-      await dao.replaceAssignedRoutines('u2', [
-        CachedAssignedRoutinesCompanion.insert(
-          userId: 'u2',
-          routineId: 'rX',
-          routineName: 'Otro',
-          fetchedAt: 1,
-        ),
-      ]);
+    test(
+      'replace reemplaza el contenido del userId y deja al resto intacto',
+      () async {
+        await dao.replaceAssignedRoutines('u1', [
+          CachedAssignedRoutinesCompanion.insert(
+            userId: 'u1',
+            routineId: 'r1',
+            routineName: 'Push',
+            fetchedAt: 1,
+          ),
+          CachedAssignedRoutinesCompanion.insert(
+            userId: 'u1',
+            routineId: 'r2',
+            routineName: 'Pull',
+            fetchedAt: 2,
+          ),
+        ]);
+        // Otro usuario debe sobrevivir.
+        await dao.replaceAssignedRoutines('u2', [
+          CachedAssignedRoutinesCompanion.insert(
+            userId: 'u2',
+            routineId: 'rX',
+            routineName: 'Otro',
+            fetchedAt: 1,
+          ),
+        ]);
 
-      // Second replace para u1 → reemplaza todo.
-      await dao.replaceAssignedRoutines('u1', [
-        CachedAssignedRoutinesCompanion.insert(
-          userId: 'u1',
-          routineId: 'r9',
-          routineName: 'Legs',
-          fetchedAt: 9,
-        ),
-      ]);
+        // Second replace para u1 → reemplaza todo.
+        await dao.replaceAssignedRoutines('u1', [
+          CachedAssignedRoutinesCompanion.insert(
+            userId: 'u1',
+            routineId: 'r9',
+            routineName: 'Legs',
+            fetchedAt: 9,
+          ),
+        ]);
 
-      final u1Rows = await dao.readAssignedRoutines('u1');
-      expect(u1Rows.length, 1);
-      expect(u1Rows.single.routineId, 'r9');
+        final u1Rows = await dao.readAssignedRoutines('u1');
+        expect(u1Rows.length, 1);
+        expect(u1Rows.single.routineId, 'r9');
 
-      // u2 intacto.
-      final u2Rows = await dao.readAssignedRoutines('u2');
-      expect(u2Rows.single.routineId, 'rX');
-    });
+        // u2 intacto.
+        final u2Rows = await dao.readAssignedRoutines('u2');
+        expect(u2Rows.single.routineId, 'rX');
+      },
+    );
 
     test('replace con lista vacía vacía la caché del usuario', () async {
       await dao.replaceAssignedRoutines('u1', [
@@ -87,31 +89,33 @@ void main() {
   // ─── cached_weekly_insights ───────────────────────────────────────────
 
   group('upsertWeeklyInsight / readWeeklyInsight', () {
-    test('upsert por PK compuesta (user, routine, weekStart) — el segundo gana',
-        () async {
-      await dao.upsertWeeklyInsight(
-        CachedWeeklyInsightsCompanion.insert(
-          userId: 'u1',
-          routineId: 'r1',
-          weekStart: '2026-05-11',
-          payloadJson: '{"v":1}',
-          fetchedAt: 1,
-        ),
-      );
-      await dao.upsertWeeklyInsight(
-        CachedWeeklyInsightsCompanion.insert(
-          userId: 'u1',
-          routineId: 'r1',
-          weekStart: '2026-05-11',
-          payloadJson: '{"v":2}',
-          fetchedAt: 2,
-        ),
-      );
+    test(
+      'upsert por PK compuesta (user, routine, weekStart) — el segundo gana',
+      () async {
+        await dao.upsertWeeklyInsight(
+          CachedWeeklyInsightsCompanion.insert(
+            userId: 'u1',
+            routineId: 'r1',
+            weekStart: '2026-05-11',
+            payloadJson: '{"v":1}',
+            fetchedAt: 1,
+          ),
+        );
+        await dao.upsertWeeklyInsight(
+          CachedWeeklyInsightsCompanion.insert(
+            userId: 'u1',
+            routineId: 'r1',
+            weekStart: '2026-05-11',
+            payloadJson: '{"v":2}',
+            fetchedAt: 2,
+          ),
+        );
 
-      final row = await dao.readWeeklyInsight('u1', 'r1', '2026-05-11');
-      expect(row != null, isTrue);
-      expect(row!.payloadJson, '{"v":2}');
-    });
+        final row = await dao.readWeeklyInsight('u1', 'r1', '2026-05-11');
+        expect(row != null, isTrue);
+        expect(row!.payloadJson, '{"v":2}');
+      },
+    );
 
     test('read devuelve null cuando no hay fila', () async {
       final row = await dao.readWeeklyInsight('u1', 'r1', '2026-05-11');
@@ -142,99 +146,94 @@ void main() {
       await insert('s-after', '2026-05-18', 'u1');
       await insert('s-other', '2026-05-13', 'u2'); // otro user
 
-      final rows = await dao.readWeekSessions(
-        'u1',
-        '2026-05-11',
-        '2026-05-17',
-      );
+      final rows = await dao.readWeekSessions('u1', '2026-05-11', '2026-05-17');
 
-      expect(
-        rows.map((r) => r.id).toList(),
-        ['s-mon', 's-wed', 's-sun'],
-      );
+      expect(rows.map((r) => r.id).toList(), ['s-mon', 's-wed', 's-sun']);
     });
   });
 
   group('upsertSyncedSessions', () {
-    test('respeta sync_status pending/syncing/error (no toca esas filas)',
-        () async {
-      // Sembramos 3 filas con estados protegidos.
-      for (final status in const ['pending', 'syncing', 'error']) {
+    test(
+      'respeta sync_status pending/syncing/error (no toca esas filas)',
+      () async {
+        // Sembramos 3 filas con estados protegidos.
+        for (final status in const ['pending', 'syncing', 'error']) {
+          await dao.saveCachedSession(
+            CachedWorkoutSessionsCompanion.insert(
+              id: 'sess-$status',
+              userId: 'u1',
+              routineDayId: 'd1',
+              sessionDate: '2026-05-11',
+              startedAt: 1,
+              totalTargetSets: const Value(10),
+              syncStatus: Value(status),
+              fetchedAt: 1,
+            ),
+          );
+        }
+
+        // Y una fila ya synced.
         await dao.saveCachedSession(
           CachedWorkoutSessionsCompanion.insert(
-            id: 'sess-$status',
+            id: 'sess-synced',
             userId: 'u1',
             routineDayId: 'd1',
             sessionDate: '2026-05-11',
             startedAt: 1,
-            totalTargetSets: const Value(10),
-            syncStatus: Value(status),
+            totalTargetSets: const Value(5),
+            syncStatus: const Value('synced'),
             fetchedAt: 1,
           ),
         );
-      }
 
-      // Y una fila ya synced.
-      await dao.saveCachedSession(
-        CachedWorkoutSessionsCompanion.insert(
-          id: 'sess-synced',
-          userId: 'u1',
-          routineDayId: 'd1',
-          sessionDate: '2026-05-11',
-          startedAt: 1,
-          totalTargetSets: const Value(5),
-          syncStatus: const Value('synced'),
-          fetchedAt: 1,
-        ),
-      );
+        // Ahora "el remote" devuelve los 4 ids con valores actualizados.
+        await dao.upsertSyncedSessions([
+          for (final id in const [
+            'sess-pending',
+            'sess-syncing',
+            'sess-error',
+            'sess-synced',
+          ])
+            CachedWorkoutSessionsCompanion.insert(
+              id: id,
+              userId: 'u1',
+              routineDayId: 'd1',
+              sessionDate: '2026-05-11',
+              startedAt: 999,
+              totalTargetSets: const Value(99),
+              // Caller envía cualquier status; el DAO lo normaliza a synced.
+              syncStatus: const Value('synced'),
+              fetchedAt: 999,
+            ),
+        ]);
 
-      // Ahora "el remote" devuelve los 4 ids con valores actualizados.
-      await dao.upsertSyncedSessions([
-        for (final id in const [
-          'sess-pending',
-          'sess-syncing',
-          'sess-error',
-          'sess-synced',
-        ])
-          CachedWorkoutSessionsCompanion.insert(
-            id: id,
-            userId: 'u1',
-            routineDayId: 'd1',
-            sessionDate: '2026-05-11',
-            startedAt: 999,
-            totalTargetSets: const Value(99),
-            // Caller envía cualquier status; el DAO lo normaliza a synced.
-            syncStatus: const Value('synced'),
-            fetchedAt: 999,
-          ),
-      ]);
+        Future<String> status(String id) async {
+          final row = await (db.select(
+            db.cachedWorkoutSessions,
+          )..where((t) => t.id.equals(id))).getSingle();
+          return row.syncStatus;
+        }
 
-      Future<String> status(String id) async {
-        final row = await (db.select(db.cachedWorkoutSessions)
-              ..where((t) => t.id.equals(id)))
-            .getSingle();
-        return row.syncStatus;
-      }
+        Future<int> totalTarget(String id) async {
+          final row = await (db.select(
+            db.cachedWorkoutSessions,
+          )..where((t) => t.id.equals(id))).getSingle();
+          return row.totalTargetSets;
+        }
 
-      Future<int> totalTarget(String id) async {
-        final row = await (db.select(db.cachedWorkoutSessions)
-              ..where((t) => t.id.equals(id)))
-            .getSingle();
-        return row.totalTargetSets;
-      }
+        expect(await status('sess-pending'), 'pending');
+        expect(await status('sess-syncing'), 'syncing');
+        expect(await status('sess-error'), 'error');
+        expect(await status('sess-synced'), 'synced');
 
-      expect(await status('sess-pending'), 'pending');
-      expect(await status('sess-syncing'), 'syncing');
-      expect(await status('sess-error'), 'error');
-      expect(await status('sess-synced'), 'synced');
-
-      // Las protegidas mantienen su totalTargetSets.
-      expect(await totalTarget('sess-pending'), 10);
-      expect(await totalTarget('sess-syncing'), 10);
-      expect(await totalTarget('sess-error'), 10);
-      // La synced sí se reemplazó.
-      expect(await totalTarget('sess-synced'), 99);
-    });
+        // Las protegidas mantienen su totalTargetSets.
+        expect(await totalTarget('sess-pending'), 10);
+        expect(await totalTarget('sess-syncing'), 10);
+        expect(await totalTarget('sess-error'), 10);
+        // La synced sí se reemplazó.
+        expect(await totalTarget('sess-synced'), 99);
+      },
+    );
 
     test('inserta filas nuevas como synced cuando no existían', () async {
       await dao.upsertSyncedSessions([
@@ -248,9 +247,9 @@ void main() {
           fetchedAt: 1,
         ),
       ]);
-      final row = await (db.select(db.cachedWorkoutSessions)
-            ..where((t) => t.id.equals('sess-new')))
-          .getSingle();
+      final row = await (db.select(
+        db.cachedWorkoutSessions,
+      )..where((t) => t.id.equals('sess-new'))).getSingle();
       expect(row.syncStatus, 'synced');
     });
 

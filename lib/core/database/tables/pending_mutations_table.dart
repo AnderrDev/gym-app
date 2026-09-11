@@ -20,8 +20,7 @@ class PendingMutations extends Table {
 
   /// Intentos acumulados. Solo incrementa en fallos retriable (no en pausas
   /// por auth ni en éxitos).
-  IntColumn get attempts =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
 
   /// Último error capturado en formato textual. Solo para diagnóstico /
   /// observabilidad — nunca lo lee la UI.

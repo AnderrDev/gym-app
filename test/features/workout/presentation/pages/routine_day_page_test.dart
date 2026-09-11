@@ -113,17 +113,14 @@ void main() {
     activeWorkoutNotifier = MockActiveWorkoutNotifier();
     liveActivitiesBridge = MockLiveActivitiesBridge();
     when(() => liveActivitiesBridge.isAvailable).thenReturn(false);
-    when(() => notificationService.requestPermission()).thenAnswer(
-      (_) async => true,
-    );
     when(
-      () => activeWorkoutNotifier.onRestStarted(
-        duration: any(named: 'duration'),
-      ),
-    ).thenAnswer((_) async {});
+      () => notificationService.requestPermission(),
+    ).thenAnswer((_) async => true);
     when(
-      () => activeWorkoutNotifier.onRestEnded(),
+      () =>
+          activeWorkoutNotifier.onRestStarted(duration: any(named: 'duration')),
     ).thenAnswer((_) async {});
+    when(() => activeWorkoutNotifier.onRestEnded()).thenAnswer((_) async {});
     if (di.sl.isRegistered<NotificationService>()) {
       di.sl.unregister<NotificationService>();
     }

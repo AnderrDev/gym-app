@@ -17,7 +17,8 @@ void main() {
     id: tId,
     name: 'Press de Banca',
     muscleGroup: 'Pecho',
-    instructions: 'Acuéstate en banco plano.\n\n- Agarre algo más ancho que hombros.',
+    instructions:
+        'Acuéstate en banco plano.\n\n- Agarre algo más ancho que hombros.',
   );
 
   setUp(() {
@@ -25,19 +26,24 @@ void main() {
     usecase = GetExerciseDetail(repository);
   });
 
-  test('delega en repository.getExerciseDetail y devuelve la entidad', () async {
-    when(() => repository.getExerciseDetail(any()))
-        .thenAnswer((_) async => const Right(tDetail));
+  test(
+    'delega en repository.getExerciseDetail y devuelve la entidad',
+    () async {
+      when(
+        () => repository.getExerciseDetail(any()),
+      ).thenAnswer((_) async => const Right(tDetail));
 
-    final result = await usecase(tId);
+      final result = await usecase(tId);
 
-    expect(result, const Right<Failure, ExerciseDetail>(tDetail));
-    verify(() => repository.getExerciseDetail(tId)).called(1);
-  });
+      expect(result, const Right<Failure, ExerciseDetail>(tDetail));
+      verify(() => repository.getExerciseDetail(tId)).called(1);
+    },
+  );
 
   test('propaga Failure desde el repositorio', () async {
-    when(() => repository.getExerciseDetail(any()))
-        .thenAnswer((_) async => const Left(NotFoundFailure('not found')));
+    when(
+      () => repository.getExerciseDetail(any()),
+    ).thenAnswer((_) async => const Left(NotFoundFailure('not found')));
 
     final result = await usecase(tId);
 

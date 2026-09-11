@@ -40,11 +40,7 @@ class ProfileInfoCard extends StatelessWidget {
     for (var i = 0; i < rows.length; i++) {
       children.add(rows[i]);
       if (i < rows.length - 1) {
-        children.add(Divider(
-          height: 1,
-          thickness: 1,
-          color: colors.divider,
-        ));
+        children.add(Divider(height: 1, thickness: 1, color: colors.divider));
       }
     }
     return Container(

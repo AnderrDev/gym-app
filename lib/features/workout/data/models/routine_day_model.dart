@@ -58,7 +58,8 @@ class RoutineDayModel {
           targetWeight: (exMap['target_weight'] as num?)?.toDouble() ?? 0.0,
           targetReps: (exMap['target_reps'] as num?)?.toInt() ?? 0,
           targetSets: (exMap['target_sets'] as num?)?.toInt() ?? 3,
-          restTimerSeconds: (exMap['rest_timer_seconds'] as num?)?.toInt() ?? 90,
+          restTimerSeconds:
+              (exMap['rest_timer_seconds'] as num?)?.toInt() ?? 90,
         ),
       );
     }
@@ -96,26 +97,26 @@ class RoutineDayModel {
   }
 
   factory RoutineDayModel.fromEntity(RoutineDay entity) => RoutineDayModel(
-        id: entity.id,
-        routineId: entity.routineId,
-        name: entity.name,
-        dayOfWeek: entity.dayOfWeek,
-        exercises: entity.exercises,
-        targetSetsCount: entity.targetSetsCount,
-        status: entity.status,
-        exerciseNamesPreview: entity.exerciseNamesPreview,
-      );
+    id: entity.id,
+    routineId: entity.routineId,
+    name: entity.name,
+    dayOfWeek: entity.dayOfWeek,
+    exercises: entity.exercises,
+    targetSetsCount: entity.targetSetsCount,
+    status: entity.status,
+    exerciseNamesPreview: entity.exerciseNamesPreview,
+  );
 
   RoutineDay toEntity() => RoutineDay(
-        id: id,
-        routineId: routineId,
-        dayOfWeek: dayOfWeek,
-        name: name,
-        exercises: exercises,
-        targetSetsCount: targetSetsCount,
-        status: status,
-        exerciseNamesPreview: exerciseNamesPreview,
-      );
+    id: id,
+    routineId: routineId,
+    dayOfWeek: dayOfWeek,
+    name: name,
+    exercises: exercises,
+    targetSetsCount: targetSetsCount,
+    status: status,
+    exerciseNamesPreview: exerciseNamesPreview,
+  );
 
   static WorkoutDayStatus _statusFromName(String? name) {
     if (name == null) return WorkoutDayStatus.pending;

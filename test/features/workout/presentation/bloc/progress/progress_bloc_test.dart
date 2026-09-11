@@ -179,8 +179,11 @@ void main() {
       },
       act: (b) => b.add(RefreshProgress(userId, weekStart: monday)),
       expect: () => [
-        isA<ProgressFailure>()
-            .having((s) => s.message, 'message', 'refresh-boom'),
+        isA<ProgressFailure>().having(
+          (s) => s.message,
+          'message',
+          'refresh-boom',
+        ),
       ],
     );
   });

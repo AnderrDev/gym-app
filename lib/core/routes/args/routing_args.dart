@@ -53,10 +53,10 @@ class RoutineStatsArgs {
   final String routineName;
 
   Map<String, String> toQueryParams() => {
-        'userId': userId,
-        'routineId': routineId,
-        'routineName': routineName,
-      };
+    'userId': userId,
+    'routineId': routineId,
+    'routineName': routineName,
+  };
 
   /// Reconstruye args desde `state.uri.queryParameters`. Devuelve null si
   /// falta alguno de los 3 campos requeridos.
@@ -89,10 +89,10 @@ class ExerciseProgressArgs {
   final String exerciseName;
 
   Map<String, String> toQueryParams() => {
-        'userId': userId,
-        'exerciseId': exerciseId,
-        'exerciseName': exerciseName,
-      };
+    'userId': userId,
+    'exerciseId': exerciseId,
+    'exerciseName': exerciseName,
+  };
 
   static ExerciseProgressArgs? tryFromQuery(Map<String, String> q) {
     final userId = q['userId'];

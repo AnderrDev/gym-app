@@ -9,7 +9,10 @@ class DeleteDayDialog extends StatelessWidget {
 
   final String dayName;
 
-  static Future<bool> show(BuildContext context, {required String dayName}) async {
+  static Future<bool> show(
+    BuildContext context, {
+    required String dayName,
+  }) async {
     final res = await showDialog<bool>(
       context: context,
       builder: (_) => DeleteDayDialog(dayName: dayName),
@@ -34,15 +37,18 @@ class DeleteDayDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context, false),
           child: Text(
             'CANCELAR',
-            style:
-                context.text.labelMedium?.copyWith(color: context.colors.textSecondary),
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(
             'ELIMINAR',
-            style: context.text.labelMedium?.copyWith(color: context.colors.error),
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.error,
+            ),
           ),
         ),
       ],

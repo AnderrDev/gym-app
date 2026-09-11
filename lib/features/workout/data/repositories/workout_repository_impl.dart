@@ -77,9 +77,10 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     this.localDatabase,
     Clock? clock,
     String? Function()? currentUserIdResolver,
-  })  : _clock = clock ?? const SystemClock(),
-        _currentUserId = currentUserIdResolver ??
-            (() => Supabase.instance.client.auth.currentUser?.id);
+  }) : _clock = clock ?? const SystemClock(),
+       _currentUserId =
+           currentUserIdResolver ??
+           (() => Supabase.instance.client.auth.currentUser?.id);
 
   bool get _isOnline => connectivity?.isOnline ?? true;
 
@@ -117,8 +118,9 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           try {
             await writeCache(fresh);
           } catch (e) {
-            AppLogger.instance
-                .warning('workout_cache.write_failed[$label]: $e');
+            AppLogger.instance.warning(
+              'workout_cache.write_failed[$label]: $e',
+            );
           }
         }
         return fresh;
@@ -171,13 +173,15 @@ class WorkoutRepositoryImpl extends WorkoutRepository
           try {
             await writeCache(fresh);
           } catch (e) {
-            AppLogger.instance
-                .warning('workout_cache.write_failed[$label]: $e');
+            AppLogger.instance.warning(
+              'workout_cache.write_failed[$label]: $e',
+            );
           }
         }
         return fresh;
       } catch (e) {
-        final isNetwork = e is core_ex.NetworkException ||
+        final isNetwork =
+            e is core_ex.NetworkException ||
             (e is Exception && _isNetworkLike(e));
         if (!isNetwork) {
           // Negocio (NotFound/Auth/...). Propagamos para preservar
@@ -204,8 +208,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
         () => _swrNullable<List<Routine>>(
           label: 'assignedRoutines',
           fetchRemote: () async {
-            final fresh =
-                await remoteDataSource.getAssignedRoutines(userId);
+            final fresh = await remoteDataSource.getAssignedRoutines(userId);
             return fresh.map((m) => m.toEntity()).toList();
           },
           writeCache: (routines) async {
@@ -239,230 +242,213 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   @override
   Future<Either<Failure, List<Exercise>>> getExercisesForDay(
     String routineDayId,
-  ) =>
-      guard(
-        () => _swrList<List<Exercise>>(
-          label: 'exercisesForDay',
-          fetchRemote: () async {
-            final fresh =
-                await remoteDataSource.getExercisesForDay(routineDayId);
-            return fresh.map((m) => m.toEntity()).toList();
-          },
-          writeCache: (exercises) =>
-              localDataSource!.cacheExercisesForDay(routineDayId, exercises),
-          readCache: () =>
-              localDataSource!.getExercisesForDay(routineDayId),
-          isEmpty: (l) => l.isEmpty,
-        ),
-      );
+  ) => guard(
+    () => _swrList<List<Exercise>>(
+      label: 'exercisesForDay',
+      fetchRemote: () async {
+        final fresh = await remoteDataSource.getExercisesForDay(routineDayId);
+        return fresh.map((m) => m.toEntity()).toList();
+      },
+      writeCache: (exercises) =>
+          localDataSource!.cacheExercisesForDay(routineDayId, exercises),
+      readCache: () => localDataSource!.getExercisesForDay(routineDayId),
+      isEmpty: (l) => l.isEmpty,
+    ),
+  );
 
   @override
   Future<Either<Failure, List<WorkoutSession>>> getWeekSessions(
     String userId,
     DateTime weekStart,
     DateTime weekEnd,
-  ) =>
-      guard(
-        () => _swrNullable<List<WorkoutSession>>(
-          label: 'weekSessions',
-          fetchRemote: () async {
-            final fresh = await remoteDataSource.getWeekSessions(
-              userId,
-              weekStart,
-              weekEnd,
-            );
-            return fresh.map((m) => m.toEntity()).toList();
-          },
-          writeCache: (sessions) async {
-            if (localDataSource == null) return;
-            await localDataSource!.cacheWeekSessions(userId, sessions);
-          },
-          readCache: () async {
-            if (localDataSource == null) return null;
-            return localDataSource!.getWeekSessions(
-              userId,
-              weekStart,
-              weekEnd,
-            );
-          },
-          offlineFallback: const <WorkoutSession>[],
-        ),
-      );
+  ) => guard(
+    () => _swrNullable<List<WorkoutSession>>(
+      label: 'weekSessions',
+      fetchRemote: () async {
+        final fresh = await remoteDataSource.getWeekSessions(
+          userId,
+          weekStart,
+          weekEnd,
+        );
+        return fresh.map((m) => m.toEntity()).toList();
+      },
+      writeCache: (sessions) async {
+        if (localDataSource == null) return;
+        await localDataSource!.cacheWeekSessions(userId, sessions);
+      },
+      readCache: () async {
+        if (localDataSource == null) return null;
+        return localDataSource!.getWeekSessions(userId, weekStart, weekEnd);
+      },
+      offlineFallback: const <WorkoutSession>[],
+    ),
+  );
 
   @override
   Future<Either<Failure, WorkoutSession?>> getExistingSession(
     String userId,
     String routineDayId,
     DateTime sessionDate,
-  ) =>
-      guard(
-        () async => (await remoteDataSource.getExistingSession(
-          userId,
-          routineDayId,
-          sessionDate,
-        ))
-            ?.toEntity(),
-      );
+  ) => guard(
+    () async => (await remoteDataSource.getExistingSession(
+      userId,
+      routineDayId,
+      sessionDate,
+    ))?.toEntity(),
+  );
 
   @override
   Future<Either<Failure, WorkoutSession>> startWorkoutForDay(
     String userId,
     String routineDayId,
     DateTime sessionDate,
-  ) =>
-      guard(() async {
-        // Online-first: si hay red, escribimos directo al remoto y devolvemos
-        // la sesión real (con el id que asignó Postgres). Sólo si genuinamente
-        // estamos offline caemos al outbox local. Antes el path local-first
-        // siempre encolaba aunque el cliente estuviera online, y el drain del
-        // SyncWorker quedaba atascado con backoffs / RLS auth-pause, dejando
-        // los POST sin enviarse "ahí mismo".
-        if (!_offlineCapable || _isOnline) {
-          final session = (await remoteDataSource.startWorkoutForDay(
-            userId,
-            routineDayId,
-            sessionDate,
-          ))
-              .toEntity();
-          if (localDataSource != null) {
-            try {
-              await localDataSource!.saveCachedSession(session);
-            } catch (e) {
-              AppLogger.instance
-                  .warning('startWorkoutForDay: cache write failed: $e');
-            }
-          }
-          return session;
-        }
-        // Offline real: id provisional uuid v4 + outbox. SyncWorker empuja
-        // cuando recupera red.
-        final newId = uuid!.v4();
-        final session = WorkoutSession(
-          id: newId,
-          userId: userId,
-          routineDayId: routineDayId,
-          sessionDate: sessionDate,
-        );
-        await _txn(() async {
+  ) => guard(() async {
+    // Online-first: si hay red, escribimos directo al remoto y devolvemos
+    // la sesión real (con el id que asignó Postgres). Sólo si genuinamente
+    // estamos offline caemos al outbox local. Antes el path local-first
+    // siempre encolaba aunque el cliente estuviera online, y el drain del
+    // SyncWorker quedaba atascado con backoffs / RLS auth-pause, dejando
+    // los POST sin enviarse "ahí mismo".
+    if (!_offlineCapable || _isOnline) {
+      final session = (await remoteDataSource.startWorkoutForDay(
+        userId,
+        routineDayId,
+        sessionDate,
+      )).toEntity();
+      if (localDataSource != null) {
+        try {
           await localDataSource!.saveCachedSession(session);
-          await outbox!.enqueue(MutationKind.insertSession, {
-            'id': newId,
-            'user_id': userId,
-            'routine_day_id': routineDayId,
-            'session_date': _isoDate(sessionDate),
-          });
-        });
-        unawaited(syncWorker?.kick());
-        return session;
+        } catch (e) {
+          AppLogger.instance.warning(
+            'startWorkoutForDay: cache write failed: $e',
+          );
+        }
+      }
+      return session;
+    }
+    // Offline real: id provisional uuid v4 + outbox. SyncWorker empuja
+    // cuando recupera red.
+    final newId = uuid!.v4();
+    final session = WorkoutSession(
+      id: newId,
+      userId: userId,
+      routineDayId: routineDayId,
+      sessionDate: sessionDate,
+    );
+    await _txn(() async {
+      await localDataSource!.saveCachedSession(session);
+      await outbox!.enqueue(MutationKind.insertSession, {
+        'id': newId,
+        'user_id': userId,
+        'routine_day_id': routineDayId,
+        'session_date': _isoDate(sessionDate),
       });
+    });
+    unawaited(syncWorker?.kick());
+    return session;
+  });
 
   @override
   Future<Either<Failure, void>> saveSetLog(SetLog setLog) => guard(() async {
-        // Online-first (ver nota en `startWorkoutForDay`). El POST sale ya
-        // mismo cuando hay red; el outbox sólo entra si estamos offline.
-        if (!_offlineCapable || _isOnline) {
-          await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
-          if (localDataSource != null) {
-            try {
-              await localDataSource!.upsertCachedSetLog(setLog);
-            } catch (e) {
-              AppLogger.instance
-                  .warning('saveSetLog: cache write failed: $e');
-            }
-          }
-          return;
-        }
-        await _txn(() async {
+    // Online-first (ver nota en `startWorkoutForDay`). El POST sale ya
+    // mismo cuando hay red; el outbox sólo entra si estamos offline.
+    if (!_offlineCapable || _isOnline) {
+      await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+      if (localDataSource != null) {
+        try {
           await localDataSource!.upsertCachedSetLog(setLog);
-          await outbox!.enqueue(MutationKind.upsertSetLog, {
-            'id': setLog.id,
-            'session_id': setLog.sessionId,
-            'exercise_id': setLog.exerciseId,
-            'actual_weight': setLog.actualWeight,
-            'actual_reps': setLog.actualReps,
-            'set_index': setLog.setIndex,
-            'created_at': setLog.createdAt?.toUtc().toIso8601String(),
-          });
-        });
-        unawaited(syncWorker?.kick());
+        } catch (e) {
+          AppLogger.instance.warning('saveSetLog: cache write failed: $e');
+        }
+      }
+      return;
+    }
+    await _txn(() async {
+      await localDataSource!.upsertCachedSetLog(setLog);
+      await outbox!.enqueue(MutationKind.upsertSetLog, {
+        'id': setLog.id,
+        'session_id': setLog.sessionId,
+        'exercise_id': setLog.exerciseId,
+        'actual_weight': setLog.actualWeight,
+        'actual_reps': setLog.actualReps,
+        'set_index': setLog.setIndex,
+        'created_at': setLog.createdAt?.toUtc().toIso8601String(),
       });
+    });
+    unawaited(syncWorker?.kick());
+  });
 
   @override
   Future<Either<Failure, void>> deleteSetLog({
     required String sessionId,
     required String exerciseId,
     required int setIndex,
-  }) =>
-      guard(
-        () => remoteDataSource.deleteSetLog(
-          sessionId: sessionId,
-          exerciseId: exerciseId,
-          setIndex: setIndex,
-        ),
-      );
+  }) => guard(
+    () => remoteDataSource.deleteSetLog(
+      sessionId: sessionId,
+      exerciseId: exerciseId,
+      setIndex: setIndex,
+    ),
+  );
 
   @override
   Future<Either<Failure, SetLog?>> getLastExercisePerformance(
     String exerciseId,
-  ) =>
-      guard(
-        () async =>
-            (await remoteDataSource.getLastExercisePerformance(exerciseId))
-                ?.toEntity(),
-      );
+  ) => guard(
+    () async => (await remoteDataSource.getLastExercisePerformance(
+      exerciseId,
+    ))?.toEntity(),
+  );
 
   @override
   Future<Either<Failure, Map<String, SetLog?>>> getLastExercisePerformances(
     List<String> exerciseIds,
-  ) =>
-      guard(() async {
-        if (exerciseIds.isEmpty) return <String, SetLog?>{};
-        final userId = _currentUserId();
-        final canCache = userId != null && localDataSource != null;
+  ) => guard(() async {
+    if (exerciseIds.isEmpty) return <String, SetLog?>{};
+    final userId = _currentUserId();
+    final canCache = userId != null && localDataSource != null;
 
-        return _swrList<Map<String, SetLog?>>(
-          label: 'lastPerformances',
-          fetchRemote: () async {
-            final result =
-                await remoteDataSource.getLastExercisePerformances(
-              exerciseIds,
-            );
-            return result.map((k, v) => MapEntry(k, v?.toEntity()));
-          },
-          writeCache: (map) async {
-            if (!canCache) return;
-            await localDataSource!.cacheLastPerformances(userId, map);
-          },
-          readCache: () async {
-            if (!canCache) return null;
-            return localDataSource!
-                .getLastPerformancesForExercises(userId, exerciseIds);
-          },
-          // El map siempre llega con keys = exerciseIds (incluso si los
-          // values son `null`). Lo consideramos vacío sólo cuando todos
-          // los values son null Y veníamos del cache (no del remote).
-          isEmpty: (m) => m.values.every((v) => v == null),
+    return _swrList<Map<String, SetLog?>>(
+      label: 'lastPerformances',
+      fetchRemote: () async {
+        final result = await remoteDataSource.getLastExercisePerformances(
+          exerciseIds,
         );
-      });
+        return result.map((k, v) => MapEntry(k, v?.toEntity()));
+      },
+      writeCache: (map) async {
+        if (!canCache) return;
+        await localDataSource!.cacheLastPerformances(userId, map);
+      },
+      readCache: () async {
+        if (!canCache) return null;
+        return localDataSource!.getLastPerformancesForExercises(
+          userId,
+          exerciseIds,
+        );
+      },
+      // El map siempre llega con keys = exerciseIds (incluso si los
+      // values son `null`). Lo consideramos vacío sólo cuando todos
+      // los values son null Y veníamos del cache (no del remote).
+      isEmpty: (m) => m.values.every((v) => v == null),
+    );
+  });
 
   @override
   Future<Either<Failure, List<SetLog>>> getSessionSetLogs(String sessionId) =>
       guard(
-        () async => (await remoteDataSource.getSessionSetLogs(sessionId))
-            .map((m) => m.toEntity())
-            .toList(),
+        () async => (await remoteDataSource.getSessionSetLogs(
+          sessionId,
+        )).map((m) => m.toEntity()).toList(),
       );
 
   @override
   Future<Either<Failure, Map<String, List<SetLog>>>> getSetLogsForSessions(
     List<String> sessionIds,
-  ) =>
-      guard(() async {
-        final raw = await remoteDataSource.getSetLogsForSessions(sessionIds);
-        return raw.map(
-          (k, v) => MapEntry(k, v.map((m) => m.toEntity()).toList()),
-        );
-      });
+  ) => guard(() async {
+    final raw = await remoteDataSource.getSetLogsForSessions(sessionIds);
+    return raw.map((k, v) => MapEntry(k, v.map((m) => m.toEntity()).toList()));
+  });
 
   @override
   Future<Either<Failure, List<WorkoutSession>>> getRecentSessionsForDay(
@@ -470,150 +456,139 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     String routineDayId,
     DateTime beforeDate, {
     int limit = 3,
-  }) =>
-      guard(
-        () async => (await remoteDataSource.getRecentSessionsForDay(
-          userId,
-          routineDayId,
-          beforeDate,
-          limit: limit,
-        ))
-            .map((m) => m.toEntity())
-            .toList(),
-      );
+  }) => guard(
+    () async => (await remoteDataSource.getRecentSessionsForDay(
+      userId,
+      routineDayId,
+      beforeDate,
+      limit: limit,
+    )).map((m) => m.toEntity()).toList(),
+  );
 
   @override
   Future<Either<Failure, void>> finishWorkoutSession(
     String sessionId, {
     List<CoachingAnalysis>? coachingAnalysis,
-  }) =>
-      guard(() async {
-        // Online-first (ver nota en `startWorkoutForDay`).
-        if (!_offlineCapable || _isOnline) {
-          await remoteDataSource.finishWorkoutSession(
+  }) => guard(() async {
+    // Online-first (ver nota en `startWorkoutForDay`).
+    if (!_offlineCapable || _isOnline) {
+      await remoteDataSource.finishWorkoutSession(
+        sessionId,
+        coachingAnalysis: coachingAnalysis,
+      );
+      if (localDataSource != null) {
+        try {
+          await localDataSource!.markSessionCompleted(
             sessionId,
-            coachingAnalysis: coachingAnalysis,
+            _clock.now().toUtc(),
           );
-          if (localDataSource != null) {
-            try {
-              await localDataSource!
-                  .markSessionCompleted(sessionId, _clock.now().toUtc());
-            } catch (e) {
-              AppLogger.instance
-                  .warning('finishWorkoutSession: cache write failed: $e');
-            }
-          }
-          return;
+        } catch (e) {
+          AppLogger.instance.warning(
+            'finishWorkoutSession: cache write failed: $e',
+          );
         }
-        final completedAt = _clock.now().toUtc();
-        await _txn(() async {
-          await localDataSource!.markSessionCompleted(sessionId, completedAt);
-          await outbox!.enqueue(MutationKind.finalizeSession, {
-            'session_id': sessionId,
-            'coaching_analysis':
-                coachingAnalysis?.map((c) => c.toJson()).toList(),
-          });
-        });
-        unawaited(syncWorker?.kick());
+      }
+      return;
+    }
+    final completedAt = _clock.now().toUtc();
+    await _txn(() async {
+      await localDataSource!.markSessionCompleted(sessionId, completedAt);
+      await outbox!.enqueue(MutationKind.finalizeSession, {
+        'session_id': sessionId,
+        'coaching_analysis': coachingAnalysis?.map((c) => c.toJson()).toList(),
       });
+    });
+    unawaited(syncWorker?.kick());
+  });
 
   @override
   Future<Either<Failure, WeeklyInsights>> getWeeklyInsights({
     required String routineId,
     required DateTime weekStart,
-  }) =>
-      guard(() async {
-        final userId = _currentUserId();
-        // El cache va por (userId, routineId, weekStart). Si no hay user
-        // resoluble (tests sin Supabase singleton) saltamos cache —
-        // remote-only con offlineFallback como red de seguridad.
-        final canCache = userId != null && localDataSource != null;
-        final fallback = WeeklyInsights(
-          weekStart: weekStart,
-          weekEnd: weekStart.add(const Duration(days: 6)),
-          plannedDays: 0,
-          completedDays: 0,
-          completedSessions: 0,
-          adherenceRate: 0,
-          totalVolume: 0,
-          previousWeekVolume: 0,
-          volumeTrendPercent: 0,
-          personalRecords: 0,
+  }) => guard(() async {
+    final userId = _currentUserId();
+    // El cache va por (userId, routineId, weekStart). Si no hay user
+    // resoluble (tests sin Supabase singleton) saltamos cache —
+    // remote-only con offlineFallback como red de seguridad.
+    final canCache = userId != null && localDataSource != null;
+    final fallback = WeeklyInsights(
+      weekStart: weekStart,
+      weekEnd: weekStart.add(const Duration(days: 6)),
+      plannedDays: 0,
+      completedDays: 0,
+      completedSessions: 0,
+      adherenceRate: 0,
+      totalVolume: 0,
+      previousWeekVolume: 0,
+      volumeTrendPercent: 0,
+      personalRecords: 0,
+    );
+    return _swrNullable<WeeklyInsights>(
+      label: 'weeklyInsights',
+      fetchRemote: () => remoteDataSource.getWeeklyInsights(
+        routineId: routineId,
+        weekStart: weekStart,
+      ),
+      writeCache: (insights) async {
+        if (!canCache) return;
+        await localDataSource!.cacheWeeklyInsights(
+          userId: userId,
+          routineId: routineId,
+          insights: insights,
         );
-        return _swrNullable<WeeklyInsights>(
-          label: 'weeklyInsights',
-          fetchRemote: () => remoteDataSource.getWeeklyInsights(
-            routineId: routineId,
-            weekStart: weekStart,
-          ),
-          writeCache: (insights) async {
-            if (!canCache) return;
-            await localDataSource!.cacheWeeklyInsights(
-              userId: userId,
-              routineId: routineId,
-              insights: insights,
-            );
-          },
-          readCache: () async {
-            if (!canCache) return null;
-            return localDataSource!.getWeeklyInsights(
-              userId,
-              routineId,
-              weekStart,
-            );
-          },
-          offlineFallback: fallback,
-        );
-      });
+      },
+      readCache: () async {
+        if (!canCache) return null;
+        return localDataSource!.getWeeklyInsights(userId, routineId, weekStart);
+      },
+      offlineFallback: fallback,
+    );
+  });
 
   @override
   Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(
     String userId,
     String exerciseId,
-  ) =>
-      guard(() async {
-        final rawData = await remoteDataSource.getExerciseLogsHistory(
-          userId,
-          exerciseId,
-        );
-        return mapExerciseLogsToHistory(rawData);
-      });
+  ) => guard(() async {
+    final rawData = await remoteDataSource.getExerciseLogsHistory(
+      userId,
+      exerciseId,
+    );
+    return mapExerciseLogsToHistory(rawData);
+  });
 
   @override
   Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(
     String userId,
     String routineId,
-  ) =>
-      guard(() async {
-        final rawData = await remoteDataSource.getRoutineStats(
-          userId,
-          routineId,
-        );
-        return mapRoutineSessionRows(rawData);
-      });
+  ) => guard(() async {
+    final rawData = await remoteDataSource.getRoutineStats(userId, routineId);
+    return mapRoutineSessionRows(rawData);
+  });
 
   @override
   Future<Either<Failure, WorkoutSession?>> getActiveSessionForUser(
     String userId,
-  ) =>
-      guard(() async {
-        try {
-          return (await remoteDataSource.getActiveSessionForUser(userId))
-              ?.toEntity();
-        } catch (e) {
-          // Fallback offline-capable: ante errores de red caemos al cache
-          // local. Mantenemos el throw para todos los demás errores —
-          // `mapToFailure` los traducirá al failure correcto.
-          if (!_offlineCapable) rethrow;
-          if (e is core_ex.NetworkException || e is Exception && _isNetworkLike(e)) {
-            AppLogger.instance.warning(
-              'workout_repo.active_session.remote_failed → fallback cache: $e',
-            );
-            return localDataSource!.getOpenSessionForUser(userId);
-          }
-          rethrow;
-        }
-      });
+  ) => guard(() async {
+    try {
+      return (await remoteDataSource.getActiveSessionForUser(
+        userId,
+      ))?.toEntity();
+    } catch (e) {
+      // Fallback offline-capable: ante errores de red caemos al cache
+      // local. Mantenemos el throw para todos los demás errores —
+      // `mapToFailure` los traducirá al failure correcto.
+      if (!_offlineCapable) rethrow;
+      if (e is core_ex.NetworkException ||
+          e is Exception && _isNetworkLike(e)) {
+        AppLogger.instance.warning(
+          'workout_repo.active_session.remote_failed → fallback cache: $e',
+        );
+        return localDataSource!.getOpenSessionForUser(userId);
+      }
+      rethrow;
+    }
+  });
 
   /// Stream observable de una sesión local. UI puede suscribirse para ver
   /// cambios tras drain (e.g. coaching aplicado).
@@ -629,8 +604,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     // mantener este file plataforma-agnóstico. Comparamos por nombre del
     // runtime type, igual que hace el error_mapper en otros casos.
     final name = e.runtimeType.toString();
-    return name == 'SocketException' ||
-        name == 'TimeoutException';
+    return name == 'SocketException' || name == 'TimeoutException';
   }
 
   String _isoDate(DateTime d) =>
@@ -638,4 +612,3 @@ class WorkoutRepositoryImpl extends WorkoutRepository
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 }
-

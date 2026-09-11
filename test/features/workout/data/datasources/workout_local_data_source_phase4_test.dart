@@ -39,11 +39,7 @@ void main() {
           creatorId: 'creator-1',
           creatorName: 'Coach',
         ),
-        Routine(
-          id: 'r2',
-          name: 'Pull',
-          exerciseCount: 4,
-        ),
+        Routine(id: 'r2', name: 'Pull', exerciseCount: 4),
       ];
       await local.cacheAssignedRoutines('u1', routines);
 
@@ -197,10 +193,12 @@ void main() {
         sessionDate: DateTime.utc(2026, 5, 13),
       );
 
-      await local.cacheWeekSessions(
-        'u1',
-        [inside1, inside2, outside, otherUser],
-      );
+      await local.cacheWeekSessions('u1', [
+        inside1,
+        inside2,
+        outside,
+        otherUser,
+      ]);
 
       final read = await local.getWeekSessions(
         'u1',
@@ -252,9 +250,9 @@ void main() {
       await local.cacheWeekSessions('u1', [remoteSession]);
 
       // 3) La fila no se ha tocado — sigue pending y con los conteos locales.
-      final row = await (db.select(db.cachedWorkoutSessions)
-            ..where((t) => t.id.equals('sess-1')))
-          .getSingle();
+      final row = await (db.select(
+        db.cachedWorkoutSessions,
+      )..where((t) => t.id.equals('sess-1'))).getSingle();
       expect(row.syncStatus, 'pending');
       expect(row.totalTargetSets, 10);
       expect(row.completedSetsCount, 5);

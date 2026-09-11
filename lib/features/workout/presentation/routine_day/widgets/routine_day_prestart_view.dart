@@ -80,9 +80,7 @@ class RoutineDayPreStartView extends StatelessWidget {
           ..._exerciseCardsWithSpacing(),
           if (lastSession?.coachingAnalysis?.isNotEmpty ?? false) ...[
             const SizedBox(height: Spacing.lg),
-            RoutineDayCoachingSummary(
-              coaching: lastSession!.coachingAnalysis!,
-            ),
+            RoutineDayCoachingSummary(coaching: lastSession!.coachingAnalysis!),
           ],
           if (hasAnotherActiveSession) ...[
             const SizedBox(height: Spacing.lg),
@@ -147,7 +145,9 @@ class _ActiveSessionWarning extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.warning.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: context.colors.warning.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: context.colors.warning.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [

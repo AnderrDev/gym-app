@@ -31,7 +31,9 @@ class DayCardSurface extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(Radii.lg),
           color: context.colors.surface.withValues(alpha: 0.25),
-          border: Border.all(color: context.colors.divider.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: context.colors.divider.withValues(alpha: 0.4),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -228,8 +230,9 @@ class DayCardDateBlock extends StatelessWidget {
     }
 
     final initialColor = muted ? context.colors.textSecondary : accent;
-    final numberColor =
-        muted ? context.colors.textSecondary : context.colors.textPrimary;
+    final numberColor = muted
+        ? context.colors.textSecondary
+        : context.colors.textPrimary;
     return SizedBox(
       width: 36,
       child: Column(

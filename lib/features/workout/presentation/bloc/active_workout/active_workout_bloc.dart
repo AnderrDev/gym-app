@@ -118,8 +118,9 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       ),
     );
     try {
-      final setLogs = (await repository.getSessionSetLogs(event.session.id))
-          .getOrElse((_) => const []);
+      final setLogs = (await repository.getSessionSetLogs(
+        event.session.id,
+      )).getOrElse((_) => const []);
       // El evento `ResumeActiveWorkout` no trae el routineDayName explícito;
       // cae sobre el contexto persistido como fallback.
       final dayName =
@@ -205,8 +206,9 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     }
     final newLogs = state.setLogs
         .where(
-          (l) => !(l.exerciseId == event.exerciseId &&
-              l.setIndex == event.setIndex),
+          (l) =>
+              !(l.exerciseId == event.exerciseId &&
+                  l.setIndex == event.setIndex),
         )
         .toList();
     emit(state.copyWith(setLogs: newLogs));

@@ -110,11 +110,7 @@ void main() {
     tester,
   ) async {
     when(() => bloc.state).thenReturn(
-      ProgressReady(
-        weekStart: monday,
-        weekEnd: sunday,
-        routines: const [],
-      ),
+      ProgressReady(weekStart: monday, weekEnd: sunday, routines: const []),
     );
 
     await tester.pumpWidget(wrap());

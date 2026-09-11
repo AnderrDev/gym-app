@@ -49,8 +49,9 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
         totalTargetSets > 0 && totalCompletedSets >= totalTargetSets;
     final prs = _computePrs();
     final comparisons = _computeComparisons();
-    final coaching =
-        analysis.where((a) => a.recommendation.isNotEmpty).toList();
+    final coaching = analysis
+        .where((a) => a.recommendation.isNotEmpty)
+        .toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
@@ -87,8 +88,9 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                       WorkoutMetric(
                         label: 'SERIES',
                         value: '$totalCompletedSets',
-                        secondary:
-                            totalTargetSets > 0 ? '/ $totalTargetSets' : null,
+                        secondary: totalTargetSets > 0
+                            ? '/ $totalTargetSets'
+                            : null,
                         accent: context.colors.primary,
                         icon: Icons.task_alt_rounded,
                       ),
@@ -154,8 +156,9 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
             );
       if (currMax > prevMax && currMax > 0) {
         // Reps usadas en la serie que rompió récord (la más pesada).
-        final prSet =
-            curr.reduce((a, b) => a.actualWeight >= b.actualWeight ? a : b);
+        final prSet = curr.reduce(
+          (a, b) => a.actualWeight >= b.actualWeight ? a : b,
+        );
         out.add(
           WorkoutSummaryPr(
             exerciseName: ex.name,

@@ -32,7 +32,9 @@ class DeleteRoutineDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context, false),
           child: Text(
             'CANCELAR',
-            style: context.text.labelMedium?.copyWith(color: context.colors.textSecondary),
+            style: context.text.labelMedium?.copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
         ),
         ElevatedButton(

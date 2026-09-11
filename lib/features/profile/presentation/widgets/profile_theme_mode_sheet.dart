@@ -135,9 +135,7 @@ class _ThemeOption extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? accent
-                      : colors.surface,
+                  color: selected ? accent : colors.surface,
                   borderRadius: BorderRadius.circular(Radii.sm),
                   border: Border.all(color: colors.divider),
                 ),

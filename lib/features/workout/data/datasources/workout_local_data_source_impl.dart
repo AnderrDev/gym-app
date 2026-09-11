@@ -93,10 +93,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   // ─── Writes ─────────────────────────────────────────────────────────────
 
   @override
-  Future<void> cacheRoutineDays(
-    String routineId,
-    List<RoutineDay> days,
-  ) async {
+  Future<void> cacheRoutineDays(String routineId, List<RoutineDay> days) async {
     final now = _nowMs;
     final rows = days
         .map(
@@ -165,8 +162,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
         actualReps: log.actualReps,
         setIndex: log.setIndex,
         setLogId: Value(log.id),
-        performedAt:
-            Value(log.createdAt?.toUtc().millisecondsSinceEpoch),
+        performedAt: Value(log.createdAt?.toUtc().millisecondsSinceEpoch),
         fetchedAt: now,
       );
     });
@@ -182,12 +178,10 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     String syncStatus = 'pending',
   }) {
     final now = _nowMs;
-    final coachingJson = (session.coachingAnalysis == null ||
-            session.coachingAnalysis!.isEmpty)
+    final coachingJson =
+        (session.coachingAnalysis == null || session.coachingAnalysis!.isEmpty)
         ? null
-        : jsonEncode(
-            session.coachingAnalysis!.map((c) => c.toJson()).toList(),
-          );
+        : jsonEncode(session.coachingAnalysis!.map((c) => c.toJson()).toList());
     return _dao.saveCachedSession(
       CachedWorkoutSessionsCompanion.insert(
         id: session.id,
@@ -195,9 +189,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
         routineDayId: session.routineDayId,
         sessionDate: _isoDate(session.sessionDate),
         startedAt: now,
-        completedAt: Value(
-          session.completedAt?.toUtc().millisecondsSinceEpoch,
-        ),
+        completedAt: Value(session.completedAt?.toUtc().millisecondsSinceEpoch),
         totalTargetSets: Value(session.totalTargetSets),
         completedSetsCount: Value(session.completedSetsCount),
         coachingAnalysisJson: Value(coachingJson),
@@ -208,10 +200,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   }
 
   @override
-  Future<void> upsertCachedSetLog(
-    SetLog log, {
-    String syncStatus = 'pending',
-  }) {
+  Future<void> upsertCachedSetLog(SetLog log, {String syncStatus = 'pending'}) {
     final now = _nowMs;
     final createdMs = log.createdAt?.toUtc().millisecondsSinceEpoch ?? now;
     return _dao.upsertCachedSetLog(
@@ -255,9 +244,9 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
 
   @override
   Stream<WorkoutSession?> watchSession(String id) {
-    return _dao.watchSession(id).map(
-          (row) => row == null ? null : _mapSession(row),
-        );
+    return _dao
+        .watchSession(id)
+        .map((row) => row == null ? null : _mapSession(row));
   }
 
   // ─── Phase 4 SWR polish ────────────────────────────────────────────────
@@ -367,33 +356,27 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     if (sessions.isEmpty) return;
     final now = _nowMs;
     final rows = sessions
-        .map(
-          (s) {
-            final coachingJson = (s.coachingAnalysis == null ||
-                    s.coachingAnalysis!.isEmpty)
-                ? null
-                : jsonEncode(
-                    s.coachingAnalysis!.map((c) => c.toJson()).toList(),
-                  );
-            return CachedWorkoutSessionsCompanion.insert(
-              id: s.id,
-              userId: s.userId,
-              routineDayId: s.routineDayId,
-              sessionDate: _isoDate(s.sessionDate),
-              startedAt: now,
-              completedAt: Value(
-                s.completedAt?.toUtc().millisecondsSinceEpoch,
-              ),
-              totalTargetSets: Value(s.totalTargetSets),
-              completedSetsCount: Value(s.completedSetsCount),
-              coachingAnalysisJson: Value(coachingJson),
-              // Marcado como `synced` porque viene del remote; el DAO
-              // se encarga de respetar filas pending/syncing/error.
-              syncStatus: const Value('synced'),
-              fetchedAt: now,
-            );
-          },
-        )
+        .map((s) {
+          final coachingJson =
+              (s.coachingAnalysis == null || s.coachingAnalysis!.isEmpty)
+              ? null
+              : jsonEncode(s.coachingAnalysis!.map((c) => c.toJson()).toList());
+          return CachedWorkoutSessionsCompanion.insert(
+            id: s.id,
+            userId: s.userId,
+            routineDayId: s.routineDayId,
+            sessionDate: _isoDate(s.sessionDate),
+            startedAt: now,
+            completedAt: Value(s.completedAt?.toUtc().millisecondsSinceEpoch),
+            totalTargetSets: Value(s.totalTargetSets),
+            completedSetsCount: Value(s.completedSetsCount),
+            coachingAnalysisJson: Value(coachingJson),
+            // Marcado como `synced` porque viene del remote; el DAO
+            // se encarga de respetar filas pending/syncing/error.
+            syncStatus: const Value('synced'),
+            fetchedAt: now,
+          );
+        })
         .toList(growable: false);
     await _dao.upsertSyncedSessions(rows);
   }
@@ -419,10 +402,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
       sessionDate: DateTime.parse(row.sessionDate),
       completedAt: row.completedAt == null
           ? null
-          : DateTime.fromMillisecondsSinceEpoch(
-              row.completedAt!,
-              isUtc: true,
-            ),
+          : DateTime.fromMillisecondsSinceEpoch(row.completedAt!, isUtc: true),
       completedSetsCount: row.completedSetsCount,
       totalTargetSets: row.totalTargetSets,
       coachingAnalysis: coaching,

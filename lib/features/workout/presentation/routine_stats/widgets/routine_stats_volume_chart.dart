@@ -48,7 +48,11 @@ class RoutineStatsVolumeChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.show_chart_rounded, color: context.colors.primary, size: 20),
+              Icon(
+                Icons.show_chart_rounded,
+                color: context.colors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -171,10 +175,11 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         );
                         return LineTooltipItem(
                           '${fmt(s.y)} kg·reps',
-                          (context.text.bodySmall ?? const TextStyle()).copyWith(
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          (context.text.bodySmall ?? const TextStyle())
+                              .copyWith(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
                           children: [
                             TextSpan(
                               text: '\n$date',

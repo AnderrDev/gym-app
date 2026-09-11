@@ -47,17 +47,17 @@ class WeeklyInsights extends Equatable {
   /// Simétrico a [`fromJson`]. Usado por la caché local (Phase 4) para
   /// persistir el snapshot del Edge Function sin perder fidelidad.
   Map<String, dynamic> toJson() => {
-        'week_start': weekStart.toIso8601String(),
-        'week_end': weekEnd.toIso8601String(),
-        'planned_days': plannedDays,
-        'completed_days': completedDays,
-        'completed_sessions': completedSessions,
-        'adherence_rate': adherenceRate,
-        'total_volume': totalVolume,
-        'previous_week_volume': previousWeekVolume,
-        'volume_trend_percent': volumeTrendPercent,
-        'personal_records': personalRecords,
-      };
+    'week_start': weekStart.toIso8601String(),
+    'week_end': weekEnd.toIso8601String(),
+    'planned_days': plannedDays,
+    'completed_days': completedDays,
+    'completed_sessions': completedSessions,
+    'adherence_rate': adherenceRate,
+    'total_volume': totalVolume,
+    'previous_week_volume': previousWeekVolume,
+    'volume_trend_percent': volumeTrendPercent,
+    'personal_records': personalRecords,
+  };
 
   @override
   List<Object?> get props => [

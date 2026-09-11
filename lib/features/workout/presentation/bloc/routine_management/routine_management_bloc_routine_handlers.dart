@@ -140,8 +140,9 @@ extension RoutineEditHandlers on RoutineManagementBloc {
           submissionStatus: RoutineManagementSubmissionStatus.success,
           lastAction: RoutineManagementAction.deleteRoutine,
           feedbackMessage: 'Rutina eliminada correctamente',
-          routines:
-              state.routines.where((r) => r.id != event.routineId).toList(),
+          routines: state.routines
+              .where((r) => r.id != event.routineId)
+              .toList(),
         ),
       ),
     );

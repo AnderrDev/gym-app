@@ -51,16 +51,19 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// como records `(re, ex)` para que el datasource construya la entidad de
   /// dominio sin recurrir a otro DAO.
   Future<List<({CachedRoutineExerciseRow re, CachedExerciseRow ex})>>
-      readExercisesForDay(String routineDayId) async {
-    final rows = await (select(cachedRoutineExercises).join([
-      innerJoin(
-        cachedExercises,
-        cachedExercises.id.equalsExp(cachedRoutineExercises.exerciseId),
-      ),
-    ])
-          ..where(cachedRoutineExercises.routineDayId.equals(routineDayId))
-          ..orderBy([OrderingTerm.asc(cachedRoutineExercises.position)]))
-        .get();
+  readExercisesForDay(String routineDayId) async {
+    final rows =
+        await (select(cachedRoutineExercises).join([
+                innerJoin(
+                  cachedExercises,
+                  cachedExercises.id.equalsExp(
+                    cachedRoutineExercises.exerciseId,
+                  ),
+                ),
+              ])
+              ..where(cachedRoutineExercises.routineDayId.equals(routineDayId))
+              ..orderBy([OrderingTerm.asc(cachedRoutineExercises.position)]))
+            .get();
 
     return rows
         .map(
@@ -81,10 +84,7 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   ) async {
     if (exerciseIds.isEmpty) return const {};
     final query = select(cachedLastPerformances)
-      ..where(
-        (t) =>
-            t.userId.equals(userId) & t.exerciseId.isIn(exerciseIds),
-      );
+      ..where((t) => t.userId.equals(userId) & t.exerciseId.isIn(exerciseIds));
     final rows = await query.get();
     return {for (final r in rows) r.exerciseId: r};
   }
@@ -99,9 +99,9 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     List<CachedRoutineDaysCompanion> rows,
   ) {
     return transaction(() async {
-      await (delete(cachedRoutineDays)
-            ..where((t) => t.routineId.equals(routineId)))
-          .go();
+      await (delete(
+        cachedRoutineDays,
+      )..where((t) => t.routineId.equals(routineId))).go();
       if (rows.isEmpty) return;
       await batch((b) {
         b.insertAll(cachedRoutineDays, rows);
@@ -118,9 +118,9 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     List<CachedExercisesCompanion> catalog,
   ) {
     return transaction(() async {
-      await (delete(cachedRoutineExercises)
-            ..where((t) => t.routineDayId.equals(routineDayId)))
-          .go();
+      await (delete(
+        cachedRoutineExercises,
+      )..where((t) => t.routineDayId.equals(routineDayId))).go();
 
       if (catalog.isNotEmpty) {
         await batch((b) {
@@ -161,18 +161,16 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// Inserta o reemplaza una sesión cacheada. El caller (datasource local)
   /// se encarga de construir el companion completo — aquí solo persistimos.
   Future<void> saveCachedSession(CachedWorkoutSessionsCompanion row) {
-    return into(cachedWorkoutSessions).insert(
-      row,
-      mode: InsertMode.insertOrReplace,
-    );
+    return into(
+      cachedWorkoutSessions,
+    ).insert(row, mode: InsertMode.insertOrReplace);
   }
 
   /// Marca una sesión como completada en local. No toca el resto de la
   /// fila — quien aplique coaching debe usar [`applyCoachingForSession`]
   /// por separado.
   Future<void> markSessionCompleted(String id, int completedAtMs) {
-    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id)))
-        .write(
+    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id))).write(
       CachedWorkoutSessionsCompanion(
         completedAt: Value(completedAtMs),
         fetchedAt: Value(completedAtMs),
@@ -184,8 +182,7 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// Persiste el JSON serializado del coaching tras finalizar la sesión.
   Future<void> applyCoachingForSession(String id, String coachingJson) {
     final now = DateTime.now().toUtc().millisecondsSinceEpoch;
-    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id)))
-        .write(
+    return (update(cachedWorkoutSessions)..where((t) => t.id.equals(id))).write(
       CachedWorkoutSessionsCompanion(
         coachingAnalysisJson: Value(coachingJson),
         fetchedAt: Value(now),
@@ -220,10 +217,7 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// criterio que la unique constraint del backend, así el SyncWorker
   /// puede empujar varias veces sin duplicar.
   Future<void> upsertCachedSetLog(CachedSetLogsCompanion row) {
-    return into(cachedSetLogs).insert(
-      row,
-      mode: InsertMode.insertOrReplace,
-    );
+    return into(cachedSetLogs).insert(row, mode: InsertMode.insertOrReplace);
   }
 
   // ─── Phase 4: cached_assigned_routines ─────────────────────────────────
@@ -246,9 +240,9 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     List<CachedAssignedRoutinesCompanion> rows,
   ) {
     return transaction(() async {
-      await (delete(cachedAssignedRoutines)
-            ..where((t) => t.userId.equals(userId)))
-          .go();
+      await (delete(
+        cachedAssignedRoutines,
+      )..where((t) => t.userId.equals(userId))).go();
       if (rows.isEmpty) return;
       await batch((b) {
         b.insertAll(cachedAssignedRoutines, rows);
@@ -279,10 +273,9 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// Upsert por PK compuesta `(userId, routineId, weekStart)`. El caller
   /// construye el companion completo (payloadJson serializado fuera).
   Future<void> upsertWeeklyInsight(CachedWeeklyInsightsCompanion row) {
-    return into(cachedWeeklyInsights).insert(
-      row,
-      mode: InsertMode.insertOrReplace,
-    );
+    return into(
+      cachedWeeklyInsights,
+    ).insert(row, mode: InsertMode.insertOrReplace);
   }
 
   // ─── Phase 4: cached_workout_sessions (read-side de la semana) ─────────
@@ -311,18 +304,17 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
   /// colisiones write-side respeta cualquier fila local cuyo `sync_status`
   /// esté en `pending | syncing | error` (esas las gestiona el SyncWorker).
   /// El resto se reemplaza con la fila remota.
-  Future<void> upsertSyncedSessions(
-    List<CachedWorkoutSessionsCompanion> rows,
-  ) {
+  Future<void> upsertSyncedSessions(List<CachedWorkoutSessionsCompanion> rows) {
     if (rows.isEmpty) return Future.value();
     return transaction(() async {
       for (final row in rows) {
         if (!row.id.present) continue;
         final id = row.id.value;
-        final existing = await (select(cachedWorkoutSessions)
-              ..where((t) => t.id.equals(id))
-              ..limit(1))
-            .getSingleOrNull();
+        final existing =
+            await (select(cachedWorkoutSessions)
+                  ..where((t) => t.id.equals(id))
+                  ..limit(1))
+                .getSingleOrNull();
         if (existing != null) {
           const protected = {'pending', 'syncing', 'error'};
           if (protected.contains(existing.syncStatus)) {

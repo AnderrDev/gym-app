@@ -87,21 +87,20 @@ void main() {
     expect(find.text('Añadir 2 ejercicios'), findsOneWidget);
   });
 
-  testWidgets(
-    'debe deshabilitar ejercicios ya presentes en la rutina',
-    (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(alreadySelectedIds: const {'e1'}),
-      );
+  testWidgets('debe deshabilitar ejercicios ya presentes en la rutina', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      createWidgetUnderTest(alreadySelectedIds: const {'e1'}),
+    );
 
-      expect(find.text('Ya en tu rutina'), findsOneWidget);
+    expect(find.text('Ya en tu rutina'), findsOneWidget);
 
-      await tester.tap(find.text('Press de Banca Plano'));
-      await tester.pump();
+    await tester.tap(find.text('Press de Banca Plano'));
+    await tester.pump();
 
-      expect(find.text('0 seleccionados'), findsOneWidget);
-    },
-  );
+    expect(find.text('0 seleccionados'), findsOneWidget);
+  });
 
   testWidgets(
     'debe retornar la lista seleccionada al presionar el botón de añadir',
@@ -121,10 +120,12 @@ void main() {
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 onPressed: () async {
-                  result = await showModalBottomSheet<List<ExerciseCatalogItem>>(
-                    context: context,
-                    builder: (_) => const ExerciseCatalogSheet(catalog: catalog),
-                  );
+                  result =
+                      await showModalBottomSheet<List<ExerciseCatalogItem>>(
+                        context: context,
+                        builder: (_) =>
+                            const ExerciseCatalogSheet(catalog: catalog),
+                      );
                 },
                 child: const Text('Open'),
               ),

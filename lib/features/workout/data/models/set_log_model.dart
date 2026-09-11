@@ -67,12 +67,12 @@ class SetLogModel {
   }
 
   SetLog toEntity() => SetLog(
-        id: id,
-        sessionId: sessionId,
-        exerciseId: exerciseId,
-        actualWeight: actualWeight,
-        actualReps: actualReps,
-        setIndex: setIndex,
-        createdAt: createdAt,
-      );
+    id: id,
+    sessionId: sessionId,
+    exerciseId: exerciseId,
+    actualWeight: actualWeight,
+    actualReps: actualReps,
+    setIndex: setIndex,
+    createdAt: createdAt,
+  );
 }

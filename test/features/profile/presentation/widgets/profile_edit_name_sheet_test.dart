@@ -61,23 +61,30 @@ void main() {
     expect(find.widgetWithText(TextField, 'Ander'), findsOneWidget);
   });
 
-  testWidgets('submit con nombre vacío muestra warning y NO llama al repo',
-      (tester) async {
+  testWidgets('submit con nombre vacío muestra warning y NO llama al repo', (
+    tester,
+  ) async {
     await openSheet(tester, initialValue: '', onSaved: (_) {});
     await tester.tap(find.text('GUARDAR'));
     await tester.pump();
     expect(find.text('El nombre no puede estar vacío'), findsOneWidget);
-    verifyNever(() => repository.updateFullName(
-          userId: any(named: 'userId'),
-          fullName: any(named: 'fullName'),
-        ));
+    verifyNever(
+      () => repository.updateFullName(
+        userId: any(named: 'userId'),
+        fullName: any(named: 'fullName'),
+      ),
+    );
   });
 
-  testWidgets('submit exitoso invoca onSaved y cierra el sheet', (tester) async {
-    when(() => repository.updateFullName(
-          userId: any(named: 'userId'),
-          fullName: any(named: 'fullName'),
-        )).thenAnswer((_) async => const Right('Ander Cifuentes'));
+  testWidgets('submit exitoso invoca onSaved y cierra el sheet', (
+    tester,
+  ) async {
+    when(
+      () => repository.updateFullName(
+        userId: any(named: 'userId'),
+        fullName: any(named: 'fullName'),
+      ),
+    ).thenAnswer((_) async => const Right('Ander Cifuentes'));
 
     String? saved;
     await openSheet(
@@ -94,12 +101,15 @@ void main() {
     expect(find.byType(ProfileEditNameSheet), findsNothing);
   });
 
-  testWidgets('submit fallido muestra snackbar de error y NO invoca onSaved',
-      (tester) async {
-    when(() => repository.updateFullName(
-          userId: any(named: 'userId'),
-          fullName: any(named: 'fullName'),
-        )).thenAnswer((_) async => const Left(ServerFailure('boom')));
+  testWidgets('submit fallido muestra snackbar de error y NO invoca onSaved', (
+    tester,
+  ) async {
+    when(
+      () => repository.updateFullName(
+        userId: any(named: 'userId'),
+        fullName: any(named: 'fullName'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
 
     var calledOnSaved = false;
     await openSheet(

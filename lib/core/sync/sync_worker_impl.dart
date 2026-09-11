@@ -41,13 +41,13 @@ class SyncWorkerImpl implements SyncWorker {
     required AuthRepository authRepository,
     required Clock clock,
     Random? random,
-  })  : _outbox = outbox,
-        _remote = remote,
-        _local = local,
-        _connectivity = connectivity,
-        _auth = authRepository,
-        _clock = clock,
-        _random = random ?? Random();
+  }) : _outbox = outbox,
+       _remote = remote,
+       _local = local,
+       _connectivity = connectivity,
+       _auth = authRepository,
+       _clock = clock,
+       _random = random ?? Random();
 
   final OutboxRepository _outbox;
   final WorkoutRemoteDataSource _remote;
@@ -150,7 +150,8 @@ class SyncWorkerImpl implements SyncWorker {
           }
         }
 
-        final lockToken = '${_clock.now().microsecondsSinceEpoch}'
+        final lockToken =
+            '${_clock.now().microsecondsSinceEpoch}'
             '-${_random.nextInt(1 << 32)}';
         final got = await _outbox.tryClaim(m.id, lockToken);
         if (!got) {
@@ -165,31 +166,27 @@ class SyncWorkerImpl implements SyncWorker {
           _emit(SyncMutationApplied(kind: m.kind, id: m.id));
         } on _DropException catch (drop) {
           await _outbox.markSuccess(m.id);
-          _emit(SyncMutationDropped(
-            kind: m.kind,
-            id: m.id,
-            reason: drop.reason,
-          ));
+          _emit(
+            SyncMutationDropped(kind: m.kind, id: m.id, reason: drop.reason),
+          );
         } on _AuthPausedException {
           // No incrementamos attempts; sólo liberamos el lock para que
           // cuando se reanude, el siguiente drain la tome igual.
-          await _outbox.markFailure(
-            m.id,
-            'auth_paused',
-            _clock.now(),
-          );
+          await _outbox.markFailure(m.id, 'auth_paused', _clock.now());
           _authPaused = true;
           _emit(const SyncAuthPaused());
           break;
         } catch (e) {
           final next = _nextAttempt(m.attempts);
           await _outbox.markFailure(m.id, e.toString(), _clock.now().add(next));
-          _emit(SyncMutationFailed(
-            kind: m.kind,
-            id: m.id,
-            error: e.toString(),
-            nextAttempt: next,
-          ));
+          _emit(
+            SyncMutationFailed(
+              kind: m.kind,
+              id: m.id,
+              error: e.toString(),
+              nextAttempt: next,
+            ),
+          );
           // Backoff: terminamos el drain para no quemar la CPU; el próximo
           // kick (connectivity / nuevo enqueue) reintentará.
           break;
@@ -222,8 +219,9 @@ class SyncWorkerImpl implements SyncWorker {
         case MutationKind.insertSession:
           final userId = m.payload['user_id'] as String;
           final routineDayId = m.payload['routine_day_id'] as String;
-          final sessionDate =
-              DateTime.parse(m.payload['session_date'] as String);
+          final sessionDate = DateTime.parse(
+            m.payload['session_date'] as String,
+          );
           // El id local generado al encolar tiene que viajar al remoto: sin
           // esto, set_logs y finalize encolados con `session_id = <local>`
           // nunca matchean porque Postgres asigna otro UUID al insert.
@@ -251,8 +249,7 @@ class SyncWorkerImpl implements SyncWorker {
           return;
         case MutationKind.finalizeSession:
           final sessionId = m.payload['session_id'] as String;
-          final coachingRaw =
-              m.payload['coaching_analysis'] as List<dynamic>?;
+          final coachingRaw = m.payload['coaching_analysis'] as List<dynamic>?;
           final coaching = coachingRaw
               ?.whereType<Map<String, dynamic>>()
               .map(CoachingAnalysis.fromJson)
@@ -281,7 +278,7 @@ class SyncWorkerImpl implements SyncWorker {
       // Auth via PostgrestException (RLS).
       final code = e.code ?? '';
       if (code.startsWith('PGRST301') ||
-          code == '42501' /* insufficient_privilege */) {
+          code == '42501' /* insufficient_privilege */ ) {
         throw const _AuthPausedException();
       }
       rethrow;

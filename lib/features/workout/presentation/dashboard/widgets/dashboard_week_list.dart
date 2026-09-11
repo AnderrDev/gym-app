@@ -110,10 +110,7 @@ class _StaggeredEntry extends StatelessWidget {
         final t = curved.value;
         return Opacity(
           opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 14),
-            child: c,
-          ),
+          child: Transform.translate(offset: Offset(0, (1 - t) * 14), child: c),
         );
       },
       child: child,

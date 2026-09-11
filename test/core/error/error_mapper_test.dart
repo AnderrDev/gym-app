@@ -24,10 +24,7 @@ void main() {
 
     test('PostgrestException with PGRST116 → NotFoundFailure', () {
       final f = mapToFailure(
-        const supabase.PostgrestException(
-          message: 'no rows',
-          code: 'PGRST116',
-        ),
+        const supabase.PostgrestException(message: 'no rows', code: 'PGRST116'),
       );
       expect(f, isA<NotFoundFailure>());
       expect(f.message, 'no rows');
@@ -117,13 +114,10 @@ void main() {
       final result = await guard<int>(
         () async => throw const supabase.AuthException('expired'),
       );
-      result.fold(
-        (failure) {
-          expect(failure, isA<AuthFailure>());
-          expect(failure.message, 'expired');
-        },
-        (_) => fail('expected Left'),
-      );
+      result.fold((failure) {
+        expect(failure, isA<AuthFailure>());
+        expect(failure.message, 'expired');
+      }, (_) => fail('expected Left'));
     });
   });
 }

@@ -25,10 +25,11 @@ void main() {
   });
 
   test('enqueue persiste la mutación con kind y payload', () async {
-    final id = await outbox.enqueue(
-      MutationKind.insertSession,
-      {'user_id': 'u1', 'routine_day_id': 'd1', 'session_date': '2026-05-18'},
-    );
+    final id = await outbox.enqueue(MutationKind.insertSession, {
+      'user_id': 'u1',
+      'routine_day_id': 'd1',
+      'session_date': '2026-05-18',
+    });
     expect(id, isPositive);
     final pending = await outbox.peekReady(DateTime.now(), limit: 10);
     expect(pending.length, 1);
@@ -50,10 +51,9 @@ void main() {
   });
 
   test('peekReady excluye filas con next_attempt_at en el futuro', () async {
-    final id = await outbox.enqueue(
-      MutationKind.upsertSetLog,
-      {'session_id': 's1'},
-    );
+    final id = await outbox.enqueue(MutationKind.upsertSetLog, {
+      'session_id': 's1',
+    });
     final batch = await outbox.peekReady(DateTime.now(), limit: 1);
     expect(batch.first.id, id);
     await outbox.markFailure(
@@ -62,15 +62,21 @@ void main() {
       DateTime.now().add(const Duration(minutes: 5)),
     );
     final later = await outbox.peekReady(DateTime.now(), limit: 1);
-    expect(later, isEmpty,
-        reason: 'filas con next_attempt_at futuro no son retomables');
+    expect(
+      later,
+      isEmpty,
+      reason: 'filas con next_attempt_at futuro no son retomables',
+    );
 
     final ahead = await outbox.peekReady(
       DateTime.now().add(const Duration(minutes: 6)),
       limit: 1,
     );
-    expect(ahead, isNotEmpty,
-        reason: 'cuando llega el tiempo agendado vuelve a aparecer');
+    expect(
+      ahead,
+      isNotEmpty,
+      reason: 'cuando llega el tiempo agendado vuelve a aparecer',
+    );
   });
 
   test('peekReady excluye filas con lock_token', () async {
@@ -106,8 +112,7 @@ void main() {
       'network down',
       DateTime.now().subtract(const Duration(seconds: 1)),
     );
-    final retry =
-        await outbox.peekReady(DateTime.now(), limit: 1);
+    final retry = await outbox.peekReady(DateTime.now(), limit: 1);
     expect(retry.first.attempts, 1);
     expect(retry.first.lockToken, isNull);
 
@@ -116,8 +121,7 @@ void main() {
       'still down',
       DateTime.now().subtract(const Duration(seconds: 1)),
     );
-    final third =
-        await outbox.peekReady(DateTime.now(), limit: 1);
+    final third = await outbox.peekReady(DateTime.now(), limit: 1);
     expect(third.first.attempts, 2);
   });
 

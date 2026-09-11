@@ -58,11 +58,7 @@ class ProfileHeader extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 )
-              : Icon(
-                  Icons.person_rounded,
-                  size: 40,
-                  color: colors.primary,
-                ),
+              : Icon(Icons.person_rounded, size: 40, color: colors.primary),
         ),
         const SizedBox(height: 16),
         Text(

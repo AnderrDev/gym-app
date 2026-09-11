@@ -22,8 +22,9 @@ class DayEditorSaveAction extends StatelessWidget {
         onPressed: isDirty ? onSave : null,
         style: TextButton.styleFrom(
           foregroundColor: context.colors.primary,
-          disabledForegroundColor:
-              context.colors.textSecondary.withValues(alpha: 0.4),
+          disabledForegroundColor: context.colors.textSecondary.withValues(
+            alpha: 0.4,
+          ),
         ),
         child: Text(
           'GUARDAR',

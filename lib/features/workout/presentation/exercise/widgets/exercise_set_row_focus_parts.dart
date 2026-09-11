@@ -75,9 +75,8 @@ class FocusChipsRow extends StatelessWidget {
                       child: focused == SetRowFocusedField.weight
                           ? QuickStepStrip(
                               steps: const [-2.5, -1, 1, 2.5],
-                              formatter: (v) => v > 0
-                                  ? '+${_formatStep(v)}'
-                                  : _formatStep(v),
+                              formatter: (v) =>
+                                  v > 0 ? '+${_formatStep(v)}' : _formatStep(v),
                               onTap: onBumpWeight,
                             )
                           : QuickStepStrip(

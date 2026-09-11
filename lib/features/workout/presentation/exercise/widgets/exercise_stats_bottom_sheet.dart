@@ -180,11 +180,10 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         state.history,
                         (s) => s.estimated1RM,
                       ),
-                      formatter: (v) =>
-                          v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1),
-                      chart: ExerciseEstimated1RMChart(
-                        history: state.history,
-                      ),
+                      formatter: (v) => v % 1 == 0
+                          ? v.toStringAsFixed(0)
+                          : v.toStringAsFixed(1),
+                      chart: ExerciseEstimated1RMChart(history: state.history),
                     ),
                     const SizedBox(height: 32),
                     ExerciseStatsChartSection(
@@ -210,8 +209,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     ...state.history.map(
-                      (session) =>
-                          ExerciseHistorySessionItem(session: session),
+                      (session) => ExerciseHistorySessionItem(session: session),
                     ),
                   ],
                 );
@@ -231,12 +229,11 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
         : GlassContainer(
             blur: 40,
             opacity: 0.05,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             padding: EdgeInsets.zero,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.85,
-              color: Colors.black.withValues(alpha: 0.4),
+              color: context.colors.overlay.withValues(alpha: 0.4),
               child: inner,
             ),
           );

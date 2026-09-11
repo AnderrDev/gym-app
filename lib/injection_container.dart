@@ -118,9 +118,7 @@ Future<void> init() async {
   // ── WORKOUT (100% remoto) ────────────────────────────────────────────────
   sl.registerFactory(() => ExerciseStatsBloc(repository: sl()));
 
-  sl.registerFactory(
-    () => ExerciseDetailBloc(getExerciseDetail: sl()),
-  );
+  sl.registerFactory(() => ExerciseDetailBloc(getExerciseDetail: sl()));
 
   sl.registerFactory(
     () => DashboardBloc(
@@ -199,8 +197,7 @@ Future<void> init() async {
       outbox: sl.isRegistered<OutboxRepository>()
           ? sl<OutboxRepository>()
           : null,
-      syncWorker:
-          sl.isRegistered<SyncWorker>() ? sl<SyncWorker>() : null,
+      syncWorker: sl.isRegistered<SyncWorker>() ? sl<SyncWorker>() : null,
       uuid: sl<Uuid>(),
       localDatabase: sl.isRegistered<LocalDatabase>()
           ? sl<LocalDatabase>()
@@ -324,8 +321,9 @@ Future<void> init() async {
   // registra el SyncWorker).
   if (Capabilities.hasOfflineSync && sl.isRegistered<SyncWorker>()) {
     try {
-      await sl<OutboxRepository>()
-          .releaseStaleLocks(const Duration(seconds: 60));
+      await sl<OutboxRepository>().releaseStaleLocks(
+        const Duration(seconds: 60),
+      );
       sl<SyncWorker>().start();
       AppLogger.instance.info('sync_worker started');
     } catch (e) {

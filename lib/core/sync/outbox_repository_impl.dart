@@ -19,7 +19,9 @@ class OutboxRepositoryImpl implements OutboxRepository {
   @override
   Future<int> enqueue(MutationKind kind, Map<String, dynamic> payload) {
     final now = _nowMs();
-    return _db.into(_db.pendingMutations).insert(
+    return _db
+        .into(_db.pendingMutations)
+        .insert(
           PendingMutationsCompanion.insert(
             kind: kind.toWire(),
             payloadJson: jsonEncode(payload),
@@ -30,10 +32,7 @@ class OutboxRepositoryImpl implements OutboxRepository {
   }
 
   @override
-  Future<List<PendingMutation>> peekReady(
-    DateTime now, {
-    int limit = 1,
-  }) async {
+  Future<List<PendingMutation>> peekReady(DateTime now, {int limit = 1}) async {
     final nowMs = now.toUtc().millisecondsSinceEpoch;
     final query = _db.select(_db.pendingMutations)
       ..where(
@@ -50,41 +49,39 @@ class OutboxRepositoryImpl implements OutboxRepository {
 
   @override
   Future<bool> tryClaim(int id, String lockToken) async {
-    final affected = await (_db.update(_db.pendingMutations)
-          ..where((t) => t.id.equals(id) & t.lockToken.isNull()))
-        .write(PendingMutationsCompanion(lockToken: Value(lockToken)));
+    final affected =
+        await (_db.update(_db.pendingMutations)
+              ..where((t) => t.id.equals(id) & t.lockToken.isNull()))
+            .write(PendingMutationsCompanion(lockToken: Value(lockToken)));
     return affected > 0;
   }
 
   @override
   Future<void> markSuccess(int id) async {
-    await (_db.delete(_db.pendingMutations)..where((t) => t.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.pendingMutations,
+    )..where((t) => t.id.equals(id))).go();
   }
 
   @override
-  Future<void> markFailure(
-    int id,
-    String error,
-    DateTime nextAttempt,
-  ) async {
+  Future<void> markFailure(int id, String error, DateTime nextAttempt) async {
     // Leemos primero el row para incrementar attempts (drift no expone
     // `column = column + 1` con seguridad de tipos en update genérico, así
     // que hacemos read-modify-write).
-    final row = await (_db.select(_db.pendingMutations)
-          ..where((t) => t.id.equals(id))
-          ..limit(1))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_db.pendingMutations)
+              ..where((t) => t.id.equals(id))
+              ..limit(1))
+            .getSingleOrNull();
     if (row == null) return;
-    await (_db.update(_db.pendingMutations)..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.pendingMutations,
+    )..where((t) => t.id.equals(id))).write(
       PendingMutationsCompanion(
         attempts: Value(row.attempts + 1),
         lastError: Value(error),
         lastAttemptAt: Value(_nowMs()),
-        nextAttemptAt: Value(
-          nextAttempt.toUtc().millisecondsSinceEpoch,
-        ),
+        nextAttemptAt: Value(nextAttempt.toUtc().millisecondsSinceEpoch),
         lockToken: const Value(null),
       ),
     );
@@ -92,24 +89,22 @@ class OutboxRepositoryImpl implements OutboxRepository {
 
   @override
   Future<void> releaseStaleLocks(Duration olderThan) async {
-    final thresholdMs =
-        _nowMs() - olderThan.inMilliseconds;
-    await (_db.update(_db.pendingMutations)
-          ..where(
-            (t) =>
-                t.lockToken.isNotNull() &
-                (t.lastAttemptAt.isNull() |
-                    t.lastAttemptAt.isSmallerThanValue(thresholdMs)),
-          ))
+    final thresholdMs = _nowMs() - olderThan.inMilliseconds;
+    await (_db.update(_db.pendingMutations)..where(
+          (t) =>
+              t.lockToken.isNotNull() &
+              (t.lastAttemptAt.isNull() |
+                  t.lastAttemptAt.isSmallerThanValue(thresholdMs)),
+        ))
         .write(const PendingMutationsCompanion(lockToken: Value(null)));
   }
 
   @override
   Future<int> pendingCount() async {
     final count = _db.pendingMutations.id.count();
-    final row = await (_db.selectOnly(_db.pendingMutations)
-          ..addColumns([count]))
-        .getSingle();
+    final row = await (_db.selectOnly(
+      _db.pendingMutations,
+    )..addColumns([count])).getSingle();
     return row.read(count) ?? 0;
   }
 

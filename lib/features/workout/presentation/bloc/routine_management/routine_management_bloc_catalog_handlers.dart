@@ -23,11 +23,11 @@ extension RoutineCatalogHandlers on RoutineManagementBloc {
     // userId); si falla, no rompemos el listado — simplemente no pintamos
     // badge "ACTIVA".
     final routinesFuture = getAllRoutines();
-    final assignedFuture =
-        event.userId != null ? getAssignedRoutines(event.userId!) : null;
+    final assignedFuture = event.userId != null
+        ? getAssignedRoutines(event.userId!)
+        : null;
     final routinesResult = await routinesFuture;
-    final assignedResult =
-        assignedFuture == null ? null : await assignedFuture;
+    final assignedResult = assignedFuture == null ? null : await assignedFuture;
 
     routinesResult.fold(
       (failure) => emit(

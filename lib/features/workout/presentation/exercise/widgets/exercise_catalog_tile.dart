@@ -34,8 +34,8 @@ class ExerciseCatalogTile extends StatelessWidget {
         color: isAlreadyInDay
             ? context.colors.textDisabled.withValues(alpha: 0.1)
             : (isSelected
-                ? context.colors.primary.withValues(alpha: 0.05)
-                : Colors.transparent),
+                  ? context.colors.primary.withValues(alpha: 0.05)
+                  : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -49,13 +49,17 @@ class ExerciseCatalogTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: isAlreadyInDay
                 ? context.colors.surfaceHighlight
-                : (isSelected ? context.colors.primary : context.colors.surface),
+                : (isSelected
+                      ? context.colors.primary
+                      : context.colors.surface),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             isAlreadyInDay
                 ? Icons.lock_outline_rounded
-                : (isSelected ? Icons.check_rounded : Icons.local_fire_department_rounded),
+                : (isSelected
+                      ? Icons.check_rounded
+                      : Icons.local_fire_department_rounded),
             color: isSelected && !isAlreadyInDay
                 ? context.colors.onPrimary
                 : context.colors.textDisabled,
@@ -67,23 +71,27 @@ class ExerciseCatalogTile extends StatelessWidget {
           style: context.text.bodyLarge?.copyWith(
             color: isAlreadyInDay
                 ? context.colors.textDisabled
-                : (isSelected ? context.colors.primary : context.colors.textPrimary),
+                : (isSelected
+                      ? context.colors.primary
+                      : context.colors.textPrimary),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         subtitle: Text(
           isAlreadyInDay ? 'Ya en tu rutina' : exercise.muscleGroup,
-          style: context.text.labelMedium?.copyWith(color: context.colors.textDisabled),
+          style: context.text.labelMedium?.copyWith(
+            color: context.colors.textDisabled,
+          ),
         ),
         trailing: isAlreadyInDay
             ? null
             : (isSelected
-                ? Icon(
-                    Icons.check_circle_rounded,
-                    color: context.colors.primary,
-                    size: 20,
-                  )
-                : null),
+                  ? Icon(
+                      Icons.check_circle_rounded,
+                      color: context.colors.primary,
+                      size: 20,
+                    )
+                  : null),
       ),
     );
   }

@@ -11,12 +11,7 @@ void main() {
   late MockWorkoutRepository repository;
   late SaveRoutineDay usecase;
 
-  const tDay = RoutineDay(
-    id: '',
-    routineId: 'r1',
-    dayOfWeek: 1,
-    name: 'Día 1',
-  );
+  const tDay = RoutineDay(id: '', routineId: 'r1', dayOfWeek: 1, name: 'Día 1');
   const tSaved = RoutineDay(
     id: 'd1',
     routineId: 'r1',
@@ -33,16 +28,18 @@ void main() {
     usecase = SaveRoutineDay(repository);
   });
 
-  test('delega en repository.saveRoutineDay y devuelve el día persistido',
-      () async {
-    when(
-      () => repository.saveRoutineDay(any()),
-    ).thenAnswer((_) async => const Right(tSaved));
+  test(
+    'delega en repository.saveRoutineDay y devuelve el día persistido',
+    () async {
+      when(
+        () => repository.saveRoutineDay(any()),
+      ).thenAnswer((_) async => const Right(tSaved));
 
-    final result = await usecase(tDay);
+      final result = await usecase(tDay);
 
-    expect(result.isRight(), isTrue);
-    result.fold((_) => fail('expected right'), (r) => expect(r.id, 'd1'));
-    verify(() => repository.saveRoutineDay(tDay)).called(1);
-  });
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('expected right'), (r) => expect(r.id, 'd1'));
+      verify(() => repository.saveRoutineDay(tDay)).called(1);
+    },
+  );
 }

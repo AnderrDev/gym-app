@@ -339,30 +339,32 @@ void main() {
   });
 
   group('saveRoutine', () {
-    test('debería insertar una nueva rutina y devolverla con id real',
-        () async {
-      final fakeQueryBuilder = FakeSupabaseQueryBuilder();
-      final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
-      final fakeListFilterBuilder = FakePostgrestListFilterBuilder();
-      final fakeMapTransform = FakePostgrestMapTransformBuilder();
-      fakeMapTransform.setData({
-        'id': 'r_new',
-        'name': 'N',
-        'is_public': false,
-        'creator_id': 'u1',
-      });
+    test(
+      'debería insertar una nueva rutina y devolverla con id real',
+      () async {
+        final fakeQueryBuilder = FakeSupabaseQueryBuilder();
+        final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
+        final fakeListFilterBuilder = FakePostgrestListFilterBuilder();
+        final fakeMapTransform = FakePostgrestMapTransformBuilder();
+        fakeMapTransform.setData({
+          'id': 'r_new',
+          'name': 'N',
+          'is_public': false,
+          'creator_id': 'u1',
+        });
 
-      mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._insert = (vals) => fakeFilterBuilder;
-      fakeFilterBuilder.setSelectMap((_) => fakeListFilterBuilder);
-      fakeListFilterBuilder._single = () => fakeMapTransform;
+        mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
+        fakeQueryBuilder._insert = (vals) => fakeFilterBuilder;
+        fakeFilterBuilder.setSelectMap((_) => fakeListFilterBuilder);
+        fakeListFilterBuilder._single = () => fakeMapTransform;
 
-      final saved = await dataSource.saveRoutine(
-        const RoutineModel(id: 'new_1', name: 'N', exerciseCount: 0),
-      );
-      expect(saved.id, 'r_new');
-      expect(saved.name, 'N');
-    });
+        final saved = await dataSource.saveRoutine(
+          const RoutineModel(id: 'new_1', name: 'N', exerciseCount: 0),
+        );
+        expect(saved.id, 'r_new');
+        expect(saved.name, 'N');
+      },
+    );
 
     test('debería actualizar una rutina existente y devolverla', () async {
       final fakeQueryBuilder = FakeSupabaseQueryBuilder();
@@ -418,5 +420,4 @@ void main() {
       await dataSource.deleteRoutine('r1');
     });
   });
-
 }

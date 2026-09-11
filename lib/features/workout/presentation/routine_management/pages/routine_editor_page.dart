@@ -93,16 +93,16 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         if (newId != null) {
           // `pushReplacement` reemplaza el stack actual del editor: ya no
           // tiene sentido volver a la vista previa de la ajena.
-          GoRouter.of(context).pushReplacement(
-            AppRoutes.routineEditor,
-            extra: newId,
-          );
+          GoRouter.of(
+            context,
+          ).pushReplacement(AppRoutes.routineEditor, extra: newId);
         }
         return;
       }
       // Si encadenamos "AÑADIR DÍA" sobre una rutina nueva, silenciamos el
       // toast del SaveRoutine — el siguiente success (SaveDay) lo mostrará.
-      final isChainedSave = _addDayAfterSave &&
+      final isChainedSave =
+          _addDayAfterSave &&
           state.lastAction == RoutineManagementAction.saveRoutine;
       if (!isChainedSave) {
         AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
@@ -163,7 +163,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             // `editingRoutine` consideramos owner=true para no flashear UI de
             // read-only en el primer frame y luego cambiar.
             final loadedCreatorId = state.editingRoutine?.creatorId;
-            final isOwner = widget.routineId == null ||
+            final isOwner =
+                widget.routineId == null ||
                 loadedCreatorId == null ||
                 loadedCreatorId == userId;
             final isDirty = state.isDirty && isOwner;
@@ -208,9 +209,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                           onPublicChanged: (val) {
                             setState(() => _isPublic = val);
                             HapticFeedback.selectionClick();
-                            context
-                                .read<RoutineManagementBloc>()
-                                .add(const MarkRoutineDirty());
+                            context.read<RoutineManagementBloc>().add(
+                              const MarkRoutineDirty(),
+                            );
                           },
                         ),
                       ),
@@ -344,7 +345,6 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       ForkRoutine(userId: userId, sourceRoutineId: sourceRoutineId),
     );
   }
-
 }
 
 /// Banner sticky que aparece cuando la rutina abierta no pertenece al
@@ -370,8 +370,9 @@ class _ForkBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.colors.primary.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: context.colors.primary.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: context.colors.primary.withValues(alpha: 0.35),
+          ),
         ),
         child: Row(
           children: [
@@ -410,8 +411,9 @@ class _ForkBanner extends StatelessWidget {
               onPressed: submitting ? null : onTap,
               style: TextButton.styleFrom(
                 backgroundColor: context.colors.primary,
-                disabledBackgroundColor:
-                    context.colors.primary.withValues(alpha: 0.4),
+                disabledBackgroundColor: context.colors.primary.withValues(
+                  alpha: 0.4,
+                ),
                 foregroundColor: context.colors.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.md,

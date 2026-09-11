@@ -196,9 +196,9 @@ class _DayEditorPageState extends State<DayEditorPage> {
                   child: DayNameInput(
                     controller: _nameController,
                     readOnly: !widget.isOwner,
-                    onChanged: (_) => context
-                        .read<RoutineManagementBloc>()
-                        .add(const MarkRoutineDirty()),
+                    onChanged: (_) => context.read<RoutineManagementBloc>().add(
+                      const MarkRoutineDirty(),
+                    ),
                   ),
                 ),
                 if (exercises.isNotEmpty)
@@ -210,8 +210,9 @@ class _DayEditorPageState extends State<DayEditorPage> {
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
-            floatingActionButton:
-                widget.isOwner ? _buildCatalogFab(currentDay, exercises) : null,
+            floatingActionButton: widget.isOwner
+                ? _buildCatalogFab(currentDay, exercises)
+                : null,
           ),
         );
       },
@@ -253,11 +254,11 @@ class _DayEditorPageState extends State<DayEditorPage> {
         child: DayEditorEmptyState(
           onTap: widget.isOwner
               ? () => DayEditorDialogs.showExerciseCatalog(
-                    context,
-                    routineId: widget.routineId,
-                    day: currentDay,
-                    currentExercises: exercises,
-                  )
+                  context,
+                  routineId: widget.routineId,
+                  day: currentDay,
+                  currentExercises: exercises,
+                )
               : null,
         ),
       );
@@ -268,19 +269,16 @@ class _DayEditorPageState extends State<DayEditorPage> {
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final ex = exercises[index];
-              return ExerciseRowCard(
-                exercise: ex,
-                index: index,
-                onTap: null,
-                onRemove: null,
-                onInfo: () => pushExerciseDetail(context, ex.id),
-              );
-            },
-            childCount: exercises.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final ex = exercises[index];
+            return ExerciseRowCard(
+              exercise: ex,
+              index: index,
+              onTap: null,
+              onRemove: null,
+              onInfo: () => pushExerciseDetail(context, ex.id),
+            );
+          }, childCount: exercises.length),
         ),
       );
     }
@@ -339,5 +337,4 @@ class _DayEditorPageState extends State<DayEditorPage> {
       ),
     );
   }
-
 }

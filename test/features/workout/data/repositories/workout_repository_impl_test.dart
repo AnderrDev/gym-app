@@ -63,34 +63,46 @@ void main() {
     when(() => mockConnectivity.isOnline).thenReturn(true);
     // Stubs por defecto: cache vacío. Los tests SWR específicos los
     // sobrescriben cuando necesitan otro comportamiento.
-    when(() => mockLocalDataSource.cacheRoutineDays(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockLocalDataSource.cacheExercisesForDay(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockLocalDataSource.cacheLastPerformances(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockLocalDataSource.cacheAssignedRoutines(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockLocalDataSource.cacheWeekSessions(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockLocalDataSource.cacheWeeklyInsights(
-          userId: any(named: 'userId'),
-          routineId: any(named: 'routineId'),
-          insights: any(named: 'insights'),
-        )).thenAnswer((_) async {});
-    when(() => mockLocalDataSource.getRoutineDays(any()))
-        .thenAnswer((_) async => const []);
-    when(() => mockLocalDataSource.getExercisesForDay(any()))
-        .thenAnswer((_) async => const []);
-    when(() =>
-            mockLocalDataSource.getLastPerformancesForExercises(any(), any()))
-        .thenAnswer((_) async => const {});
-    when(() => mockLocalDataSource.getAssignedRoutines(any()))
-        .thenAnswer((_) async => null);
-    when(() => mockLocalDataSource.getWeekSessions(any(), any(), any()))
-        .thenAnswer((_) async => const []);
-    when(() => mockLocalDataSource.getWeeklyInsights(any(), any(), any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockLocalDataSource.cacheRoutineDays(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.cacheExercisesForDay(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.cacheLastPerformances(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.cacheAssignedRoutines(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.cacheWeekSessions(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.cacheWeeklyInsights(
+        userId: any(named: 'userId'),
+        routineId: any(named: 'routineId'),
+        insights: any(named: 'insights'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockLocalDataSource.getRoutineDays(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockLocalDataSource.getExercisesForDay(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockLocalDataSource.getLastPerformancesForExercises(any(), any()),
+    ).thenAnswer((_) async => const {});
+    when(
+      () => mockLocalDataSource.getAssignedRoutines(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockLocalDataSource.getWeekSessions(any(), any(), any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockLocalDataSource.getWeeklyInsights(any(), any(), any()),
+    ).thenAnswer((_) async => null);
     repository = WorkoutRepositoryImpl(
       remoteDataSource: mockRemoteDataSource,
       localDataSource: mockLocalDataSource,
@@ -320,13 +332,10 @@ void main() {
         () => mockRemoteDataSource.getActiveSessionForUser(any()),
       ).thenThrow(const supabase.AuthException('expired'));
       final result = await repository.getActiveSessionForUser(tUserId);
-      result.fold(
-        (f) {
-          expect(f, isA<AuthFailure>());
-          expect(f.message, 'expired');
-        },
-        (_) => fail('expected Left'),
-      );
+      result.fold((f) {
+        expect(f, isA<AuthFailure>());
+        expect(f.message, 'expired');
+      }, (_) => fail('expected Left'));
     });
 
     test('ServerException → ServerFailure', () async {
@@ -334,13 +343,10 @@ void main() {
         () => mockRemoteDataSource.getAllRoutines(),
       ).thenThrow(core_ex.ServerException('500'));
       final result = await repository.getAllRoutines();
-      result.fold(
-        (f) {
-          expect(f, isA<ServerFailure>());
-          expect(f.message, '500');
-        },
-        (_) => fail('expected Left'),
-      );
+      result.fold((f) {
+        expect(f, isA<ServerFailure>());
+        expect(f.message, '500');
+      }, (_) => fail('expected Left'));
     });
 
     test(
@@ -360,22 +366,24 @@ void main() {
       },
     );
 
-    test('getWeeklyInsights propaga ServerFailure ante error genérico',
-        () async {
-      when(
-        () => mockRemoteDataSource.getWeeklyInsights(
-          routineId: any(named: 'routineId'),
-          weekStart: any(named: 'weekStart'),
-        ),
-      ).thenThrow(StateError('rpc-down'));
-      final result = await repository.getWeeklyInsights(
-        routineId: 'r1',
-        weekStart: DateTime(2026, 4, 5),
-      );
-      result.fold(
-        (f) => expect(f, isA<ServerFailure>()),
-        (_) => fail('expected Left'),
-      );
-    });
+    test(
+      'getWeeklyInsights propaga ServerFailure ante error genérico',
+      () async {
+        when(
+          () => mockRemoteDataSource.getWeeklyInsights(
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenThrow(StateError('rpc-down'));
+        final result = await repository.getWeeklyInsights(
+          routineId: 'r1',
+          weekStart: DateTime(2026, 4, 5),
+        );
+        result.fold(
+          (f) => expect(f, isA<ServerFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
   });
 }

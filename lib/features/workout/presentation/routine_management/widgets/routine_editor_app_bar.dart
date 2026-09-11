@@ -37,10 +37,7 @@ class RoutineEditorAppBar extends StatelessWidget {
       backgroundColor: colors.background,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(
-          Icons.close_rounded,
-          color: colors.textPrimary,
-        ),
+        icon: Icon(Icons.close_rounded, color: colors.textPrimary),
         tooltip: 'Cerrar editor',
         onPressed: onClose,
       ),
@@ -51,10 +48,7 @@ class RoutineEditorAppBar extends StatelessWidget {
       actions: [
         if (isExisting && isOwner)
           IconButton(
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: colors.error,
-            ),
+            icon: Icon(Icons.delete_outline_rounded, color: colors.error),
             tooltip: 'Eliminar rutina',
             onPressed: onDelete,
           ),

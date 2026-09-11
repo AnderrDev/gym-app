@@ -53,13 +53,15 @@ void main() {
       ),
     );
     registerFallbackValue(DateTime.utc(2026, 1, 1));
-    registerFallbackValue(const SetLogModel(
-      sessionId: 's',
-      exerciseId: 'e',
-      actualWeight: 0,
-      actualReps: 0,
-      setIndex: 0,
-    ));
+    registerFallbackValue(
+      const SetLogModel(
+        sessionId: 's',
+        exerciseId: 'e',
+        actualWeight: 0,
+        actualReps: 0,
+        setIndex: 0,
+      ),
+    );
   });
 
   setUp(() {
@@ -72,8 +74,9 @@ void main() {
     when(() => conn.isOnline).thenReturn(true);
     when(() => local.saveCachedSession(any())).thenAnswer((_) async {});
     when(() => local.upsertCachedSetLog(any())).thenAnswer((_) async {});
-    when(() => local.markSessionCompleted(any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => local.markSessionCompleted(any(), any()),
+    ).thenAnswer((_) async {});
     when(() => outbox.enqueue(any(), any())).thenAnswer((_) async => 1);
     when(() => worker.kick()).thenAnswer((_) async {});
 
@@ -89,31 +92,33 @@ void main() {
   });
 
   group('startWorkoutForDay (offline-capable)', () {
-    test('online: escribe directo al remoto + refresca cache, NO encola',
-        () async {
-      when(() => remote.startWorkoutForDay(any(), any(), any())).thenAnswer(
-        (_) async => WorkoutSessionModel(
-          id: 'srv-id',
-          userId: tUserId,
-          routineDayId: tRoutineDayId,
-          sessionDate: tSessionDate,
-        ),
-      );
-      final result = await repo.startWorkoutForDay(
-        tUserId,
-        tRoutineDayId,
-        tSessionDate,
-      );
-      result.fold((l) => fail('expected Right, got $l'), (session) {
-        expect(session.id, 'srv-id');
-        expect(session.userId, tUserId);
-        expect(session.routineDayId, tRoutineDayId);
-      });
-      verify(() => remote.startWorkoutForDay(any(), any(), any())).called(1);
-      verify(() => local.saveCachedSession(any())).called(1);
-      verifyNever(() => outbox.enqueue(any(), any()));
-      verifyNever(() => worker.kick());
-    });
+    test(
+      'online: escribe directo al remoto + refresca cache, NO encola',
+      () async {
+        when(() => remote.startWorkoutForDay(any(), any(), any())).thenAnswer(
+          (_) async => WorkoutSessionModel(
+            id: 'srv-id',
+            userId: tUserId,
+            routineDayId: tRoutineDayId,
+            sessionDate: tSessionDate,
+          ),
+        );
+        final result = await repo.startWorkoutForDay(
+          tUserId,
+          tRoutineDayId,
+          tSessionDate,
+        );
+        result.fold((l) => fail('expected Right, got $l'), (session) {
+          expect(session.id, 'srv-id');
+          expect(session.userId, tUserId);
+          expect(session.routineDayId, tRoutineDayId);
+        });
+        verify(() => remote.startWorkoutForDay(any(), any(), any())).called(1);
+        verify(() => local.saveCachedSession(any())).called(1);
+        verifyNever(() => outbox.enqueue(any(), any()));
+        verifyNever(() => worker.kick());
+      },
+    );
 
     test('offline: local + outbox, no toca remoto', () async {
       when(() => conn.isOnline).thenReturn(false);
@@ -132,22 +137,24 @@ void main() {
   });
 
   group('saveSetLog (offline-capable)', () {
-    test('online: escribe directo al remoto + refresca cache, NO encola',
-        () async {
-      when(() => remote.saveSetLog(any())).thenAnswer((_) async {});
-      const log = SetLog(
-        sessionId: 'sess-1',
-        exerciseId: 'e1',
-        actualWeight: 60,
-        actualReps: 10,
-        setIndex: 0,
-      );
-      final result = await repo.saveSetLog(log);
-      expect(result.isRight(), isTrue);
-      verify(() => remote.saveSetLog(any())).called(1);
-      verify(() => local.upsertCachedSetLog(log)).called(1);
-      verifyNever(() => outbox.enqueue(any(), any()));
-    });
+    test(
+      'online: escribe directo al remoto + refresca cache, NO encola',
+      () async {
+        when(() => remote.saveSetLog(any())).thenAnswer((_) async {});
+        const log = SetLog(
+          sessionId: 'sess-1',
+          exerciseId: 'e1',
+          actualWeight: 60,
+          actualReps: 10,
+          setIndex: 0,
+        );
+        final result = await repo.saveSetLog(log);
+        expect(result.isRight(), isTrue);
+        verify(() => remote.saveSetLog(any())).called(1);
+        verify(() => local.upsertCachedSetLog(log)).called(1);
+        verifyNever(() => outbox.enqueue(any(), any()));
+      },
+    );
 
     test('offline: local + outbox, no toca remoto', () async {
       when(() => conn.isOnline).thenReturn(false);
@@ -167,44 +174,52 @@ void main() {
   });
 
   group('finishWorkoutSession (offline-capable)', () {
-    test('online: llama al remoto + marca local completed, NO encola',
-        () async {
-      when(() => remote.finishWorkoutSession(any(),
-              coachingAnalysis: any(named: 'coachingAnalysis')))
-          .thenAnswer((_) async {});
-      final result = await repo.finishWorkoutSession(
-        'sess-1',
-        coachingAnalysis: const [
-          CoachingAnalysis(
-            exerciseName: 'X',
-            recommendation: 'r',
+    test(
+      'online: llama al remoto + marca local completed, NO encola',
+      () async {
+        when(
+          () => remote.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
           ),
-        ],
-      );
-      expect(result.isRight(), isTrue);
-      verify(() => remote.finishWorkoutSession(any(),
-          coachingAnalysis: any(named: 'coachingAnalysis'))).called(1);
-      verify(() => local.markSessionCompleted('sess-1', any())).called(1);
-      verifyNever(() => outbox.enqueue(any(), any()));
-    });
+        ).thenAnswer((_) async {});
+        final result = await repo.finishWorkoutSession(
+          'sess-1',
+          coachingAnalysis: const [
+            CoachingAnalysis(exerciseName: 'X', recommendation: 'r'),
+          ],
+        );
+        expect(result.isRight(), isTrue);
+        verify(
+          () => remote.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).called(1);
+        verify(() => local.markSessionCompleted('sess-1', any())).called(1);
+        verifyNever(() => outbox.enqueue(any(), any()));
+      },
+    );
 
     test('offline: marca local completed + encola finalizeSession', () async {
       when(() => conn.isOnline).thenReturn(false);
       final result = await repo.finishWorkoutSession(
         'sess-1',
         coachingAnalysis: const [
-          CoachingAnalysis(
-            exerciseName: 'X',
-            recommendation: 'r',
-          ),
+          CoachingAnalysis(exerciseName: 'X', recommendation: 'r'),
         ],
       );
       expect(result.isRight(), isTrue);
       verify(() => local.markSessionCompleted('sess-1', any())).called(1);
-      verify(() => outbox.enqueue(MutationKind.finalizeSession, any()))
-          .called(1);
-      verifyNever(() => remote.finishWorkoutSession(any(),
-          coachingAnalysis: any(named: 'coachingAnalysis')));
+      verify(
+        () => outbox.enqueue(MutationKind.finalizeSession, any()),
+      ).called(1);
+      verifyNever(
+        () => remote.finishWorkoutSession(
+          any(),
+          coachingAnalysis: any(named: 'coachingAnalysis'),
+        ),
+      );
     });
   });
 
@@ -216,30 +231,28 @@ void main() {
         connectivity: conn,
         currentUserIdResolver: () => tUserId,
       );
-      when(() => remote.startWorkoutForDay(any(), any(), any()))
-          .thenAnswer((_) async => WorkoutSessionModel(
-                id: 'remote-id',
-                userId: 'u1',
-                routineDayId: 'd1',
-                sessionDate: DateTime.utc(2026, 5, 18),
-              ));
-      await legacyRepo.startWorkoutForDay(
-        tUserId,
-        tRoutineDayId,
-        tSessionDate,
+      when(() => remote.startWorkoutForDay(any(), any(), any())).thenAnswer(
+        (_) async => WorkoutSessionModel(
+          id: 'remote-id',
+          userId: 'u1',
+          routineDayId: 'd1',
+          sessionDate: DateTime.utc(2026, 5, 18),
+        ),
       );
-      verify(() => remote.startWorkoutForDay(any(), any(), any()))
-          .called(greaterThanOrEqualTo(1));
+      await legacyRepo.startWorkoutForDay(tUserId, tRoutineDayId, tSessionDate);
+      verify(
+        () => remote.startWorkoutForDay(any(), any(), any()),
+      ).called(greaterThanOrEqualTo(1));
       verifyNever(() => outbox.enqueue(any(), any()));
     });
   });
 
-  test(
-      'online: si la cache local falla tras el remote OK, igual devuelve '
+  test('online: si la cache local falla tras el remote OK, igual devuelve '
       'Right (best-effort write a cache)', () async {
     when(() => remote.saveSetLog(any())).thenAnswer((_) async {});
-    when(() => local.upsertCachedSetLog(any()))
-        .thenThrow(const SocketException('disk full'));
+    when(
+      () => local.upsertCachedSetLog(any()),
+    ).thenThrow(const SocketException('disk full'));
     const log = SetLog(
       sessionId: 'sess-1',
       exerciseId: 'e1',

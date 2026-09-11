@@ -41,12 +41,14 @@ class RoutineSessionCard extends StatelessWidget {
               children: [
                 Text(
                   session.routineDayName,
-                  style: context.text.bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: context.text.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
-                  AppDateFormat.weekdayLongDayMonth(session.sessionDate)
-                      .toUpperCase(),
+                  AppDateFormat.weekdayLongDayMonth(
+                    session.sessionDate,
+                  ).toUpperCase(),
                   style: context.text.labelMedium?.copyWith(
                     fontSize: 10,
                     color: context.colors.textDisabled,

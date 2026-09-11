@@ -22,14 +22,23 @@ class AppSpinner extends StatelessWidget {
     this.semanticLabel = 'Cargando',
   });
 
-  const AppSpinner.small({super.key, this.color, this.semanticLabel = 'Cargando'})
-      : size = 20;
+  const AppSpinner.small({
+    super.key,
+    this.color,
+    this.semanticLabel = 'Cargando',
+  }) : size = 20;
 
-  const AppSpinner.medium({super.key, this.color, this.semanticLabel = 'Cargando'})
-      : size = 36;
+  const AppSpinner.medium({
+    super.key,
+    this.color,
+    this.semanticLabel = 'Cargando',
+  }) : size = 36;
 
-  const AppSpinner.large({super.key, this.color, this.semanticLabel = 'Cargando'})
-      : size = 56;
+  const AppSpinner.large({
+    super.key,
+    this.color,
+    this.semanticLabel = 'Cargando',
+  }) : size = 56;
 
   final double size;
   final Color? color;
@@ -40,10 +49,7 @@ class AppSpinner extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       liveRegion: true,
-      child: SpinKitFadingCircle(
-        size: size,
-        color: color ?? AppColors.primary,
-      ),
+      child: SpinKitFadingCircle(size: size, color: color ?? AppColors.primary),
     );
   }
 }

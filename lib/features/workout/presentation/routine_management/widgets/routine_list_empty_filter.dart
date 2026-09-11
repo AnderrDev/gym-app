@@ -12,19 +12,18 @@ class RoutineListEmptyFilter extends StatelessWidget {
   final RoutineListFilter filter;
 
   String get _title => switch (filter) {
-        RoutineListFilter.all => 'Sin rutinas',
-        RoutineListFilter.mine => 'No tenés rutinas propias',
-        RoutineListFilter.community => 'Sin rutinas de la comunidad',
-      };
+    RoutineListFilter.all => 'Sin rutinas',
+    RoutineListFilter.mine => 'No tenés rutinas propias',
+    RoutineListFilter.community => 'Sin rutinas de la comunidad',
+  };
 
   String get _subtitle => switch (filter) {
-        RoutineListFilter.all =>
-          'Creá una rutina propia o explorá el catálogo de la comunidad.',
-        RoutineListFilter.mine =>
-          'Creá tu primera rutina y armala día por día.',
-        RoutineListFilter.community =>
-          'Cuando otros usuarios compartan rutinas, aparecerán acá.',
-      };
+    RoutineListFilter.all =>
+      'Creá una rutina propia o explorá el catálogo de la comunidad.',
+    RoutineListFilter.mine => 'Creá tu primera rutina y armala día por día.',
+    RoutineListFilter.community =>
+      'Cuando otros usuarios compartan rutinas, aparecerán acá.',
+  };
 
   @override
   Widget build(BuildContext context) {

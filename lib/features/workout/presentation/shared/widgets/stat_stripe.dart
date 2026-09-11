@@ -68,7 +68,9 @@ class StatStripe extends StatelessWidget {
           ),
         ),
         const SizedBox(width: Spacing.xs),
-        Expanded(child: _DeltaChip(delta: delta, unit: unit, formatter: _formatDelta)),
+        Expanded(
+          child: _DeltaChip(delta: delta, unit: unit, formatter: _formatDelta),
+        ),
       ],
     );
   }

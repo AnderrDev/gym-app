@@ -102,9 +102,8 @@ class _ProgressPageState extends State<ProgressPage> {
       body: BlocBuilder<ProgressBloc, ProgressState>(
         builder: (context, state) {
           return switch (state) {
-            ProgressInitial() || ProgressLoading() => const Center(
-              child: AppSpinner.medium(),
-            ),
+            ProgressInitial() ||
+            ProgressLoading() => const Center(child: AppSpinner.medium()),
             ProgressFailure(:final message) => _ProgressErrorView(
               message: message,
               onRetry: _retry,
@@ -151,7 +150,9 @@ class _ProgressErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: context.text.bodyMedium?.copyWith(color: context.colors.error),
+              style: context.text.bodyMedium?.copyWith(
+                color: context.colors.error,
+              ),
             ),
             const SizedBox(height: Spacing.lg),
             ElevatedButton.icon(
@@ -241,7 +242,9 @@ class _WeekRangeLabel extends StatelessWidget {
         '${AppDateFormat.dayMonthShort(weekStart)} – ${AppDateFormat.dayMonthShort(weekEnd)}';
     return Text(
       text,
-      style: context.text.bodySmall?.copyWith(color: context.colors.textSecondary),
+      style: context.text.bodySmall?.copyWith(
+        color: context.colors.textSecondary,
+      ),
     );
   }
 }
@@ -263,4 +266,3 @@ class _SectionTitle extends StatelessWidget {
     );
   }
 }
-

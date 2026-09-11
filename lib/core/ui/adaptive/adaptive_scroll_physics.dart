@@ -22,8 +22,6 @@ class AdaptiveScrollPhysics {
         parent: AlwaysScrollableScrollPhysics(),
       );
     }
-    return const ClampingScrollPhysics(
-      parent: AlwaysScrollableScrollPhysics(),
-    );
+    return const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
   }
 }

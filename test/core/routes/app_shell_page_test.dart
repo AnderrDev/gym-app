@@ -138,10 +138,7 @@ void main() {
     return MaterialApp.router(
       routerConfig: buildTestRouter(),
       builder: (context, child) {
-        return BlocProvider<AuthBloc>.value(
-          value: mockAuthBloc,
-          child: child!,
-        );
+        return BlocProvider<AuthBloc>.value(value: mockAuthBloc, child: child!);
       },
     );
   }
@@ -175,10 +172,7 @@ void main() {
     expect(find.text('STUB_ROUTINES'), findsOneWidget);
     // `IndexedStack` mantiene los branches montados — ambos están en el
     // árbol pero solo el activo es visible. Verificamos el visible:
-    expect(
-      tester.widget<IndexedStack>(find.byType(IndexedStack)).index,
-      1,
-    );
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
   });
 
   testWidgets('tap en PERFIL muestra el branch de perfil', (tester) async {
@@ -188,10 +182,7 @@ void main() {
     await tester.tap(find.text('PERFIL'));
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widget<IndexedStack>(find.byType(IndexedStack)).index,
-      3,
-    );
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 3);
   });
 
   testWidgets(
@@ -219,19 +210,18 @@ void main() {
     },
   );
 
-  testWidgets(
-    'banner desaparece cuando el watcher no tiene sesión activa',
-    (tester) async {
-      when(
-        () => mockWatcherBloc.state,
-      ).thenReturn(const ActiveSessionWatcherState());
+  testWidgets('banner desaparece cuando el watcher no tiene sesión activa', (
+    tester,
+  ) async {
+    when(
+      () => mockWatcherBloc.state,
+    ).thenReturn(const ActiveSessionWatcherState());
 
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pump();
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
 
-      expect(find.text('Retomar'), findsNothing);
-    },
-  );
+    expect(find.text('Retomar'), findsNothing);
+  });
 
   testWidgets(
     'initState dispara CheckActiveSession con el userId autenticado',

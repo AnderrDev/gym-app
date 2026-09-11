@@ -108,7 +108,9 @@ class RoutineManagementState extends Equatable {
       editingRoutine: clearEditingRoutine
           ? null
           : (editingRoutine ?? this.editingRoutine),
-      editingDays: clearEditingDays ? const [] : (editingDays ?? this.editingDays),
+      editingDays: clearEditingDays
+          ? const []
+          : (editingDays ?? this.editingDays),
       exerciseCatalog: exerciseCatalog ?? this.exerciseCatalog,
       catalogStatus: catalogStatus ?? this.catalogStatus,
       isDirty: markClean ? false : (isDirty ?? this.isDirty),

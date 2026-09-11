@@ -60,9 +60,9 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
   @override
   void initState() {
     super.initState();
-    _weightCtrl =
-        TextEditingController(text: _weightText(_initialWeightFor(widget)))
-          ..addListener(_recomputeDirty);
+    _weightCtrl = TextEditingController(
+      text: _weightText(_initialWeightFor(widget)),
+    )..addListener(_recomputeDirty);
     _repsCtrl = TextEditingController(text: _repsText(_initialRepsFor(widget)))
       ..addListener(_recomputeDirty);
     _weightFocus = FocusNode()..addListener(_onFocusChange);
@@ -103,12 +103,16 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
   @override
   void didUpdateWidget(covariant ExerciseSetRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncIfPristine(_weightCtrl,
-        _weightText(_initialWeightFor(oldWidget)),
-        _weightText(_initialWeightFor(widget)));
-    _syncIfPristine(_repsCtrl,
-        _repsText(_initialRepsFor(oldWidget)),
-        _repsText(_initialRepsFor(widget)));
+    _syncIfPristine(
+      _weightCtrl,
+      _weightText(_initialWeightFor(oldWidget)),
+      _weightText(_initialWeightFor(widget)),
+    );
+    _syncIfPristine(
+      _repsCtrl,
+      _repsText(_initialRepsFor(oldWidget)),
+      _repsText(_initialRepsFor(widget)),
+    );
     _recomputeDirty();
   }
 
@@ -163,8 +167,9 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
   void _bumpWeight(double delta) {
     final current = double.tryParse(_weightCtrl.text) ?? 0.0;
     final next = (current + delta).clamp(0.0, 9999.0);
-    final text =
-        next % 1 == 0 ? next.toStringAsFixed(0) : next.toStringAsFixed(1);
+    final text = next % 1 == 0
+        ? next.toStringAsFixed(0)
+        : next.toStringAsFixed(1);
     _weightCtrl.value = TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
@@ -220,13 +225,15 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
       return;
     }
     HapticFeedback.mediumImpact();
-    widget.onSaved(SetLog(
-      sessionId: widget.sessionId,
-      exerciseId: widget.exerciseId,
-      actualWeight: weight,
-      actualReps: reps,
-      setIndex: widget.setNumber,
-    ));
+    widget.onSaved(
+      SetLog(
+        sessionId: widget.sessionId,
+        exerciseId: widget.exerciseId,
+        actualWeight: weight,
+        actualReps: reps,
+        setIndex: widget.setNumber,
+      ),
+    );
   }
 
   @override
@@ -247,7 +254,9 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
     final prevLabel = prev == null
         ? null
         : '${_formatWeight(prev.actualWeight)}×${prev.actualReps}';
-    final accent = widget.isDone ? context.colors.success : context.colors.primary;
+    final accent = widget.isDone
+        ? context.colors.success
+        : context.colors.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.sm),
@@ -282,7 +291,9 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
               // habilita teclado tocando el chip ✎.
               Expanded(
                 child: CompactNumberField(
-                  key: ValueKey('weight_${widget.exerciseId}_${widget.setNumber}'),
+                  key: ValueKey(
+                    'weight_${widget.exerciseId}_${widget.setNumber}',
+                  ),
                   controller: _weightCtrl,
                   focusNode: _weightFocus,
                   suffix: 'kg',
@@ -294,7 +305,9 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
               SizedBox(
                 width: 64,
                 child: CompactNumberField(
-                  key: ValueKey('reps_${widget.exerciseId}_${widget.setNumber}'),
+                  key: ValueKey(
+                    'reps_${widget.exerciseId}_${widget.setNumber}',
+                  ),
                   controller: _repsCtrl,
                   focusNode: _repsFocus,
                   suffix: 'reps',

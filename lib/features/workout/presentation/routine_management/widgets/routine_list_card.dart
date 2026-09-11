@@ -104,7 +104,9 @@ class RoutineListCard extends StatelessWidget {
                           isActive: isActive,
                           accent: accent,
                           onActivate: () => onActivate(routine.id),
-                          onFork: onFork == null ? null : () => onFork!(routine.id),
+                          onFork: onFork == null
+                              ? null
+                              : () => onFork!(routine.id),
                         ),
                       ],
                     ),
@@ -150,10 +152,7 @@ class _Header extends StatelessWidget {
         if (isActive)
           Container(
             margin: const EdgeInsets.only(left: Spacing.sm),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: accent,
               borderRadius: BorderRadius.circular(8),
@@ -189,8 +188,8 @@ class _StatsRow extends StatelessWidget {
     final author = isMine
         ? 'Mi rutina'
         : (routine.creatorName?.isNotEmpty == true
-            ? routine.creatorName!
-            : 'Comunidad');
+              ? routine.creatorName!
+              : 'Comunidad');
     return Wrap(
       spacing: Spacing.sm,
       runSpacing: Spacing.xs,
@@ -230,10 +229,7 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(10),

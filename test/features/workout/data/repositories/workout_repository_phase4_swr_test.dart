@@ -34,11 +34,7 @@ void main() {
   final tWeekStart = DateTime.utc(2026, 5, 11);
   final tWeekEnd = DateTime.utc(2026, 5, 17);
 
-  const tRoutineModel = RoutineModel(
-    id: 'r1',
-    name: 'Push',
-    exerciseCount: 4,
-  );
+  const tRoutineModel = RoutineModel(id: 'r1', name: 'Push', exerciseCount: 4);
   const tRoutineCached = Routine(
     id: 'r-cached',
     name: 'Cached Push',
@@ -94,15 +90,17 @@ void main() {
     conn = MockConnectivityService();
     when(() => conn.isOnline).thenReturn(true);
 
-    when(() => local.cacheAssignedRoutines(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => local.cacheWeekSessions(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => local.cacheWeeklyInsights(
-          userId: any(named: 'userId'),
-          routineId: any(named: 'routineId'),
-          insights: any(named: 'insights'),
-        )).thenAnswer((_) async {});
+    when(
+      () => local.cacheAssignedRoutines(any(), any()),
+    ).thenAnswer((_) async {});
+    when(() => local.cacheWeekSessions(any(), any())).thenAnswer((_) async {});
+    when(
+      () => local.cacheWeeklyInsights(
+        userId: any(named: 'userId'),
+        routineId: any(named: 'routineId'),
+        insights: any(named: 'insights'),
+      ),
+    ).thenAnswer((_) async {});
 
     repo = WorkoutRepositoryImpl(
       remoteDataSource: remote,
@@ -116,10 +114,12 @@ void main() {
 
   group('getAssignedRoutines SWR', () {
     test('online + remote ok + cache null → fresh + escribe cache', () async {
-      when(() => remote.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => const [tRoutineModel]);
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => null);
+      when(
+        () => remote.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => const [tRoutineModel]);
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -129,10 +129,12 @@ void main() {
     });
 
     test('online + remote ok + cache stale → fresh gana', () async {
-      when(() => remote.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => const [tRoutineModel]);
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => const [tRoutineCached]);
+      when(
+        () => remote.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => const [tRoutineModel]);
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => const [tRoutineCached]);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -141,10 +143,12 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → cache', () async {
-      when(() => remote.getAssignedRoutines(tUserId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => const [tRoutineCached]);
+      when(
+        () => remote.getAssignedRoutines(tUserId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => const [tRoutineCached]);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -153,10 +157,12 @@ void main() {
     });
 
     test('online + remote falla + sin cache → offlineFallback ([])', () async {
-      when(() => remote.getAssignedRoutines(tUserId))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => null);
+      when(
+        () => remote.getAssignedRoutines(tUserId),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
@@ -164,8 +170,9 @@ void main() {
 
     test('offline + cache con datos → cache, sin tocar remote', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => const [tRoutineCached]);
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => const [tRoutineCached]);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) {
@@ -176,8 +183,9 @@ void main() {
 
     test('offline + sin cache → offlineFallback ([])', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getAssignedRoutines(tUserId))
-          .thenAnswer((_) async => null);
+      when(
+        () => local.getAssignedRoutines(tUserId),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getAssignedRoutines(tUserId);
       result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
@@ -189,10 +197,12 @@ void main() {
 
   group('getWeekSessions SWR', () {
     test('online + remote ok + cache vacío → fresh + escribe cache', () async {
-      when(() => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => [tSessionModel]);
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => const []);
+      when(
+        () => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => [tSessionModel]);
+      when(
+        () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
       result.fold((l) => fail('expected Right'), (r) {
@@ -202,10 +212,12 @@ void main() {
     });
 
     test('online + remote ok + cache stale → fresh gana', () async {
-      when(() => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => [tSessionModel]);
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => [tSessionCached]);
+      when(
+        () => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => [tSessionModel]);
+      when(
+        () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => [tSessionCached]);
 
       final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
       result.fold((l) => fail('expected Right'), (r) {
@@ -214,10 +226,12 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → cache', () async {
-      when(() => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => [tSessionCached]);
+      when(
+        () => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => [tSessionCached]);
 
       final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
       result.fold((l) => fail('expected Right'), (r) {
@@ -225,21 +239,30 @@ void main() {
       });
     });
 
-    test('online + remote falla + cache vacío → offlineFallback ([])',
-        () async {
-      when(() => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenThrow(const SocketException('down'));
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => const []);
+    test(
+      'online + remote falla + cache vacío → offlineFallback ([])',
+      () async {
+        when(
+          () => remote.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+        ).thenThrow(const SocketException('down'));
+        when(
+          () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+        ).thenAnswer((_) async => const []);
 
-      final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
-      result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
-    });
+        final result = await repo.getWeekSessions(
+          tUserId,
+          tWeekStart,
+          tWeekEnd,
+        );
+        result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
+      },
+    );
 
     test('offline + cache con datos → cache, sin tocar remote', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => [tSessionCached]);
+      when(
+        () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => [tSessionCached]);
 
       final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
       result.fold((l) => fail('expected Right'), (r) {
@@ -250,8 +273,9 @@ void main() {
 
     test('offline + cache vacío → offlineFallback ([])', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd))
-          .thenAnswer((_) async => const []);
+      when(
+        () => local.getWeekSessions(tUserId, tWeekStart, tWeekEnd),
+      ).thenAnswer((_) async => const []);
 
       final result = await repo.getWeekSessions(tUserId, tWeekStart, tWeekEnd);
       result.fold((l) => fail('expected Right'), (r) => expect(r, isEmpty));
@@ -262,12 +286,15 @@ void main() {
 
   group('getWeeklyInsights SWR', () {
     test('online + remote ok + cache null → fresh + escribe cache', () async {
-      when(() => remote.getWeeklyInsights(
-            routineId: tRoutineId,
-            weekStart: tWeekStart,
-          )).thenAnswer((_) async => tInsights);
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => null);
+      when(
+        () => remote.getWeeklyInsights(
+          routineId: tRoutineId,
+          weekStart: tWeekStart,
+        ),
+      ).thenAnswer((_) async => tInsights);
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -276,20 +303,25 @@ void main() {
       result.fold((l) => fail('expected Right'), (r) {
         expect(r.completedDays, 3);
       });
-      verify(() => local.cacheWeeklyInsights(
-            userId: tUserId,
-            routineId: tRoutineId,
-            insights: any(named: 'insights'),
-          )).called(1);
+      verify(
+        () => local.cacheWeeklyInsights(
+          userId: tUserId,
+          routineId: tRoutineId,
+          insights: any(named: 'insights'),
+        ),
+      ).called(1);
     });
 
     test('online + remote ok + cache stale → fresh gana', () async {
-      when(() => remote.getWeeklyInsights(
-            routineId: tRoutineId,
-            weekStart: tWeekStart,
-          )).thenAnswer((_) async => tInsights);
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => tInsightsCached);
+      when(
+        () => remote.getWeeklyInsights(
+          routineId: tRoutineId,
+          weekStart: tWeekStart,
+        ),
+      ).thenAnswer((_) async => tInsights);
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => tInsightsCached);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -302,12 +334,15 @@ void main() {
     });
 
     test('online + remote falla + cache con datos → cache', () async {
-      when(() => remote.getWeeklyInsights(
-            routineId: tRoutineId,
-            weekStart: tWeekStart,
-          )).thenThrow(const SocketException('down'));
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => tInsightsCached);
+      when(
+        () => remote.getWeeklyInsights(
+          routineId: tRoutineId,
+          weekStart: tWeekStart,
+        ),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => tInsightsCached);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -319,15 +354,17 @@ void main() {
       });
     });
 
-    test(
-        'online + remote falla + cache vacío → offlineFallback '
+    test('online + remote falla + cache vacío → offlineFallback '
         '(WeeklyInsights todo a cero)', () async {
-      when(() => remote.getWeeklyInsights(
-            routineId: tRoutineId,
-            weekStart: tWeekStart,
-          )).thenThrow(const SocketException('down'));
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => null);
+      when(
+        () => remote.getWeeklyInsights(
+          routineId: tRoutineId,
+          weekStart: tWeekStart,
+        ),
+      ).thenThrow(const SocketException('down'));
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -345,8 +382,9 @@ void main() {
 
     test('offline + cache con datos → cache, sin tocar remote', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => tInsightsCached);
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => tInsightsCached);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -355,16 +393,19 @@ void main() {
       result.fold((l) => fail('expected Right'), (r) {
         expect(r.completedDays, 1);
       });
-      verifyNever(() => remote.getWeeklyInsights(
-            routineId: any(named: 'routineId'),
-            weekStart: any(named: 'weekStart'),
-          ));
+      verifyNever(
+        () => remote.getWeeklyInsights(
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      );
     });
 
     test('offline + cache vacío → offlineFallback', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart))
-          .thenAnswer((_) async => null);
+      when(
+        () => local.getWeeklyInsights(tUserId, tRoutineId, tWeekStart),
+      ).thenAnswer((_) async => null);
 
       final result = await repo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -384,10 +425,12 @@ void main() {
         connectivity: conn,
         currentUserIdResolver: () => null,
       );
-      when(() => remote.getWeeklyInsights(
-            routineId: tRoutineId,
-            weekStart: tWeekStart,
-          )).thenAnswer((_) async => tInsights);
+      when(
+        () => remote.getWeeklyInsights(
+          routineId: tRoutineId,
+          weekStart: tWeekStart,
+        ),
+      ).thenAnswer((_) async => tInsights);
 
       final result = await anonymousRepo.getWeeklyInsights(
         routineId: tRoutineId,
@@ -398,11 +441,13 @@ void main() {
       });
       // No debió tocar el cache para lectura ni escritura.
       verifyNever(() => local.getWeeklyInsights(any(), any(), any()));
-      verifyNever(() => local.cacheWeeklyInsights(
-            userId: any(named: 'userId'),
-            routineId: any(named: 'routineId'),
-            insights: any(named: 'insights'),
-          ));
+      verifyNever(
+        () => local.cacheWeeklyInsights(
+          userId: any(named: 'userId'),
+          routineId: any(named: 'routineId'),
+          insights: any(named: 'insights'),
+        ),
+      );
     });
   });
 }

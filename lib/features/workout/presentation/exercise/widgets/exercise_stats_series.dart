@@ -19,10 +19,10 @@ class ExerciseStatsSeries {
     final chronological = history.reversed.toList();
     final values = chronological.map(extractor).toList();
     final actual = values.isEmpty ? 0.0 : values.last;
-    final record =
-        values.isEmpty ? 0.0 : values.reduce((a, b) => a > b ? a : b);
-    final delta =
-        values.length < 2 ? null : actual - values[values.length - 2];
+    final record = values.isEmpty
+        ? 0.0
+        : values.reduce((a, b) => a > b ? a : b);
+    final delta = values.length < 2 ? null : actual - values[values.length - 2];
     return ExerciseStatsSeries._(
       values: values,
       actual: actual,

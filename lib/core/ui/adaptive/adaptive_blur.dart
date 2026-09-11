@@ -47,7 +47,9 @@ class AdaptiveBlur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = (tintColor ?? Colors.transparent).withValues(alpha: tintOpacity);
+    final tint = (tintColor ?? Colors.transparent).withValues(
+      alpha: tintOpacity,
+    );
     final tinted = Container(color: tint, child: child);
 
     if (!Capabilities.supportsCheapBlur) {

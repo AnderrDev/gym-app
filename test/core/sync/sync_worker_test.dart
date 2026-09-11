@@ -28,32 +28,34 @@ void main() {
     MutationKind kind = MutationKind.upsertSetLog,
     Map<String, dynamic>? payload,
     int attempts = 0,
-  }) =>
-      PendingMutation(
-        id: id,
-        kind: kind,
-        payload: payload ??
-            {
-              'session_id': 'sess-1',
-              'exercise_id': 'e1',
-              'actual_weight': 60,
-              'actual_reps': 10,
-              'set_index': 0,
-            },
-        attempts: attempts,
-        createdAt: DateTime.utc(2026, 5, 18),
-      );
+  }) => PendingMutation(
+    id: id,
+    kind: kind,
+    payload:
+        payload ??
+        {
+          'session_id': 'sess-1',
+          'exercise_id': 'e1',
+          'actual_weight': 60,
+          'actual_reps': 10,
+          'set_index': 0,
+        },
+    attempts: attempts,
+    createdAt: DateTime.utc(2026, 5, 18),
+  );
 
   setUpAll(() {
     registerFallbackValue(DateTime.utc(2026, 1, 1));
     registerFallbackValue(Duration.zero);
-    registerFallbackValue(const SetLogModel(
-      sessionId: 's',
-      exerciseId: 'e',
-      actualWeight: 0,
-      actualReps: 0,
-      setIndex: 0,
-    ));
+    registerFallbackValue(
+      const SetLogModel(
+        sessionId: 's',
+        exerciseId: 'e',
+        actualWeight: 0,
+        actualReps: 0,
+        setIndex: 0,
+      ),
+    );
   });
 
   setUp(() {
@@ -73,7 +75,9 @@ void main() {
     when(() => outbox.pendingCount()).thenAnswer((_) async => 0);
     when(() => outbox.tryClaim(any(), any())).thenAnswer((_) async => true);
     when(() => outbox.markSuccess(any())).thenAnswer((_) async {});
-    when(() => outbox.markFailure(any(), any(), any())).thenAnswer((_) async {});
+    when(
+      () => outbox.markFailure(any(), any(), any()),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -82,14 +86,14 @@ void main() {
   });
 
   SyncWorkerImpl buildWorker() => SyncWorkerImpl(
-        outbox: outbox,
-        remote: remote,
-        local: local,
-        connectivity: conn,
-        authRepository: auth,
-        clock: fakeClockAt(DateTime.utc(2026, 5, 18, 12)),
-        random: fixedRandom,
-      );
+    outbox: outbox,
+    remote: remote,
+    local: local,
+    connectivity: conn,
+    authRepository: auth,
+    clock: fakeClockAt(DateTime.utc(2026, 5, 18, 12)),
+    random: fixedRandom,
+  );
 
   group('drain FIFO', () {
     test('procesa varias mutaciones en orden hasta vaciar', () async {
@@ -97,8 +101,9 @@ void main() {
       final m1 = pending(id: 1);
       final m2 = pending(id: 2);
       var callCount = 0;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(
+        () => outbox.peekReady(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) return [m1];
         if (callCount == 2) return [m2];
@@ -120,8 +125,9 @@ void main() {
     test('saveSetLog OK → markSuccess + Applied event', () async {
       final m = pending();
       var first = true;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(
+        () => outbox.peekReady(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async {
         if (first) {
           first = false;
           return [m];
@@ -145,136 +151,154 @@ void main() {
   });
 
   group('errores no-recuperables → drop', () {
-    test('PostgrestException 23505 en insertSession → drop superseded',
-        () async {
-      final m = pending(
-        id: 7,
-        kind: MutationKind.insertSession,
-        payload: {
-          'user_id': 'u1',
-          'routine_day_id': 'd1',
-          'session_date': '2026-05-18',
-        },
-      );
-      var first = true;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
-        if (first) {
-          first = false;
-          return [m];
-        }
-        return [];
-      });
-      when(() => remote.startWorkoutForDay(any(), any(), any())).thenThrow(
-        const supabase.PostgrestException(
-          message: 'duplicate key',
-          code: '23505',
-        ),
-      );
+    test(
+      'PostgrestException 23505 en insertSession → drop superseded',
+      () async {
+        final m = pending(
+          id: 7,
+          kind: MutationKind.insertSession,
+          payload: {
+            'user_id': 'u1',
+            'routine_day_id': 'd1',
+            'session_date': '2026-05-18',
+          },
+        );
+        var first = true;
+        when(
+          () => outbox.peekReady(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          if (first) {
+            first = false;
+            return [m];
+          }
+          return [];
+        });
+        when(() => remote.startWorkoutForDay(any(), any(), any())).thenThrow(
+          const supabase.PostgrestException(
+            message: 'duplicate key',
+            code: '23505',
+          ),
+        );
 
-      final events = <SyncWorkerEvent>[];
-      final worker = buildWorker();
-      worker.events$.listen(events.add);
-      worker.start();
-      await worker.drain();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        final events = <SyncWorkerEvent>[];
+        final worker = buildWorker();
+        worker.events$.listen(events.add);
+        worker.start();
+        await worker.drain();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      verify(() => outbox.markSuccess(7)).called(1);
-      final drops = events.whereType<SyncMutationDropped>();
-      expect(drops.length, 1);
-      expect(drops.first.reason, 'session_superseded');
-      await worker.stop();
-    });
+        verify(() => outbox.markSuccess(7)).called(1);
+        final drops = events.whereType<SyncMutationDropped>();
+        expect(drops.length, 1);
+        expect(drops.first.reason, 'session_superseded');
+        await worker.stop();
+      },
+    );
 
-    test('WorkoutFunctionException VALIDATION_ERROR → drop validation',
-        () async {
-      final m = pending(id: 9, kind: MutationKind.finalizeSession, payload: {
-        'session_id': 'sess-1',
-        'coaching_analysis': null,
-      });
-      var first = true;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
-        if (first) {
-          first = false;
-          return [m];
-        }
-        return [];
-      });
-      when(() => remote.finishWorkoutSession(any(),
-              coachingAnalysis: any(named: 'coachingAnalysis')))
-          .thenThrow(const core_ex.WorkoutFunctionException(
-        code: 'VALIDATION_ERROR',
-        userMessage: 'bad',
-      ));
+    test(
+      'WorkoutFunctionException VALIDATION_ERROR → drop validation',
+      () async {
+        final m = pending(
+          id: 9,
+          kind: MutationKind.finalizeSession,
+          payload: {'session_id': 'sess-1', 'coaching_analysis': null},
+        );
+        var first = true;
+        when(
+          () => outbox.peekReady(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          if (first) {
+            first = false;
+            return [m];
+          }
+          return [];
+        });
+        when(
+          () => remote.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenThrow(
+          const core_ex.WorkoutFunctionException(
+            code: 'VALIDATION_ERROR',
+            userMessage: 'bad',
+          ),
+        );
 
-      final events = <SyncWorkerEvent>[];
-      final worker = buildWorker();
-      worker.events$.listen(events.add);
-      worker.start();
-      await worker.drain();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        final events = <SyncWorkerEvent>[];
+        final worker = buildWorker();
+        worker.events$.listen(events.add);
+        worker.start();
+        await worker.drain();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      verify(() => outbox.markSuccess(9)).called(1);
-      final drops = events.whereType<SyncMutationDropped>().toList();
-      expect(drops.length, 1);
-      expect(drops.first.reason, 'validation_failed');
-      await worker.stop();
-    });
+        verify(() => outbox.markSuccess(9)).called(1);
+        final drops = events.whereType<SyncMutationDropped>().toList();
+        expect(drops.length, 1);
+        expect(drops.first.reason, 'validation_failed');
+        await worker.stop();
+      },
+    );
   });
 
   group('pausa por auth', () {
-    test('UNAUTHORIZED → emite SyncAuthPaused y NO incrementa attempts',
-        () async {
-      final m = pending(id: 11, kind: MutationKind.upsertSetLog);
-      var first = true;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
-        if (first) {
-          first = false;
-          return [m];
-        }
-        return [];
-      });
-      when(() => remote.saveSetLog(any())).thenThrow(
-        const supabase.AuthException('jwt expired'),
-      );
+    test(
+      'UNAUTHORIZED → emite SyncAuthPaused y NO incrementa attempts',
+      () async {
+        final m = pending(id: 11, kind: MutationKind.upsertSetLog);
+        var first = true;
+        when(
+          () => outbox.peekReady(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          if (first) {
+            first = false;
+            return [m];
+          }
+          return [];
+        });
+        when(
+          () => remote.saveSetLog(any()),
+        ).thenThrow(const supabase.AuthException('jwt expired'));
 
-      final events = <SyncWorkerEvent>[];
-      final worker = buildWorker();
-      worker.events$.listen(events.add);
-      worker.start();
-      await worker.drain();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        final events = <SyncWorkerEvent>[];
+        final worker = buildWorker();
+        worker.events$.listen(events.add);
+        worker.start();
+        await worker.drain();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      expect(events.whereType<SyncAuthPaused>().length, 1);
-      // Verificamos que NO se llamó markSuccess y SÍ markFailure con
-      // nextAttempt = ahora (no penaliza).
-      verifyNever(() => outbox.markSuccess(11));
-      verify(() => outbox.markFailure(11, any(that: contains('auth')), any()))
-          .called(1);
+        expect(events.whereType<SyncAuthPaused>().length, 1);
+        // Verificamos que NO se llamó markSuccess y SÍ markFailure con
+        // nextAttempt = ahora (no penaliza).
+        verifyNever(() => outbox.markSuccess(11));
+        verify(
+          () => outbox.markFailure(11, any(that: contains('auth')), any()),
+        ).called(1);
 
-      // Reanuda al recibir authStateChanges(true).
-      authCtrl.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      await worker.stop();
-    });
+        // Reanuda al recibir authStateChanges(true).
+        authCtrl.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await worker.stop();
+      },
+    );
   });
 
   group('backoff', () {
     test('failure transient agenda con backoff dentro de rango', () async {
       final m = pending(id: 21, kind: MutationKind.upsertSetLog, attempts: 1);
       var first = true;
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(
+        () => outbox.peekReady(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async {
         if (first) {
           first = false;
           return [m];
         }
         return [];
       });
-      when(() => remote.saveSetLog(any()))
-          .thenThrow(Exception('transient down'));
+      when(
+        () => remote.saveSetLog(any()),
+      ).thenThrow(Exception('transient down'));
 
       final events = <SyncWorkerEvent>[];
       final worker = buildWorker();
@@ -305,8 +329,9 @@ void main() {
 
     test('kick es no-op cuando offline', () async {
       when(() => conn.isOnline).thenReturn(false);
-      when(() => outbox.peekReady(any(), limit: any(named: 'limit')))
-          .thenAnswer((_) async => []);
+      when(
+        () => outbox.peekReady(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async => []);
       final worker = buildWorker();
       worker.start();
       await worker.kick();
@@ -315,4 +340,3 @@ void main() {
     });
   });
 }
-

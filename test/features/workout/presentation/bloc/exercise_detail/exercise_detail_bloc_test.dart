@@ -33,8 +33,9 @@ void main() {
     blocTest<ExerciseDetailBloc, ExerciseDetailState>(
       'éxito → status ready con detail',
       build: () {
-        when(() => getExerciseDetail(any()))
-            .thenAnswer((_) async => const Right(tDetail));
+        when(
+          () => getExerciseDetail(any()),
+        ).thenAnswer((_) async => const Right(tDetail));
         return buildBloc();
       },
       act: (b) => b.add(const LoadExerciseDetail('ex-1')),
@@ -53,8 +54,9 @@ void main() {
     blocTest<ExerciseDetailBloc, ExerciseDetailState>(
       'failure → status failure con errorMessage',
       build: () {
-        when(() => getExerciseDetail(any()))
-            .thenAnswer((_) async => const Left(NotFoundFailure('no existe')));
+        when(
+          () => getExerciseDetail(any()),
+        ).thenAnswer((_) async => const Left(NotFoundFailure('no existe')));
         return buildBloc();
       },
       act: (b) => b.add(const LoadExerciseDetail('ex-1')),

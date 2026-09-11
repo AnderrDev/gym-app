@@ -88,10 +88,7 @@ class _ProfileEditNameSheetState extends State<ProfileEditNameSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Editar nombre',
-                style: context.text.titleLarge,
-              ),
+              Text('Editar nombre', style: context.text.titleLarge),
               const SizedBox(height: Spacing.xs),
               Text(
                 'Así te ven los demás cuando compartís rutinas.',

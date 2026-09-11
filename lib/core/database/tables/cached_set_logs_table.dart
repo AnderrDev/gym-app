@@ -21,8 +21,7 @@ class CachedSetLogs extends Table {
   TextColumn get remoteId => text().nullable()();
 
   /// Estado de sincronización: `pending`, `syncing`, `synced`, `error`.
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
 
   /// Epoch ms (UTC) del último write local.
   IntColumn get fetchedAt => integer()();

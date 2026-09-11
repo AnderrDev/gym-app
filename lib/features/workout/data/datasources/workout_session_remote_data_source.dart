@@ -12,7 +12,7 @@ import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dar
 /// `generate_coaching_v1`, `get_weekly_insights_v1`).
 class WorkoutSessionRemoteDataSource {
   WorkoutSessionRemoteDataSource({required this.client})
-      : _invoker = EdgeFunctionInvoker(client: client);
+    : _invoker = EdgeFunctionInvoker(client: client);
 
   final SupabaseClient client;
   final EdgeFunctionInvoker _invoker;
@@ -230,8 +230,9 @@ class WorkoutSessionRemoteDataSource {
   }) async {
     final payload = <String, dynamic>{'session_id': sessionId};
     if (coachingAnalysis != null) {
-      payload['coaching_analysis'] =
-          coachingAnalysis.map((e) => e.toJson()).toList();
+      payload['coaching_analysis'] = coachingAnalysis
+          .map((e) => e.toJson())
+          .toList();
     }
 
     await _invoker.invoke(

@@ -69,10 +69,7 @@ class _ComparisonRow extends StatelessWidget {
         : (delta > 0 ? '+' : '−') + delta.abs().toStringAsFixed(1);
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 10),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
@@ -118,7 +115,10 @@ class _ComparisonRow extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'kg',
-                style: context.text.labelMedium?.copyWith(color: color, fontSize: 10),
+                style: context.text.labelMedium?.copyWith(
+                  color: color,
+                  fontSize: 10,
+                ),
               ),
             ],
           ),

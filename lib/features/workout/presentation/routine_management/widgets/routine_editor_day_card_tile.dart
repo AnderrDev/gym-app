@@ -34,8 +34,9 @@ class RoutineEditorDayCardTile extends StatelessWidget {
       index: index,
       day: day,
       onTap: () => _openDayEditor(context),
-      confirmDelete:
-          isOwner ? () => DeleteDayDialog.show(context, dayName: day.name) : null,
+      confirmDelete: isOwner
+          ? () => DeleteDayDialog.show(context, dayName: day.name)
+          : null,
       onDelete: isOwner ? () => _deleteDay(context) : null,
     );
   }
@@ -51,10 +52,7 @@ class RoutineEditorDayCardTile extends StatelessWidget {
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
     context.read<RoutineManagementBloc>().add(
-      LoadRoutineForEditing(
-        userId: authState.user.id,
-        routineId: routineId,
-      ),
+      LoadRoutineForEditing(userId: authState.user.id, routineId: routineId),
     );
   }
 
@@ -64,11 +62,7 @@ class RoutineEditorDayCardTile extends StatelessWidget {
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
     context.read<RoutineManagementBloc>().add(
-      DeleteDay(
-        userId: authState.user.id,
-        routineId: routineId,
-        dayId: day.id,
-      ),
+      DeleteDay(userId: authState.user.id, routineId: routineId, dayId: day.id),
     );
   }
 }

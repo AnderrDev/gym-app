@@ -11,6 +11,5 @@ class ForkRoutine {
   Future<Either<Failure, String>> call(
     String sourceRoutineId, {
     String? newName,
-  }) =>
-      repository.forkRoutine(sourceRoutineId, newName: newName);
+  }) => repository.forkRoutine(sourceRoutineId, newName: newName);
 }

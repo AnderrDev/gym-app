@@ -35,9 +35,9 @@ void main() {
     Bloc.observer = AppBlocObserver();
 
     if (Capabilities.supportsOrientationLock) {
-      await SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.portraitUp],
-      );
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
     }
     // El `SystemUiOverlayStyle` ya no se setea aquí: depende del brightness
     // del tema activo, así que vive en `_SystemUiOverlayChrome` (montado en
@@ -162,8 +162,9 @@ class _SystemUiOverlayChrome extends StatelessWidget {
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         systemNavigationBarColor:
             palette?.background ?? (isDark ? Colors.black : Colors.white),
-        systemNavigationBarIconBrightness:
-            isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
       ),
     );
     return child;
@@ -183,7 +184,8 @@ class _BootstrapErrorApp extends StatelessWidget {
     final raw = '$error';
     if (kIsWeb) {
       final s = raw.toLowerCase();
-      final looksLikeStorageBlock = s.contains('localstorage') ||
+      final looksLikeStorageBlock =
+          s.contains('localstorage') ||
           s.contains('quotaexceeded') ||
           s.contains('securityerror') ||
           (s.contains('storage') && s.contains('access'));
@@ -192,7 +194,7 @@ class _BootstrapErrorApp extends StatelessWidget {
           title: 'Tu navegador está bloqueando el almacenamiento',
           body:
               'Esto suele pasar en el modo privado de Safari. Abrí la app en '
-                  'una pestaña normal (sin modo privado) y volvé a intentar.',
+              'una pestaña normal (sin modo privado) y volvé a intentar.',
         );
       }
     }

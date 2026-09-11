@@ -19,24 +19,22 @@ class AppBottomSheet {
     bool useSafeArea = true,
     EdgeInsetsGeometry? padding,
     Color? backgroundColor,
-  }) =>
-      AdaptiveSheet.show<T>(
-        context,
-        child: child,
-        title: title,
-        useSafeArea: useSafeArea,
-        padding: padding,
-        backgroundColor: backgroundColor,
-      );
+  }) => AdaptiveSheet.show<T>(
+    context,
+    child: child,
+    title: title,
+    useSafeArea: useSafeArea,
+    padding: padding,
+    backgroundColor: backgroundColor,
+  );
 
   static Future<T?> showRaw<T>(
     BuildContext context, {
     required WidgetBuilder builder,
     bool useSafeArea = true,
-  }) =>
-      AdaptiveSheet.showRaw<T>(
-        context,
-        builder: builder,
-        useSafeArea: useSafeArea,
-      );
+  }) => AdaptiveSheet.showRaw<T>(
+    context,
+    builder: builder,
+    useSafeArea: useSafeArea,
+  );
 }

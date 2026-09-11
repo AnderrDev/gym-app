@@ -159,9 +159,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     final current = phase;
     if (current is RoutineDayLoadingPhase) {
       return const [
-        SliverFillRemaining(
-          child: Center(child: AppSpinner.large()),
-        ),
+        SliverFillRemaining(child: Center(child: AppSpinner.large())),
       ];
     }
     if (current is RoutineDayErrorPhase) {
@@ -249,7 +247,10 @@ class RoutineDayViewScaffold extends StatelessWidget {
 }
 
 class _PrestartBottomBar extends StatelessWidget {
-  const _PrestartBottomBar({required this.locked, required this.onStartWorkout});
+  const _PrestartBottomBar({
+    required this.locked,
+    required this.onStartWorkout,
+  });
 
   final bool locked;
   final VoidCallback onStartWorkout;

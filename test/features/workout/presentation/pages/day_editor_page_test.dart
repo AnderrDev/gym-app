@@ -109,7 +109,9 @@ void main() {
 
   testWidgets('GUARDAR dispara SaveDay cuando hay cambios', (tester) async {
     // El botón GUARDAR ahora se habilita solo cuando isDirty=true.
-    when(() => bloc.state).thenReturn(const RoutineManagementState(isDirty: true));
+    when(
+      () => bloc.state,
+    ).thenReturn(const RoutineManagementState(isDirty: true));
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();

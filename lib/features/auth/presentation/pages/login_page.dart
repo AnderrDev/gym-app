@@ -105,7 +105,9 @@ class _LoginView extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: textTheme.labelMedium?.copyWith(
                             letterSpacing: 2,
-                            color: context.colors.primary.withValues(alpha: 0.7),
+                            color: context.colors.primary.withValues(
+                              alpha: 0.7,
+                            ),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -186,8 +188,9 @@ class _LoginView extends StatelessWidget {
                             child: Text(
                               '¿Olvidaste tu contraseña?',
                               style: textTheme.labelMedium?.copyWith(
-                                color:
-                                    context.colors.primary.withValues(alpha: 0.85),
+                                color: context.colors.primary.withValues(
+                                  alpha: 0.85,
+                                ),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
