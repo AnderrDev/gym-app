@@ -76,6 +76,7 @@ void main() {
     SetLog? lastPerformance,
     bool readOnly = false,
     void Function(SetLog)? onSetAdded,
+    void Function(int)? onSetRemoved,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -97,6 +98,7 @@ void main() {
                   lastPerformance: lastPerformance,
                   readOnly: readOnly,
                   onSetAdded: onSetAdded,
+                  onSetRemoved: onSetRemoved,
                 ),
               ),
             ),
@@ -130,35 +132,149 @@ void main() {
     expect(find.byKey(const ValueKey('sets_list')), findsOneWidget);
   });
 
-  testWidgets(
-    'debe permitir registrar una serie con un tap (inputs siempre visibles)',
-    (tester) async {
-      SetLog? captured;
+  group('flujo "Completar serie"', () {
+    Future<void> pumpCard(
+      WidgetTester tester, {
+      void Function(SetLog)? onSetAdded,
+      void Function(int)? onSetRemoved,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
-        createWidgetUnderTest(onSetAdded: (log) => captured = log),
+        createWidgetUnderTest(
+          onSetAdded: onSetAdded,
+          onSetRemoved: onSetRemoved,
+        ),
       );
+    }
 
-      // Los inputs usan `TextInputType.none` por defecto (tap → chips,
-      // sin teclado del sistema). Pero `enterText` simula entrada vía la
-      // conexión de input directamente, así que funciona sin tocar ✎.
-      await tester.enterText(find.byKey(const ValueKey('weight_e1_1')), '65');
-      await tester.enterText(find.byKey(const ValueKey('reps_e1_1')), '12');
+    Future<void> openNextSet(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('complete_set_button_e1')));
+      await tester.pumpAndSettle();
+    }
 
-      await tester.tap(find.byKey(const ValueKey('save_e1_1')));
-      await tester.pump(const Duration(milliseconds: 100));
+    String fieldText(WidgetTester tester, String key) =>
+        tester.widget<TextField>(find.byKey(ValueKey(key))).controller!.text;
+
+    Future<void> confirm(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('complete_set_confirm')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'muestra el objetivo de cada serie y el botón de la siguiente',
+      (tester) async {
+        await pumpCard(tester);
+
+        expect(find.text('60 kg × 10 reps'), findsNWidgets(3));
+        expect(find.text('COMPLETAR SERIE 1'), findsOneWidget);
+      },
+    );
+
+    testWidgets('el modal confirma peso y reps y registra la serie', (
+      tester,
+    ) async {
+      SetLog? captured;
+      await pumpCard(tester, onSetAdded: (log) => captured = log);
+
+      await openNextSet(tester);
+      expect(find.text('SERIE 1 DE 3'), findsOneWidget);
+      expect(fieldText(tester, 'complete_set_weight'), '60');
+      expect(fieldText(tester, 'complete_set_reps'), '10');
+
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_weight')),
+        '62.5',
+      );
+      await tester.pump();
+      expect(find.text('+2.5 kg sobre el objetivo'), findsOneWidget);
+      await confirm(tester);
 
       expect(captured, isNotNull);
-      expect(captured!.actualWeight, 65);
-      expect(captured!.actualReps, 12);
+      expect(captured!.actualWeight, 62.5);
+      expect(captured!.actualReps, 10);
       expect(captured!.setIndex, 1);
+      expect(find.text('62.5 kg × 10 reps'), findsOneWidget);
+      expect(find.text('COMPLETAR SERIE 2'), findsOneWidget);
 
-      // La serie 2 sigue editable e independiente.
-      expect(find.byKey(const ValueKey('save_e1_2')), findsOneWidget);
-
-      // Drenar el Future.delayed del live advice (8s).
+      // Drenar el timer del live advice (8s).
       await tester.pump(const Duration(seconds: 9));
-    },
-  );
+    });
+
+    testWidgets('subir el peso con menos reps no aconseja bajar el peso', (
+      tester,
+    ) async {
+      await pumpCard(tester);
+
+      await openNextSet(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_weight')),
+        '62',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_reps')),
+        '8',
+      );
+      await confirm(tester);
+
+      expect(find.textContaining('Subiste +2 kg'), findsOneWidget);
+      expect(find.textContaining('reduce el peso'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 9));
+    });
+
+    testWidgets('la serie siguiente arranca con el peso de la anterior', (
+      tester,
+    ) async {
+      await pumpCard(tester);
+
+      await openNextSet(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_weight')),
+        '65',
+      );
+      await confirm(tester);
+
+      await openNextSet(tester);
+      expect(find.text('SERIE 2 DE 3'), findsOneWidget);
+      expect(fieldText(tester, 'complete_set_weight'), '65');
+
+      await tester.pump(const Duration(seconds: 9));
+    });
+
+    testWidgets('desmarcar y volver a abrir conserva el peso editado', (
+      tester,
+    ) async {
+      int? removedIndex;
+      await pumpCard(tester, onSetRemoved: (i) => removedIndex = i);
+
+      await openNextSet(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_weight')),
+        '65',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('complete_set_reps')),
+        '8',
+      );
+      await confirm(tester);
+
+      // Tocar la serie completada abre el modal en modo edición.
+      await tester.tap(find.text('65 kg × 8 reps'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('complete_set_unsave')));
+      await tester.pumpAndSettle();
+
+      expect(removedIndex, 1);
+      expect(find.text('COMPLETAR SERIE 1'), findsOneWidget);
+
+      await openNextSet(tester);
+      expect(fieldText(tester, 'complete_set_weight'), '65');
+      expect(fieldText(tester, 'complete_set_reps'), '8');
+
+      await tester.pump(const Duration(seconds: 9));
+    });
+  });
 
   testWidgets('debe mostrar record histórico si existe', (tester) async {
     final lastPerf = const SetLog(

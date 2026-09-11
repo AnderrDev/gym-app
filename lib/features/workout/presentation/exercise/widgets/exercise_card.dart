@@ -12,10 +12,12 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/complete_set_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card_body.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card_header.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_bottom_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/remote_target_sheet.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/set_feedback.dart';
 
 /// Tarjeta asistente por ejercicio con Records, Autofill y Edición.
 /// El timer de descanso es gestionado por la pantalla padre (timer global).
@@ -52,6 +54,9 @@ class _ExerciseCardState extends State<ExerciseCard>
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
   final Map<int, SetLog> _completedSets = {};
+  // Últimos valores de series desmarcadas (setIndex → log) para no perder
+  // lo editado si el usuario desmarca y vuelve a completar.
+  final Map<int, SetLog> _drafts = {};
   bool _isExpanded = true;
 
   // ── Feedback en tiempo real ────────────────────────────────
@@ -127,38 +132,107 @@ class _ExerciseCardState extends State<ExerciseCard>
 
   void _onSetUnsaved(int setIndex) {
     setState(() {
-      _completedSets.remove(setIndex);
+      final removed = _completedSets.remove(setIndex);
+      // Recordamos lo registrado para que al volver a abrir la serie se
+      // conserve el peso/reps editado en vez de volver al prefill.
+      if (removed != null) _drafts[setIndex] = removed;
       // Si estábamos colapsados por "all done", volver a expandir.
       if (!widget.forceExpanded) _isExpanded = true;
     });
     widget.onSetRemoved?.call(setIndex);
   }
 
+  int? get _nextPendingSet {
+    for (var n = 1; n <= _targetSets; n++) {
+      if (!_completedSets.containsKey(n)) return n;
+    }
+    return null;
+  }
+
+  /// Valores iniciales del modal para la serie [setNumber]. Prioridad:
+  ///   1. Lo ya registrado (editar una serie completada).
+  ///   2. El borrador de una serie desmarcada.
+  ///   3. La serie previa registrada en esta sesión — si subiste el peso en
+  ///      la serie 1, la 2 arranca con ese peso.
+  ///   4. El objetivo de la rutina; si no tiene peso, la última performance.
+  ({double weight, int reps}) _prefillFor(int setNumber) {
+    final known = _completedSets[setNumber] ?? _drafts[setNumber];
+    if (known != null) {
+      return (weight: known.actualWeight, reps: known.actualReps);
+    }
+    final previous = _completedSets.entries
+        .where((e) => e.key < setNumber)
+        .fold<SetLog?>(null, (acc, e) {
+          if (acc == null || e.key > acc.setIndex) return e.value;
+          return acc;
+        });
+    if (previous != null) {
+      return (weight: previous.actualWeight, reps: previous.actualReps);
+    }
+    final ex = widget.exercise;
+    final last = widget.lastPerformance;
+    if (ex.targetWeight <= 0 && last != null && last.actualWeight > 0) {
+      return (weight: last.actualWeight, reps: last.actualReps);
+    }
+    return (weight: ex.targetWeight, reps: ex.targetReps);
+  }
+
+  Future<void> _openSetSheet(int setNumber) async {
+    unawaited(HapticFeedback.selectionClick());
+    final done = _completedSets[setNumber];
+    final prefill = _prefillFor(setNumber);
+    final result = await CompleteSetSheet.show(
+      context,
+      exerciseName: widget.exercise.name,
+      setNumber: setNumber,
+      targetSets: _targetSets,
+      targetWeight: widget.exercise.targetWeight,
+      targetReps: widget.exercise.targetReps,
+      initialWeight: prefill.weight,
+      initialReps: prefill.reps,
+      isDone: done != null,
+      lastPerformance: widget.lastPerformance,
+    );
+    if (!mounted || result == null) return;
+    switch (result) {
+      case CompleteSetSave(:final weight, :final reps):
+        if (done != null &&
+            done.actualWeight == weight &&
+            done.actualReps == reps) {
+          return;
+        }
+        _drafts.remove(setNumber);
+        _onSetSaved(
+          SetLog(
+            sessionId: widget.sessionId,
+            exerciseId: widget.exercise.id,
+            actualWeight: weight,
+            actualReps: reps,
+            setIndex: setNumber,
+          ),
+          setNumber,
+        );
+      case CompleteSetUnsave():
+        _onSetUnsaved(setNumber);
+    }
+  }
+
   void _calculateLiveAdvice(SetLog log) {
-    final targetW = widget.exercise.targetWeight;
-    final targetR = widget.exercise.targetReps;
+    final advice = evaluateSet(
+      weight: log.actualWeight,
+      reps: log.actualReps,
+      targetWeight: widget.exercise.targetWeight,
+      targetReps: widget.exercise.targetReps,
+    ).message;
 
-    String? advice;
-    if (log.actualWeight < targetW) {
-      advice =
-          'No alcanzaste el peso objetivo. Baja un poco el ritmo y prioriza técnica, o mantén este peso para la siguiente.';
-    } else if (log.actualReps < targetR) {
-      advice =
-          'Te faltaron repeticiones. Intenta descansar un poco más antes de la siguiente serie o reduce el peso 2.5kg.';
-    } else if (log.actualWeight >= targetW && log.actualReps >= targetR) {
-      advice = '¡Excelente! Objetivo cumplido. ¡Mantenlo así!';
-    }
-
-    if (advice != null) {
-      setState(() {
-        _liveAdvice = advice;
-        _showLiveAdvice = true;
-      });
-      _liveAdviceTimer?.cancel();
-      _liveAdviceTimer = Timer(const Duration(seconds: 8), () {
-        if (mounted) setState(() => _showLiveAdvice = false);
-      });
-    }
+    setState(() {
+      _liveAdvice = advice;
+      _showLiveAdvice = true;
+    });
+    _liveAdviceTimer?.cancel();
+    _liveAdviceTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted) setState(() => _showLiveAdvice = false);
+    });
   }
 
   @override
@@ -226,14 +300,12 @@ class _ExerciseCardState extends State<ExerciseCard>
             isExpanded: _isExpanded,
             targetSets: _targetSets,
             exercise: widget.exercise,
-            sessionId: widget.sessionId,
             completedSets: _completedSets,
-            lastPerformance: widget.lastPerformance,
             readOnly: widget.readOnly,
             coachingAnalysis: widget.coachingAnalysis,
-            onSaveSet: _onSetSaved,
-            onUnsaveSet: widget.readOnly ? null : _onSetUnsaved,
             recommendationText: _getFriendlyRecommendation,
+            nextPendingSet: _nextPendingSet,
+            onOpenSet: widget.readOnly ? null : _openSetSheet,
           ),
         ],
       ),

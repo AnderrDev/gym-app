@@ -2,6 +2,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -12,28 +13,28 @@ class ExerciseCardBody extends StatelessWidget {
   final bool isExpanded;
   final int targetSets;
   final Exercise exercise;
-  final String sessionId;
   final Map<int, SetLog> completedSets;
-  final SetLog? lastPerformance;
   final bool readOnly;
   final CoachingAnalysis? coachingAnalysis;
-  final void Function(SetLog log, int setIndex) onSaveSet;
-  final void Function(int setIndex)? onUnsaveSet;
   final String Function(String) recommendationText;
+
+  /// Primera serie sin completar, o `null` si ya están todas.
+  final int? nextPendingSet;
+
+  /// Abre el modal de la serie indicada. `null` en modo solo lectura.
+  final void Function(int setNumber)? onOpenSet;
 
   const ExerciseCardBody({
     super.key,
     required this.isExpanded,
     required this.targetSets,
     required this.exercise,
-    required this.sessionId,
     required this.completedSets,
-    required this.lastPerformance,
     required this.readOnly,
     required this.coachingAnalysis,
-    required this.onSaveSet,
     required this.recommendationText,
-    this.onUnsaveSet,
+    this.nextPendingSet,
+    this.onOpenSet,
   });
 
   @override
@@ -72,17 +73,25 @@ class ExerciseCardBody extends StatelessWidget {
                         setNumber: n,
                         targetReps: exercise.targetReps,
                         targetWeight: exercise.targetWeight,
-                        isDone: completedSets.containsKey(n),
                         completedLog: completedSets[n],
-                        lastPerformanceLog: lastPerformance,
-                        sessionId: sessionId,
-                        exerciseId: exercise.id,
                         readOnly: readOnly,
-                        onSaved: readOnly ? (_) {} : (log) => onSaveSet(log, n),
-                        onUnsaved: readOnly ? null : onUnsaveSet,
+                        isNext: n == nextPendingSet,
+                        onTap: readOnly || onOpenSet == null
+                            ? null
+                            : () => onOpenSet!(n),
                       );
                     }),
                   ),
+                  if (!readOnly && nextPendingSet != null && onOpenSet != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Spacing.sm),
+                      child: AppButton(
+                        key: ValueKey('complete_set_button_${exercise.id}'),
+                        label: 'Completar serie $nextPendingSet',
+                        icon: Icons.check_rounded,
+                        onPressed: () => onOpenSet!(nextPendingSet!),
+                      ),
+                    ),
                 ],
               ),
             ),

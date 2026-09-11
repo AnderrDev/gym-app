@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_focus_parts.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_parts.dart';
 
 /// Variante stateless de la fila de serie: solo lectura para historial.
 /// Sin inputs, sin botón ✓, sin chips — solo el círculo + texto resumido.
