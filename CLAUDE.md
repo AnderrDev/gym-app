@@ -35,7 +35,7 @@ flutter build web --dart-define-from-file=.env
 - Single test by name: `flutter test --plain-name "<substring of test description>"`
 - Integration test: `flutter test integration_test/app_test.dart` (or via `flutter drive`)
 - Edge-function contract smoke test: `bash scripts/contract_smoke_supabase.sh` (requires `supabase` CLI auth, `psql`, `jq`, and `SUPABASE_DB_PASSWORD` env var; creates a real test user via admin API and exercises all three Edge Functions end-to-end)
-- Firebase web deploy: `flutter build web` then `firebase deploy --only hosting`
+- Firebase web deploy: `flutter build web --dart-define-from-file=.env` (or with explicit `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`) then `firebase deploy --only hosting`. **Never build without dart-define for a real deploy** — `firebase.json`'s default `"**/.*"` ignore rule strips the bundled `.env` asset from every upload, so a build that relied on the asset instead of dart-define ships with empty Supabase credentials and crashes at boot (`SupabaseConfig.init()` throws `StateError`, shown as `_BootstrapErrorApp`).
 
 ## High-level architecture
 
@@ -55,7 +55,7 @@ Within each feature: `domain` (entities + repository interfaces + use cases retu
 
 ### State management — flutter_bloc
 
-Two top-level providers wired in `main.dart`: `AuthBloc` (lifetime-bound to the app) and `WorkoutBloc` (created via DI). Auth state drives navigation: the router subscribes to `authBloc.stream` via `GoRouterRefreshStream` and redirects unauthenticated users to `/login` and authenticated users away from auth pages. **While `AuthInitial`/`AuthLoading`, redirect returns `null` to avoid flicker before auth resolves** — preserve this behavior when modifying `AppRouter`.
+Top-level providers wired in `main.dart`: `AuthBloc` and `SettingsBloc` (both created via DI, `main.dart` just resolves them with `di.sl<...>()`). There is no single `WorkoutBloc` — the workout feature is split into one BLoC per screen/concern (`DashboardBloc`, `RoutineManagementBloc`, `RoutineDayBloc`, `ActiveWorkoutBloc`, `ProgressBloc`, `RoutineStatsBloc`, `ExerciseStatsBloc`, `ExerciseDetailBloc`, `ProfileBloc`), each scoped to the page that uses it. `ActiveSessionWatcherBloc` and `SyncStatusBloc` are provided one level up, in the shell (see below). Auth state drives navigation: the router subscribes to `authBloc.stream` via `GoRouterRefreshStream` and redirects unauthenticated users to `/login` and authenticated users away from auth pages. **While `AuthInitial`/`AuthLoading`, redirect returns `null` to avoid flicker before auth resolves** — preserve this behavior when modifying `AppRouter`.
 
 ### Routing
 
@@ -113,7 +113,7 @@ Repository implementations should NOT use ad-hoc `catch (e) { return Left(Server
 - Functional error handling with `fpdart` — use cases return `Either<Failure, T>`; don't throw from domain code. Use `guard`/`mapToFailure` in repositories.
 - Core domain entities (`Routine`, `RoutineDay`, `Exercise`, `WorkoutSession`, `SetLog`, `User`) are `freezed` classes — `==`/`copyWith`/`hashCode` are generated; the `.freezed.dart` parts are **committed** (like the drift `.g.dart`). Their data-layer models (`XModel`) are **sibling** classes, NOT subclasses: each keeps its hand-written `fromJson`/`toJson` (the JSON is too custom for `json_serializable`) plus `toEntity()`/`fromEntity()`. Models must never escape the data layer — repos convert at the boundary. Never do `List<Entity>.from(models)` (compiles, throws at runtime — analyze won't catch it); map with `.toEntity()`.
 - Regenerate codegen with `dart run build_runner build --force-jit`. Plain `build` (AOT) fails on this toolchain with `'dart compile' does not support build hooks` — Dart 3.10 native build hooks pulled in transitively by `objective_c`. The `--force-jit` flag sidesteps the AOT build-script compile.
-- DI via `get_it` (`sl`). Repositories/data sources are `LazySingleton`; BLoCs are `Factory`. Register new dependencies in `injection_container.dart`.
+- DI via `get_it` (`sl`). Repositories/data sources are `LazySingleton`; BLoCs are `Factory` — the one deliberate exception is `SettingsBloc`, registered `LazySingleton` because it must outlive any single screen (see the comment at its registration). Register new dependencies in `injection_container.dart`.
 - `AuthBloc` consumes `AuthRepository.authStateChanges` (a `Stream<bool>`) — it must NOT import `package:supabase_flutter/...`. Adding a new auth-aware bloc? Inject the repository, not the SDK.
 - The "is there an in-progress workout?" question is owned by `ActiveSessionService` (`lib/core/services/active_session_service.dart`) — DI singleton, watched by `ActiveSessionWatcherBloc`. Don't query `workout_sessions` directly from UI/blocs for this state.
 - Logging goes through `lib/core/observability/app_logger.dart` and `AppBlocObserver`. Use the logger instead of raw `print`/`debugPrint`.
