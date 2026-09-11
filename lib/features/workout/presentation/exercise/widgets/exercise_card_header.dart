@@ -6,6 +6,7 @@ import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.d
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card_coaching.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 enum _HeaderMenuAction { target, insights, progress, howTo }
 
@@ -136,7 +137,7 @@ class ExerciseCardHeader extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'TARGET: ${exercise.targetWeight.toStringAsFixed(0)}kg x ${exercise.targetReps}',
+                              'TARGET: ${formatWeight(exercise.targetWeight)}kg x ${exercise.targetReps}',
                               style: context.text.labelMedium?.copyWith(
                                 color: context.colors.primary,
                                 fontSize: 9,
@@ -163,7 +164,7 @@ class ExerciseCardHeader extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Record: ${lastPerformance!.actualWeight.toStringAsFixed(0)}kg x ${lastPerformance!.actualReps}',
+                                  'Record: ${formatWeight(lastPerformance!.actualWeight)}kg x ${lastPerformance!.actualReps}',
                                   style: context.text.labelMedium?.copyWith(
                                     color: context.colors.primary.withValues(
                                       alpha: 0.8,

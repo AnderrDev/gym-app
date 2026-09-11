@@ -11,6 +11,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Bottom sheet para editar el objetivo de un ejercicio durante la sesión.
 /// Reemplaza el `showDialog` de `exercise_card._showRemoteTargetEditor` que
@@ -58,7 +59,7 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
   @override
   void initState() {
     super.initState();
-    _weight = WeightInput.dirty(widget.initialWeight.toStringAsFixed(0));
+    _weight = WeightInput.dirty(formatWeight(widget.initialWeight));
     _reps = RepsInput.dirty(widget.initialReps.toString());
   }
 
