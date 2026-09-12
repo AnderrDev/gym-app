@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -244,6 +245,112 @@ void main() {
       verify: (b) {
         expect(b.state.setLogs, hasLength(1));
         expect(b.state.setLogs.first.actualReps, 8);
+      },
+    );
+
+    const pendingLog = SetLog(
+      sessionId: sessionId,
+      exerciseId: 'e1',
+      actualWeight: 80,
+      actualReps: 8,
+      setIndex: 1,
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'si el guardado falla revierte el log y expone actionError',
+      build: () {
+        when(
+          () => repository.saveSetLog(any()),
+        ).thenAnswer((_) async => const Left(ServerFailure('sin red')));
+        return buildBloc()..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+          ),
+        );
+      },
+      act: (b) => b.add(const SaveActiveSetLog(pendingLog)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.setLogs, isEmpty);
+        expect(b.state.actionError, contains('sin red'));
+        // La sesión sigue viva: no se cae a failure.
+        expect(b.state.status, ActiveWorkoutStatus.running);
+      },
+    );
+  });
+
+  group('UnsaveActiveSetLog', () {
+    const savedLog = SetLog(
+      sessionId: sessionId,
+      exerciseId: 'e1',
+      actualWeight: 80,
+      actualReps: 8,
+      setIndex: 1,
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'éxito → saca el log de la lista',
+      build: () {
+        when(
+          () => repository.deleteSetLog(
+            sessionId: any(named: 'sessionId'),
+            exerciseId: any(named: 'exerciseId'),
+            setIndex: any(named: 'setIndex'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
+        return buildBloc()..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+            setLogs: const [savedLog],
+          ),
+        );
+      },
+      act: (b) => b.add(
+        const UnsaveActiveSetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) => expect(b.state.setLogs, isEmpty),
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'si falla restaura el log y no tumba la sesión',
+      build: () {
+        when(
+          () => repository.deleteSetLog(
+            sessionId: any(named: 'sessionId'),
+            exerciseId: any(named: 'exerciseId'),
+            setIndex: any(named: 'setIndex'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('sin red')));
+        return buildBloc()..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+            setLogs: const [savedLog],
+          ),
+        );
+      },
+      act: (b) => b.add(
+        const UnsaveActiveSetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.setLogs, hasLength(1));
+        expect(b.state.status, ActiveWorkoutStatus.running);
+        expect(b.state.actionError, contains('sin red'));
       },
     );
   });

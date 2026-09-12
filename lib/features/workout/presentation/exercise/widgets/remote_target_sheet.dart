@@ -76,8 +76,10 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
         targetReps: r,
       ),
     );
+    // El resultado real lo confirma (o lo rechaza) el bloc: si RLS bloquea
+    // el update, emite `actionError` y la página muestra el error.
     Navigator.of(context).pop();
-    AppSnackBar.success(context, 'Objetivo actualizado remotamente');
+    AppSnackBar.success(context, 'Objetivo enviado');
   }
 
   @override
@@ -113,7 +115,8 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
             Text('Cambiar objetivo remoto', style: textTheme.headlineSmall),
             const SizedBox(height: Spacing.xs),
             Text(
-              'Ajustá el peso y las reps para el resto de la sesión.',
+              'Cambia el objetivo del ejercicio en la rutina: aplica a esta '
+              'sesión y a las siguientes.',
               style: textTheme.bodyMedium,
             ),
             const SizedBox(height: Spacing.lg),

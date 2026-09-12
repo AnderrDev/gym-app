@@ -34,6 +34,8 @@ class ActiveWorkoutState extends Equatable {
     this.recentSessions = const [],
     this.recentSessionsLogs = const {},
     this.errorMessage,
+    this.actionError,
+    this.actionErrorNonce = 0,
   });
 
   final ActiveWorkoutStatus status;
@@ -44,6 +46,14 @@ class ActiveWorkoutState extends Equatable {
   final List<WorkoutSession> recentSessions;
   final Map<String, List<SetLog>> recentSessionsLogs;
   final String? errorMessage;
+
+  /// Error de una acción puntual (guardar/desmarcar serie, cambiar objetivo)
+  /// que NO tumba la sesión: la página lo muestra como snack y sigue.
+  final String? actionError;
+
+  /// Incrementa con cada `actionError` para que dos fallos iguales seguidos
+  /// sigan disparando el listener de la página.
+  final int actionErrorNonce;
 
   bool get isRunning => status == ActiveWorkoutStatus.running;
   bool get isStarting => status == ActiveWorkoutStatus.starting;
@@ -60,8 +70,13 @@ class ActiveWorkoutState extends Equatable {
     Map<String, List<SetLog>>? recentSessionsLogs,
     String? errorMessage,
     bool clearErrorMessage = false,
+    String? actionError,
   }) {
     return ActiveWorkoutState(
+      actionError: actionError,
+      actionErrorNonce: actionError == null
+          ? actionErrorNonce
+          : actionErrorNonce + 1,
       status: status ?? this.status,
       session: clearSession ? null : (session ?? this.session),
       exercises: exercises ?? this.exercises,
@@ -85,5 +100,7 @@ class ActiveWorkoutState extends Equatable {
     recentSessions,
     recentSessionsLogs,
     errorMessage,
+    actionError,
+    actionErrorNonce,
   ];
 }

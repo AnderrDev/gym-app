@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
+import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -170,29 +171,37 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     Emitter<ActiveWorkoutState> emit,
   ) async {
     if (state.session == null) return;
-    try {
-      await repository.saveSetLog(event.setLog);
-      final newLogs = List<SetLog>.from(state.setLogs);
-      final idx = newLogs.indexWhere(
-        (l) =>
-            l.exerciseId == event.setLog.exerciseId &&
-            l.setIndex == event.setLog.setIndex,
-      );
-      if (idx != -1) {
-        newLogs[idx] = event.setLog;
-      } else {
-        newLogs.add(event.setLog);
-      }
-      emit(state.copyWith(setLogs: newLogs));
-      await notifier.onProgress(completedSets: newLogs.length);
-    } catch (e) {
+    // Optimista: la serie aparece marcada ya mismo y se revierte si el
+    // guardado falla. Antes el resultado del repo se ignoraba y una serie
+    // podía quedar marcada en pantalla sin haberse guardado en ningún lado.
+    final previousLogs = state.setLogs;
+    final newLogs = List<SetLog>.from(previousLogs);
+    final idx = newLogs.indexWhere(
+      (l) =>
+          l.exerciseId == event.setLog.exerciseId &&
+          l.setIndex == event.setLog.setIndex,
+    );
+    if (idx != -1) {
+      newLogs[idx] = event.setLog;
+    } else {
+      newLogs.add(event.setLog);
+    }
+    emit(state.copyWith(setLogs: newLogs));
+
+    final result = await repository.saveSetLog(event.setLog);
+    if (result.isLeft()) {
+      final failure = result.swap().getOrElse((_) => const ServerFailure());
       emit(
         state.copyWith(
-          status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al guardar serie: $e',
+          setLogs: previousLogs,
+          actionError:
+              'No se pudo guardar la serie ${event.setLog.setIndex}: '
+              '${failure.message}',
         ),
       );
+      return;
     }
+    await notifier.onProgress(completedSets: newLogs.length);
   }
 
   Future<void> _onUnsaveSet(
@@ -200,22 +209,8 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     Emitter<ActiveWorkoutState> emit,
   ) async {
     if (state.session == null) return;
-    final result = await repository.deleteSetLog(
-      sessionId: event.sessionId,
-      exerciseId: event.exerciseId,
-      setIndex: event.setIndex,
-    );
-    if (result.isLeft()) {
-      final failure = result.swap().getOrElse((_) => throw StateError(''));
-      emit(
-        state.copyWith(
-          status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al desmarcar serie: ${failure.message}',
-        ),
-      );
-      return;
-    }
-    final newLogs = state.setLogs
+    final previousLogs = state.setLogs;
+    final newLogs = previousLogs
         .where(
           (l) =>
               !(l.exerciseId == event.exerciseId &&
@@ -223,6 +218,26 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         )
         .toList();
     emit(state.copyWith(setLogs: newLogs));
+
+    final result = await repository.deleteSetLog(
+      sessionId: event.sessionId,
+      exerciseId: event.exerciseId,
+      setIndex: event.setIndex,
+    );
+    if (result.isLeft()) {
+      final failure = result.swap().getOrElse((_) => const ServerFailure());
+      // Error puntual: restauramos la serie y avisamos, sin tumbar la
+      // sesión entera a `failure` (antes desmarcar sin red mataba la vista).
+      emit(
+        state.copyWith(
+          setLogs: previousLogs,
+          actionError:
+              'No se pudo desmarcar la serie ${event.setIndex}: '
+              '${failure.message}',
+        ),
+      );
+      return;
+    }
     await notifier.onProgress(completedSets: newLogs.length);
   }
 
@@ -232,31 +247,32 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
   ) async {
     final session = state.session;
     if (session == null) return;
-    try {
-      final newExercises = state.exercises.map((e) {
-        if (e.id == event.exerciseId) {
-          return e.copyWith(
-            targetWeight: event.targetWeight,
-            targetReps: event.targetReps,
-          );
-        }
-        return e;
-      }).toList();
-      await repository.updateExerciseTarget(
-        session.routineDayId,
-        event.exerciseId,
-        event.targetWeight,
-        event.targetReps,
-      );
-      emit(state.copyWith(exercises: newExercises));
-    } catch (e) {
-      emit(
+    final newExercises = state.exercises.map((e) {
+      if (e.id == event.exerciseId) {
+        return e.copyWith(
+          targetWeight: event.targetWeight,
+          targetReps: event.targetReps,
+        );
+      }
+      return e;
+    }).toList();
+
+    final result = await repository.updateExerciseTarget(
+      session.routineDayId,
+      event.exerciseId,
+      event.targetWeight,
+      event.targetReps,
+    );
+    result.fold(
+      // Si la rutina no es del usuario, RLS rechaza el update: antes la UI
+      // decía "objetivo actualizado" igual.
+      (failure) => emit(
         state.copyWith(
-          status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al actualizar objetivo: $e',
+          actionError: 'No se pudo actualizar el objetivo: ${failure.message}',
         ),
-      );
-    }
+      ),
+      (_) => emit(state.copyWith(exercises: newExercises)),
+    );
   }
 
   Future<void> _onFinish(

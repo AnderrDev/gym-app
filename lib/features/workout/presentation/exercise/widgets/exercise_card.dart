@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,7 +96,34 @@ class _ExerciseCardState extends State<ExerciseCard>
   @override
   void didUpdateWidget(covariant ExerciseCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // El bloc es la fuente de verdad: cuando emite una lista nueva (guardado
+    // confirmado, o revertido porque falló) resincronizamos. Sin esto una
+    // serie revertida seguía marcada en pantalla.
+    if (!identical(
+      oldWidget.initialCompletedSets,
+      widget.initialCompletedSets,
+    )) {
+      _syncCompletedFromWidget();
+    }
     _syncPulse();
+  }
+
+  void _syncCompletedFromWidget() {
+    final incoming = <int, SetLog>{
+      for (final log in widget.initialCompletedSets)
+        if (log.exerciseId == widget.exercise.id) log.setIndex: log,
+    };
+    if (mapEquals(incoming, _completedSets)) return;
+    setState(() {
+      // Lo que desaparece se guarda como borrador: si el guardado falló,
+      // el usuario reabre la serie con sus valores y reintenta.
+      for (final entry in _completedSets.entries) {
+        if (!incoming.containsKey(entry.key)) _drafts[entry.key] = entry.value;
+      }
+      _completedSets
+        ..clear()
+        ..addAll(incoming);
+    });
   }
 
   /// Solo pulsa cuando hay coaching activo y aún quedan sets por hacer.

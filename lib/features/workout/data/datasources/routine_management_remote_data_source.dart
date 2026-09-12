@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/features/workout/data/datasources/add_exercise_to_day_item.dart';
 import 'package:gym_flutter/features/workout/data/models/exercise_model.dart';
@@ -310,10 +311,20 @@ class RoutineManagementRemoteDataSource {
     if (targetSets != null) payload['target_sets'] = targetSets;
     if (restSeconds != null) payload['rest_timer_seconds'] = restSeconds;
 
-    await client.from('routine_exercises').update(payload).match({
-      'routine_day_id': routineDayId,
-      'exercise_id': exerciseId,
-    });
+    // `.select()` devuelve las filas afectadas: si RLS rechaza el update
+    // (la rutina es de otro usuario) PostgREST no da error, actualiza 0
+    // filas. Sin esta comprobación la UI decía "objetivo actualizado".
+    final updated = await client
+        .from('routine_exercises')
+        .update(payload)
+        .match({'routine_day_id': routineDayId, 'exercise_id': exerciseId})
+        .select('exercise_id');
+    if (updated.isEmpty) {
+      throw NotFoundException(
+        'No se pudo actualizar el objetivo: la rutina no es tuya o el '
+        'ejercicio ya no existe.',
+      );
+    }
   }
 
   Future<List<RoutineModel>> getAllRoutines({

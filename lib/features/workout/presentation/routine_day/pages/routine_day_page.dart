@@ -11,6 +11,7 @@ import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
+import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -217,10 +218,15 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           );
         },
         child: BlocConsumer<ActiveWorkoutBloc, ActiveWorkoutState>(
-          listenWhen: (p, c) => p.status != c.status,
+          listenWhen: (p, c) =>
+              p.status != c.status || p.actionErrorNonce != c.actionErrorNonce,
           listener: (context, state) {
+            if (!mounted) return;
+            final actionError = state.actionError;
+            if (actionError != null) {
+              AppSnackBar.error(context, actionError);
+            }
             if (state.status == ActiveWorkoutStatus.finished) {
-              if (!mounted) return;
               context.pop(true);
             }
           },
