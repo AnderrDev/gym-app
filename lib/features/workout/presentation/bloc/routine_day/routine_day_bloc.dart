@@ -54,8 +54,17 @@ class RoutineDayBloc extends Bloc<RoutineDayEvent, RoutineDayState> {
 
       final exercises = (results[0] as Either<Failure, List<Exercise>>)
           .getOrElse((_) => const []);
-      final existingSession = (results[1] as Either<Failure, WorkoutSession?>)
+      var existingSession = (results[1] as Either<Failure, WorkoutSession?>)
           .getOrElse((_) => null);
+      // Una sesión nueva se registra con la fecha de hoy aunque se abra
+      // desde un día anterior del calendario. Si no hay sesión en la fecha
+      // exacta, buscamos la de este día de rutina dentro de la semana —
+      // mismo criterio que usa el dashboard para marcarlo completado.
+      existingSession ??= await _sessionInWeekFor(
+        userId: event.userId,
+        routineDayId: event.routineDayId,
+        date: event.sessionDate,
+      );
       final recentSessions =
           (results[2] as Either<Failure, List<WorkoutSession>>).getOrElse(
             (_) => const [],
@@ -106,6 +115,38 @@ class RoutineDayBloc extends Bloc<RoutineDayEvent, RoutineDayState> {
         ),
       );
     }
+  }
+
+  /// Sesión de [routineDayId] dentro de la semana (lunes→domingo) que
+  /// contiene [date]. Prefiere la abierta; si no, la más reciente.
+  Future<WorkoutSession?> _sessionInWeekFor({
+    required String userId,
+    required String routineDayId,
+    required DateTime date,
+  }) async {
+    final dayOnly = DateTime(date.year, date.month, date.day);
+    final weekStart = dayOnly.subtract(Duration(days: dayOnly.weekday - 1));
+    // Best-effort: si la consulta falla, la pantalla sigue usable en
+    // prestart en vez de caer a `failure`.
+    final List<WorkoutSession> sessions;
+    try {
+      sessions =
+          (await repository.getWeekSessions(
+                userId,
+                weekStart,
+                weekStart.add(const Duration(days: 6)),
+              ))
+              .getOrElse((_) => const [])
+              .where((s) => s.routineDayId == routineDayId)
+              .toList();
+    } catch (_) {
+      return null;
+    }
+    if (sessions.isEmpty) return null;
+    final open = sessions.where((s) => s.completedAt == null);
+    if (open.isNotEmpty) return open.first;
+    sessions.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+    return sessions.first;
   }
 
   Future<Map<String, SetLog?>> _fetchPreloadedRecords(

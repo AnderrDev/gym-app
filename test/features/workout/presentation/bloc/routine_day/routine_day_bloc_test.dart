@@ -43,7 +43,11 @@ void main() {
     WorkoutSession? activeOther,
     String? activeOtherDayName,
     List<Exercise> exercises = const [exerciseA],
+    List<WorkoutSession> weekSessions = const [],
   }) {
+    when(
+      () => repository.getWeekSessions(any(), any(), any()),
+    ).thenAnswer((_) async => Right(weekSessions));
     when(
       () => repository.getExercisesForDay(any()),
     ).thenAnswer((_) async => Right(exercises));
@@ -152,5 +156,60 @@ void main() {
     },
     skip: 2,
     expect: () => [const RoutineDayState()],
+  );
+
+  blocTest<RoutineDayBloc, RoutineDayState>(
+    'sin sesión en la fecha exacta usa la de esa rutina en la misma semana',
+    build: () {
+      // El día se abre con fecha de lunes, pero la sesión se hizo el
+      // miércoles (se inició desde el día anterior → fecha de hoy).
+      final midWeek = WorkoutSession(
+        id: 's-week',
+        userId: userId,
+        routineDayId: routineDayId,
+        sessionDate: DateTime(2026, 5, 6),
+        completedAt: DateTime(2026, 5, 6, 19),
+      );
+      whenLoadCommonAnswers(weekSessions: [midWeek]);
+      return buildBloc();
+    },
+    act: (b) => b.add(
+      LoadRoutineDay(
+        userId: userId,
+        routineDayId: routineDayId,
+        sessionDate: DateTime(2026, 5, 4),
+      ),
+    ),
+    wait: const Duration(milliseconds: 100),
+    verify: (b) {
+      expect(b.state.status, RoutineDayStatus.ready);
+      expect(b.state.existingSession?.id, 's-week');
+    },
+  );
+
+  blocTest<RoutineDayBloc, RoutineDayState>(
+    'ignora sesiones de la semana de otro día de rutina',
+    build: () {
+      final otherDay = WorkoutSession(
+        id: 's-other-day',
+        userId: userId,
+        routineDayId: 'd2',
+        sessionDate: DateTime(2026, 5, 6),
+      );
+      whenLoadCommonAnswers(weekSessions: [otherDay]);
+      return buildBloc();
+    },
+    act: (b) => b.add(
+      LoadRoutineDay(
+        userId: userId,
+        routineDayId: routineDayId,
+        sessionDate: DateTime(2026, 5, 4),
+      ),
+    ),
+    wait: const Duration(milliseconds: 100),
+    verify: (b) {
+      expect(b.state.status, RoutineDayStatus.ready);
+      expect(b.state.existingSession, isNull);
+    },
   );
 }
