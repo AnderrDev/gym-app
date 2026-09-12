@@ -220,6 +220,24 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     return into(cachedSetLogs).insert(row, mode: InsertMode.insertOrReplace);
   }
 
+  /// Borra un set log cacheado por su PK compuesta. Sin esto, desmarcar una
+  /// serie dejaba la fila en cache y el SWR la devolvía como completada al
+  /// reanudar sin red.
+  Future<int> deleteCachedSetLog({
+    required String sessionId,
+    required String exerciseId,
+    required int setIndex,
+  }) {
+    final query = delete(cachedSetLogs)
+      ..where(
+        (t) =>
+            t.sessionId.equals(sessionId) &
+            t.exerciseId.equals(exerciseId) &
+            t.setIndex.equals(setIndex),
+      );
+    return query.go();
+  }
+
   // ─── Phase 4: cached_assigned_routines ─────────────────────────────────
 
   /// Devuelve la caché de rutinas asignadas del usuario, más recientes

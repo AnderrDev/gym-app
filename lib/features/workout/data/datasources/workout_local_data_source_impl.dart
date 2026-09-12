@@ -219,6 +219,19 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   }
 
   @override
+  Future<void> deleteCachedSetLog({
+    required String sessionId,
+    required String exerciseId,
+    required int setIndex,
+  }) async {
+    await _dao.deleteCachedSetLog(
+      sessionId: sessionId,
+      exerciseId: exerciseId,
+      setIndex: setIndex,
+    );
+  }
+
+  @override
   Future<void> markSessionCompleted(String id, DateTime completedAt) {
     return _dao.markSessionCompleted(
       id,

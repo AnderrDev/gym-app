@@ -353,7 +353,18 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     // Online-first (ver nota en `startWorkoutForDay`). El POST sale ya
     // mismo cuando hay red; el outbox sólo entra si estamos offline.
     if (!_offlineCapable || _isOnline) {
-      await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+      try {
+        await remoteDataSource.saveSetLog(SetLogModel.fromEntity(setLog));
+      } catch (e) {
+        // Si el POST falla por red (el gym tiene wifi "conectado" pero sin
+        // salida, timeout, DNS…), la serie NO se puede perder: cae al
+        // outbox y el SyncWorker la reintenta. Los errores semánticos
+        // (RLS, validación) sí se propagan para que la UI avise.
+        if (!_offlineCapable || mapToFailure(e) is! NetworkFailure) rethrow;
+        AppLogger.instance.warning('saveSetLog: remote failed, outbox: $e');
+        await _enqueueSetLog(setLog);
+        return;
+      }
       if (localDataSource != null) {
         try {
           await localDataSource!.upsertCachedSetLog(setLog);
@@ -363,6 +374,10 @@ class WorkoutRepositoryImpl extends WorkoutRepository
       }
       return;
     }
+    await _enqueueSetLog(setLog);
+  });
+
+  Future<void> _enqueueSetLog(SetLog setLog) async {
     await _txn(() async {
       await localDataSource!.upsertCachedSetLog(setLog);
       await outbox!.enqueue(MutationKind.upsertSetLog, {
@@ -376,20 +391,67 @@ class WorkoutRepositoryImpl extends WorkoutRepository
       });
     });
     unawaited(syncWorker?.kick());
-  });
+  }
 
   @override
   Future<Either<Failure, void>> deleteSetLog({
     required String sessionId,
     required String exerciseId,
     required int setIndex,
-  }) => guard(
-    () => remoteDataSource.deleteSetLog(
-      sessionId: sessionId,
-      exerciseId: exerciseId,
-      setIndex: setIndex,
-    ),
-  );
+  }) => guard(() async {
+    Future<void> dropFromCache() async {
+      if (localDataSource == null) return;
+      try {
+        await localDataSource!.deleteCachedSetLog(
+          sessionId: sessionId,
+          exerciseId: exerciseId,
+          setIndex: setIndex,
+        );
+      } catch (e) {
+        AppLogger.instance.warning('deleteSetLog: cache delete failed: $e');
+      }
+    }
+
+    if (!_offlineCapable || _isOnline) {
+      try {
+        await remoteDataSource.deleteSetLog(
+          sessionId: sessionId,
+          exerciseId: exerciseId,
+          setIndex: setIndex,
+        );
+      } catch (e) {
+        if (!_offlineCapable || mapToFailure(e) is! NetworkFailure) rethrow;
+        AppLogger.instance.warning('deleteSetLog: remote failed, outbox: $e');
+        await _enqueueSetLogDelete(sessionId, exerciseId, setIndex);
+        return;
+      }
+      await dropFromCache();
+      return;
+    }
+    await _enqueueSetLogDelete(sessionId, exerciseId, setIndex);
+  });
+
+  /// El borrado viaja por outbox para respetar el orden FIFO respecto del
+  /// `upsertSetLog` del mismo set (si no, el upsert encolado lo resucitaría).
+  Future<void> _enqueueSetLogDelete(
+    String sessionId,
+    String exerciseId,
+    int setIndex,
+  ) async {
+    await _txn(() async {
+      await localDataSource!.deleteCachedSetLog(
+        sessionId: sessionId,
+        exerciseId: exerciseId,
+        setIndex: setIndex,
+      );
+      await outbox!.enqueue(MutationKind.deleteSetLog, {
+        'session_id': sessionId,
+        'exercise_id': exerciseId,
+        'set_index': setIndex,
+      });
+    });
+    unawaited(syncWorker?.kick());
+  }
 
   @override
   Future<Either<Failure, SetLog?>> getLastExercisePerformance(

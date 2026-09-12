@@ -247,6 +247,13 @@ class SyncWorkerImpl implements SyncWorker {
           );
           await _remote.saveSetLog(SetLogModel.fromEntity(log));
           return;
+        case MutationKind.deleteSetLog:
+          await _remote.deleteSetLog(
+            sessionId: m.payload['session_id'] as String,
+            exerciseId: m.payload['exercise_id'] as String,
+            setIndex: (m.payload['set_index'] as num).toInt(),
+          );
+          return;
         case MutationKind.finalizeSession:
           final sessionId = m.payload['session_id'] as String;
           final coachingRaw = m.payload['coaching_analysis'] as List<dynamic>?;

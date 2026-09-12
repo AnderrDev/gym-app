@@ -13,6 +13,11 @@ enum MutationKind {
   /// Upsert de un `set_log` por `(sessionId, exerciseId, setIndex)`.
   upsertSetLog,
 
+  /// Borrado de un `set_log` por `(sessionId, exerciseId, setIndex)` — el
+  /// usuario desmarcó una serie. Va por outbox (y no directo al remote) para
+  /// respetar el orden FIFO respecto del `upsertSetLog` del mismo set.
+  deleteSetLog,
+
   /// Finalize de la sesión (cierra `completed_at` + dispara coaching).
   finalizeSession;
 
