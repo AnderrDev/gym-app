@@ -12,6 +12,29 @@ abstract class ActiveWorkoutEvent extends Equatable {
   List<Object?> get props => const [];
 }
 
+class AdaptActiveWorkoutExercise extends ActiveWorkoutEvent {
+  const AdaptActiveWorkoutExercise({
+    required this.exerciseId,
+    required this.targetSets,
+    required this.targetReps,
+    required this.targetWeight,
+    this.replaceExerciseId,
+  });
+  final String exerciseId;
+  final int targetSets;
+  final int targetReps;
+  final double targetWeight;
+  final String? replaceExerciseId;
+  @override
+  List<Object?> get props => [
+    exerciseId,
+    targetSets,
+    targetReps,
+    targetWeight,
+    replaceExerciseId,
+  ];
+}
+
 /// El usuario confirma iniciar la sesión. Crea la sesión en backend.
 ///
 /// No lleva fecha: una sesión nueva siempre se registra con la fecha de hoy

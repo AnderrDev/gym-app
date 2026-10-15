@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:gym_flutter/features/workout/data/datasources/session_exercise_remote_data_source.dart';
 
 import 'package:gym_flutter/features/workout/data/datasources/exercise_catalog_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/routine_management_remote_data_source.dart';
@@ -26,7 +27,8 @@ export 'package:gym_flutter/features/workout/data/datasources/workout_remote_dat
 /// archivo bajo control de complejidad.
 class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   WorkoutRemoteDataSourceImpl({required SupabaseClient client})
-    : _sessions = WorkoutSessionRemoteDataSource(client: client),
+    : _sessionExercises = SessionExerciseRemoteDataSource(client: client),
+      _sessions = WorkoutSessionRemoteDataSource(client: client),
       _routines = RoutineManagementRemoteDataSource(client: client),
       _catalog = ExerciseCatalogRemoteDataSource(client: client);
 
@@ -34,13 +36,50 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
     required WorkoutSessionRemoteDataSource sessions,
     required RoutineManagementRemoteDataSource routines,
     required ExerciseCatalogRemoteDataSource catalog,
-  }) : _sessions = sessions,
+    SessionExerciseRemoteDataSource? sessionExercises,
+  }) : _sessionExercises = sessionExercises,
+       _sessions = sessions,
        _routines = routines,
        _catalog = catalog;
 
   final WorkoutSessionRemoteDataSource _sessions;
+  final SessionExerciseRemoteDataSource? _sessionExercises;
   final RoutineManagementRemoteDataSource _routines;
   final ExerciseCatalogRemoteDataSource _catalog;
+
+  @override
+  Future<List<ExerciseModel>> getSessionExercises(String sessionId) =>
+      _sessionExercises!.getSessionExercises(sessionId);
+
+  @override
+  Future<List<ExerciseModel>> adaptSessionExercise(
+    String sessionId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    String? replaceExerciseId,
+  }) => _sessionExercises!.adaptSessionExercise(
+    sessionId,
+    exerciseId,
+    targetSets: targetSets,
+    targetReps: targetReps,
+    targetWeight: targetWeight,
+    replaceExerciseId: replaceExerciseId,
+  );
+
+  @override
+  Future<List<ExerciseModel>> updateSessionExerciseTarget(
+    String sessionId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps,
+  ) => _sessionExercises!.updateSessionExerciseTarget(
+    sessionId,
+    exerciseId,
+    targetWeight,
+    targetReps,
+  );
 
   // ─── Routine management ────────────────────────────────────────────────
   @override

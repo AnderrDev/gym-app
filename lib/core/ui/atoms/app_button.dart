@@ -26,6 +26,7 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
     this.expand = true,
+    this.uppercaseLabel = true,
   });
 
   final String label;
@@ -34,6 +35,7 @@ class AppButton extends StatelessWidget {
   final bool isLoading;
   final IconData? icon;
   final bool expand;
+  final bool uppercaseLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +90,7 @@ class AppButton extends StatelessWidget {
           : colors.primary;
       return AppSpinner(size: 18, color: spinnerColor);
     }
-    final text = Text(label.toUpperCase());
+    final text = Text(uppercaseLabel ? label.toUpperCase() : label);
     if (icon == null) return text;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

@@ -1,17 +1,17 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:formz/formz.dart';
 
 import 'package:gym_flutter/core/forms/inputs/email.dart';
 import 'package:gym_flutter/core/forms/inputs/password.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
-import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
@@ -19,9 +19,8 @@ import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/login_form/login_form_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/login_form/login_form_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/login_form/login_form_state.dart';
-import 'package:gym_flutter/features/auth/presentation/widgets/auth_aura_background.dart';
-import 'package:gym_flutter/features/auth/presentation/widgets/auth_stagger_entrance.dart';
 import 'package:gym_flutter/features/auth/presentation/widgets/forgot_password_sheet.dart';
+import 'package:gym_flutter/features/auth/presentation/widgets/login_brand_panel.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -30,11 +29,11 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<LoginFormBloc>(
       create: (_) => LoginFormBloc(
-        seedEmail: kDebugMode
-            ? (dotenv.maybeGet('DEV_LOGIN_EMAIL') ?? 'test@gym.com')
+        seedEmail: kDebugMode && dotenv.isInitialized
+            ? dotenv.maybeGet('DEV_LOGIN_EMAIL')
             : null,
-        seedPassword: kDebugMode
-            ? (dotenv.maybeGet('DEV_LOGIN_PASSWORD') ?? 'Test1234!')
+        seedPassword: kDebugMode && dotenv.isInitialized
+            ? dotenv.maybeGet('DEV_LOGIN_PASSWORD')
             : null,
       ),
       child: const _LoginView(),
@@ -46,219 +45,222 @@ class _LoginView extends StatelessWidget {
   const _LoginView();
 
   void _onSubmit(BuildContext context) {
-    final formState = context.read<LoginFormBloc>().state;
-    if (!formState.isValid) return;
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthSubmitting || authState is AuthLoading) return;
+    final form = context.read<LoginFormBloc>().state;
+    if (!form.isValid) return;
     FocusScope.of(context).unfocus();
     context.read<AuthBloc>().add(
-      SignInRequested(formState.email.value.trim(), formState.password.value),
+      SignInRequested(form.email.value.trim(), form.password.value),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
-        listenWhen: (previous, current) => current is AuthError,
-        listener: (context, state) {
-          if (state is AuthError) {
-            AppSnackBar.error(context, state.message);
-          }
-        },
-        child: AuthAuraBackground(
-          child: AutofillGroup(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(28.0),
-                child: GlassContainer(
-                  padding: const EdgeInsets.all(Spacing.xxl),
-                  borderRadius: BorderRadius.circular(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AuthStaggerEntrance(
-                        child: Icon(
-                          Icons.bolt_rounded,
-                          size: 64,
-                          color: context.colors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.xl),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 80),
-                        child: Text(
-                          'GYM TRACKER',
-                          textAlign: TextAlign.center,
-                          style: textTheme.displayMedium?.copyWith(
-                            letterSpacing: 4,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.sm),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 160),
-                        child: Text(
-                          'PRECISIÓN KINÉTICA',
-                          textAlign: TextAlign.center,
-                          style: textTheme.labelMedium?.copyWith(
-                            letterSpacing: 2,
-                            color: context.colors.primary.withValues(
-                              alpha: 0.7,
-                            ),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 240),
-                        child: BlocBuilder<LoginFormBloc, LoginFormState>(
-                          buildWhen: (p, c) => p.email != c.email,
-                          builder: (context, state) {
-                            return AppFormField(
-                              label: 'Email',
-                              value: state.email.value,
-                              onChanged: (v) => context
-                                  .read<LoginFormBloc>()
-                                  .add(LoginEmailChanged(v)),
-                              errorText: state.email.isPure
-                                  ? null
-                                  : state.email.error?.message,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.email],
-                              prefixIcon: Icons.alternate_email_rounded,
-                              hintText: 'tu@email.com',
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.lgPlus),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 320),
-                        child: BlocBuilder<LoginFormBloc, LoginFormState>(
-                          buildWhen: (p, c) => p.password != c.password,
-                          builder: (context, state) {
-                            return AppFormField(
-                              label: 'Contraseña',
-                              value: state.password.value,
-                              onChanged: (v) => context
-                                  .read<LoginFormBloc>()
-                                  .add(LoginPasswordChanged(v)),
-                              errorText: state.password.isPure
-                                  ? null
-                                  : state.password.error?.message,
-                              obscureText: true,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.password],
-                              prefixIcon: Icons.lock_outline_rounded,
-                              onSubmitted: (_) => _onSubmit(context),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.sm),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 360),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              final email = context
-                                  .read<LoginFormBloc>()
-                                  .state
-                                  .email
-                                  .value;
-                              ForgotPasswordSheet.show(
-                                context,
-                                initialEmail: email,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              minimumSize: const Size(0, 28),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              '¿Olvidaste tu contraseña?',
-                              style: textTheme.labelMedium?.copyWith(
-                                color: context.colors.primary.withValues(
-                                  alpha: 0.85,
-                                ),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.lg),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 400),
-                        child: BlocBuilder<AuthBloc, AuthState>(
-                          buildWhen: (previous, current) =>
-                              current is AuthSubmitting ||
-                              current is AuthLoading ||
-                              current is AuthError ||
-                              current is Unauthenticated ||
-                              current is Authenticated,
-                          builder: (context, authState) {
-                            final authBusy =
-                                authState is AuthSubmitting ||
-                                authState is AuthLoading;
-                            return BlocBuilder<LoginFormBloc, LoginFormState>(
-                              builder: (context, formState) {
-                                final disabled =
-                                    authBusy ||
-                                    !formState.isValid ||
-                                    formState.submissionStatus ==
-                                        FormzSubmissionStatus.inProgress;
-                                return KineticButton(
-                                  label: 'INICIAR SESIÓN',
-                                  isLoading: authBusy,
-                                  onTap: disabled
-                                      ? null
-                                      : () => _onSubmit(context),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.xl),
-                      AuthStaggerEntrance(
-                        delay: const Duration(milliseconds: 480),
-                        child: TextButton(
-                          onPressed: () => goToRegister(context),
-                          child: RichText(
-                            text: TextSpan(
-                              style: textTheme.bodyMedium,
+        listenWhen: (_, current) => current is Authenticated,
+        listener: (_, _) => TextInput.finishAutofillContext(),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 960;
+              final padding = wide ? Spacing.xxl : Spacing.xl;
+              return SingleChildScrollView(
+                padding: EdgeInsets.all(padding),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: math.max(0, constraints.maxHeight - padding * 2),
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1160),
+                      child: wide
+                          ? Row(
                               children: [
-                                const TextSpan(text: '¿NUEVO AQUÍ? '),
-                                TextSpan(
-                                  text: 'REGÍSTRATE',
-                                  style: TextStyle(
-                                    color: context.colors.primary,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1,
+                                const Expanded(child: LoginBrandPanel()),
+                                const SizedBox(width: 80),
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: _LoginForm(
+                                      wide: true,
+                                      onSubmit: _onSubmit,
+                                    ),
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                            )
+                          : _LoginForm(wide: false, onSubmit: _onSubmit),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginForm extends StatelessWidget {
+  const _LoginForm({required this.wide, required this.onSubmit});
+  final bool wide;
+  final void Function(BuildContext) onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: AutofillGroup(
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            final busy =
+                authState is AuthSubmitting || authState is AuthLoading;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!wide) ...[
+                  const LoginBrandMark(),
+                  const SizedBox(height: Spacing.xxxl),
+                ],
+                Semantics(
+                  header: true,
+                  child: Text(
+                    'Bienvenido de nuevo',
+                    style: context.text.headlineLarge?.copyWith(
+                      fontSize: wide ? 34 : 30,
+                      height: 1.2,
+                      letterSpacing: -1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Spacing.md),
+                Text(
+                  'Tu próximo entrenamiento empieza aquí.',
+                  style: context.text.bodyLarge?.copyWith(
+                    color: context.colors.textSecondary,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: Spacing.xxl),
+                BlocBuilder<LoginFormBloc, LoginFormState>(
+                  buildWhen: (p, c) => p.email != c.email,
+                  builder: (context, state) => AppFormField(
+                    label: 'Correo electrónico',
+                    uppercaseLabel: false,
+                    autofocus: wide,
+                    value: state.email.value,
+                    onChanged: (v) =>
+                        context.read<LoginFormBloc>().add(LoginEmailChanged(v)),
+                    errorText: state.email.isPure
+                        ? null
+                        : state.email.error?.message,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [
+                      AutofillHints.username,
+                      AutofillHints.email,
+                    ],
+                    hintText: 'tu@correo.com',
+                  ),
+                ),
+                const SizedBox(height: Spacing.xl),
+                BlocBuilder<LoginFormBloc, LoginFormState>(
+                  buildWhen: (p, c) => p.password != c.password,
+                  builder: (context, state) => AppFormField(
+                    label: 'Contraseña',
+                    uppercaseLabel: false,
+                    value: state.password.value,
+                    onChanged: (v) => context.read<LoginFormBloc>().add(
+                      LoginPasswordChanged(v),
+                    ),
+                    errorText: state.password.isPure
+                        ? null
+                        : state.password.error?.message,
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
+                    hintText: 'Escribe tu contraseña',
+                    onSubmitted: (_) => onSubmit(context),
+                  ),
+                ),
+                const SizedBox(height: Spacing.sm),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => ForgotPasswordSheet.show(
+                      context,
+                      initialEmail: context
+                          .read<LoginFormBloc>()
+                          .state
+                          .email
+                          .value,
+                    ),
+                    child: const Text('¿Olvidaste tu contraseña?'),
+                  ),
+                ),
+                if (authState is AuthError) ...[
+                  const SizedBox(height: Spacing.md),
+                  Semantics(
+                    liveRegion: true,
+                    child: Container(
+                      padding: const EdgeInsets.all(Spacing.lg),
+                      decoration: BoxDecoration(
+                        color: context.colors.error.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        authState.message,
+                        style: context.text.bodyMedium?.copyWith(
+                          color: context.colors.error,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: Spacing.lg),
+                BlocBuilder<LoginFormBloc, LoginFormState>(
+                  buildWhen: (p, c) => p.isValid != c.isValid,
+                  builder: (context, form) => AppButton(
+                    label: 'Iniciar sesión',
+                    uppercaseLabel: false,
+                    isLoading: busy,
+                    onPressed: !busy && form.isValid
+                        ? () => onSubmit(context)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: Spacing.xl),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '¿Aún no tienes cuenta?',
+                      style: context.text.bodyMedium,
+                    ),
+                    TextButton(
+                      onPressed: () => goToRegister(context),
+                      child: const Text('Crear cuenta'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.xxl),
+                Divider(color: context.colors.divider),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  'Un entrenamiento a la vez.',
+                  textAlign: TextAlign.center,
+                  style: context.text.bodySmall,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

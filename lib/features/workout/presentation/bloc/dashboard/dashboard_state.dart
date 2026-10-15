@@ -49,8 +49,7 @@ class DashboardState extends Equatable {
       status == DashboardStatus.loadingRoutines ||
       status == DashboardStatus.loadingWeeklyPlan;
 
-  bool get hasWeeklyPlan =>
-      selectedRoutine != null && weekStart != null && weeklyDays.isNotEmpty;
+  bool get hasWeeklyPlan => selectedRoutine != null && weekStart != null;
 
   DashboardState copyWith({
     DashboardStatus? status,

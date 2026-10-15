@@ -46,7 +46,7 @@ Request (POST):
 Comportamiento:
 - Requiere JWT válido.
 - Verifica ownership de la sesión.
-- Usa logs actuales y última sesión completada del mismo `routine_day_id`.
+- Usa logs actuales, objetivos de la copia de sesión y última sesión completada con el mismo ejercicio (incluso en otro día de rutina).
 - Retorna recomendaciones:
   - `INCREASE_WEIGHT`
   - `INCREASE_REPS`
@@ -109,3 +109,65 @@ Response:
 1. Añadir tests de contrato para las 3 functions (success/error/códigos).
 2. Ejecutar smoke test E2E de cierre + coaching + insights en datos reales.
 3. Revisar performance SQL en remoto con `pg_stat_statements`.
+
+### Ejercicios y objetivos de una sesión
+
+La migración `20261015144656_session_exercises.sql` añade
+`workout_sessions.exercise_plan`, una copia JSONB inicializada al leer una sesión
+abierta. Las sesiones cerradas anteriores conservan la lectura de rutina compatible
+sin escribir una copia retroactiva. No cambia ningún contrato HTTP de las Edge
+Functions.
+
+RPCs para usuarios autenticados (siempre validan ownership):
+
+- `get_session_exercises_v1(p_session_id uuid) → jsonb[]` devuelve el plan completo.
+- `adapt_session_exercise_v1(p_session_id uuid, p_exercise_id uuid,
+  p_target_sets integer, p_target_reps integer, p_target_weight numeric,
+  p_replace_exercise_id uuid default null) → jsonb[]` añade o sustituye.
+- `update_session_exercise_target_v1(p_session_id uuid, p_exercise_id uuid,
+  p_target_weight numeric, p_target_reps integer) → jsonb[]` cambia objetivos.
+
+El retorno SQL es `jsonb` con un array JSON, compatible con `ExerciseModel`.
+Incluye `is_extra`, `replaces_exercise_name`, `replaced_by_exercise_name` y también
+los originales sustituidos con `target_sets = 0`; el cliente oculta estos últimos
+en la lista de pendientes. Las escrituras directas del cliente al plan se rechazan.
+Las mutaciones bloquean la fila de sesión y rechazan sesiones cerradas, duplicados,
+ejercicios inexistentes y valores fuera de límites (1–100 series, 1–1000 reps,
+peso finito 0–10000 y hasta 100 entradas, incluidos originales conservados).
+
+La sustitución conserva todos los logs y reduce el objetivo original a sus series
+registradas. La vista resumen limita el cumplimiento al objetivo de cada ejercicio;
+las series extra no compensan ejercicios pendientes. `get_coaching_inputs_v1`
+conserva las claves HTTP existentes, usa los objetivos del plan y busca la última
+sesión cerrada anterior con logs del mismo ejercicio, incluso en otro día de rutina.
+
+Contrato SQL reproducible: `supabase/tests/session_exercises.sql` ejecuta fixtures
+con rollback. `session_exercises_fixture.sql` es exclusivamente un esquema mínimo
+para una base PostgreSQL desechable; no debe ejecutarse en una base existente.
+Verificación local realizada con PostgreSQL embebido PGlite; no sustituye el smoke
+de las Edge Functions contra el proyecto Supabase correcto antes de publicar.
+
+Los writes de `set_logs` adquieren el mismo bloqueo de sesión que las RPCs. Para
+sesiones con plan, se rechazan logs de ejercicios ajenos, cambios de identidad
+(session/exercise/set_index), cualquier cambio de logs en sesiones cerradas y
+cualquier insert/update/delete de un original ya sustituido. Así, un cliente con
+estado antiguo no puede alterar las series conservadas después de sustituir.
+El trigger es invoker y conserva las políticas RLS existentes; los logs de sesiones
+legacy sin plan conservan su comportamiento anterior.
+
+### Smoke HTTP de ejercicios por sesión
+
+Ejecutar `node scripts/session_exercises_smoke.mjs` con la CLI Supabase autenticada
+en la cuenta con acceso al proyecto `benadgxgowycjxypyunc`. No requiere contraseña
+Postgres: obtiene claves en memoria mediante la CLI, crea un usuario QA aislado con
+email inválido confirmado sin enviar correo y usa su JWT para las peticiones REST,
+RPC y Edge. `finally` elimina únicamente las sesiones de ese usuario, su rutina
+privada y el usuario Auth creado. No imprime claves, contraseñas ni tokens, ni
+escribe credenciales en `.env`. No ejecuta el script antiguo de smoke.
+
+Verificado el 2026-10-15 contra el proyecto correcto: autenticación QA; snapshot,
+sustitución parcial y extra; preservación de logs; límite de cumplimiento por
+ejercicio; coaching sin reducción errónea para 40 kg frente al objetivo 38 kg;
+cierre con coaching automático; resumen estricto 4/4; rechazo de objetivos después
+del cierre; weekly insights. Todas las comprobaciones y la limpieza finalizaron
+con PASS (exit 0).

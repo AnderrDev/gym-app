@@ -70,6 +70,16 @@ class ActiveWorkoutNotifier {
     await _post();
   }
 
+  /// Cambiar ejercicios conserva el inicio y el descanso de la sesión.
+  Future<void> onPlanChanged({
+    required int totalSets,
+    required int completedSets,
+  }) async {
+    _totalSets = totalSets;
+    _completedSets = completedSets;
+    if (_dayName != null && _sessionStartedAt != null) await _post();
+  }
+
   Future<void> onRestStarted({required Duration duration}) async {
     if (_dayName == null) return;
     _restEndsAt = DateTime.now().add(duration);

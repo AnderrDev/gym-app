@@ -16,6 +16,10 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
+import 'package:gym_flutter/features/workout/domain/workout_completion.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/session_exercise_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_state.dart';
@@ -124,18 +128,66 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     // No iniciamos descanso al desmarcar — el usuario está corrigiendo.
   }
 
-  void _onShowLastSessionDetails(
+  Future<void> _onShowLastSessionDetails(
     WorkoutSession session,
     List<SetLog> logs,
     List<Exercise> exercises,
-  ) {
-    HapticFeedback.mediumImpact();
-    AdaptiveSheet.showRaw<void>(
+  ) async {
+    unawaited(HapticFeedback.mediumImpact());
+    final result = await di.sl<GetSessionExercises>()(session.id);
+    if (!mounted) return;
+    if (result.isLeft()) {
+      AppSnackBar.error(
+        context,
+        'No se pudieron cargar los ejercicios de esa sesión. Intenta de nuevo.',
+      );
+      return;
+    }
+    final sessionExercises = result.getOrElse((_) => const <Exercise>[]);
+    await AdaptiveSheet.showRaw<void>(
       context,
       builder: (_) => WorkoutHistoryBottomSheet(
         session: session,
         logs: logs,
-        exercises: exercises,
+        exercises: sessionExercises,
+      ),
+    );
+  }
+
+  Future<void> _onAdaptExercise([Exercise? replacing]) async {
+    final bloc = context.read<ActiveWorkoutBloc>();
+    final before = bloc.state;
+    if (!before.isRunning ||
+        before.isAdapting ||
+        before.session?.completedAt != null) {
+      return;
+    }
+    final completed = before.setLogs
+        .where((log) => log.exerciseId == replacing?.id)
+        .length;
+    final selection = await SessionExerciseSheet.show(
+      context,
+      getCatalog: di.sl<GetExercisesCatalog>(),
+      excludedExerciseIds: before.exercises.map((ex) => ex.id).toSet(),
+      replacing: replacing,
+      remainingSets: replacing == null
+          ? null
+          : replacing.targetSets - completed,
+    );
+    if (!mounted ||
+        selection == null ||
+        bloc.state.session?.id != before.session?.id ||
+        !bloc.state.isRunning ||
+        bloc.state.isAdapting) {
+      return;
+    }
+    bloc.add(
+      AdaptActiveWorkoutExercise(
+        exerciseId: selection.exerciseId,
+        targetSets: selection.targetSets,
+        targetReps: selection.targetReps,
+        targetWeight: selection.targetWeight,
+        replaceExerciseId: replacing?.id,
       ),
     );
   }
@@ -159,8 +211,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     AdaptiveSheet.showRaw<void>(
       context,
       builder: (ctx) => WorkoutSummaryBottomSheet(
-        totalTargetSets: widget.routineDay.targetSetsCount,
-        totalCompletedSets: active.setLogs.length,
+        totalTargetSets: totalTargetSets(active.exercises),
+        totalCompletedSets: completedTargetSets(
+          active.exercises,
+          active.setLogs,
+        ),
         totalVolume: totalVolume,
         exercises: active.exercises,
         currentLogs: active.setLogs,
@@ -170,10 +225,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
         onFinishAndSave: () {
           Navigator.pop(ctx);
           context.read<ActiveWorkoutBloc>().add(
-            FinishActiveWorkout(
-              sessionId: active.session.id,
-              coachingAnalysis: analysis,
-            ),
+            FinishActiveWorkout(sessionId: active.session.id),
           );
         },
       ),
@@ -202,11 +254,39 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       child: BlocListener<RoutineDayBloc, RoutineDayState>(
         listenWhen: (p, c) =>
             p.existingSession != c.existingSession && c.existingSession != null,
-        listener: (context, state) {
-          // Si al cargar detectamos una sesión existente, transferimos al
-          // ActiveWorkoutBloc directamente.
+        listener: (context, state) async {
           final existing = state.existingSession;
           if (existing == null) return;
+          if (existing.completedAt == null &&
+              !DateUtils.isSameDay(existing.sessionDate, DateTime.now())) {
+            final continuePrevious = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Tienes una sesión anterior pendiente'),
+                content: Text(
+                  'Empezaste esta sesión el ${formatRoutineDayDateLabel(existing.sessionDate)}. '
+                  'Al continuarla conserva esa fecha y las series guardadas. '
+                  'Finalízala antes de comenzar un entrenamiento nuevo de hoy.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Volver'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('Continuar sesión anterior'),
+                  ),
+                ],
+              ),
+            );
+            if (!context.mounted) return;
+            if (continuePrevious != true) {
+              context.pop();
+              return;
+            }
+          }
+          if (!context.mounted) return;
           context.read<ActiveWorkoutBloc>().add(
             ResumeActiveWorkout(
               session: existing,
@@ -260,10 +340,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 );
 
                 return RoutineDayViewScaffold(
+                  setDrafts: activeState.setDrafts,
                   phase: phase,
                   routineDay: widget.routineDay,
-                  // Con sesión, la fecha real (hoy si se inició desde un día
-                  // pasado); sin sesión, el día elegido en el calendario.
+                  // Siempre la fecha real de la sesión o la fecha de inicio.
                   dateLabel: formatRoutineDayDateLabel(
                     session?.sessionDate ?? widget.sessionDate,
                   ),
@@ -281,6 +361,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   onFinishWorkout: _onFinishWorkout,
                   onShowLastSessionDetails: _onShowLastSessionDetails,
                   onRetry: _retry,
+                  isAdapting: activeState.isAdapting,
+                  onAddExercise: () => _onAdaptExercise(),
+                  onReplaceExercise: _onAdaptExercise,
                 );
               },
             );

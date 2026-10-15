@@ -10,6 +10,21 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise_detail.dar
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
 abstract class WorkoutRemoteDataSource {
+  Future<List<ExerciseModel>> getSessionExercises(String sessionId);
+  Future<List<ExerciseModel>> adaptSessionExercise(
+    String sessionId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    String? replaceExerciseId,
+  });
+  Future<List<ExerciseModel>> updateSessionExerciseTarget(
+    String sessionId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps,
+  );
   Future<List<RoutineModel>> getAssignedRoutines(String userId);
   Future<List<RoutineDayModel>> getRoutineDays(String routineId);
   Future<List<ExerciseModel>> getExercisesForDay(String routineDayId);

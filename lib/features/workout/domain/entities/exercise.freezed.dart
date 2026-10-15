@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Exercise {
 
- String get id; String get routineDayId; String get name; String get targetMuscle; double get targetWeight; int get targetReps; int get targetSets; int get restTimerSeconds;
+ String get id; String get routineDayId; String get name; String get targetMuscle; double get targetWeight; int get targetReps; int get targetSets; int get restTimerSeconds; bool get isExtra; String? get replacesExerciseName; String? get replacedByExerciseName;
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ExerciseCopyWith<Exercise> get copyWith => _$ExerciseCopyWithImpl<Exercise>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Exercise&&(identical(other.id, id) || other.id == id)&&(identical(other.routineDayId, routineDayId) || other.routineDayId == routineDayId)&&(identical(other.name, name) || other.name == name)&&(identical(other.targetMuscle, targetMuscle) || other.targetMuscle == targetMuscle)&&(identical(other.targetWeight, targetWeight) || other.targetWeight == targetWeight)&&(identical(other.targetReps, targetReps) || other.targetReps == targetReps)&&(identical(other.targetSets, targetSets) || other.targetSets == targetSets)&&(identical(other.restTimerSeconds, restTimerSeconds) || other.restTimerSeconds == restTimerSeconds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Exercise&&(identical(other.id, id) || other.id == id)&&(identical(other.routineDayId, routineDayId) || other.routineDayId == routineDayId)&&(identical(other.name, name) || other.name == name)&&(identical(other.targetMuscle, targetMuscle) || other.targetMuscle == targetMuscle)&&(identical(other.targetWeight, targetWeight) || other.targetWeight == targetWeight)&&(identical(other.targetReps, targetReps) || other.targetReps == targetReps)&&(identical(other.targetSets, targetSets) || other.targetSets == targetSets)&&(identical(other.restTimerSeconds, restTimerSeconds) || other.restTimerSeconds == restTimerSeconds)&&(identical(other.isExtra, isExtra) || other.isExtra == isExtra)&&(identical(other.replacesExerciseName, replacesExerciseName) || other.replacesExerciseName == replacesExerciseName)&&(identical(other.replacedByExerciseName, replacedByExerciseName) || other.replacedByExerciseName == replacedByExerciseName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,routineDayId,name,targetMuscle,targetWeight,targetReps,targetSets,restTimerSeconds);
+int get hashCode => Object.hash(runtimeType,id,routineDayId,name,targetMuscle,targetWeight,targetReps,targetSets,restTimerSeconds,isExtra,replacesExerciseName,replacedByExerciseName);
 
 @override
 String toString() {
-  return 'Exercise(id: $id, routineDayId: $routineDayId, name: $name, targetMuscle: $targetMuscle, targetWeight: $targetWeight, targetReps: $targetReps, targetSets: $targetSets, restTimerSeconds: $restTimerSeconds)';
+  return 'Exercise(id: $id, routineDayId: $routineDayId, name: $name, targetMuscle: $targetMuscle, targetWeight: $targetWeight, targetReps: $targetReps, targetSets: $targetSets, restTimerSeconds: $restTimerSeconds, isExtra: $isExtra, replacesExerciseName: $replacesExerciseName, replacedByExerciseName: $replacedByExerciseName)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ExerciseCopyWith<$Res>  {
   factory $ExerciseCopyWith(Exercise value, $Res Function(Exercise) _then) = _$ExerciseCopyWithImpl;
 @useResult
 $Res call({
- String id, String routineDayId, String name, String targetMuscle, double targetWeight, int targetReps, int targetSets, int restTimerSeconds
+ String id, String routineDayId, String name, String targetMuscle, double targetWeight, int targetReps, int targetSets, int restTimerSeconds, bool isExtra, String? replacesExerciseName, String? replacedByExerciseName
 });
 
 
@@ -62,7 +62,7 @@ class _$ExerciseCopyWithImpl<$Res>
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? routineDayId = null,Object? name = null,Object? targetMuscle = null,Object? targetWeight = null,Object? targetReps = null,Object? targetSets = null,Object? restTimerSeconds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? routineDayId = null,Object? name = null,Object? targetMuscle = null,Object? targetWeight = null,Object? targetReps = null,Object? targetSets = null,Object? restTimerSeconds = null,Object? isExtra = null,Object? replacesExerciseName = freezed,Object? replacedByExerciseName = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,routineDayId: null == routineDayId ? _self.routineDayId : routineDayId // ignore: cast_nullable_to_non_nullable
@@ -72,7 +72,10 @@ as String,targetWeight: null == targetWeight ? _self.targetWeight : targetWeight
 as double,targetReps: null == targetReps ? _self.targetReps : targetReps // ignore: cast_nullable_to_non_nullable
 as int,targetSets: null == targetSets ? _self.targetSets : targetSets // ignore: cast_nullable_to_non_nullable
 as int,restTimerSeconds: null == restTimerSeconds ? _self.restTimerSeconds : restTimerSeconds // ignore: cast_nullable_to_non_nullable
-as int,
+as int,isExtra: null == isExtra ? _self.isExtra : isExtra // ignore: cast_nullable_to_non_nullable
+as bool,replacesExerciseName: freezed == replacesExerciseName ? _self.replacesExerciseName : replacesExerciseName // ignore: cast_nullable_to_non_nullable
+as String?,replacedByExerciseName: freezed == replacedByExerciseName ? _self.replacedByExerciseName : replacedByExerciseName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -157,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds,  bool isExtra,  String? replacesExerciseName,  String? replacedByExerciseName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
-return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds);case _:
+return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds,_that.isExtra,_that.replacesExerciseName,_that.replacedByExerciseName);case _:
   return orElse();
 
 }
@@ -178,10 +181,10 @@ return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds,  bool isExtra,  String? replacesExerciseName,  String? replacedByExerciseName)  $default,) {final _that = this;
 switch (_that) {
 case _Exercise():
-return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds);case _:
+return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds,_that.isExtra,_that.replacesExerciseName,_that.replacedByExerciseName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +201,10 @@ return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String routineDayId,  String name,  String targetMuscle,  double targetWeight,  int targetReps,  int targetSets,  int restTimerSeconds,  bool isExtra,  String? replacesExerciseName,  String? replacedByExerciseName)?  $default,) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
-return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds);case _:
+return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.targetWeight,_that.targetReps,_that.targetSets,_that.restTimerSeconds,_that.isExtra,_that.replacesExerciseName,_that.replacedByExerciseName);case _:
   return null;
 
 }
@@ -213,7 +216,7 @@ return $default(_that.id,_that.routineDayId,_that.name,_that.targetMuscle,_that.
 
 
 class _Exercise implements Exercise {
-  const _Exercise({required this.id, required this.routineDayId, required this.name, required this.targetMuscle, required this.targetWeight, required this.targetReps, this.targetSets = 3, this.restTimerSeconds = 90});
+  const _Exercise({required this.id, required this.routineDayId, required this.name, required this.targetMuscle, required this.targetWeight, required this.targetReps, this.targetSets = 3, this.restTimerSeconds = 90, this.isExtra = false, this.replacesExerciseName, this.replacedByExerciseName});
   
 
 @override final  String id;
@@ -224,6 +227,9 @@ class _Exercise implements Exercise {
 @override final  int targetReps;
 @override@JsonKey() final  int targetSets;
 @override@JsonKey() final  int restTimerSeconds;
+@override@JsonKey() final  bool isExtra;
+@override final  String? replacesExerciseName;
+@override final  String? replacedByExerciseName;
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +241,16 @@ _$ExerciseCopyWith<_Exercise> get copyWith => __$ExerciseCopyWithImpl<_Exercise>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Exercise&&(identical(other.id, id) || other.id == id)&&(identical(other.routineDayId, routineDayId) || other.routineDayId == routineDayId)&&(identical(other.name, name) || other.name == name)&&(identical(other.targetMuscle, targetMuscle) || other.targetMuscle == targetMuscle)&&(identical(other.targetWeight, targetWeight) || other.targetWeight == targetWeight)&&(identical(other.targetReps, targetReps) || other.targetReps == targetReps)&&(identical(other.targetSets, targetSets) || other.targetSets == targetSets)&&(identical(other.restTimerSeconds, restTimerSeconds) || other.restTimerSeconds == restTimerSeconds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Exercise&&(identical(other.id, id) || other.id == id)&&(identical(other.routineDayId, routineDayId) || other.routineDayId == routineDayId)&&(identical(other.name, name) || other.name == name)&&(identical(other.targetMuscle, targetMuscle) || other.targetMuscle == targetMuscle)&&(identical(other.targetWeight, targetWeight) || other.targetWeight == targetWeight)&&(identical(other.targetReps, targetReps) || other.targetReps == targetReps)&&(identical(other.targetSets, targetSets) || other.targetSets == targetSets)&&(identical(other.restTimerSeconds, restTimerSeconds) || other.restTimerSeconds == restTimerSeconds)&&(identical(other.isExtra, isExtra) || other.isExtra == isExtra)&&(identical(other.replacesExerciseName, replacesExerciseName) || other.replacesExerciseName == replacesExerciseName)&&(identical(other.replacedByExerciseName, replacedByExerciseName) || other.replacedByExerciseName == replacedByExerciseName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,routineDayId,name,targetMuscle,targetWeight,targetReps,targetSets,restTimerSeconds);
+int get hashCode => Object.hash(runtimeType,id,routineDayId,name,targetMuscle,targetWeight,targetReps,targetSets,restTimerSeconds,isExtra,replacesExerciseName,replacedByExerciseName);
 
 @override
 String toString() {
-  return 'Exercise(id: $id, routineDayId: $routineDayId, name: $name, targetMuscle: $targetMuscle, targetWeight: $targetWeight, targetReps: $targetReps, targetSets: $targetSets, restTimerSeconds: $restTimerSeconds)';
+  return 'Exercise(id: $id, routineDayId: $routineDayId, name: $name, targetMuscle: $targetMuscle, targetWeight: $targetWeight, targetReps: $targetReps, targetSets: $targetSets, restTimerSeconds: $restTimerSeconds, isExtra: $isExtra, replacesExerciseName: $replacesExerciseName, replacedByExerciseName: $replacedByExerciseName)';
 }
 
 
@@ -255,7 +261,7 @@ abstract mixin class _$ExerciseCopyWith<$Res> implements $ExerciseCopyWith<$Res>
   factory _$ExerciseCopyWith(_Exercise value, $Res Function(_Exercise) _then) = __$ExerciseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String routineDayId, String name, String targetMuscle, double targetWeight, int targetReps, int targetSets, int restTimerSeconds
+ String id, String routineDayId, String name, String targetMuscle, double targetWeight, int targetReps, int targetSets, int restTimerSeconds, bool isExtra, String? replacesExerciseName, String? replacedByExerciseName
 });
 
 
@@ -272,7 +278,7 @@ class __$ExerciseCopyWithImpl<$Res>
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? routineDayId = null,Object? name = null,Object? targetMuscle = null,Object? targetWeight = null,Object? targetReps = null,Object? targetSets = null,Object? restTimerSeconds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? routineDayId = null,Object? name = null,Object? targetMuscle = null,Object? targetWeight = null,Object? targetReps = null,Object? targetSets = null,Object? restTimerSeconds = null,Object? isExtra = null,Object? replacesExerciseName = freezed,Object? replacedByExerciseName = freezed,}) {
   return _then(_Exercise(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,routineDayId: null == routineDayId ? _self.routineDayId : routineDayId // ignore: cast_nullable_to_non_nullable
@@ -282,7 +288,10 @@ as String,targetWeight: null == targetWeight ? _self.targetWeight : targetWeight
 as double,targetReps: null == targetReps ? _self.targetReps : targetReps // ignore: cast_nullable_to_non_nullable
 as int,targetSets: null == targetSets ? _self.targetSets : targetSets // ignore: cast_nullable_to_non_nullable
 as int,restTimerSeconds: null == restTimerSeconds ? _self.restTimerSeconds : restTimerSeconds // ignore: cast_nullable_to_non_nullable
-as int,
+as int,isExtra: null == isExtra ? _self.isExtra : isExtra // ignore: cast_nullable_to_non_nullable
+as bool,replacesExerciseName: freezed == replacesExerciseName ? _self.replacesExerciseName : replacesExerciseName // ignore: cast_nullable_to_non_nullable
+as String?,replacedByExerciseName: freezed == replacedByExerciseName ? _self.replacedByExerciseName : replacedByExerciseName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

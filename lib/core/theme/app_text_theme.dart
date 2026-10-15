@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:gym_flutter/core/theme/app_palette.dart';
 
-/// `TextTheme` Material 3 de la app. Usa Space Grotesk para headlines/displays
-/// (acento técnico) y Manrope para cuerpo y labels (legibilidad).
+/// Tipografía Manrope incluida en el bundle: legible, amable y disponible
+/// desde el primer render sin descargar fuentes de terceros.
 ///
 /// Los colores no se hornean en los `TextStyle`: se derivan del `AppPalette`
 /// que recibe el builder, así el mismo `TextTheme` adapta automáticamente al
@@ -16,8 +15,8 @@ class AppTextTheme {
   /// El displayLarge usa `palette.primary` (acento brand) y el resto deriva
   /// jerarquía desde `textPrimary` / `textSecondary`.
   static TextTheme build(AppPalette palette) {
-    final headline = GoogleFonts.spaceGroteskTextTheme();
-    final body = GoogleFonts.manropeTextTheme();
+    final body = ThemeData.light().textTheme.apply(fontFamily: 'Manrope');
+    final headline = body;
 
     return TextTheme(
       displayLarge: headline.displayLarge?.copyWith(

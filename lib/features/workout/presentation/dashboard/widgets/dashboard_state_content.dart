@@ -27,6 +27,7 @@ class DashboardStateContent extends StatelessWidget {
     required this.onNextWeek,
     required this.onOpenSelectedRoutineStats,
     required this.onOpenDay,
+    this.onCurrentWeek,
   });
 
   final DashboardState state;
@@ -39,6 +40,7 @@ class DashboardStateContent extends StatelessWidget {
   final VoidCallback onNextWeek;
   final VoidCallback onOpenSelectedRoutineStats;
   final void Function(RoutineDay routineDay, DateTime date) onOpenDay;
+  final VoidCallback? onCurrentWeek;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,10 @@ class DashboardStateContent extends StatelessWidget {
         onNextWeek: onNextWeek,
         onOpenSelectedRoutineStats: onOpenSelectedRoutineStats,
         onOpenDay: onOpenDay,
+        onCurrentWeek: onCurrentWeek,
+        isLoading: state.isLoading,
+        errorMessage: state.errorMessage,
+        onRetry: onRetry,
       );
     }
 

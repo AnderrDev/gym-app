@@ -109,11 +109,17 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
   void _rebuild() => setState(() {});
 
   double get _weight =>
-      double.tryParse(_weightCtrl.text.replaceAll(',', '.')) ?? 0;
+      double.tryParse(_weightCtrl.text.trim().replaceAll(',', '.')) ??
+      double.nan;
   int get _reps => int.tryParse(_repsCtrl.text) ?? 0;
 
-  // Misma regla que la fila inline anterior: no registrar sin peso o reps.
-  bool get _isValid => _weight > 0 && _reps > 0;
+  // Cero kg representa peso corporal; un campo vacío no es un peso válido.
+  bool get _isValid =>
+      _weight.isFinite &&
+      _weight >= 0 &&
+      _weight <= 10000 &&
+      _reps >= 1 &&
+      _reps <= 1000;
 
   void _setText(TextEditingController ctrl, String text) {
     ctrl.value = TextEditingValue(
@@ -123,11 +129,13 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
     HapticFeedback.selectionClick();
   }
 
-  void _bumpWeight(double delta) =>
-      _setText(_weightCtrl, formatWeight((_weight + delta).clamp(0, 9999)));
+  void _bumpWeight(double delta) => _setText(
+    _weightCtrl,
+    formatWeight(((_weight.isFinite ? _weight : 0) + delta).clamp(0, 10000)),
+  );
 
   void _bumpReps(int delta) =>
-      _setText(_repsCtrl, '${(_reps + delta).clamp(0, 999)}');
+      _setText(_repsCtrl, '${(_reps + delta).clamp(1, 1000)}');
 
   void _confirm() {
     if (!_isValid) return;
@@ -404,7 +412,11 @@ class _WeightDeltaHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delta = weight - target;
-    if (target <= 0 || weight <= 0 || delta.abs() < 0.01) {
+    if (!weight.isFinite ||
+        !target.isFinite ||
+        target <= 0 ||
+        weight <= 0 ||
+        delta.abs() < 0.01) {
       return const SizedBox.shrink();
     }
     final up = delta > 0;

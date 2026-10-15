@@ -182,6 +182,90 @@ void main() {
     ).called(1);
   });
 
+  for (final continuePrevious in [true, false]) {
+    testWidgets(
+      'sesión de otra fecha requiere confirmar: continuar=$continuePrevious',
+      (tester) async {
+        when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+        when(
+          () => activeWorkoutBloc.state,
+        ).thenReturn(const ActiveWorkoutState());
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+        final previous = tSession.copyWith(sessionDate: DateTime(2022, 12, 31));
+        final ready = RoutineDayState(
+          status: RoutineDayStatus.ready,
+          userId: 'u1',
+          routineDayId: 'd1',
+          sessionDate: DateTime(2023),
+          exercises: const [tExercise],
+          existingSession: previous,
+        );
+        when(() => routineDayBloc.state).thenReturn(ready);
+        routineStreamCtrl.add(ready);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Tienes una sesión anterior pendiente'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('31 dic 2022'), findsOneWidget);
+        verifyNever(
+          () => activeWorkoutBloc.add(any(that: isA<ResumeActiveWorkout>())),
+        );
+        await tester.tap(
+          find.text(continuePrevious ? 'Continuar sesión anterior' : 'Volver'),
+        );
+        await tester.pumpAndSettle();
+        if (continuePrevious) {
+          final event =
+              verify(
+                    () => activeWorkoutBloc.add(
+                      captureAny(that: isA<ResumeActiveWorkout>()),
+                    ),
+                  ).captured.single
+                  as ResumeActiveWorkout;
+          expect(event.session, previous);
+        } else {
+          verifyNever(
+            () => activeWorkoutBloc.add(any(that: isA<ResumeActiveWorkout>())),
+          );
+          verifyNever(
+            () => activeWorkoutBloc.add(any(that: isA<StartActiveWorkout>())),
+          );
+          verify(() => mockGoRouter.pop<Object?>()).called(1);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'abrir una sesión pendiente con su propia fecha también pide confirmación',
+    (tester) async {
+      when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+      when(
+        () => activeWorkoutBloc.state,
+      ).thenReturn(const ActiveWorkoutState());
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      final ready = RoutineDayState(
+        status: RoutineDayStatus.ready,
+        userId: 'u1',
+        routineDayId: 'd1',
+        sessionDate: tSession.sessionDate,
+        exercises: const [tExercise],
+        existingSession: tSession,
+      );
+      when(() => routineDayBloc.state).thenReturn(ready);
+      routineStreamCtrl.add(ready);
+      await tester.pumpAndSettle();
+      expect(find.text('Tienes una sesión anterior pendiente'), findsOneWidget);
+      verifyNever(
+        () => activeWorkoutBloc.add(any(that: isA<ResumeActiveWorkout>())),
+      );
+    },
+  );
+
   testWidgets('estado ready prestart muestra el CTA de empezar', (
     tester,
   ) async {
@@ -199,7 +283,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.text('EMPEZAR ENTRENAMIENTO'), findsOneWidget);
+    expect(find.text('Entrenar hoy'), findsOneWidget);
     expect(find.text('Press Banca'), findsOneWidget);
   });
 
@@ -218,7 +302,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    await tester.tap(find.text('EMPEZAR ENTRENAMIENTO'));
+    await tester.tap(find.text('Entrenar hoy'));
     // _onStartWorkout `await`-ea NotificationService.requestPermission()
     // antes de despachar StartActiveWorkout. Esperamos el microtask para
     // que el dispatch ocurra antes del verify.

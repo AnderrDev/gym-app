@@ -97,6 +97,18 @@ class WorkoutHistoryBottomSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: Spacing.lg),
+                  for (final exercise in exercises)
+                    if (exercise.replacesExerciseName != null ||
+                        exercise.isExtra)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          exercise.replacesExerciseName != null
+                              ? '${exercise.name} · Sustituyó a ${exercise.replacesExerciseName}'
+                              : '${exercise.name} · Ejercicio extra',
+                          style: context.text.bodySmall,
+                        ),
+                      ),
                   ...groupedLogs.entries.map((entry) {
                     final coaching = session.coachingAnalysis?.firstWhereOrNull(
                       (a) =>

@@ -16,6 +16,9 @@ abstract class RoutineDay with _$RoutineDay {
     @Default(0) int targetSetsCount,
     @Default(WorkoutDayStatus.pending) WorkoutDayStatus status,
 
+    /// Fecha real de la sesión representada por el estado semanal.
+    DateTime? lastSessionDate,
+
     /// Nombres de los ejercicios del día, en orden, sin metadata adicional.
     /// Lo popula `getRoutineDays` para que `RoutineDayCard` pueda pintar un
     /// preview ("Press banca · Press militar · …") sin tener que cargar el

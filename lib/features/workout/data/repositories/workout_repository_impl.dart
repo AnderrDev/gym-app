@@ -84,6 +84,49 @@ class WorkoutRepositoryImpl extends WorkoutRepository
 
   bool get _isOnline => connectivity?.isOnline ?? true;
 
+  @override
+  Future<Either<Failure, List<Exercise>>> getSessionExercises(
+    String sessionId,
+  ) => guard(
+    () async => (await remoteDataSource.getSessionExercises(
+      sessionId,
+    )).map((model) => model.toEntity()).toList(),
+  );
+
+  @override
+  Future<Either<Failure, List<Exercise>>> adaptSessionExercise(
+    String sessionId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    String? replaceExerciseId,
+  }) => guard(
+    () async => (await remoteDataSource.adaptSessionExercise(
+      sessionId,
+      exerciseId,
+      targetSets: targetSets,
+      targetReps: targetReps,
+      targetWeight: targetWeight,
+      replaceExerciseId: replaceExerciseId,
+    )).map((model) => model.toEntity()).toList(),
+  );
+
+  @override
+  Future<Either<Failure, List<Exercise>>> updateSessionExerciseTarget(
+    String sessionId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps,
+  ) => guard(
+    () async => (await remoteDataSource.updateSessionExerciseTarget(
+      sessionId,
+      exerciseId,
+      targetWeight,
+      targetReps,
+    )).map((model) => model.toEntity()).toList(),
+  );
+
   /// Indica si la capa local-first está completa (cache + outbox + uuid).
   /// Si falta cualquiera, los métodos write caen al comportamiento legacy
   /// (escritura directa al remote sin offline) — preserva la compat con

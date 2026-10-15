@@ -132,7 +132,7 @@ class AppTheme {
           horizontal: Spacing.lg,
           vertical: Spacing.md,
         ),
-        hintStyle: textTheme.bodyMedium?.copyWith(color: palette.textDisabled),
+        hintStyle: textTheme.bodyLarge?.copyWith(color: palette.textSecondary),
         labelStyle: textTheme.bodyMedium?.copyWith(
           color: palette.textSecondary,
         ),

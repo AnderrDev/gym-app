@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <!-- theme-color con media query: iOS Safari adapta el color de la URL
        bar al esquema activo del usuario. Sin media query, el navegador
@@ -42,15 +42,8 @@
   <title>Smart Gym Tracker</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Prefetch (no preload) del runtime de drift en web. La app abre la
-       base local lazy en el primer query (LazyDatabase), pero estos
-       binarios pesan ~1.8 MB combinados. `prefetch` hace que el browser
-       los baje en idle después del primer paint, así el render inicial
-       no compite por bandwidth y cuando el usuario interactúa con datos
-       locales ya están cacheados. Combinado con Cache-Control immutable
-       en firebase.json, en visitas siguientes son 0 bytes. -->
-  <link rel="prefetch" href="sqlite3.wasm" as="fetch" crossorigin="anonymous">
-  <link rel="prefetch" href="drift_worker.dart.js" as="script">
+  <!-- Los recursos de persistencia se solicitan cuando se necesitan;
+       no competimos con el login mediante descargas especulativas. -->
 
   <style>
     /* Fondo pre-paint: adaptado al esquema activo del usuario para que
@@ -93,9 +86,68 @@
         background-color: #0A0A0B;
       }
     }
+
+    #boot {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-content: center;
+      gap: 16px;
+      color: #1c1c1e;
+      background: #fff;
+      text-align: center;
+      font: 500 15px/1.5 system-ui, sans-serif;
+    }
+    .boot-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin: 0 auto;
+      background: #007aff;
+      color: #fff;
+      border-radius: 12px;
+    }
+    .boot-title { font-size: 20px; font-weight: 650; }
+    .boot-caption { margin: 0; color: #6e6e73; }
+    #boot button {
+      justify-self: center;
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 10px;
+      background: #007aff;
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+    }
+    #boot button:focus-visible { outline: 3px solid #5ac8fa; outline-offset: 3px; }
+    @media (prefers-color-scheme: dark) {
+      #boot { background: #0a0a0b; color: #f2f2f7; }
+      .boot-caption { color: #a1a1aa; }
+    }
   </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div id="boot" role="status" aria-live="polite">
+    <div class="boot-mark" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/>
+      </svg>
+    </div>
+    <div class="boot-title">Gym Tracker</div>
+    <p id="boot-caption" class="boot-caption">Preparando tu entrenamiento…</p>
+    <button id="boot-retry" type="button" hidden onclick="location.reload()">Recargar</button>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      document.getElementById('boot')?.remove();
+    }, { once: true });
+  </script>
+  <noscript><style>#boot { display: none; }</style>Activa JavaScript en tu navegador para abrir Gym Tracker.</noscript>
+  <!-- El parámetro release evita que el worker antiguo intercepte el nuevo
+       bootstrap antes de que este pueda retirar su caché. -->
+  <script src="flutter_bootstrap.js?release={{flutter_service_worker_version}}" async
+    onerror="document.getElementById('boot-caption').textContent='No pudimos abrir la app. Revisa tu conexión e inténtalo de nuevo.'; document.getElementById('boot-retry').hidden=false;"></script>
 </body>
 </html>

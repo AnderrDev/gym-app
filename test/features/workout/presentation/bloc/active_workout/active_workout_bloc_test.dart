@@ -4,6 +4,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/services/workout_draft_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -20,6 +22,8 @@ class _MockActiveSessionService extends Mock implements ActiveSessionService {}
 
 class _MockActiveWorkoutNotifier extends Mock
     implements ActiveWorkoutNotifier {}
+
+class _MockWorkoutDraftService extends Mock implements WorkoutDraftService {}
 
 void main() {
   late MockWorkoutRepository repository;
@@ -65,6 +69,18 @@ void main() {
     activeSessionService = _MockActiveSessionService();
     notifier = _MockActiveWorkoutNotifier();
     when(
+      () => notifier.onPlanChanged(
+        totalSets: any(named: 'totalSets'),
+        completedSets: any(named: 'completedSets'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => repository.getSessionExercises(any()),
+    ).thenAnswer((_) async => const Right([exerciseA]));
+    when(
+      () => repository.getLastExercisePerformances(any()),
+    ).thenAnswer((_) async => const Right(<String, SetLog?>{}));
+    when(
       () => activeSessionService.save(
         sessionId: any(named: 'sessionId'),
         routineDayId: any(named: 'routineDayId'),
@@ -98,13 +114,411 @@ void main() {
     clock: clock,
   );
 
+  for (final succeeds in [true, false]) {
+    test(
+      'sustituir conserva series realizadas y sesión utilizable: éxito=$succeeds',
+      () async {
+        const log = SetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+          actualWeight: 80,
+          actualReps: 10,
+        );
+        final original = exerciseA.copyWith(
+          targetSets: 1,
+          replacedByExerciseName: 'Remo',
+        );
+        const replacement = Exercise(
+          id: 'e2',
+          routineDayId: routineDayId,
+          name: 'Remo',
+          targetMuscle: 'Espalda',
+          targetSets: 2,
+          targetWeight: 20,
+          targetReps: 12,
+          replacesExerciseName: 'Press',
+        );
+        when(
+          () => repository.adaptSessionExercise(
+            sessionId,
+            'e2',
+            targetSets: 2,
+            targetReps: 12,
+            targetWeight: 20,
+            replaceExerciseId: 'e1',
+          ),
+        ).thenAnswer(
+          (_) async => succeeds
+              ? Right([original, replacement])
+              : const Left(NetworkFailure()),
+        );
+        final bloc = buildBloc()
+          ..emit(
+            ActiveWorkoutState(
+              status: ActiveWorkoutStatus.running,
+              session: session,
+              exercises: const [exerciseA],
+              setLogs: const [log],
+            ),
+          );
+        final finished = bloc.stream.firstWhere((s) => !s.isAdapting);
+        bloc.add(
+          const AdaptActiveWorkoutExercise(
+            exerciseId: 'e2',
+            targetSets: 2,
+            targetReps: 12,
+            targetWeight: 20,
+            replaceExerciseId: 'e1',
+          ),
+        );
+        final state = await finished;
+        expect(state.isRunning, true);
+        expect(state.setLogs, const [log]);
+        expect(
+          state.exercises,
+          succeeds ? [original, replacement] : [exerciseA],
+        );
+        expect(
+          state.actionError,
+          succeeds ? isNull : contains('No se pudo adaptar'),
+        );
+        verifyNever(
+          () => repository.updateExerciseTarget(any(), any(), any(), any()),
+        );
+        await bloc.close();
+      },
+    );
+  }
+
+  test('editar objetivo de un extra solo actualiza la sesión actual', () async {
+    final changed = exerciseA.copyWith(targetWeight: 82.5);
+    when(
+      () => repository.updateSessionExerciseTarget(sessionId, 'e1', 82.5, 10),
+    ).thenAnswer((_) async => Right([changed]));
+    final bloc = buildBloc()
+      ..emit(
+        ActiveWorkoutState(
+          status: ActiveWorkoutStatus.running,
+          session: session,
+          exercises: const [exerciseA],
+        ),
+      );
+    final edited = bloc.stream.first;
+    bloc.add(
+      const UpdateActiveExerciseTarget(
+        exerciseId: 'e1',
+        targetWeight: 82.5,
+        targetReps: 10,
+      ),
+    );
+    expect((await edited).exercises.single.targetWeight, 82.5);
+    verifyNever(
+      () => repository.updateExerciseTarget(any(), any(), any(), any()),
+    );
+    await bloc.close();
+  });
+
+  test(
+    'reanudar recupera extras del plan guardado, no de la rutina base',
+    () async {
+      const extra = Exercise(
+        id: 'extra',
+        routineDayId: routineDayId,
+        name: 'Remo',
+        targetMuscle: 'Espalda',
+        targetWeight: 30,
+        targetReps: 12,
+        isExtra: true,
+      );
+      when(
+        () => repository.getSessionExercises(sessionId),
+      ).thenAnswer((_) async => const Right([exerciseA, extra]));
+      when(
+        () => repository.getSessionSetLogs(sessionId),
+      ).thenAnswer((_) async => const Right(<SetLog>[]));
+      final bloc = buildBloc();
+      final running = bloc.stream.firstWhere((s) => s.isRunning);
+      bloc.add(
+        ResumeActiveWorkout(
+          session: session,
+          exercises: const [exerciseA],
+          lastPerformances: const {},
+        ),
+      );
+      expect((await running).exercises.map((e) => e.id), ['e1', 'extra']);
+      await bloc.close();
+    },
+  );
+
+  blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+    'iniciar hoy no continúa silenciosamente una sesión anterior devuelta por el backend',
+    build: () {
+      when(
+        () => repository.startWorkoutForDay(userId, routineDayId, any()),
+      ).thenAnswer((_) async => Right(session));
+      when(
+        () => repository.getExercisesForDay(any()),
+      ).thenAnswer((_) async => const Right([exerciseA]));
+      when(
+        () => repository.getSessionSetLogs(any()),
+      ).thenAnswer((_) async => const Right(<SetLog>[]));
+      when(
+        () => repository.getLastExercisePerformances(any()),
+      ).thenAnswer((_) async => const Right(<String, SetLog?>{}));
+      when(
+        () => repository.getRecentSessionsForDay(
+          any(),
+          any(),
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => const Right(<WorkoutSession>[]));
+      when(
+        () => repository.getSetLogsForSessions(any()),
+      ).thenAnswer((_) async => const Right(<String, List<SetLog>>{}));
+      return buildBloc();
+    },
+    act: (b) => b.add(
+      const StartActiveWorkout(
+        userId: userId,
+        routineDayId: routineDayId,
+        routineDayName: 'Pecho',
+      ),
+    ),
+    expect: () => [
+      isA<ActiveWorkoutState>().having(
+        (s) => s.status,
+        'status',
+        ActiveWorkoutStatus.starting,
+      ),
+      isA<ActiveWorkoutState>()
+          .having((s) => s.status, 'status', ActiveWorkoutStatus.failure)
+          .having((s) => s.errorMessage, 'message', contains('anterior')),
+    ],
+  );
+
+  test(
+    'desmarcar, salir y reanudar conserva valores sin completar la serie ni cambiar la fecha',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      const log = SetLog(
+        sessionId: sessionId,
+        exerciseId: 'e1',
+        setIndex: 1,
+        actualWeight: 82.5,
+        actualReps: 8,
+      );
+      when(
+        () => repository.deleteSetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+        ),
+      ).thenAnswer((_) async => const Right(null));
+      when(
+        () => repository.getSessionSetLogs(sessionId),
+      ).thenAnswer((_) async => const Right(<SetLog>[]));
+      ActiveWorkoutBloc create() => ActiveWorkoutBloc(
+        repository: repository,
+        activeSessionService: activeSessionService,
+        notifier: notifier,
+        clock: clock,
+        draftService: WorkoutDraftService(prefs),
+      );
+      final first = create()
+        ..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            setLogs: const [log],
+          ),
+        );
+      final unmarked = first.stream.firstWhere(
+        (s) => s.setLogs.isEmpty && s.setDrafts.isNotEmpty,
+      );
+      first.add(
+        const UnsaveActiveSetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+        ),
+      );
+      await unmarked;
+      await first.close();
+      await prefs.reload();
+      final resumed = create();
+      final running = resumed.stream.firstWhere((s) => s.isRunning);
+      resumed.add(
+        ResumeActiveWorkout(
+          session: session,
+          exercises: const [exerciseA],
+          lastPerformances: const {},
+        ),
+      );
+      final state = await running;
+      expect(state.setLogs, isEmpty);
+      expect(state.setDrafts.single.actualWeight, 82.5);
+      expect(state.setDrafts.single.actualReps, 8);
+      expect(state.session!.sessionDate, DateTime(2026, 5, 4));
+      await resumed.close();
+    },
+  );
+
+  test('dos desmarcados rápidos no restauran una serie eliminada', () async {
+    final drafts = _MockWorkoutDraftService();
+    when(() => drafts.save(any(), any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    });
+    when(
+      () => repository.deleteSetLog(
+        sessionId: any(named: 'sessionId'),
+        exerciseId: any(named: 'exerciseId'),
+        setIndex: any(named: 'setIndex'),
+      ),
+    ).thenAnswer((_) async => const Right(null));
+    const firstLog = SetLog(
+      sessionId: sessionId,
+      exerciseId: 'e1',
+      setIndex: 1,
+      actualWeight: 82.5,
+      actualReps: 8,
+    );
+    final bloc =
+        ActiveWorkoutBloc(
+          repository: repository,
+          activeSessionService: activeSessionService,
+          notifier: notifier,
+          draftService: drafts,
+        )..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            setLogs: [firstLog, firstLog.copyWith(setIndex: 2)],
+          ),
+        );
+    bloc.add(
+      const UnsaveActiveSetLog(
+        sessionId: sessionId,
+        exerciseId: 'e1',
+        setIndex: 1,
+      ),
+    );
+    bloc.add(
+      const UnsaveActiveSetLog(
+        sessionId: sessionId,
+        exerciseId: 'e1',
+        setIndex: 2,
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await bloc.close();
+    expect(bloc.state.setLogs, isEmpty);
+    expect(bloc.state.setDrafts, hasLength(2));
+  });
+
+  test(
+    'fallo al conservar borrador restaura una lista nueva para resincronizar la tarjeta',
+    () async {
+      final drafts = _MockWorkoutDraftService();
+      when(
+        () => drafts.save(any(), any()),
+      ).thenThrow(StateError('storage full'));
+      const log = SetLog(
+        sessionId: sessionId,
+        exerciseId: 'e1',
+        setIndex: 1,
+        actualWeight: 82.5,
+        actualReps: 8,
+      );
+      final original = <SetLog>[log];
+      final bloc =
+          ActiveWorkoutBloc(
+            repository: repository,
+            activeSessionService: activeSessionService,
+            notifier: notifier,
+            draftService: drafts,
+          )..emit(
+            ActiveWorkoutState(
+              status: ActiveWorkoutStatus.running,
+              session: session,
+              setLogs: original,
+            ),
+          );
+      final failed = bloc.stream.firstWhere((s) => s.actionError != null);
+      bloc.add(
+        const UnsaveActiveSetLog(
+          sessionId: sessionId,
+          exerciseId: 'e1',
+          setIndex: 1,
+        ),
+      );
+      final restored = await failed;
+      expect(restored.setLogs, [log]);
+      expect(identical(restored.setLogs, original), isFalse);
+      verifyNever(
+        () => repository.deleteSetLog(
+          sessionId: any(named: 'sessionId'),
+          exerciseId: any(named: 'exerciseId'),
+          setIndex: any(named: 'setIndex'),
+        ),
+      );
+      await bloc.close();
+    },
+  );
+
+  test(
+    'finalizar el entrenamiento limpia los borradores persistidos',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final drafts = WorkoutDraftService(prefs);
+      const log = SetLog(
+        sessionId: sessionId,
+        exerciseId: 'e1',
+        setIndex: 1,
+        actualWeight: 82.5,
+        actualReps: 8,
+      );
+      await drafts.save(userId, log);
+      when(
+        () =>
+            repository.finishWorkoutSession(sessionId, coachingAnalysis: null),
+      ).thenAnswer((_) async => const Right(null));
+      final bloc =
+          ActiveWorkoutBloc(
+            repository: repository,
+            activeSessionService: activeSessionService,
+            notifier: notifier,
+            draftService: drafts,
+          )..emit(
+            ActiveWorkoutState(
+              status: ActiveWorkoutStatus.running,
+              session: session,
+              setDrafts: const [log],
+            ),
+          );
+      final finished = bloc.stream.firstWhere(
+        (s) => s.status == ActiveWorkoutStatus.finished,
+      );
+      bloc.add(const FinishActiveWorkout(sessionId: sessionId));
+      expect((await finished).setDrafts, isEmpty);
+      expect(drafts.load(userId, sessionId), isEmpty);
+      await bloc.close();
+    },
+  );
+
   group('StartActiveWorkout', () {
     blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
       'éxito → status running con session/exercises/setLogs',
       build: () {
         when(
           () => repository.startWorkoutForDay(any(), any(), any()),
-        ).thenAnswer((_) async => Right(session));
+        ).thenAnswer(
+          (_) async =>
+              Right(session.copyWith(sessionDate: DateTime(2026, 5, 6))),
+        );
         when(
           () => repository.getExercisesForDay(any()),
         ).thenAnswer((_) async => const Right([exerciseA]));
@@ -147,7 +561,10 @@ void main() {
       build: () {
         when(
           () => repository.startWorkoutForDay(any(), any(), any()),
-        ).thenAnswer((_) async => Right(session));
+        ).thenAnswer(
+          (_) async =>
+              Right(session.copyWith(sessionDate: DateTime(2026, 5, 6))),
+        );
         when(
           () => repository.getExercisesForDay(any()),
         ).thenAnswer((_) async => const Right(<Exercise>[]));
@@ -356,6 +773,61 @@ void main() {
   });
 
   group('FinishActiveWorkout', () {
+    test(
+      'finalizar usa coaching del servidor y no una copia calculada antes de guardar',
+      () async {
+        when(
+          () => repository.finishWorkoutSession(
+            sessionId,
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
+        final bloc = buildBloc()
+          ..emit(
+            ActiveWorkoutState(
+              status: ActiveWorkoutStatus.running,
+              session: session,
+              exercises: const [exerciseA],
+            ),
+          );
+        final done = bloc.stream.firstWhere(
+          (s) => s.status == ActiveWorkoutStatus.finished,
+        );
+        bloc.add(
+          const FinishActiveWorkout(
+            sessionId: sessionId,
+            coachingAnalysis: <CoachingAnalysis>[],
+          ),
+        );
+        await done;
+        verify(
+          () => repository.finishWorkoutSession(
+            sessionId,
+            coachingAnalysis: null,
+          ),
+        ).called(1);
+        await bloc.close();
+      },
+    );
+
+    test('ignora finalizar una sesión distinta a la abierta', () async {
+      final bloc = buildBloc()
+        ..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+          ),
+        );
+      bloc.add(const FinishActiveWorkout(sessionId: 'otra-sesion'));
+      await bloc.close();
+      expect(bloc.state.isRunning, true);
+      verifyNever(
+        () => repository.finishWorkoutSession(
+          any(),
+          coachingAnalysis: any(named: 'coachingAnalysis'),
+        ),
+      );
+    });
     blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
       'éxito → status finished y limpia el activeSessionService',
       build: () {

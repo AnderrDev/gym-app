@@ -22,23 +22,31 @@ class RoutineDayActiveFocusView extends StatefulWidget {
     required this.sessionId,
     required this.exercises,
     required this.completedLogs,
+    this.setDrafts = const [],
     required this.lastPerformances,
     required this.coachingAnalyses,
     required this.effectiveReadOnly,
     required this.onSetAdded,
     this.onSetRemoved,
     this.onFinishWorkout,
+    this.isAdapting = false,
+    this.onAddExercise,
+    this.onReplaceExercise,
   });
 
   final String sessionId;
   final List<Exercise> exercises;
   final List<SetLog> completedLogs;
+  final List<SetLog> setDrafts;
   final Map<String, SetLog?> lastPerformances;
   final Map<String, CoachingAnalysis?> coachingAnalyses;
   final bool effectiveReadOnly;
   final void Function(SetLog log) onSetAdded;
   final void Function(String exerciseId, int setIndex)? onSetRemoved;
   final VoidCallback? onFinishWorkout;
+  final bool isAdapting;
+  final VoidCallback? onAddExercise;
+  final ValueChanged<Exercise>? onReplaceExercise;
 
   @override
   State<RoutineDayActiveFocusView> createState() =>
@@ -64,6 +72,19 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     // clampeamos antes del próximo build para evitar RangeError en
     // `_ExerciseStepper` (que indexa `exercises[currentIndex]`).
     final exCount = widget.exercises.length;
+    final oldIds = oldWidget.exercises.map((ex) => ex.id).toSet();
+    final addedIndex = widget.exercises.indexWhere(
+      (ex) => !oldIds.contains(ex.id),
+    );
+    if (addedIndex >= 0 && _pageController.hasClients) {
+      _currentIndex = addedIndex;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(addedIndex);
+        }
+      });
+      return;
+    }
     if (exCount == 0) {
       _currentIndex = 0;
     } else if (_currentIndex >= exCount) {
@@ -108,15 +129,36 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.xl),
-          child: Text(
-            'No hay ejercicios para esta sesión',
-            style: TextStyle(color: context.colors.textSecondary),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No hay ejercicios para esta sesión',
+                style: TextStyle(color: context.colors.textSecondary),
+              ),
+              if (!widget.effectiveReadOnly && widget.onAddExercise != null)
+                TextButton.icon(
+                  onPressed: widget.isAdapting ? null : widget.onAddExercise,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Añadir ejercicio extra'),
+                ),
+            ],
           ),
         ),
       );
     }
     return Column(
       children: [
+        if (!widget.effectiveReadOnly && widget.onAddExercise != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: widget.isAdapting ? null : widget.onAddExercise,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Añadir ejercicio extra'),
+            ),
+          ),
+        if (widget.isAdapting) const LinearProgressIndicator(),
         FocusViewExerciseStepper(
           exercises: widget.exercises,
           completedLogs: widget.completedLogs,
@@ -145,23 +187,89 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                 ),
                 child: Column(
                   children: [
-                    ExerciseCard(
-                      key: ValueKey('exercise-card-${ex.id}'),
-                      exercise: ex,
-                      sessionId: widget.sessionId,
-                      initialCompletedSets: widget.completedLogs,
-                      lastPerformance: widget.lastPerformances[ex.id],
-                      readOnly: widget.effectiveReadOnly,
-                      coachingAnalysis: widget.coachingAnalyses[ex.id],
-                      forceExpanded: !widget.effectiveReadOnly,
-                      onSetAdded: widget.effectiveReadOnly
-                          ? null
-                          : widget.onSetAdded,
-                      onSetRemoved: widget.effectiveReadOnly
-                          ? null
-                          : (idx) => widget.onSetRemoved?.call(ex.id, idx),
-                    ),
-                    if (allSetsDone && !widget.effectiveReadOnly) ...[
+                    if (ex.isExtra ||
+                        ex.replacesExerciseName != null ||
+                        ex.replacedByExerciseName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          ex.replacesExerciseName != null
+                              ? 'Sustituye a ${ex.replacesExerciseName} · Solo esta sesión'
+                              : ex.replacedByExerciseName != null
+                              ? 'Series conservadas · Continuar con ${ex.replacedByExerciseName}'
+                              : 'Ejercicio extra · Solo esta sesión',
+                          style: context.text.bodySmall,
+                        ),
+                      ),
+                    if (!widget.effectiveReadOnly &&
+                        !allSetsDone &&
+                        widget.onReplaceExercise != null)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: widget.isAdapting
+                              ? null
+                              : () => widget.onReplaceExercise!(ex),
+                          icon: const Icon(Icons.swap_horiz_rounded),
+                          label: const Text('Sustituir ejercicio'),
+                        ),
+                      ),
+                    if (ex.replacedByExerciseName != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: context.colors.divider),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(ex.name, style: context.text.titleMedium),
+                            for (final log in widget.completedLogs.where(
+                              (log) => log.exerciseId == ex.id,
+                            ))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Serie ${log.setIndex} · ${log.actualWeight} kg × ${log.actualReps}',
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                    else
+                      AbsorbPointer(
+                        absorbing: widget.isAdapting,
+                        child: ExerciseCard(
+                          key: ValueKey('exercise-card-${ex.id}'),
+                          exercise: ex,
+                          sessionId: widget.sessionId,
+                          initialCompletedSets: widget.completedLogs,
+                          initialDrafts: widget.setDrafts,
+                          lastPerformance: widget.lastPerformances[ex.id],
+                          readOnly:
+                              widget.effectiveReadOnly ||
+                              ex.replacedByExerciseName != null,
+                          coachingAnalysis: widget.coachingAnalyses[ex.id],
+                          forceExpanded:
+                              !widget.effectiveReadOnly &&
+                              ex.replacedByExerciseName == null,
+                          onSetAdded:
+                              widget.effectiveReadOnly ||
+                                  ex.replacedByExerciseName != null
+                              ? null
+                              : widget.onSetAdded,
+                          onSetRemoved:
+                              widget.effectiveReadOnly ||
+                                  ex.replacedByExerciseName != null
+                              ? null
+                              : (idx) => widget.onSetRemoved?.call(ex.id, idx),
+                        ),
+                      ),
+                    if (allSetsDone &&
+                        !widget.effectiveReadOnly &&
+                        !widget.isAdapting) ...[
                       const SizedBox(height: Spacing.md),
                       FocusViewNextStepCta(
                         nextExerciseName: nextEx?.name,

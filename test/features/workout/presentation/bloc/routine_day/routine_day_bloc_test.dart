@@ -78,6 +78,32 @@ void main() {
 
   group('LoadRoutineDay', () {
     blocTest<RoutineDayBloc, RoutineDayState>(
+      'ofrece la sesión abierta anterior del mismo entrenamiento sin modificar su fecha',
+      build: () {
+        whenLoadCommonAnswers(
+          activeOther: WorkoutSession(
+            id: 's-old',
+            userId: userId,
+            routineDayId: routineDayId,
+            sessionDate: DateTime(2026, 5, 3),
+          ),
+        );
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        LoadRoutineDay(
+          userId: userId,
+          routineDayId: routineDayId,
+          sessionDate: sessionDate,
+        ),
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (b) {
+        expect(b.state.existingSession?.sessionDate, DateTime(2026, 5, 3));
+        expect(b.state.hasAnotherActiveSession, isFalse);
+      },
+    );
+    blocTest<RoutineDayBloc, RoutineDayState>(
       'sin sesión existente → ready con flag de otra sesión activa',
       build: () {
         whenLoadCommonAnswers(
@@ -159,7 +185,7 @@ void main() {
   );
 
   blocTest<RoutineDayBloc, RoutineDayState>(
-    'sin sesión en la fecha exacta usa la de esa rutina en la misma semana',
+    'entrenar hoy no recupera una sesión cerrada de otra fecha de la semana',
     build: () {
       // El día se abre con fecha de lunes, pero la sesión se hizo el
       // miércoles (se inició desde el día anterior → fecha de hoy).
@@ -183,7 +209,7 @@ void main() {
     wait: const Duration(milliseconds: 100),
     verify: (b) {
       expect(b.state.status, RoutineDayStatus.ready);
-      expect(b.state.existingSession?.id, 's-week');
+      expect(b.state.existingSession, isNull);
     },
   );
 

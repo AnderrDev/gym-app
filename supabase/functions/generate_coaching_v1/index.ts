@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { jsonResponse, preflight } from "../_shared/cors.ts";
 import { logError, logInfo, requireUser, userClient } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
+import { shouldReduceWeight } from "./weight_reduction.ts";
 
 const RATE_LIMIT = {
   functionName: "generate_coaching_v1",
@@ -182,7 +183,7 @@ Deno.serve(async (req: Request) => {
       recommendation = "INCREASE_REPS";
       feedback = "Mantén el peso e intenta sumar repeticiones.";
       performanceScore = 0.88;
-    } else if (avgCurrentReps < Math.max(4, Number(target.target_reps ?? 0) * 0.6)) {
+    } else if (shouldReduceWeight(avgCurrentWeight, avgCurrentReps, Number(target.target_weight ?? 0), Number(target.target_reps ?? 0))) {
       recommendation = "DECREASE_WEIGHT";
       feedback = "Baja un poco la carga para priorizar técnica y rango completo.";
       performanceScore = 0.55;

@@ -16,6 +16,7 @@ class WorkoutPerformanceAnalyzer {
     final results = <CoachingAnalysis>[];
 
     for (final ex in exercises) {
+      if (ex.targetSets == 0) continue;
       final exLogs = logs.where((l) => l.exerciseId == ex.id).toList();
       final completedSets = exLogs.length;
 
@@ -86,7 +87,10 @@ class WorkoutPerformanceAnalyzer {
           // reps es progresión — no aconsejar bajar por el historial.
           final increasedWeightToday = currentAvgWeight > last['weight']!;
 
-          if (!increasedWeightToday &&
+          if (completedSets >= ex.targetSets &&
+              !repsMet &&
+              currentAvgWeight <= ex.targetWeight &&
+              !increasedWeightToday &&
               (isRegressing ||
                   (isStagnated && currentAvgReps < ex.targetReps))) {
             recommendation =

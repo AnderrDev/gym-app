@@ -34,7 +34,7 @@ Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
   WorkoutSession session,
 ) async {
   final results = await Future.wait([
-    repository.getExercisesForDay(session.routineDayId),
+    repository.getSessionExercises(session.id),
     repository.getRecentSessionsForDay(
       userId,
       session.routineDayId,
@@ -45,7 +45,7 @@ Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
   ]);
 
   final exercises = (results[0] as Either<Failure, List<Exercise>>).getOrElse(
-    (_) => const [],
+    (failure) => throw failure,
   );
   final recentSessions = (results[1] as Either<Failure, List<WorkoutSession>>)
       .getOrElse((_) => const []);

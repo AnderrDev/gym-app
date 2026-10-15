@@ -30,6 +30,8 @@ class AppFormField extends StatefulWidget {
     this.inputFormatters,
     this.hintText,
     this.focusNode,
+    this.uppercaseLabel = true,
+    this.autofocus = false,
   });
 
   final String label;
@@ -47,6 +49,8 @@ class AppFormField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final String? hintText;
   final FocusNode? focusNode;
+  final bool uppercaseLabel;
+  final bool autofocus;
 
   @override
   State<AppFormField> createState() => _AppFormFieldState();
@@ -89,44 +93,54 @@ class _AppFormFieldState extends State<AppFormField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.label.toUpperCase(),
+          widget.uppercaseLabel ? widget.label.toUpperCase() : widget.label,
           style: textTheme.labelMedium?.copyWith(
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w900,
+            fontSize: widget.uppercaseLabel ? null : 14,
+            letterSpacing: widget.uppercaseLabel ? 1.5 : 0,
+            fontWeight: widget.uppercaseLabel
+                ? FontWeight.w900
+                : FontWeight.w600,
             color: context.colors.textSecondary,
           ),
         ),
         const SizedBox(height: Spacing.sm),
-        TextField(
-          controller: _controller,
-          focusNode: widget.focusNode,
-          obscureText: _obscured && widget.obscureText,
-          enabled: widget.enabled,
-          keyboardType: widget.keyboardType,
-          textInputAction: widget.textInputAction,
-          autofillHints: widget.autofillHints,
-          maxLength: widget.maxLength,
-          inputFormatters: widget.inputFormatters,
-          onChanged: widget.onChanged,
-          onSubmitted: widget.onSubmitted,
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            errorText: widget.errorText,
-            counterText: '',
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon, size: 18)
-                : null,
-            suffixIcon: widget.obscureText
-                ? IconButton(
-                    onPressed: _toggleObscured,
-                    icon: Icon(
-                      _obscured
-                          ? Icons.visibility_rounded
-                          : Icons.visibility_off_rounded,
-                      size: 18,
-                    ),
-                  )
-                : null,
+        Semantics(
+          label: widget.label,
+          child: TextField(
+            controller: _controller,
+            autofocus: widget.autofocus,
+            focusNode: widget.focusNode,
+            obscureText: _obscured && widget.obscureText,
+            enabled: widget.enabled,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction,
+            autofillHints: widget.autofillHints,
+            maxLength: widget.maxLength,
+            inputFormatters: widget.inputFormatters,
+            onChanged: widget.onChanged,
+            onSubmitted: widget.onSubmitted,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              errorText: widget.errorText,
+              counterText: '',
+              prefixIcon: widget.prefixIcon != null
+                  ? Icon(widget.prefixIcon, size: 18)
+                  : null,
+              suffixIcon: widget.obscureText
+                  ? IconButton(
+                      tooltip: _obscured
+                          ? 'Mostrar contraseña'
+                          : 'Ocultar contraseña',
+                      onPressed: _toggleObscured,
+                      icon: Icon(
+                        _obscured
+                            ? Icons.visibility_rounded
+                            : Icons.visibility_off_rounded,
+                        size: 18,
+                      ),
+                    )
+                  : null,
+            ),
           ),
         ),
       ],

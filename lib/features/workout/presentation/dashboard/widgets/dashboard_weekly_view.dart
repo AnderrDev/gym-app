@@ -1,36 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_insights_compact.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_header.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_list.dart';
-import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_week_summary.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/utils/routine_day_phase_resolver.dart';
 
-/// Vista semanal del dashboard. Compone:
-/// - `DashboardWeekHeader` (rango + rutina + progress ring + flechas)
-/// - Lista vertical de días con stagger de entrada (`DashboardWeekList`)
-/// - Insights compactos al final
-///
-/// La transición entre semanas se anima con `AnimatedSwitcher` direccional
-/// (slide horizontal + fade) y un `GestureDetector` capta swipes para
-/// llamar a `onPreviousWeek` / `onNextWeek`. El header se mantiene estable
-/// y sus subcomponentes animan sus propios cambios (rango de fechas,
-/// progress ring).
+/// Elegir qué entrenar y consultar el historial son dos tareas distintas.
+/// La fecha programada nunca se utiliza para iniciar un entrenamiento nuevo.
 class DashboardWeeklyView extends StatefulWidget {
-  final List<RoutineDay> days;
-  final DateTime weekStart;
-  final Routine? selectedRoutine;
-  final WeeklyInsights? insights;
-  final String? insightsError;
-  final VoidCallback onPreviousWeek;
-  final VoidCallback onNextWeek;
-  final VoidCallback onOpenSelectedRoutineStats;
-  final void Function(RoutineDay routineDay, DateTime date) onOpenDay;
-
   const DashboardWeeklyView({
     super.key,
     required this.days,
@@ -42,214 +20,262 @@ class DashboardWeeklyView extends StatefulWidget {
     required this.onNextWeek,
     required this.onOpenSelectedRoutineStats,
     required this.onOpenDay,
+    this.onCurrentWeek,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
   });
+
+  final List<RoutineDay> days;
+  final DateTime weekStart;
+  final Routine? selectedRoutine;
+  final WeeklyInsights? insights;
+  final String? insightsError;
+  final VoidCallback onPreviousWeek;
+  final VoidCallback onNextWeek;
+  final VoidCallback onOpenSelectedRoutineStats;
+  final void Function(RoutineDay day, DateTime date) onOpenDay;
+  final VoidCallback? onCurrentWeek;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   @override
   State<DashboardWeeklyView> createState() => _DashboardWeeklyViewState();
 }
 
-class _DashboardWeeklyViewState extends State<DashboardWeeklyView>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _staggerController;
-  final ScrollController _scroll = ScrollController();
-  final GlobalKey _todayKey = GlobalKey();
+class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
+  bool _history = false;
 
-  /// +1 = la nueva semana es posterior; -1 = anterior; 0 = primera carga.
-  /// Lo usa el `AnimatedSwitcher` para deslizar la lista en la dirección
-  /// correcta.
-  int _direction = 0;
-
-  /// Umbral de drag horizontal (px) para disparar prev/next.
-  static const double _swipeThreshold = 60;
-  double _dragX = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _staggerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _ensureTodayVisible());
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
   }
 
-  @override
-  void didUpdateWidget(covariant DashboardWeeklyView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.weekStart != widget.weekStart) {
-      _direction = widget.weekStart.isAfter(oldWidget.weekStart) ? 1 : -1;
-      _staggerController
-        ..reset()
-        ..forward();
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _ensureTodayVisible(),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _staggerController.dispose();
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  void _ensureTodayVisible() {
-    final ctx = _todayKey.currentContext;
-    if (ctx == null) return;
-    Scrollable.ensureVisible(
-      ctx,
-      alignment: 0.1,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  Future<void> _onRefresh() async {
-    // El bloc expone `prev/next` para cambiar semana pero no un evento
-    // idempotente de "recargar la actual". Mantenemos el `RefreshIndicator`
-    // por afordancia (gesture aprendido) y por el feedback táctil; cuando
-    // exista un evento de refresh lo conectamos aquí.
-    await Future<void>.delayed(const Duration(milliseconds: 320));
-  }
-
-  void _onHorizontalDragUpdate(DragUpdateDetails d) {
-    _dragX += d.delta.dx;
-  }
-
-  void _onHorizontalDragEnd(DragEndDetails d) {
-    final dx = _dragX;
-    final velocity = d.primaryVelocity ?? 0;
-    _dragX = 0;
-    if (dx <= -_swipeThreshold || velocity < -400) {
-      widget.onNextWeek();
-    } else if (dx >= _swipeThreshold || velocity > 400) {
-      widget.onPreviousWeek();
-    }
-  }
+  bool get _currentWeek =>
+      !_today.isBefore(widget.weekStart) &&
+      _today.isBefore(widget.weekStart.add(const Duration(days: 7)));
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final weekEnd = widget.weekStart.add(const Duration(days: 6));
-    final dayMap = <int, RoutineDay>{
-      for (final d in widget.days) d.dayOfWeek: d,
-    };
-    final containsToday =
-        !today.isBefore(widget.weekStart) &&
-        today.isBefore(widget.weekStart.add(const Duration(days: 7)));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DashboardWeekHeader(
-          weekStart: widget.weekStart,
-          weekEnd: weekEnd,
-          isCurrentWeek: containsToday,
-          routineName: widget.selectedRoutine?.name,
-          onPreviousWeek: widget.onPreviousWeek,
-          onNextWeek: widget.onNextWeek,
-          onOpenStats: widget.onOpenSelectedRoutineStats,
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            color: context.colors.primary,
-            backgroundColor: context.colors.background,
-            onRefresh: _onRefresh,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragUpdate: _onHorizontalDragUpdate,
-              onHorizontalDragEnd: _onHorizontalDragEnd,
-              child: ListView(
-                controller: _scroll,
-                physics: const AlwaysScrollableScrollPhysics(),
-                // Bottom `xxxl` (40px) le da aire al resumen semanal antes
-                // de la bottom nav.
-                padding: const EdgeInsets.fromLTRB(
-                  Spacing.lg,
-                  Spacing.md,
-                  Spacing.lg,
-                  Spacing.xxxl,
-                ),
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, anim) {
-                      final beginX = _direction >= 0 ? 0.12 : -0.12;
-                      final inOffset = Tween<Offset>(
-                        begin: Offset(beginX, 0),
-                        end: Offset.zero,
-                      ).animate(anim);
-                      return ClipRect(
-                        child: FadeTransition(
-                          opacity: anim,
-                          child: SlideTransition(
-                            position: inOffset,
-                            child: child,
-                          ),
-                        ),
-                      );
-                    },
-                    child: KeyedSubtree(
-                      key: ValueKey(widget.weekStart.toIso8601String()),
-                      child: DashboardWeekList(
-                        weekStart: widget.weekStart,
-                        daysByDayOfWeek: dayMap,
-                        today: today,
-                        onTapDay: widget.onOpenDay,
-                        stagger: _staggerController,
-                        todayKey: containsToday ? _todayKey : null,
-                      ),
-                    ),
-                  ),
-                  // Resumen semanal SIEMPRE visible: data local desde la
-                  // lista de días, sin esperar al RPC remoto. Esto evita el
-                  // gigante hueco blanco entre los días y la bottom nav.
-                  if (widget.days.isNotEmpty) ...[
-                    const SizedBox(height: Spacing.xl),
-                    DashboardWeekSummary(
-                      days: widget.days,
-                      weekStart: widget.weekStart,
-                      onTapNext: widget.onOpenDay,
-                    ),
-                  ],
-                  // Insights remotos sólo si efectivamente hay data — el
-                  // placeholder "no disponibles" lo absorbió el resumen.
-                  if (widget.insights != null) ...[
-                    const SizedBox(height: Spacing.lg),
-                    const _SectionLabel(text: 'Insights'),
-                    const SizedBox(height: Spacing.sm),
-                    DashboardInsightsCompact(
-                      insights: widget.insights,
-                      error: null,
-                    ),
-                  ],
-                ],
+    final days = [...widget.days]
+      ..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
+    final historyDays =
+        days.where((day) => day.lastSessionDate != null).toList()
+          ..sort((a, b) => b.lastSessionDate!.compareTo(a.lastSessionDate!));
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 880),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          children: [
+            Text(
+              widget.selectedRoutine?.name ?? 'Tu rutina',
+              style: context.text.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              'Elige qué entrenar. Cada sesión nueva se registra con la fecha de hoy.',
+              style: context.text.bodyMedium?.copyWith(
+                color: context.colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('Entrenar')),
+                ButtonSegment(value: true, label: Text('Historial')),
+              ],
+              selected: {_history},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                setState(() => _history = selection.single);
+                if (!_history && !_currentWeek) widget.onCurrentWeek?.call();
+              },
+            ),
+            const SizedBox(height: 24),
+            if (widget.isLoading) const LinearProgressIndicator(),
+            if (widget.errorMessage != null) ...[
+              Text(
+                widget.errorMessage!,
+                style: TextStyle(color: context.colors.error),
+              ),
+              TextButton(
+                onPressed: widget.onRetry,
+                child: const Text('Reintentar'),
+              ),
+            ],
+            if (_history) ...[
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Semana anterior',
+                    onPressed: widget.isLoading ? null : widget.onPreviousWeek,
+                    icon: const Icon(Icons.chevron_left_rounded),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${_shortDate(widget.weekStart)} — ${_shortDate(widget.weekStart.add(const Duration(days: 6)))}',
+                      textAlign: TextAlign.center,
+                      style: context.text.titleSmall,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Semana siguiente',
+                    onPressed: widget.isLoading || _currentWeek
+                        ? null
+                        : widget.onNextWeek,
+                    icon: const Icon(Icons.chevron_right_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (historyDays.isEmpty && !widget.isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No hay entrenamientos registrados esta semana.'),
+                ),
+              for (final day in historyDays)
+                _TrainingRow(
+                  day: day,
+                  history: true,
+                  today: _today,
+                  enabled: !widget.isLoading && widget.errorMessage == null,
+                  onOpen: () => widget.onOpenDay(day, day.lastSessionDate!),
+                ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: widget.onOpenSelectedRoutineStats,
+                icon: const Icon(Icons.insights_rounded),
+                label: const Text('Ver historial completo'),
+              ),
+            ] else ...[
+              Text(
+                'Hoy · ${_shortDate(_today)}',
+                style: context.text.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              if (days.isEmpty && !widget.isLoading)
+                const Text(
+                  'Esta rutina todavía no tiene entrenamientos. Añádelos desde Rutinas.',
+                ),
+              for (final day in days)
+                _TrainingRow(
+                  day: day,
+                  history: false,
+                  today: _today,
+                  enabled:
+                      !widget.isLoading &&
+                      widget.errorMessage == null &&
+                      _currentWeek,
+                  onOpen: () => widget.onOpenDay(day, _today),
+                ),
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text});
+String _shortDate(DateTime date) => formatRoutineDayDateLabel(date);
 
-  final String text;
+class _TrainingRow extends StatelessWidget {
+  const _TrainingRow({
+    required this.day,
+    required this.history,
+    required this.today,
+    required this.enabled,
+    required this.onOpen,
+  });
+
+  final RoutineDay day;
+  final bool history;
+  final DateTime today;
+  final bool enabled;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      text.toUpperCase(),
-      style: theme.textTheme.labelSmall?.copyWith(
-        color: context.colors.textSecondary,
-        letterSpacing: 1.5,
-        fontWeight: FontWeight.w600,
+    final date = day.lastSessionDate;
+    final active = day.status == WorkoutDayStatus.inProgress;
+    final completedToday =
+        date != null && DateUtils.isSameDay(date, today) && !active;
+    final preview = day.exerciseNamesPreview.isNotEmpty
+        ? day.exerciseNamesPreview.join(' · ')
+        : day.exercises.map((e) => e.name).join(' · ');
+    final status = date == null
+        ? 'Sin entrenar esta semana'
+        : '${active ? 'Pendiente desde' : 'Realizado el'} ${_shortDate(date)}';
+    final label = history
+        ? (active ? 'Continuar sesión' : 'Ver sesión')
+        : active
+        ? (DateUtils.isSameDay(date, today)
+              ? 'Continuar sesión'
+              : 'Continuar sesión anterior')
+        : completedToday
+        ? 'Ver entrenamiento de hoy'
+        : 'Entrenar hoy';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: context.colors.divider),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            day.name,
+            style: context.text.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Programado: ${day.dayNameFull}',
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
+          if (preview.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              preview,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodyMedium,
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            status,
+            style: context.text.bodyMedium?.copyWith(
+              color: active
+                  ? context.colors.primary
+                  : context.colors.textSecondary,
+            ),
+          ),
+          if (day.status == WorkoutDayStatus.completedPartial)
+            Text(
+              'Finalizado con series pendientes',
+              style: context.text.bodySmall,
+            ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: enabled ? onOpen : null,
+            icon: Icon(
+              history || completedToday
+                  ? Icons.arrow_forward_rounded
+                  : Icons.play_arrow_rounded,
+            ),
+            label: Text(label),
+          ),
+        ],
       ),
     );
   }

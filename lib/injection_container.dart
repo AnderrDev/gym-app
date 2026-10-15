@@ -1,3 +1,7 @@
+import 'package:gym_flutter/core/services/workout_draft_service.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/adapt_session_exercise.dart';
+import 'package:gym_flutter/features/workout/data/datasources/session_exercise_remote_data_source.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
@@ -134,6 +138,7 @@ Future<void> init() async {
     () => ActiveWorkoutBloc(
       repository: sl(),
       activeSessionService: sl(),
+      draftService: sl(),
       notifier: sl(),
       clock: sl<Clock>(),
     ),
@@ -186,6 +191,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ReorderExercises(sl()));
   sl.registerLazySingleton(() => UpdateExerciseTarget(sl()));
   sl.registerLazySingleton(() => GetExercisesCatalog(sl()));
+  sl.registerLazySingleton(() => GetSessionExercises(sl()));
+  sl.registerLazySingleton(() => AdaptSessionExercise(sl()));
   sl.registerLazySingleton(() => GetExerciseDetail(sl()));
 
   sl.registerLazySingleton<WorkoutRepository>(
@@ -229,12 +236,16 @@ Future<void> init() async {
   sl.registerLazySingleton<ExerciseCatalogRemoteDataSource>(
     () => ExerciseCatalogRemoteDataSource(client: sl()),
   );
+  sl.registerLazySingleton<SessionExerciseRemoteDataSource>(
+    () => SessionExerciseRemoteDataSource(client: sl()),
+  );
 
   sl.registerLazySingleton<WorkoutRemoteDataSource>(
     () => WorkoutRemoteDataSourceImpl.fromParts(
       sessions: sl(),
       routines: sl(),
       catalog: sl(),
+      sessionExercises: sl(),
     ),
   );
 
@@ -300,6 +311,7 @@ Future<void> init() async {
 
   sl.registerLazySingleton(() => Supabase.instance.client);
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
+  sl.registerLazySingleton(() => WorkoutDraftService(sl()));
   sl.registerLazySingleton(() => RoutineAssignmentBus());
   sl.registerLazySingleton<Clock>(() => const SystemClock());
 

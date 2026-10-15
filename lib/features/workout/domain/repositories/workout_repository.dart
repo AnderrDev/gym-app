@@ -30,6 +30,15 @@ class AddExerciseToDayPayload {
 }
 
 abstract class WorkoutRepository {
+  Future<Either<Failure, List<Exercise>>> getSessionExercises(String sessionId);
+  Future<Either<Failure, List<Exercise>>> adaptSessionExercise(
+    String sessionId, String exerciseId, {
+    required int targetSets, required int targetReps,
+    required double targetWeight, String? replaceExerciseId,
+  });
+  Future<Either<Failure, List<Exercise>>> updateSessionExerciseTarget(
+    String sessionId, String exerciseId, double targetWeight, int targetReps,
+  );
   /// Fetches the routines assigned to a specific user
   Future<Either<Failure, List<Routine>>> getAssignedRoutines(String userId);
 

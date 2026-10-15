@@ -73,6 +73,7 @@ void main() {
     Exercise? exercise,
     String sessionId = 's1',
     List<SetLog> initialCompletedSets = const [],
+    List<SetLog> initialDrafts = const [],
     SetLog? lastPerformance,
     bool readOnly = false,
     void Function(SetLog)? onSetAdded,
@@ -95,6 +96,7 @@ void main() {
                   exercise: exercise ?? tExercise,
                   sessionId: sessionId,
                   initialCompletedSets: initialCompletedSets,
+                  initialDrafts: initialDrafts,
                   lastPerformance: lastPerformance,
                   readOnly: readOnly,
                   onSetAdded: onSetAdded,
@@ -133,10 +135,26 @@ void main() {
   });
 
   group('flujo "Completar serie"', () {
+    testWidgets('un extra conserva el peso cero confirmado aunque exista historial con carga', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(createWidgetUnderTest(
+        exercise: tExercise.copyWith(targetWeight: 0, isExtra: true),
+        lastPerformance: const SetLog(sessionId: 'old', exerciseId: 'e1', setIndex: 1,
+          actualWeight: 60, actualReps: 10),
+      ));
+      await tester.tap(find.byKey(const ValueKey('complete_set_button_e1')));
+      await tester.pumpAndSettle();
+      final weights = tester.widgetList<TextField>(find.byType(TextField))
+          .map((field) => field.controller?.text).toList();
+      expect(weights, contains('0'));
+      expect(weights, isNot(contains('60')));
+    });
     Future<void> pumpCard(
       WidgetTester tester, {
       void Function(SetLog)? onSetAdded,
       void Function(int)? onSetRemoved,
+      List<SetLog> initialDrafts = const [],
     }) async {
       await tester.binding.setSurfaceSize(const Size(1100, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -144,6 +162,7 @@ void main() {
         createWidgetUnderTest(
           onSetAdded: onSetAdded,
           onSetRemoved: onSetRemoved,
+          initialDrafts: initialDrafts,
         ),
       );
     }
@@ -199,6 +218,24 @@ void main() {
 
       // Drenar el timer del live advice (8s).
       await tester.pump(const Duration(seconds: 9));
+    });
+
+    testWidgets('reabrir conserva el borrador sin marcar la serie completada', (
+      tester,
+    ) async {
+      const draft = SetLog(
+        sessionId: 's1',
+        exerciseId: 'e1',
+        setIndex: 1,
+        actualWeight: 65.5,
+        actualReps: 8,
+      );
+      await pumpCard(tester, initialDrafts: const [draft]);
+      expect(find.text('COMPLETAR SERIE 1'), findsOneWidget);
+      expect(find.text('65.5 kg × 8 reps'), findsNothing);
+      await openNextSet(tester);
+      expect(fieldText(tester, 'complete_set_weight'), '65.5');
+      expect(fieldText(tester, 'complete_set_reps'), '8');
     });
 
     testWidgets('subir el peso con menos reps no aconseja bajar el peso', (

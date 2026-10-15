@@ -16,7 +16,8 @@ mixin _$RoutineDay {
 
  String get id; String get routineId; int get dayOfWeek;// 1=Lunes, 7=Domingo
  String get name;// "Pecho y Tríceps"
- List<Exercise> get exercises; int get targetSetsCount; WorkoutDayStatus get status;/// Nombres de los ejercicios del día, en orden, sin metadata adicional.
+ List<Exercise> get exercises; int get targetSetsCount; WorkoutDayStatus get status;/// Fecha real de la sesión representada por el estado semanal.
+ DateTime? get lastSessionDate;/// Nombres de los ejercicios del día, en orden, sin metadata adicional.
 /// Lo popula `getRoutineDays` para que `RoutineDayCard` pueda pintar un
 /// preview ("Press banca · Press militar · …") sin tener que cargar el
 /// día completo. Vacío cuando el day se construyó desde un contexto que
@@ -32,16 +33,16 @@ $RoutineDayCopyWith<RoutineDay> get copyWith => _$RoutineDayCopyWithImpl<Routine
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutineDay&&(identical(other.id, id) || other.id == id)&&(identical(other.routineId, routineId) || other.routineId == routineId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&(identical(other.targetSetsCount, targetSetsCount) || other.targetSetsCount == targetSetsCount)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.exerciseNamesPreview, exerciseNamesPreview));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutineDay&&(identical(other.id, id) || other.id == id)&&(identical(other.routineId, routineId) || other.routineId == routineId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&(identical(other.targetSetsCount, targetSetsCount) || other.targetSetsCount == targetSetsCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastSessionDate, lastSessionDate) || other.lastSessionDate == lastSessionDate)&&const DeepCollectionEquality().equals(other.exerciseNamesPreview, exerciseNamesPreview));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,routineId,dayOfWeek,name,const DeepCollectionEquality().hash(exercises),targetSetsCount,status,const DeepCollectionEquality().hash(exerciseNamesPreview));
+int get hashCode => Object.hash(runtimeType,id,routineId,dayOfWeek,name,const DeepCollectionEquality().hash(exercises),targetSetsCount,status,lastSessionDate,const DeepCollectionEquality().hash(exerciseNamesPreview));
 
 @override
 String toString() {
-  return 'RoutineDay(id: $id, routineId: $routineId, dayOfWeek: $dayOfWeek, name: $name, exercises: $exercises, targetSetsCount: $targetSetsCount, status: $status, exerciseNamesPreview: $exerciseNamesPreview)';
+  return 'RoutineDay(id: $id, routineId: $routineId, dayOfWeek: $dayOfWeek, name: $name, exercises: $exercises, targetSetsCount: $targetSetsCount, status: $status, lastSessionDate: $lastSessionDate, exerciseNamesPreview: $exerciseNamesPreview)';
 }
 
 
@@ -52,7 +53,7 @@ abstract mixin class $RoutineDayCopyWith<$Res>  {
   factory $RoutineDayCopyWith(RoutineDay value, $Res Function(RoutineDay) _then) = _$RoutineDayCopyWithImpl;
 @useResult
 $Res call({
- String id, String routineId, int dayOfWeek, String name, List<Exercise> exercises, int targetSetsCount, WorkoutDayStatus status, List<String> exerciseNamesPreview
+ String id, String routineId, int dayOfWeek, String name, List<Exercise> exercises, int targetSetsCount, WorkoutDayStatus status, DateTime? lastSessionDate, List<String> exerciseNamesPreview
 });
 
 
@@ -69,7 +70,7 @@ class _$RoutineDayCopyWithImpl<$Res>
 
 /// Create a copy of RoutineDay
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? routineId = null,Object? dayOfWeek = null,Object? name = null,Object? exercises = null,Object? targetSetsCount = null,Object? status = null,Object? exerciseNamesPreview = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? routineId = null,Object? dayOfWeek = null,Object? name = null,Object? exercises = null,Object? targetSetsCount = null,Object? status = null,Object? lastSessionDate = freezed,Object? exerciseNamesPreview = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,routineId: null == routineId ? _self.routineId : routineId // ignore: cast_nullable_to_non_nullable
@@ -78,7 +79,8 @@ as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nu
 as String,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
 as List<Exercise>,targetSetsCount: null == targetSetsCount ? _self.targetSetsCount : targetSetsCount // ignore: cast_nullable_to_non_nullable
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as WorkoutDayStatus,exerciseNamesPreview: null == exerciseNamesPreview ? _self.exerciseNamesPreview : exerciseNamesPreview // ignore: cast_nullable_to_non_nullable
+as WorkoutDayStatus,lastSessionDate: freezed == lastSessionDate ? _self.lastSessionDate : lastSessionDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,exerciseNamesPreview: null == exerciseNamesPreview ? _self.exerciseNamesPreview : exerciseNamesPreview // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  List<String> exerciseNamesPreview)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  DateTime? lastSessionDate,  List<String> exerciseNamesPreview)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RoutineDay() when $default != null:
-return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.exerciseNamesPreview);case _:
+return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.lastSessionDate,_that.exerciseNamesPreview);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exerci
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  List<String> exerciseNamesPreview)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  DateTime? lastSessionDate,  List<String> exerciseNamesPreview)  $default,) {final _that = this;
 switch (_that) {
 case _RoutineDay():
-return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.exerciseNamesPreview);case _:
+return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.lastSessionDate,_that.exerciseNamesPreview);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exerci
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  List<String> exerciseNamesPreview)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String routineId,  int dayOfWeek,  String name,  List<Exercise> exercises,  int targetSetsCount,  WorkoutDayStatus status,  DateTime? lastSessionDate,  List<String> exerciseNamesPreview)?  $default,) {final _that = this;
 switch (_that) {
 case _RoutineDay() when $default != null:
-return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.exerciseNamesPreview);case _:
+return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exercises,_that.targetSetsCount,_that.status,_that.lastSessionDate,_that.exerciseNamesPreview);case _:
   return null;
 
 }
@@ -220,7 +222,7 @@ return $default(_that.id,_that.routineId,_that.dayOfWeek,_that.name,_that.exerci
 
 
 class _RoutineDay extends RoutineDay {
-  const _RoutineDay({required this.id, required this.routineId, required this.dayOfWeek, required this.name, final  List<Exercise> exercises = const [], this.targetSetsCount = 0, this.status = WorkoutDayStatus.pending, final  List<String> exerciseNamesPreview = const []}): _exercises = exercises,_exerciseNamesPreview = exerciseNamesPreview,super._();
+  const _RoutineDay({required this.id, required this.routineId, required this.dayOfWeek, required this.name, final  List<Exercise> exercises = const [], this.targetSetsCount = 0, this.status = WorkoutDayStatus.pending, this.lastSessionDate, final  List<String> exerciseNamesPreview = const []}): _exercises = exercises,_exerciseNamesPreview = exerciseNamesPreview,super._();
   
 
 @override final  String id;
@@ -239,6 +241,8 @@ class _RoutineDay extends RoutineDay {
 
 @override@JsonKey() final  int targetSetsCount;
 @override@JsonKey() final  WorkoutDayStatus status;
+/// Fecha real de la sesión representada por el estado semanal.
+@override final  DateTime? lastSessionDate;
 /// Nombres de los ejercicios del día, en orden, sin metadata adicional.
 /// Lo popula `getRoutineDays` para que `RoutineDayCard` pueda pintar un
 /// preview ("Press banca · Press militar · …") sin tener que cargar el
@@ -267,16 +271,16 @@ _$RoutineDayCopyWith<_RoutineDay> get copyWith => __$RoutineDayCopyWithImpl<_Rou
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoutineDay&&(identical(other.id, id) || other.id == id)&&(identical(other.routineId, routineId) || other.routineId == routineId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&(identical(other.targetSetsCount, targetSetsCount) || other.targetSetsCount == targetSetsCount)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._exerciseNamesPreview, _exerciseNamesPreview));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoutineDay&&(identical(other.id, id) || other.id == id)&&(identical(other.routineId, routineId) || other.routineId == routineId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&(identical(other.targetSetsCount, targetSetsCount) || other.targetSetsCount == targetSetsCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastSessionDate, lastSessionDate) || other.lastSessionDate == lastSessionDate)&&const DeepCollectionEquality().equals(other._exerciseNamesPreview, _exerciseNamesPreview));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,routineId,dayOfWeek,name,const DeepCollectionEquality().hash(_exercises),targetSetsCount,status,const DeepCollectionEquality().hash(_exerciseNamesPreview));
+int get hashCode => Object.hash(runtimeType,id,routineId,dayOfWeek,name,const DeepCollectionEquality().hash(_exercises),targetSetsCount,status,lastSessionDate,const DeepCollectionEquality().hash(_exerciseNamesPreview));
 
 @override
 String toString() {
-  return 'RoutineDay(id: $id, routineId: $routineId, dayOfWeek: $dayOfWeek, name: $name, exercises: $exercises, targetSetsCount: $targetSetsCount, status: $status, exerciseNamesPreview: $exerciseNamesPreview)';
+  return 'RoutineDay(id: $id, routineId: $routineId, dayOfWeek: $dayOfWeek, name: $name, exercises: $exercises, targetSetsCount: $targetSetsCount, status: $status, lastSessionDate: $lastSessionDate, exerciseNamesPreview: $exerciseNamesPreview)';
 }
 
 
@@ -287,7 +291,7 @@ abstract mixin class _$RoutineDayCopyWith<$Res> implements $RoutineDayCopyWith<$
   factory _$RoutineDayCopyWith(_RoutineDay value, $Res Function(_RoutineDay) _then) = __$RoutineDayCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String routineId, int dayOfWeek, String name, List<Exercise> exercises, int targetSetsCount, WorkoutDayStatus status, List<String> exerciseNamesPreview
+ String id, String routineId, int dayOfWeek, String name, List<Exercise> exercises, int targetSetsCount, WorkoutDayStatus status, DateTime? lastSessionDate, List<String> exerciseNamesPreview
 });
 
 
@@ -304,7 +308,7 @@ class __$RoutineDayCopyWithImpl<$Res>
 
 /// Create a copy of RoutineDay
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? routineId = null,Object? dayOfWeek = null,Object? name = null,Object? exercises = null,Object? targetSetsCount = null,Object? status = null,Object? exerciseNamesPreview = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? routineId = null,Object? dayOfWeek = null,Object? name = null,Object? exercises = null,Object? targetSetsCount = null,Object? status = null,Object? lastSessionDate = freezed,Object? exerciseNamesPreview = null,}) {
   return _then(_RoutineDay(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,routineId: null == routineId ? _self.routineId : routineId // ignore: cast_nullable_to_non_nullable
@@ -313,7 +317,8 @@ as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nu
 as String,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
 as List<Exercise>,targetSetsCount: null == targetSetsCount ? _self.targetSetsCount : targetSetsCount // ignore: cast_nullable_to_non_nullable
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as WorkoutDayStatus,exerciseNamesPreview: null == exerciseNamesPreview ? _self._exerciseNamesPreview : exerciseNamesPreview // ignore: cast_nullable_to_non_nullable
+as WorkoutDayStatus,lastSessionDate: freezed == lastSessionDate ? _self.lastSessionDate : lastSessionDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,exerciseNamesPreview: null == exerciseNamesPreview ? _self._exerciseNamesPreview : exerciseNamesPreview // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }

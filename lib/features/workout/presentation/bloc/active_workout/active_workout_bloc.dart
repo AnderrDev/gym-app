@@ -3,9 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/services/workout_draft_service.dart';
+import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/adapt_session_exercise.dart';
+import 'package:gym_flutter/features/workout/domain/workout_completion.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/_active_workout_loader.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_event.dart';
@@ -18,25 +22,48 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     required this.repository,
     required this.activeSessionService,
     required this.notifier,
+    this.draftService,
     Clock clock = const SystemClock(),
   }) : _clock = clock,
        super(const ActiveWorkoutState()) {
-    on<StartActiveWorkout>(_onStart);
-    on<ResumeActiveWorkout>(_onResume);
-    on<SaveActiveSetLog>(_onSaveSet);
-    on<UnsaveActiveSetLog>(_onUnsaveSet);
-    on<UpdateActiveExerciseTarget>(_onUpdateTarget);
-    on<FinishActiveWorkout>(_onFinish);
-    on<ResetActiveWorkout>((_, emit) async {
-      emit(const ActiveWorkoutState());
-      await notifier.onEnded();
-    });
+    // Una sola cola evita que guardar/desmarcar/finalizar se pisen mientras
+    // esperamos almacenamiento local o backend.
+    on<ActiveWorkoutEvent>(
+      _handleEvent,
+      transformer: (events, mapper) => events.asyncExpand(mapper),
+    );
   }
 
   final WorkoutRepository repository;
   final ActiveSessionService activeSessionService;
   final ActiveWorkoutNotifier notifier;
+  final WorkoutDraftService? draftService;
   final Clock _clock;
+
+  Future<void> _handleEvent(
+    ActiveWorkoutEvent event,
+    Emitter<ActiveWorkoutState> emit,
+  ) async {
+    switch (event) {
+      case StartActiveWorkout():
+        await _onStart(event, emit);
+      case ResumeActiveWorkout():
+        await _onResume(event, emit);
+      case SaveActiveSetLog():
+        await _onSaveSet(event, emit);
+      case UnsaveActiveSetLog():
+        await _onUnsaveSet(event, emit);
+      case UpdateActiveExerciseTarget():
+        await _onUpdateTarget(event, emit);
+      case AdaptActiveWorkoutExercise():
+        await _onAdaptExercise(event, emit);
+      case FinishActiveWorkout():
+        await _onFinish(event, emit);
+      case ResetActiveWorkout():
+        emit(const ActiveWorkoutState());
+        await notifier.onEnded();
+    }
+  }
 
   DateTime _today() {
     final now = _clock.now();
@@ -59,10 +86,11 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     try {
       // Siempre hoy: iniciar desde un día pasado del calendario no debe
       // registrar el entrenamiento con esa fecha.
+      final today = _today();
       final session = (await repository.startWorkoutForDay(
         event.userId,
         event.routineDayId,
-        _today(),
+        today,
       )).getOrElse((_) => throw Exception('No se pudo iniciar la sesión'));
 
       // El backend puede devolver una sesión existente cuyo `routineDayId`
@@ -74,6 +102,19 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
             status: ActiveWorkoutStatus.failure,
             errorMessage:
                 'Ya hay una sesión activa en otro día. Termínala antes de iniciar esta.',
+          ),
+        );
+        return;
+      }
+
+      final actualDate = session.sessionDate;
+      if (DateTime(actualDate.year, actualDate.month, actualDate.day) !=
+          today) {
+        emit(
+          state.copyWith(
+            status: ActiveWorkoutStatus.failure,
+            errorMessage:
+                'Hay una sesión anterior pendiente. Vuelve y continúa esa sesión para finalizarla antes de entrenar hoy.',
           ),
         );
         return;
@@ -104,6 +145,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
           session: session,
           exercises: ctx.exercises,
           setLogs: ctx.setLogs,
+          setDrafts: draftService?.load(session.userId, session.id) ?? const [],
           lastPerformances: ctx.lastPerformances,
           recentSessions: ctx.recentSessions,
           recentSessionsLogs: ctx.recentSessionsLogs,
@@ -130,6 +172,9 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       ),
     );
     try {
+      final exercises = (await repository.getSessionExercises(
+        event.session.id,
+      )).getOrElse((failure) => throw failure);
       final setLogs = (await repository.getSessionSetLogs(
         event.session.id,
       )).getOrElse((_) => const []);
@@ -140,7 +185,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       await notifier.onStarted(
         dayName: dayName,
         sessionStartedAt: DateTime.now(),
-        totalSets: _totalTargetSetsFor(event.exercises),
+        totalSets: _totalTargetSetsFor(exercises),
       );
       if (setLogs.isNotEmpty) {
         await notifier.onProgress(completedSets: setLogs.length);
@@ -149,9 +194,12 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         state.copyWith(
           status: ActiveWorkoutStatus.running,
           session: event.session,
-          exercises: event.exercises,
+          exercises: exercises,
           setLogs: setLogs,
-          lastPerformances: event.lastPerformances,
+          setDrafts:
+              draftService?.load(event.session.userId, event.session.id) ??
+              const [],
+          lastPerformances: await fetchLastPerformances(repository, exercises),
           recentSessions: event.recentSessions,
           recentSessionsLogs: event.recentSessionsLogs,
         ),
@@ -170,7 +218,10 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     SaveActiveSetLog event,
     Emitter<ActiveWorkoutState> emit,
   ) async {
-    if (state.session == null) return;
+    if (state.session == null || event.setLog.sessionId != state.session!.id) {
+      return;
+    }
+    await _rememberDraft(event.setLog, emit);
     // Optimista: la serie aparece marcada ya mismo y se revierte si el
     // guardado falla. Antes el resultado del repo se ignoraba y una serie
     // podía quedar marcada en pantalla sin haberse guardado en ningún lado.
@@ -208,8 +259,25 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     UnsaveActiveSetLog event,
     Emitter<ActiveWorkoutState> emit,
   ) async {
-    if (state.session == null) return;
+    if (state.session == null || event.sessionId != state.session!.id) return;
     final previousLogs = state.setLogs;
+    final removed = previousLogs
+        .where(
+          (l) =>
+              l.exerciseId == event.exerciseId && l.setIndex == event.setIndex,
+        )
+        .firstOrNull;
+    if (removed == null) return;
+    if (!await _rememberDraft(removed, emit)) {
+      emit(
+        state.copyWith(
+          setLogs: List<SetLog>.from(previousLogs),
+          actionError:
+              'No se pudo conservar el peso editado. Intenta desmarcar de nuevo.',
+        ),
+      );
+      return;
+    }
     final newLogs = previousLogs
         .where(
           (l) =>
@@ -241,24 +309,36 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     await notifier.onProgress(completedSets: newLogs.length);
   }
 
+  Future<bool> _rememberDraft(
+    SetLog log,
+    Emitter<ActiveWorkoutState> emit,
+  ) async {
+    final drafts = List<SetLog>.from(state.setDrafts)
+      ..removeWhere(
+        (l) => l.exerciseId == log.exerciseId && l.setIndex == log.setIndex,
+      )
+      ..add(log);
+    emit(state.copyWith(setDrafts: drafts));
+    try {
+      await draftService?.save(state.session!.userId, log);
+      return true;
+    } catch (e) {
+      AppLogger.instance.warning(
+        'No se pudo conservar el borrador de serie: $e',
+      );
+      return false;
+    }
+  }
+
   Future<void> _onUpdateTarget(
     UpdateActiveExerciseTarget event,
     Emitter<ActiveWorkoutState> emit,
   ) async {
     final session = state.session;
     if (session == null) return;
-    final newExercises = state.exercises.map((e) {
-      if (e.id == event.exerciseId) {
-        return e.copyWith(
-          targetWeight: event.targetWeight,
-          targetReps: event.targetReps,
-        );
-      }
-      return e;
-    }).toList();
-
-    final result = await repository.updateExerciseTarget(
-      session.routineDayId,
+    if (session.completedAt != null) return;
+    final result = await repository.updateSessionExerciseTarget(
+      session.id,
       event.exerciseId,
       event.targetWeight,
       event.targetReps,
@@ -271,7 +351,49 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
           actionError: 'No se pudo actualizar el objetivo: ${failure.message}',
         ),
       ),
-      (_) => emit(state.copyWith(exercises: newExercises)),
+      (exercises) => emit(state.copyWith(exercises: exercises)),
+    );
+  }
+
+  Future<void> _onAdaptExercise(
+    AdaptActiveWorkoutExercise event,
+    Emitter<ActiveWorkoutState> emit,
+  ) async {
+    final session = state.session;
+    if (!state.isRunning || session == null || session.completedAt != null) {
+      return;
+    }
+    emit(state.copyWith(isAdapting: true));
+    final result = await AdaptSessionExercise(repository)(
+      session.id,
+      event.exerciseId,
+      targetSets: event.targetSets,
+      targetReps: event.targetReps,
+      targetWeight: event.targetWeight,
+      replaceExerciseId: event.replaceExerciseId,
+    );
+    await result.fold(
+      (failure) async => emit(
+        state.copyWith(
+          isAdapting: false,
+          actionError:
+              'No se pudo adaptar el entrenamiento: ${failure.message}',
+        ),
+      ),
+      (exercises) async {
+        final performances = await fetchLastPerformances(repository, exercises);
+        emit(
+          state.copyWith(
+            exercises: exercises,
+            lastPerformances: performances,
+            isAdapting: false,
+          ),
+        );
+        await notifier.onPlanChanged(
+          totalSets: totalTargetSets(exercises),
+          completedSets: completedTargetSets(exercises, state.setLogs),
+        );
+      },
     );
   }
 
@@ -279,6 +401,13 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     FinishActiveWorkout event,
     Emitter<ActiveWorkoutState> emit,
   ) async {
+    final current = state.session;
+    if (!state.isRunning ||
+        current == null ||
+        current.id != event.sessionId ||
+        current.completedAt != null) {
+      return;
+    }
     emit(
       state.copyWith(
         status: ActiveWorkoutStatus.finishing,
@@ -288,7 +417,9 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     try {
       final result = await repository.finishWorkoutSession(
         event.sessionId,
-        coachingAnalysis: event.coachingAnalysis,
+        // El servidor consulta los logs ya guardados y el historial del mismo
+        // ejercicio, aunque antes se entrenara en otro día de la rutina.
+        coachingAnalysis: null,
       );
       if (result.isLeft()) {
         emit(
@@ -300,8 +431,23 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         return;
       }
       await activeSessionService.clear();
+      final session = state.session;
+      if (session != null) {
+        try {
+          await draftService?.clear(session.userId, session.id);
+        } catch (e) {
+          AppLogger.instance.warning(
+            'No se pudieron limpiar los borradores: $e',
+          );
+        }
+      }
       await notifier.onEnded();
-      emit(state.copyWith(status: ActiveWorkoutStatus.finished));
+      emit(
+        state.copyWith(
+          status: ActiveWorkoutStatus.finished,
+          setDrafts: const [],
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(

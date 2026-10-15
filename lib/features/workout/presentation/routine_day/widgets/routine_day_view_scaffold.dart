@@ -14,6 +14,7 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
+import 'package:gym_flutter/features/workout/domain/workout_completion.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_banner.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_active_focus_view.dart';
@@ -35,6 +36,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     required this.effectiveReadOnly,
     required this.isCompleted,
     required this.currentSessionLogs,
+    this.setDrafts = const [],
     required this.totalVolume,
     required this.restTimer,
     required this.onClose,
@@ -46,6 +48,9 @@ class RoutineDayViewScaffold extends StatelessWidget {
     required this.onFinishWorkout,
     required this.onShowLastSessionDetails,
     required this.onRetry,
+    this.isAdapting = false,
+    this.onAddExercise,
+    this.onReplaceExercise,
   });
 
   final RoutineDayPhase phase;
@@ -54,6 +59,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
   final bool effectiveReadOnly;
   final bool isCompleted;
   final List<SetLog> currentSessionLogs;
+  final List<SetLog> setDrafts;
   final double totalVolume;
   final ValueListenable<RestTimerSnapshot> restTimer;
   final VoidCallback onClose;
@@ -70,6 +76,9 @@ class RoutineDayViewScaffold extends StatelessWidget {
   )
   onShowLastSessionDetails;
   final VoidCallback onRetry;
+  final bool isAdapting;
+  final VoidCallback? onAddExercise;
+  final ValueChanged<Exercise>? onReplaceExercise;
 
   @override
   Widget build(BuildContext context) {
@@ -93,14 +102,14 @@ class RoutineDayViewScaffold extends StatelessWidget {
           exercises: exercises,
           isActive: isActive,
           totalVolume: totalVolume,
-          completedSets: currentSessionLogs.length,
+          completedSets: completedTargetSets(exercises, currentSessionLogs),
           // `routineDay.targetSetsCount` viene en 0 cuando el day se cargó por
           // un endpoint que no embebe los ejercicios (lista, navegación
           // directa). Lo derivamos en vivo de la lista de ejercicios cargada.
           totalSets: exercises.fold<int>(0, (sum, ex) => sum + ex.targetSets),
           onClose: onClose,
           onShowLastSessionDetails: onShowLastSessionDetails,
-          onFinish: isActive && !effectiveReadOnly
+          onFinish: isActive && !effectiveReadOnly && !isAdapting
               ? () {
                   HapticFeedback.heavyImpact();
                   onFinishWorkout(phase as RoutineDayActivePhase);
@@ -204,11 +213,17 @@ class RoutineDayViewScaffold extends StatelessWidget {
           hasScrollBody: true,
           child: RoutineDayActiveFocusView(
             sessionId: current.session.id,
-            exercises: current.exercises,
+            exercises: current.exercises
+                .where((ex) => ex.targetSets > 0)
+                .toList(),
             completedLogs: currentSessionLogs,
+            setDrafts: setDrafts,
             lastPerformances: current.lastPerformances,
             coachingAnalyses: coachingByExercise,
             effectiveReadOnly: effectiveReadOnly,
+            isAdapting: isAdapting,
+            onAddExercise: onAddExercise,
+            onReplaceExercise: onReplaceExercise,
             onSetAdded: (log) {
               onSetAdded(log);
               HapticFeedback.selectionClick();
@@ -272,9 +287,8 @@ class _PrestartBottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: AppButton(
-          label: locked
-              ? 'Tienes una sesión en curso'
-              : 'Empezar entrenamiento',
+          label: locked ? 'Tienes una sesión en curso' : 'Entrenar hoy',
+          uppercaseLabel: false,
           icon: locked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
           onPressed: locked ? null : onStartWorkout,
         ),

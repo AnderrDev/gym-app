@@ -22,3 +22,8 @@ POST JSON:
 - `recommendation` (`INCREASE_WEIGHT`, `INCREASE_REPS`, `MAINTAIN`, `DECREASE_WEIGHT`)
 - `feedback`
 - `performance_score`
+
+La carga por encima del objetivo no genera una recomendación de reducir peso.
+Los objetivos proceden del plan de la sesión cuando existe; las comparaciones
+usan el historial del ejercicio real, aunque se haya entrenado en otro día.
+Prueba de regresión: `deno test supabase/functions/generate_coaching_v1/weight_reduction_test.ts`.

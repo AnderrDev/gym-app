@@ -30,18 +30,21 @@ class ActiveWorkoutState extends Equatable {
     this.session,
     this.exercises = const [],
     this.setLogs = const [],
+    this.setDrafts = const [],
     this.lastPerformances = const {},
     this.recentSessions = const [],
     this.recentSessionsLogs = const {},
     this.errorMessage,
     this.actionError,
     this.actionErrorNonce = 0,
+    this.isAdapting = false,
   });
 
   final ActiveWorkoutStatus status;
   final WorkoutSession? session;
   final List<Exercise> exercises;
   final List<SetLog> setLogs;
+  final List<SetLog> setDrafts;
   final Map<String, SetLog?> lastPerformances;
   final List<WorkoutSession> recentSessions;
   final Map<String, List<SetLog>> recentSessionsLogs;
@@ -54,6 +57,7 @@ class ActiveWorkoutState extends Equatable {
   /// Incrementa con cada `actionError` para que dos fallos iguales seguidos
   /// sigan disparando el listener de la página.
   final int actionErrorNonce;
+  final bool isAdapting;
 
   bool get isRunning => status == ActiveWorkoutStatus.running;
   bool get isStarting => status == ActiveWorkoutStatus.starting;
@@ -65,14 +69,17 @@ class ActiveWorkoutState extends Equatable {
     bool clearSession = false,
     List<Exercise>? exercises,
     List<SetLog>? setLogs,
+    List<SetLog>? setDrafts,
     Map<String, SetLog?>? lastPerformances,
     List<WorkoutSession>? recentSessions,
     Map<String, List<SetLog>>? recentSessionsLogs,
     String? errorMessage,
     bool clearErrorMessage = false,
     String? actionError,
+    bool? isAdapting,
   }) {
     return ActiveWorkoutState(
+      isAdapting: isAdapting ?? this.isAdapting,
       actionError: actionError,
       actionErrorNonce: actionError == null
           ? actionErrorNonce
@@ -81,6 +88,7 @@ class ActiveWorkoutState extends Equatable {
       session: clearSession ? null : (session ?? this.session),
       exercises: exercises ?? this.exercises,
       setLogs: setLogs ?? this.setLogs,
+      setDrafts: setDrafts ?? this.setDrafts,
       lastPerformances: lastPerformances ?? this.lastPerformances,
       recentSessions: recentSessions ?? this.recentSessions,
       recentSessionsLogs: recentSessionsLogs ?? this.recentSessionsLogs,
@@ -96,11 +104,13 @@ class ActiveWorkoutState extends Equatable {
     session,
     exercises,
     setLogs,
+    setDrafts,
     lastPerformances,
     recentSessions,
     recentSessionsLogs,
     errorMessage,
     actionError,
     actionErrorNonce,
+    isAdapting,
   ];
 }

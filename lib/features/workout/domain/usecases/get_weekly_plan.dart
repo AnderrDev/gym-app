@@ -39,6 +39,7 @@ class GetWeeklyPlan {
           .toList();
 
       WorkoutDayStatus status;
+      DateTime? lastSessionDate;
       if (sessionsForDay.isEmpty) {
         status = WorkoutDayStatus.pending;
       } else {
@@ -47,20 +48,26 @@ class GetWeeklyPlan {
             .toList();
 
         if (activeSession.isNotEmpty) {
+          activeSession.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+          lastSessionDate = activeSession.first.sessionDate;
           status = WorkoutDayStatus.inProgress;
         } else {
           sessionsForDay.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
           final latestClosedSession = sessionsForDay.first;
+          lastSessionDate = latestClosedSession.sessionDate;
 
           final isFullyCompleted =
-              latestClosedSession.completedSetsCount >= day.targetSetsCount;
+              latestClosedSession.completedSetsCount >=
+              (latestClosedSession.totalTargetSets > 0
+                  ? latestClosedSession.totalTargetSets
+                  : day.targetSetsCount);
           status = isFullyCompleted
               ? WorkoutDayStatus.completed
               : WorkoutDayStatus.completedPartial;
         }
       }
 
-      return day.copyWith(status: status);
+      return day.copyWith(status: status, lastSessionDate: lastSessionDate);
     }).toList();
 
     return Right(enrichedDays);

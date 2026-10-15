@@ -5,6 +5,8 @@
 # Secrets — credenciales locales no van al repo
 .env
 .env.local
+.firebase/
+supabase/.temp/
 
 # Miscellaneous
 *.class

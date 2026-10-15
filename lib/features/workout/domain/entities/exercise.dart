@@ -13,5 +13,8 @@ abstract class Exercise with _$Exercise {
     required int targetReps,
     @Default(3) int targetSets,
     @Default(90) int restTimerSeconds,
+    @Default(false) bool isExtra,
+    String? replacesExerciseName,
+    String? replacedByExerciseName,
   }) = _Exercise;
 }

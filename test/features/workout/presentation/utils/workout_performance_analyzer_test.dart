@@ -53,7 +53,7 @@ void main() {
 
   test('historial en regresión no pisa una subida de peso de hoy', () {
     // Las dos sesiones previas regresan (menos reps, mismo peso), pero hoy
-    // subió a 40 kg: no debe aparecer "RENDIMIENTO DECRECIENTE".
+    // subió a 40 kg: no debe aparecer 'RENDIMIENTO DECRECIENTE'.
     final result = WorkoutPerformanceAnalyzer.analyzePerformance(
       [exercise],
       logs('today', 40, 8),
@@ -73,5 +73,38 @@ void main() {
     ).single;
 
     expect(result.feedback, 'WEIGHT_REDUCTION_ADVISED');
+  });
+  test('superar el objetivo prevalece sobre una regresión histórica', () {
+    final result = WorkoutPerformanceAnalyzer.analyzePerformance(
+      [exercise],
+      logs('today', 40, 10),
+      history: [session('s2', 8), session('s1', 5)],
+      historyLogs: {'s2': logs('s2', 42, 7), 's1': logs('s1', 42, 9)},
+    ).single;
+    expect(result.feedback, 'PROGRESSIVE_OVERLOAD');
+    expect(result.recommendation.toLowerCase(), isNot(contains('bajar')));
+  });
+
+  test(
+    'subir sobre el objetivo con menos reps no se invalida por el historial',
+    () {
+      final result = WorkoutPerformanceAnalyzer.analyzePerformance(
+        [exercise],
+        logs('today', 40, 8),
+        history: [session('s2', 8), session('s1', 5)],
+        historyLogs: {'s2': logs('s2', 42, 7), 's1': logs('s1', 42, 9)},
+      ).single;
+      expect(result.feedback, 'HEAVIER_CONSOLIDATE');
+    },
+  );
+
+  test('series pendientes no reciben un consejo de bajar por historial', () {
+    final result = WorkoutPerformanceAnalyzer.analyzePerformance(
+      [exercise],
+      logs('today', 38, 7).take(1).toList(),
+      history: [session('s2', 8), session('s1', 5)],
+      historyLogs: {'s2': logs('s2', 38, 7), 's1': logs('s1', 38, 9)},
+    ).single;
+    expect(result.feedback, 'IN_PROGRESS');
   });
 }

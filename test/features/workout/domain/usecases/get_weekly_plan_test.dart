@@ -70,6 +70,7 @@ void main() {
 
     final days = result.getOrElse((_) => []);
     expect(days.first.status, WorkoutDayStatus.inProgress);
+    expect(days.first.lastSessionDate, DateTime(2024, 1, 1));
   });
 
   test('marca completed cuando la sesion cerrada cumple objetivo', () async {
@@ -111,6 +112,8 @@ void main() {
 
     final days = result.getOrElse((_) => []);
     expect(days.first.status, WorkoutDayStatus.completed);
+    // Programado el lunes, realizado el martes: se conserva la fecha real.
+    expect(days.first.lastSessionDate, DateTime(2024, 1, 2));
   });
 
   test(
@@ -154,6 +157,7 @@ void main() {
 
       final days = result.getOrElse((_) => []);
       expect(days.first.status, WorkoutDayStatus.completedPartial);
+      expect(days.first.lastSessionDate, DateTime(2024, 1, 3));
     },
   );
 

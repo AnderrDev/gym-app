@@ -220,6 +220,17 @@ class _DashboardPageState extends State<DashboardPage> {
               onNextWeek: () => _changeWeek(1),
               onOpenSelectedRoutineStats: _openSelectedRoutineStats,
               onOpenDay: _openRoutineDay,
+              onCurrentWeek: () {
+                final auth = context.read<AuthBloc>().state;
+                if (auth is Authenticated) {
+                  context.read<DashboardBloc>().add(
+                    ChangeWeek(
+                      userId: auth.user.id,
+                      weekStart: _weekStartOf(DateTime.now()),
+                    ),
+                  );
+                }
+              },
             );
           },
         ),

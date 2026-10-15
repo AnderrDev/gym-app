@@ -26,6 +26,7 @@ class ExerciseCard extends StatefulWidget {
   final Exercise exercise;
   final String sessionId;
   final List<SetLog> initialCompletedSets;
+  final List<SetLog> initialDrafts;
   final SetLog? lastPerformance;
   final void Function(SetLog)? onSetAdded;
   final void Function(int setIndex)? onSetRemoved;
@@ -38,6 +39,7 @@ class ExerciseCard extends StatefulWidget {
     required this.exercise,
     required this.sessionId,
     this.initialCompletedSets = const [],
+    this.initialDrafts = const [],
     this.lastPerformance,
     this.onSetAdded,
     this.onSetRemoved,
@@ -184,7 +186,15 @@ class _ExerciseCardState extends State<ExerciseCard>
   ///      la serie 1, la 2 arranca con ese peso.
   ///   4. El objetivo de la rutina; si no tiene peso, la última performance.
   ({double weight, int reps}) _prefillFor(int setNumber) {
-    final known = _completedSets[setNumber] ?? _drafts[setNumber];
+    final persisted = widget.initialDrafts
+        .where(
+          (l) =>
+              l.sessionId == widget.sessionId &&
+              l.exerciseId == widget.exercise.id &&
+              l.setIndex == setNumber,
+        )
+        .firstOrNull;
+    final known = _completedSets[setNumber] ?? persisted ?? _drafts[setNumber];
     if (known != null) {
       return (weight: known.actualWeight, reps: known.actualReps);
     }
@@ -199,7 +209,8 @@ class _ExerciseCardState extends State<ExerciseCard>
     }
     final ex = widget.exercise;
     final last = widget.lastPerformance;
-    if (ex.targetWeight <= 0 && last != null && last.actualWeight > 0) {
+    if (ex.targetWeight <= 0 && !ex.isExtra && ex.replacesExerciseName == null &&
+        last != null && last.actualWeight > 0) {
       return (weight: last.actualWeight, reps: last.actualReps);
     }
     return (weight: ex.targetWeight, reps: ex.targetReps);

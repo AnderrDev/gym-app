@@ -13,6 +13,9 @@ class ExerciseModel {
   final int targetReps;
   final int targetSets;
   final int restTimerSeconds;
+  final bool isExtra;
+  final String? replacesExerciseName;
+  final String? replacedByExerciseName;
 
   const ExerciseModel({
     required this.id,
@@ -23,6 +26,9 @@ class ExerciseModel {
     required this.targetReps,
     this.targetSets = 3,
     this.restTimerSeconds = 90,
+    this.isExtra = false,
+    this.replacesExerciseName,
+    this.replacedByExerciseName,
   });
 
   factory ExerciseModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +58,9 @@ class ExerciseModel {
       targetReps: json['target_reps'] as int? ?? 10,
       targetSets: json['target_sets'] as int? ?? 3,
       restTimerSeconds: json['rest_timer_seconds'] as int? ?? 90,
+      isExtra: json['is_extra'] as bool? ?? false,
+      replacesExerciseName: json['replaces_exercise_name'] as String?,
+      replacedByExerciseName: json['replaced_by_exercise_name'] as String?,
     );
   }
 
@@ -65,6 +74,9 @@ class ExerciseModel {
       targetReps: entity.targetReps,
       targetSets: entity.targetSets,
       restTimerSeconds: entity.restTimerSeconds,
+      isExtra: entity.isExtra,
+      replacesExerciseName: entity.replacesExerciseName,
+      replacedByExerciseName: entity.replacedByExerciseName,
     );
   }
 
@@ -78,6 +90,9 @@ class ExerciseModel {
       'target_reps': targetReps,
       'target_sets': targetSets,
       'rest_timer_seconds': restTimerSeconds,
+      'is_extra': isExtra,
+      'replaces_exercise_name': replacesExerciseName,
+      'replaced_by_exercise_name': replacedByExerciseName,
     };
   }
 
@@ -90,5 +105,8 @@ class ExerciseModel {
     targetReps: targetReps,
     targetSets: targetSets,
     restTimerSeconds: restTimerSeconds,
+    isExtra: isExtra,
+    replacesExerciseName: replacesExerciseName,
+    replacedByExerciseName: replacedByExerciseName,
   );
 }

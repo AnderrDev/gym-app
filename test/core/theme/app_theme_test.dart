@@ -6,10 +6,7 @@ import 'package:gym_flutter/core/theme/app_theme.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 
 void main() {
-  // Los builders de AppTheme invocan GoogleFonts.*TextTheme, que dispara
-  // fetches de red asíncronos. En tests usamos `testWidgets` para que el
-  // binding tolere esos errores async ya conocidos (mismo patrón que el
-  // resto de los widget tests del repo).
+  // La tipografía viene del bundle; construir un tema no necesita red.
   group('AppTheme', () {
     testWidgets('light() expone AppPalette light y brightness=light', (
       tester,
