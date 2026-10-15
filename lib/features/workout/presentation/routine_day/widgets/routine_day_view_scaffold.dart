@@ -22,7 +22,7 @@ import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/ro
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_error_state.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_phase.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_prestart_view.dart';
-import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_status_strip.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_completed_view.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/workout_performance_analyzer.dart';
 
 /// Render del día de rutina. Consume un `RoutineDayPhase` (view model) para
@@ -82,6 +82,27 @@ class RoutineDayViewScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loading = phase;
+    if (loading is RoutineDayLoadingPhase) {
+      return Scaffold(
+        backgroundColor: context.colors.background,
+        body: SizedBox.expand(
+          child: Center(
+            child: Semantics(
+              liveRegion: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AppSpinner.large(),
+                  const SizedBox(height: Spacing.lg),
+                  Text(loading.message, style: context.text.bodyLarge),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final exercises = _exercisesOf(phase);
     final recentSessions = _recentSessionsOf(phase);
     final recentSessionsLogs = _recentSessionsLogsOf(phase);
@@ -100,7 +121,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
           lastSession: lastSession,
           lastLogs: lastLogs,
           exercises: exercises,
-          isActive: isActive,
+          isActive: isActive && !effectiveReadOnly,
           totalVolume: totalVolume,
           completedSets: completedTargetSets(exercises, currentSessionLogs),
           // `routineDay.targetSetsCount` viene en 0 cuando el day se cargó por
@@ -116,22 +137,14 @@ class RoutineDayViewScaffold extends StatelessWidget {
                 }
               : null,
         ),
-        // Strip solo visible para mostrar el badge de lectura/completado.
-        // El volumen activo se movió al chip del app bar.
-        if (effectiveReadOnly)
-          RoutineDayStatusStrip(
-            isWorkoutStarted: false,
-            totalVolume: totalVolume,
-            effectiveReadOnly: effectiveReadOnly,
-            isCompleted: isCompleted,
-          ),
         ..._buildContentSlivers(context),
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
       ],
     );
 
     return Scaffold(
-      body: isActive
+      backgroundColor: context.colors.background,
+      body: isActive && !effectiveReadOnly
           ? SafeArea(
               bottom: false,
               child: Column(
@@ -152,7 +165,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
   }
 
   Widget? _buildBottomNavigation(BuildContext context) {
-    if (phase is RoutineDayPrestartPhase) {
+    if (phase is RoutineDayPrestartPhase && !effectiveReadOnly) {
       final prestart = phase as RoutineDayPrestartPhase;
       return _PrestartBottomBar(
         locked: prestart.hasAnotherActiveSession,
@@ -166,11 +179,6 @@ class RoutineDayViewScaffold extends StatelessWidget {
 
   List<Widget> _buildContentSlivers(BuildContext context) {
     final current = phase;
-    if (current is RoutineDayLoadingPhase) {
-      return const [
-        SliverFillRemaining(child: Center(child: AppSpinner.large())),
-      ];
-    }
     if (current is RoutineDayErrorPhase) {
       return [
         SliverFillRemaining(
@@ -196,6 +204,17 @@ class RoutineDayViewScaffold extends StatelessWidget {
       ];
     }
     if (current is RoutineDayActivePhase) {
+      if (effectiveReadOnly) {
+        return [
+          SliverToBoxAdapter(
+            child: RoutineDayCompletedView(
+              exercises: current.exercises,
+              logs: currentSessionLogs,
+              totalVolume: totalVolume,
+            ),
+          ),
+        ];
+      }
       final liveAnalysis = WorkoutPerformanceAnalyzer.analyzePerformance(
         current.exercises,
         currentSessionLogs,
@@ -286,11 +305,24 @@ class _PrestartBottomBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: AppButton(
-          label: locked ? 'Tienes una sesión en curso' : 'Entrenar hoy',
-          uppercaseLabel: false,
-          icon: locked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-          onPressed: locked ? null : onStartWorkout,
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                label: locked
+                    ? 'Tienes una sesión en curso'
+                    : 'Iniciar entrenamiento',
+                uppercaseLabel: false,
+                icon: locked
+                    ? Icons.lock_outline_rounded
+                    : Icons.play_arrow_rounded,
+                onPressed: locked ? null : onStartWorkout,
+              ),
+            ),
+          ),
         ),
       ),
     );

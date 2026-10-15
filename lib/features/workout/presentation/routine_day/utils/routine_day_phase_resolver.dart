@@ -18,7 +18,11 @@ RoutineDayPhase resolveRoutineDayPhase({
     );
   }
   if (active.isStarting || active.isFinishing) {
-    return const RoutineDayLoadingPhase();
+    return RoutineDayLoadingPhase(
+      message: active.isFinishing
+          ? 'Guardando entrenamiento…'
+          : 'Iniciando entrenamiento…',
+    );
   }
   if (active.isRunning && active.session != null) {
     return RoutineDayActivePhase(

@@ -48,6 +48,8 @@ class RoutineDayAppBar extends StatelessWidget {
       return SliverAppBar(
         pinned: true,
         backgroundColor: context.colors.background,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
@@ -84,72 +86,45 @@ class RoutineDayAppBar extends StatelessWidget {
         ),
       );
     }
-    // Prestart / lectura: mantenemos el hero con gradiente.
     return SliverAppBar(
-      expandedHeight: 132,
       pinned: true,
       backgroundColor: context.colors.background,
+      surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(
-          Icons.close_rounded,
-          color: context.colors.textPrimary,
-          size: 24,
-        ),
+        icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: 'Volver',
         onPressed: onClose,
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            routineDay.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            dateLabel,
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ],
       ),
       actions: [
         if (lastSession != null)
           IconButton(
-            icon: Icon(
-              Icons.history_rounded,
-              color: context.colors.primary,
-              size: 22,
-            ),
-            tooltip: 'Ver última sesión',
+            icon: const Icon(Icons.history_rounded),
+            tooltip: 'Ver sesiones anteriores',
             onPressed: () =>
                 onShowLastSessionDetails(lastSession!, lastLogs, exercises),
           ),
-        const SizedBox(width: 4),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        centerTitle: false,
-        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              routineDay.name.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.headlineMedium?.copyWith(
-                fontSize: 15,
-                letterSpacing: 1.2,
-              ),
-            ),
-            Text(
-              dateLabel,
-              style: context.text.labelMedium?.copyWith(
-                color: context.colors.textSecondary,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                context.colors.primary.withValues(alpha: 0.1),
-                context.colors.background,
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -218,7 +193,7 @@ class _ActiveBottomBar extends StatelessWidget {
           Row(
             children: [
               Text(
-                '$completedSets/$totalSets series',
+                'En curso · $completedSets/$totalSets series',
                 style: context.text.labelMedium?.copyWith(
                   color: context.colors.textPrimary,
                   fontWeight: FontWeight.w700,

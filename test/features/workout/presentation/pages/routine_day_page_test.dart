@@ -283,7 +283,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.text('Entrenar hoy'), findsOneWidget);
+    expect(find.text('Iniciar entrenamiento'), findsOneWidget);
     expect(find.text('Press Banca'), findsOneWidget);
   });
 
@@ -302,16 +302,100 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    await tester.tap(find.text('Entrenar hoy'));
-    // _onStartWorkout `await`-ea NotificationService.requestPermission()
-    // antes de despachar StartActiveWorkout. Esperamos el microtask para
-    // que el dispatch ocurra antes del verify.
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Iniciar entrenamiento'));
+    await tester.pump();
 
     verify(
       () => activeWorkoutBloc.add(any(that: isA<StartActiveWorkout>())),
     ).called(1);
   });
+
+  for (final status in [
+    ActiveWorkoutStatus.idle,
+    ActiveWorkoutStatus.starting,
+  ]) {
+    testWidgets('carga ocupa toda la pantalla: $status', (tester) async {
+      when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+      when(
+        () => activeWorkoutBloc.state,
+      ).thenReturn(ActiveWorkoutState(status: status));
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      expect(find.byType(SliverAppBar), findsNothing);
+      expect(
+        find.text(
+          status == ActiveWorkoutStatus.starting
+              ? 'Iniciando entrenamiento…'
+              : 'Cargando entrenamiento…',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Iniciar entrenamiento'), findsNothing);
+    });
+  }
+
+  testWidgets('inicio bloquea el segundo toque mientras pide permisos', (
+    tester,
+  ) async {
+    final permission = Completer<bool>();
+    when(
+      () => notificationService.requestPermission(),
+    ).thenAnswer((_) => permission.future);
+    when(() => routineDayBloc.state).thenReturn(
+      const RoutineDayState(
+        status: RoutineDayStatus.ready,
+        exercises: [tExercise],
+      ),
+    );
+    when(() => activeWorkoutBloc.state).thenReturn(const ActiveWorkoutState());
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await tester.tap(find.text('Iniciar entrenamiento'));
+    await tester.pump();
+    expect(find.text('Iniciando entrenamiento…'), findsOneWidget);
+    expect(find.text('Iniciar entrenamiento'), findsNothing);
+    permission.complete(true);
+    await tester.pump();
+    verify(
+      () => activeWorkoutBloc.add(any(that: isA<StartActiveWorkout>())),
+    ).called(1);
+  });
+
+  testWidgets(
+    'sesión cerrada muestra todos los ejercicios y series sin modo de edición',
+    (tester) async {
+      when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+      when(() => activeWorkoutBloc.state).thenReturn(
+        ActiveWorkoutState(
+          status: ActiveWorkoutStatus.running,
+          session: tSession.copyWith(completedAt: DateTime(2023, 1, 1, 12)),
+          exercises: [
+            tExercise,
+            tExercise.copyWith(id: 'e2', name: 'Aperturas'),
+          ],
+          setLogs: const [
+            SetLog(
+              sessionId: 's1',
+              exerciseId: 'e1',
+              setIndex: 1,
+              actualWeight: 65,
+              actualReps: 9,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      expect(find.text('Entrenamiento finalizado'), findsOneWidget);
+      expect(find.text('Press Banca'), findsOneWidget);
+      expect(find.text('Aperturas'), findsOneWidget);
+      expect(find.text('Serie 1 · 65 kg × 9 reps'), findsOneWidget);
+      expect(find.text('Sin series registradas'), findsOneWidget);
+      expect(find.byType(PageView), findsNothing);
+      expect(find.text('FINALIZAR'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('estado running renderiza ExerciseCard y FINALIZAR', (
     tester,

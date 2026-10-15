@@ -15,7 +15,12 @@ sealed class RoutineDayPhase extends Equatable {
 }
 
 class RoutineDayLoadingPhase extends RoutineDayPhase {
-  const RoutineDayLoadingPhase();
+  const RoutineDayLoadingPhase({this.message = 'Cargando entrenamiento…'});
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
 }
 
 class RoutineDayErrorPhase extends RoutineDayPhase {

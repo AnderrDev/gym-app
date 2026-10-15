@@ -53,6 +53,7 @@ class RoutineDayPage extends StatefulWidget {
 
 class _RoutineDayPageState extends State<RoutineDayPage> {
   late final RestTimerController _restController;
+  bool _startRequested = false;
 
   @override
   void initState() {
@@ -94,13 +95,21 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   Future<void> _onStartWorkout() async {
+    if (_startRequested) return;
     final routineState = context.read<RoutineDayBloc>().state;
-    if (routineState.status != RoutineDayStatus.ready) return;
+    final activeState = context.read<ActiveWorkoutBloc>().state;
+    if (routineState.status != RoutineDayStatus.ready ||
+        routineState.hasAnotherActiveSession ||
+        activeState.isStarting ||
+        activeState.isRunning) {
+      return;
+    }
+    setState(() => _startRequested = true);
     unawaited(HapticFeedback.heavyImpact());
-    // Pedimos permiso de notis al primer arranque — contexto claro (cronómetro
-    // en lock screen). Si se deniega seguimos, sólo nos perdemos la noti.
-    await di.sl<NotificationService>().requestPermission();
-    if (!mounted) return;
+    // El permiso del cronómetro no debe retrasar el inicio ni bloquear la web.
+    unawaited(
+      di.sl<NotificationService>().requestPermission().catchError((_) => false),
+    );
     context.read<ActiveWorkoutBloc>().add(
       StartActiveWorkout(
         userId: routineState.userId ?? widget.userId,
@@ -302,6 +311,9 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               p.status != c.status || p.actionErrorNonce != c.actionErrorNonce,
           listener: (context, state) {
             if (!mounted) return;
+            if (_startRequested && state.status != ActiveWorkoutStatus.idle) {
+              setState(() => _startRequested = false);
+            }
             final actionError = state.actionError;
             if (actionError != null) {
               AppSnackBar.error(context, actionError);
@@ -325,13 +337,19 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 return previous != current;
               },
               builder: (context, routineState) {
-                final phase = resolveRoutineDayPhase(
-                  routine: routineState,
-                  active: activeState,
-                  fallbackUserId: widget.userId,
-                  fallbackRoutineDayId: widget.routineDay.id,
-                  fallbackSessionDate: widget.sessionDate,
-                );
+                final phase =
+                    _startRequested &&
+                        activeState.status == ActiveWorkoutStatus.idle
+                    ? const RoutineDayLoadingPhase(
+                        message: 'Iniciando entrenamiento…',
+                      )
+                    : resolveRoutineDayPhase(
+                        routine: routineState,
+                        active: activeState,
+                        fallbackUserId: widget.userId,
+                        fallbackRoutineDayId: widget.routineDay.id,
+                        fallbackSessionDate: widget.sessionDate,
+                      );
                 final session = activeState.session;
                 final isCompleted = session?.completedAt != null;
                 final totalVolume = activeState.setLogs.fold<double>(
