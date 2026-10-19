@@ -180,6 +180,11 @@ abstract class WorkoutRepository {
     List<CoachingAnalysis>? coachingAnalysis,
   });
 
+  /// Coaching generado por el servidor al finalizar la sesión.
+  Future<Either<Failure, List<CoachingAnalysis>>> getSessionCoaching(
+    String sessionId,
+  );
+
   /// Gets the historical logs for an exercise
   Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(
     String userId,

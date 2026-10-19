@@ -255,6 +255,22 @@ class WorkoutSessionRemoteDataSource {
     }
   }
 
+  /// Coaching que `finalize_workout_session_v1` guardó en la sesión.
+  /// `null` si aún no hay (generación fallida o sesión abierta).
+  Future<List<CoachingAnalysis>?> getSessionCoaching(String sessionId) async {
+    final row = await client
+        .from('workout_sessions')
+        .select('coaching_analysis')
+        .eq('id', sessionId)
+        .maybeSingle();
+    final raw = row?['coaching_analysis'];
+    if (raw is! List) return null;
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(CoachingAnalysis.fromJson)
+        .toList();
+  }
+
   Future<void> _invokeFinalize(Map<String, dynamic> payload) async {
     await _invoker.invoke(
       functionName: 'finalize_workout_session_v1',

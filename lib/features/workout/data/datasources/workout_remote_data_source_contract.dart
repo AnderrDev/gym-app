@@ -69,6 +69,7 @@ abstract class WorkoutRemoteDataSource {
     String sessionId, {
     List<CoachingAnalysis>? coachingAnalysis,
   });
+  Future<List<CoachingAnalysis>?> getSessionCoaching(String sessionId);
   Future<WeeklyInsights> getWeeklyInsights({
     required String routineId,
     required DateTime weekStart,

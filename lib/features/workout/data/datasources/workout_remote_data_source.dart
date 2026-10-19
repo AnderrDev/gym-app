@@ -244,6 +244,10 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   );
 
   @override
+  Future<List<CoachingAnalysis>?> getSessionCoaching(String sessionId) =>
+      _sessions.getSessionCoaching(sessionId);
+
+  @override
   Future<void> finishWorkoutSession(
     String sessionId, {
     List<CoachingAnalysis>? coachingAnalysis,
