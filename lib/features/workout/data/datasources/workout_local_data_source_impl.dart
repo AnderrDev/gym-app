@@ -321,7 +321,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     final row = await _dao.readWeeklyInsight(
       userId,
       routineId,
-      _isoDate(weekStart.toUtc()),
+      _isoDate(weekStart),
     );
     if (row == null) return null;
     final decoded = jsonDecode(row.payloadJson);
@@ -340,7 +340,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
       CachedWeeklyInsightsCompanion.insert(
         userId: userId,
         routineId: routineId,
-        weekStart: _isoDate(insights.weekStart.toUtc()),
+        weekStart: _isoDate(insights.weekStart),
         payloadJson: jsonEncode(insights.toJson()),
         fetchedAt: now,
       ),
@@ -355,8 +355,8 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   ) async {
     final rows = await _dao.readWeekSessions(
       userId,
-      _isoDate(weekStart.toUtc()),
-      _isoDate(weekEnd.toUtc()),
+      _isoDate(weekStart),
+      _isoDate(weekEnd),
     );
     return rows.map(_mapSession).toList(growable: false);
   }
@@ -422,6 +422,10 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     );
   }
 
+  /// Fecha de calendario tal cual (sin `toUtc()`): `toUtc()` sobre la
+  /// medianoche local del lunes en España daba el domingo, y la consulta
+  /// offline de la semana se desplazaba un día respecto a cómo se guardan
+  /// las sesiones (`session_date` local).
   String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
