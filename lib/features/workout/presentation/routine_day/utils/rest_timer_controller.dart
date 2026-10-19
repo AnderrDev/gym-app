@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
 
@@ -30,7 +31,10 @@ class RestTimerController {
     required this.notifications,
     this.onNaturalEnd,
     this.clock = const SystemClock(),
-  });
+    @visibleForTesting bool? scheduledAlertOverride,
+  }) : _scheduledAlertOverride = scheduledAlertOverride;
+
+  final bool? _scheduledAlertOverride;
 
   final ActiveWorkoutNotifier notifier;
   final LiveActivitiesBridge liveActivities;
@@ -44,6 +48,14 @@ class RestTimerController {
 
   Timer? _timer;
   DateTime? _endsAt;
+
+  /// iOS sin Live Activity: la app se suspende con la pantalla bloqueada y
+  /// ni el Timer ni `showRestEnded` llegan a tiempo, así que el fin del
+  /// descanso se programa en el sistema. Con Live Activity ya avisa su
+  /// `AlertConfig`; en Android el proceso sigue vivo y avisa el Timer.
+  bool get _usesScheduledAlert =>
+      _scheduledAlertOverride ??
+      (Capabilities.supportsLiveActivities && !liveActivities.isAvailable);
 
   void dispose() {
     _timer?.cancel();
@@ -64,6 +76,9 @@ class RestTimerController {
       totalRestSeconds: seconds,
     );
     unawaited(notifier.onRestStarted(duration: Duration(seconds: seconds)));
+    if (_usesScheduledAlert) {
+      unawaited(notifications.scheduleRestEnded(Duration(seconds: seconds)));
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
 
@@ -100,7 +115,7 @@ class RestTimerController {
     // si la Live Activity está activa, su `AlertConfig` ya muestra
     // banner+sonido en iOS → omitimos el push del sistema. En Android (sin
     // LA) sí firamos el push tradicional.
-    if (!liveActivities.isAvailable) {
+    if (!liveActivities.isAvailable && !_usesScheduledAlert) {
       unawaited(notifications.showRestEnded());
     }
     HapticFeedback.vibrate();
@@ -113,7 +128,11 @@ class RestTimerController {
     _endsAt = null;
     snapshot.value = const RestTimerSnapshot.idle();
     // En el fin natural ya vibró `_onNaturalEnd`; no encadenar otra.
-    if (!naturalEnd) HapticFeedback.heavyImpact();
+    if (!naturalEnd) {
+      HapticFeedback.heavyImpact();
+      // Descanso saltado: la alerta programada ya no toca.
+      if (_usesScheduledAlert) unawaited(notifications.cancelRestEnded());
+    }
     unawaited(notifier.onRestEnded(naturalEnd: naturalEnd));
   }
 
@@ -143,5 +162,10 @@ class RestTimerController {
     unawaited(
       notifier.onRestStarted(duration: Duration(seconds: newRemaining)),
     );
+    if (_usesScheduledAlert) {
+      unawaited(
+        notifications.scheduleRestEnded(Duration(seconds: newRemaining)),
+      );
+    }
   }
 }

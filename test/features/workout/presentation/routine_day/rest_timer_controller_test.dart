@@ -73,4 +73,55 @@ void main() {
     expect(controller.snapshot.value.isResting, isFalse);
     verifyNever(() => notifier.onRestStarted(duration: any(named: 'duration')));
   });
+
+  group('alerta programada (iOS sin Live Activity)', () {
+    late RestTimerController scheduled;
+
+    setUp(() {
+      when(() => liveActivities.isAvailable).thenReturn(false);
+      when(
+        () => notifications.scheduleRestEnded(any()),
+      ).thenAnswer((_) async {});
+      when(() => notifications.cancelRestEnded()).thenAnswer((_) async {});
+      when(() => notifications.showRestEnded()).thenAnswer((_) async {});
+      scheduled = RestTimerController(
+        notifier: notifier,
+        liveActivities: liveActivities,
+        notifications: notifications,
+        clock: clock,
+        scheduledAlertOverride: true,
+      );
+    });
+
+    tearDown(() => scheduled.dispose());
+
+    test('start programa la alerta en el sistema', () {
+      scheduled.start(90);
+      verify(
+        () => notifications.scheduleRestEnded(const Duration(seconds: 90)),
+      ).called(1);
+    });
+
+    test('adjust la reprograma con el nuevo restante', () {
+      scheduled.start(60);
+      scheduled.adjust(15);
+      verify(
+        () => notifications.scheduleRestEnded(const Duration(seconds: 75)),
+      ).called(1);
+    });
+
+    test('saltar el descanso la cancela', () {
+      scheduled.start(60);
+      scheduled.stop();
+      verify(() => notifications.cancelRestEnded()).called(1);
+    });
+
+    test('el fin natural no duplica la alerta ya programada', () {
+      scheduled.start(30);
+      clock.set(clock.now().add(const Duration(seconds: 31)));
+      scheduled.tick();
+      verifyNever(() => notifications.showRestEnded());
+      verifyNever(() => notifications.cancelRestEnded());
+    });
+  });
 }
