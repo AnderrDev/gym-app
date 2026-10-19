@@ -44,7 +44,7 @@ class DayEditorEmptyState extends StatelessWidget {
           Text(
             onTap == null
                 ? 'Este día todavía no tiene ejercicios.'
-                : 'Añadí ejercicios desde el catálogo para empezar a armar este día.',
+                : 'Añade ejercicios desde el catálogo para empezar a armar este día.',
             textAlign: TextAlign.center,
             style: context.text.bodyMedium?.copyWith(
               color: context.colors.textSecondary,

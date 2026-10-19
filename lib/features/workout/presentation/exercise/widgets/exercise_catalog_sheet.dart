@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_tile.dart';
+import 'package:gym_flutter/core/utils/search_text.dart';
 
 /// Bottom sheet de selección de ejercicios desde el catálogo real (Supabase).
 ///
@@ -48,21 +49,28 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
   }
 
   List<ExerciseCatalogItem> get _filteredExercises {
-    final query = _searchQuery.toLowerCase();
+    final query = normalizeForSearch(_searchQuery);
     return widget.catalog.where((e) {
       final matchesCategory =
           _selectedCategory == _allCategory ||
           e.muscleGroup == _selectedCategory;
+      // Sin tildes y también por grupo muscular ("pecho" → press banca).
       final matchesSearch =
-          query.isEmpty || e.name.toLowerCase().contains(query);
+          query.isEmpty ||
+          normalizeForSearch(e.name).contains(query) ||
+          normalizeForSearch(e.muscleGroup).contains(query);
       return matchesCategory && matchesSearch;
     }).toList();
   }
 
+  /// En el orden en que se tocaron (el `Set` conserva inserción): es el
+  /// orden en que se añaden al día.
   List<ExerciseCatalogItem> _buildResult() {
-    return widget.catalog
-        .where((e) => _selectedIds.contains(e.id))
-        .toList(growable: false);
+    final byId = {for (final e in widget.catalog) e.id: e};
+    return [
+      for (final id in _selectedIds)
+        if (byId[id] != null) byId[id]!,
+    ];
   }
 
   @override
@@ -297,7 +305,9 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
         ),
         child: Text(
           hasSelection
-              ? 'Añadir ${_selectedIds.length} ejercicios'
+              ? (_selectedIds.length == 1
+                    ? 'Añadir 1 ejercicio'
+                    : 'Añadir ${_selectedIds.length} ejercicios')
               : 'Selecciona ejercicios',
           style: TextStyle(
             color: hasSelection

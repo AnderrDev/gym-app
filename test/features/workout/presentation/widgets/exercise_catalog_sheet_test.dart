@@ -78,7 +78,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('1 seleccionados'), findsOneWidget);
-    expect(find.text('Añadir 1 ejercicios'), findsOneWidget);
+    expect(find.text('Añadir 1 ejercicio'), findsOneWidget);
 
     await tester.tap(find.text('Press Inclinado Manc.'));
     await tester.pump();
@@ -140,7 +140,7 @@ void main() {
       await tester.tap(find.text('Press de Banca Plano'));
       await tester.pump();
 
-      await tester.tap(find.text('Añadir 1 ejercicios'));
+      await tester.tap(find.text('Añadir 1 ejercicio'));
       await tester.pumpAndSettle();
 
       expect(result, isNotNull);

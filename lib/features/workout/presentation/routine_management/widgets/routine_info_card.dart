@@ -153,7 +153,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                     Text(
                       widget.isPublic
                           ? 'Visible para toda la comunidad'
-                          : 'Solo vos podés usarla',
+                          : 'Solo tú puedes usarla',
                       style: context.text.labelMedium?.copyWith(
                         color: context.colors.textSecondary,
                         fontSize: 10,

@@ -89,7 +89,7 @@ class RoutineDayCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         exerciseCount == 0
-                            ? 'Sin ejercicios · tocá para añadir'
+                            ? 'Sin ejercicios · toca para añadir'
                             : '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
                         style: context.text.labelMedium?.copyWith(
                           color: exerciseCount == 0

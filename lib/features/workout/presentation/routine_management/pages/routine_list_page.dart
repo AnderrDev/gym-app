@@ -26,6 +26,7 @@ import 'package:gym_flutter/features/workout/presentation/routine_management/wid
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_search_bar.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_skeleton.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_summary_header.dart';
+import 'package:gym_flutter/core/ui/feedback/app_dialog.dart';
 
 class RoutineListPage extends StatefulWidget {
   const RoutineListPage({super.key});
@@ -70,15 +71,33 @@ class _RoutineListPageState extends State<RoutineListPage> {
     context.read<RoutineManagementBloc>().add(LoadAllRoutines(userId: userId));
   }
 
-  void _onAssignRoutine(String routineId) {
+  Future<void> _onAssignRoutine(String routineId) async {
     final authState = context.read<AuthBloc>().state;
-    if (authState is Authenticated) {
-      HapticFeedback.heavyImpact();
-      AppLoader.show(context, message: 'Activando rutina...');
-      context.read<RoutineManagementBloc>().add(
-        AssignRoutineToUser(userId: authState.user.id, routineId: routineId),
+    if (authState is! Authenticated) return;
+    final state = context.read<RoutineManagementBloc>().state;
+    final current = state.activeRoutineId;
+    if (current != null && current != routineId) {
+      // Activar sustituye la rutina activa y lleva a HOY: que no pase por un
+      // toque accidental.
+      final currentName = state.routines
+          .where((r) => r.id == current)
+          .map((r) => r.name)
+          .firstOrNull;
+      final ok = await AppDialog.confirm(
+        context,
+        title: 'Cambiar de rutina',
+        message: currentName == null
+            ? 'Esta rutina sustituirá a tu rutina activa.'
+            : 'Esta rutina sustituirá a "$currentName" como tu rutina activa.',
+        confirmLabel: 'Activar',
       );
+      if (ok != true || !mounted) return;
     }
+    unawaited(HapticFeedback.heavyImpact());
+    AppLoader.show(context, message: 'Activando rutina...');
+    context.read<RoutineManagementBloc>().add(
+      AssignRoutineToUser(userId: authState.user.id, routineId: routineId),
+    );
   }
 
   void _onForkRoutine(String routineId) {

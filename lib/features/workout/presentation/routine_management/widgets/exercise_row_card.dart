@@ -185,10 +185,21 @@ class ExerciseRowCard extends StatelessWidget {
                     ),
                   ),
                 if (onRemove != null)
-                  Icon(
-                    Icons.drag_indicator_rounded,
-                    color: context.colors.textDisabled,
-                    size: 22,
+                  // Arrastre inmediato desde el asa; mantener pulsada la
+                  // tarjeta sigue funcionando.
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Semantics(
+                      label: 'Arrastrar para reordenar',
+                      child: Padding(
+                        padding: const EdgeInsets.all(Spacing.sm),
+                        child: Icon(
+                          Icons.drag_indicator_rounded,
+                          color: context.colors.textSecondary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),

@@ -5,7 +5,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 
-/// Header con resumen visible apenas se entra: "Tenés X rutinas · Activa: Y".
+/// Header con resumen visible apenas se entra: "Tienes X rutinas · Activa: Y".
 /// Si no hay rutina activa el subtítulo cambia al CTA "Activá una para
 /// empezar".
 class RoutineListSummaryHeader extends StatelessWidget {
@@ -70,7 +70,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
                 children: [
                   Text(
                     totalCount == 0
-                        ? 'Aún no tenés rutinas'
+                        ? 'Aún no tienes rutinas'
                         : '$totalCount ${totalCount == 1 ? "rutina" : "rutinas"} disponibles',
                     style: context.text.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w800,
