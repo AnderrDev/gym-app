@@ -34,7 +34,10 @@ Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
   WorkoutSession session,
 ) async {
   final results = await Future.wait([
-    repository.getSessionExercises(session.id),
+    repository.getSessionExercises(
+      session.id,
+      routineDayId: session.routineDayId,
+    ),
     repository.getRecentSessionsForDay(
       userId,
       session.routineDayId,

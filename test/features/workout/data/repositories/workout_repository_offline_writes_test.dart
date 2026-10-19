@@ -9,6 +9,7 @@ import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
 import 'package:gym_flutter/features/workout/data/repositories/workout_repository_impl.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 
@@ -220,6 +221,88 @@ void main() {
           coachingAnalysis: any(named: 'coachingAnalysis'),
         ),
       );
+    });
+  });
+
+  group('finishWorkoutSession con red caída a mitad', () {
+    test(
+      'online pero el POST falla por red: encola en vez de fallar',
+      () async {
+        when(
+          () => remote.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenThrow(const SocketException('sin salida'));
+        final result = await repo.finishWorkoutSession('sess-1');
+        expect(result.isRight(), isTrue);
+        verify(() => local.markSessionCompleted('sess-1', any())).called(1);
+        verify(
+          () => outbox.enqueue(MutationKind.finalizeSession, any()),
+        ).called(1);
+      },
+    );
+
+    test('un error que no es de red se propaga y no encola', () async {
+      when(
+        () => remote.finishWorkoutSession(
+          any(),
+          coachingAnalysis: any(named: 'coachingAnalysis'),
+        ),
+      ).thenThrow(Exception('boom'));
+      final result = await repo.finishWorkoutSession('sess-1');
+      expect(result.isLeft(), isTrue);
+      verifyNever(() => outbox.enqueue(any(), any()));
+    });
+  });
+
+  group('getSessionExercises con fallback al plan cacheado', () {
+    const cached = [
+      Exercise(
+        id: 'e1',
+        routineDayId: tRoutineDayId,
+        name: 'Press',
+        targetMuscle: 'Pecho',
+        targetWeight: 60,
+        targetReps: 8,
+        targetSets: 3,
+      ),
+    ];
+
+    test('offline: usa el plan del día sin llamar al servidor', () async {
+      when(() => conn.isOnline).thenReturn(false);
+      when(
+        () => local.getExercisesForDay(tRoutineDayId),
+      ).thenAnswer((_) async => cached);
+      final result = await repo.getSessionExercises(
+        'local-id',
+        routineDayId: tRoutineDayId,
+      );
+      expect(result.getOrElse((_) => const []), cached);
+      verifyNever(() => remote.getSessionExercises(any()));
+    });
+
+    test('online pero el RPC falla por red: usa el plan cacheado', () async {
+      when(
+        () => remote.getSessionExercises(any()),
+      ).thenThrow(const SocketException('timeout'));
+      when(
+        () => local.getExercisesForDay(tRoutineDayId),
+      ).thenAnswer((_) async => cached);
+      final result = await repo.getSessionExercises(
+        'sess-1',
+        routineDayId: tRoutineDayId,
+      );
+      expect(result.getOrElse((_) => const []), cached);
+    });
+
+    test('sin routineDayId no hay fallback', () async {
+      when(
+        () => remote.getSessionExercises(any()),
+      ).thenThrow(const SocketException('timeout'));
+      final result = await repo.getSessionExercises('sess-1');
+      expect(result.isLeft(), isTrue);
+      verifyNever(() => local.getExercisesForDay(any()));
     });
   });
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/core/ui/molecules/app_error_state.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -184,6 +185,33 @@ void main() {
     verify(
       () => routineDayBloc.add(any(that: isA<LoadRoutineDay>())),
     ).called(1);
+  });
+
+  testWidgets('Reintentar tras fallar el inicio limpia el error y recarga', (
+    tester,
+  ) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      const ActiveWorkoutState(
+        status: ActiveWorkoutStatus.failure,
+        errorMessage: 'No se pudo iniciar el entrenamiento',
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    clearInteractions(routineDayBloc);
+
+    tester.widget<AppErrorState>(find.byType(AppErrorState)).onRetry!();
+    await tester.pump();
+
+    verify(
+      () => activeWorkoutBloc.add(any(that: isA<ResetActiveWorkout>())),
+    ).called(1);
+    verifyInOrder([
+      () => routineDayBloc.add(any(that: isA<ResetRoutineDay>())),
+      () => routineDayBloc.add(any(that: isA<LoadRoutineDay>())),
+    ]);
   });
 
   for (final continuePrevious in [true, false]) {

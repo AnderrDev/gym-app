@@ -1,4 +1,3 @@
-import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
@@ -11,6 +10,7 @@ import 'package:gym_flutter/core/error/exceptions.dart' as core_ex;
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/core/sync/outbox_repository.dart';
 import 'package:gym_flutter/core/sync/sync_worker.dart';
@@ -87,12 +87,32 @@ class WorkoutRepositoryImpl extends WorkoutRepository
 
   @override
   Future<Either<Failure, List<Exercise>>> getSessionExercises(
-    String sessionId,
-  ) => guard(
-    () async => (await remoteDataSource.getSessionExercises(
-      sessionId,
-    )).map((model) => model.toEntity()).toList(),
-  );
+    String sessionId, {
+    String? routineDayId,
+  }) => guard(() async {
+    final canUseCache =
+        _offlineCapable && localDataSource != null && routineDayId != null;
+    // Sin red el RPC no puede responder, y una sesión iniciada offline ni
+    // siquiera existe aún en el servidor: el plan base del día cacheado
+    // basta para entrenar.
+    if (canUseCache && !_isOnline) {
+      final cached = await localDataSource!.getExercisesForDay(routineDayId);
+      if (cached.isNotEmpty) return cached;
+    }
+    try {
+      return (await remoteDataSource.getSessionExercises(
+        sessionId,
+      )).map((model) => model.toEntity()).toList();
+    } catch (e) {
+      if (!canUseCache || mapToFailure(e) is! NetworkFailure) rethrow;
+      final cached = await localDataSource!.getExercisesForDay(routineDayId);
+      if (cached.isEmpty) rethrow;
+      AppLogger.instance.warning(
+        'getSessionExercises: remote failed, cached day plan: $e',
+      );
+      return cached;
+    }
+  });
 
   @override
   Future<Either<Failure, List<Exercise>>> adaptSessionExercise(
@@ -578,10 +598,22 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   }) => guard(() async {
     // Online-first (ver nota en `startWorkoutForDay`).
     if (!_offlineCapable || _isOnline) {
-      await remoteDataSource.finishWorkoutSession(
-        sessionId,
-        coachingAnalysis: coachingAnalysis,
-      );
+      try {
+        await remoteDataSource.finishWorkoutSession(
+          sessionId,
+          coachingAnalysis: coachingAnalysis,
+        );
+      } catch (e) {
+        // Igual que `saveSetLog`: un fallo de red (wifi del gym sin salida,
+        // timeout) no debe dejar al usuario sin poder cerrar el entreno. Se
+        // encola y el SyncWorker lo envía detrás de las series pendientes.
+        if (!_offlineCapable || mapToFailure(e) is! NetworkFailure) rethrow;
+        AppLogger.instance.warning(
+          'finishWorkoutSession: remote failed, outbox: $e',
+        );
+        await _enqueueFinalize(sessionId, coachingAnalysis);
+        return;
+      }
       if (localDataSource != null) {
         try {
           await localDataSource!.markSessionCompleted(
@@ -596,6 +628,13 @@ class WorkoutRepositoryImpl extends WorkoutRepository
       }
       return;
     }
+    await _enqueueFinalize(sessionId, coachingAnalysis);
+  });
+
+  Future<void> _enqueueFinalize(
+    String sessionId,
+    List<CoachingAnalysis>? coachingAnalysis,
+  ) async {
     final completedAt = _clock.now().toUtc();
     await _txn(() async {
       await localDataSource!.markSessionCompleted(sessionId, completedAt);
@@ -605,7 +644,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
       });
     });
     unawaited(syncWorker?.kick());
-  });
+  }
 
   @override
   Future<Either<Failure, WeeklyInsights>> getWeeklyInsights({

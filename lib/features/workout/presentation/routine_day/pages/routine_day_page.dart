@@ -267,13 +267,19 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   void _retry() {
-    context.read<RoutineDayBloc>().add(
-      LoadRoutineDay(
-        userId: widget.userId,
-        routineDayId: widget.routineDay.id,
-        sessionDate: widget.sessionDate,
-      ),
-    );
+    // Si falló iniciar o reanudar, el error lo tiene ActiveWorkoutBloc y
+    // domina la fase: hay que limpiarlo. Reiniciar también RoutineDayBloc
+    // hace que el listener vuelva a ver `existingSession` y reanude.
+    context.read<ActiveWorkoutBloc>().add(const ResetActiveWorkout());
+    context.read<RoutineDayBloc>()
+      ..add(const ResetRoutineDay())
+      ..add(
+        LoadRoutineDay(
+          userId: widget.userId,
+          routineDayId: widget.routineDay.id,
+          sessionDate: widget.sessionDate,
+        ),
+      );
   }
 
   @override

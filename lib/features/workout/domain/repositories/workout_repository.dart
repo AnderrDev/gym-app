@@ -30,15 +30,28 @@ class AddExerciseToDayPayload {
 }
 
 abstract class WorkoutRepository {
-  Future<Either<Failure, List<Exercise>>> getSessionExercises(String sessionId);
+  /// Plan de la sesión. [routineDayId] habilita el fallback offline: si no
+  /// hay red (o la sesión se creó offline y aún no existe en el servidor) se
+  /// devuelve el plan base del día desde la caché.
+  Future<Either<Failure, List<Exercise>>> getSessionExercises(
+    String sessionId, {
+    String? routineDayId,
+  });
   Future<Either<Failure, List<Exercise>>> adaptSessionExercise(
-    String sessionId, String exerciseId, {
-    required int targetSets, required int targetReps,
-    required double targetWeight, String? replaceExerciseId,
+    String sessionId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    String? replaceExerciseId,
   });
   Future<Either<Failure, List<Exercise>>> updateSessionExerciseTarget(
-    String sessionId, String exerciseId, double targetWeight, int targetReps,
+    String sessionId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps,
   );
+
   /// Fetches the routines assigned to a specific user
   Future<Either<Failure, List<Routine>>> getAssignedRoutines(String userId);
 

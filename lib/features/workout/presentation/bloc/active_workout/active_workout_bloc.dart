@@ -91,7 +91,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         event.userId,
         event.routineDayId,
         today,
-      )).getOrElse((_) => throw Exception('No se pudo iniciar la sesión'));
+      )).getOrElse((failure) => throw failure);
 
       // El backend puede devolver una sesión existente cuyo `routineDayId`
       // difiera del solicitado (sesión activa pendiente). Emitimos `failure`
@@ -155,7 +155,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       emit(
         state.copyWith(
           status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al iniciar sesión: $e',
+          errorMessage: _describe('No se pudo iniciar el entrenamiento', e),
         ),
       );
     }
@@ -174,6 +174,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     try {
       final exercises = (await repository.getSessionExercises(
         event.session.id,
+        routineDayId: event.session.routineDayId,
       )).getOrElse((failure) => throw failure);
       final setLogs = (await repository.getSessionSetLogs(
         event.session.id,
@@ -208,7 +209,7 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       emit(
         state.copyWith(
           status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al reanudar sesión: $e',
+          errorMessage: _describe('No se pudo reanudar el entrenamiento', e),
         ),
       );
     }
@@ -422,10 +423,15 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         coachingAnalysis: null,
       );
       if (result.isLeft()) {
+        // La sesión sigue abierta y con sus series: se vuelve al entreno y
+        // se avisa, en vez de una pantalla de error sin salida.
         emit(
           state.copyWith(
-            status: ActiveWorkoutStatus.failure,
-            errorMessage: result.fold((f) => f.message, (_) => 'Error'),
+            status: ActiveWorkoutStatus.running,
+            actionError: _describe(
+              'No se pudo finalizar',
+              result.fold((f) => f, (_) => null),
+            ),
           ),
         );
         return;
@@ -451,10 +457,20 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
     } catch (e) {
       emit(
         state.copyWith(
-          status: ActiveWorkoutStatus.failure,
-          errorMessage: 'Error al finalizar sesión: $e',
+          status: ActiveWorkoutStatus.running,
+          actionError: _describe('No se pudo finalizar', e),
         ),
       );
     }
+  }
+
+  /// Mensaje para el usuario: los `Failure` ya traen texto legible; otras
+  /// excepciones no se muestran en crudo ("Exception: …").
+  String _describe(String action, Object? error) {
+    if (error is Failure && error.message.isNotEmpty) {
+      return '$action: ${error.message}';
+    }
+    AppLogger.instance.warning('$action: $error');
+    return '$action. Revisa tu conexión e inténtalo de nuevo.';
   }
 }

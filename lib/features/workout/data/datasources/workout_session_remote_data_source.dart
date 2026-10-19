@@ -235,6 +235,22 @@ class WorkoutSessionRemoteDataSource {
           .toList();
     }
 
+    try {
+      await _invokeFinalize(payload);
+    } on WorkoutFunctionException catch (e) {
+      if (e.code != 'NOT_FOUND_OR_ALREADY_COMPLETED') rethrow;
+      // Reintento tras perder la respuesta: el servidor ya la cerró. Para
+      // el usuario es éxito, no "ya fue finalizada o no existe".
+      final row = await client
+          .from('workout_sessions')
+          .select('completed_at')
+          .eq('id', sessionId)
+          .maybeSingle();
+      if (row == null || row['completed_at'] == null) rethrow;
+    }
+  }
+
+  Future<void> _invokeFinalize(Map<String, dynamic> payload) async {
     await _invoker.invoke(
       functionName: 'finalize_workout_session_v1',
       body: payload,

@@ -75,7 +75,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => repository.getSessionExercises(any()),
+      () => repository.getSessionExercises(
+        any(),
+        routineDayId: any(named: 'routineDayId'),
+      ),
     ).thenAnswer((_) async => const Right([exerciseA]));
     when(
       () => repository.getLastExercisePerformances(any()),
@@ -232,7 +235,10 @@ void main() {
         isExtra: true,
       );
       when(
-        () => repository.getSessionExercises(sessionId),
+        () => repository.getSessionExercises(
+          sessionId,
+          routineDayId: any(named: 'routineDayId'),
+        ),
       ).thenAnswer((_) async => const Right([exerciseA, extra]));
       when(
         () => repository.getSessionSetLogs(sessionId),
@@ -855,6 +861,33 @@ void main() {
       verify: (b) {
         expect(b.state.status, ActiveWorkoutStatus.finished);
         verify(() => activeSessionService.clear()).called(1);
+      },
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'si falla vuelve al entreno con aviso, sin pantalla de error',
+      build: () {
+        when(
+          () => repository.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('Servidor caído')));
+        return buildBloc()..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+          ),
+        );
+      },
+      act: (b) => b.add(const FinishActiveWorkout(sessionId: sessionId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.status, ActiveWorkoutStatus.running);
+        expect(b.state.session, session);
+        expect(b.state.actionError, 'No se pudo finalizar: Servidor caído');
+        verifyNever(() => activeSessionService.clear());
       },
     );
   });
