@@ -28,8 +28,17 @@ void goToProfile(BuildContext context) => context.go(AppRoutes.profile);
 
 // ── Fullscreen pushes (NO viven dentro del shell) ─────────────────────────
 
+/// El id va también en el query string: `extra` no sobrevive a recargar la
+/// página en web y el editor se abría como "Nueva rutina".
+String routineEditorLocation(String? routineId) => routineId == null
+    ? AppRoutes.routineEditor
+    : Uri(
+        path: AppRoutes.routineEditor,
+        queryParameters: {'id': routineId},
+      ).toString();
+
 Future<bool?> pushRoutineEditor(BuildContext context, {String? routineId}) =>
-    context.push<bool>(AppRoutes.routineEditor, extra: routineId);
+    context.push<bool>(routineEditorLocation(routineId), extra: routineId);
 
 Future<bool?> pushDayEditor(BuildContext context, DayEditorArgs args) =>
     context.push<bool>(AppRoutes.dayEditor, extra: args);

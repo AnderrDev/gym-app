@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/injection_container.dart' show sl;
@@ -39,6 +40,15 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_managemen
 part 'routine_management_bloc_catalog_handlers.dart';
 part 'routine_management_bloc_day_handlers.dart';
 part 'routine_management_bloc_routine_handlers.dart';
+
+/// Día de rutina con un entreno en curso, si lo hay. Borrarlo (o su rutina)
+/// dejaría la sesión abierta colgando de un día inexistente.
+String? _trainingRoutineDayId() => sl.isRegistered<ActiveSessionService>()
+    ? sl<ActiveSessionService>().getContext()?.routineDayId
+    : null;
+
+const _trainingDeleteMessage =
+    'Estás entrenando este día. Finaliza el entreno antes de borrarlo.';
 
 /// Bloc del subdominio "gestión de rutinas": catálogo + edición + CRUD.
 ///

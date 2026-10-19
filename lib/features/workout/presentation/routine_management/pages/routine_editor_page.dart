@@ -7,11 +7,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
-import 'package:gym_flutter/core/routes/app_routes.dart';
+import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/feedback/discard_changes_dialog.dart';
+import 'package:gym_flutter/core/ui/molecules/app_error_state.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -117,7 +118,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           // tiene sentido volver a la vista previa de la ajena.
           GoRouter.of(
             context,
-          ).pushReplacement(AppRoutes.routineEditor, extra: newId);
+          ).pushReplacement(routineEditorLocation(newId), extra: newId);
         }
         return;
       }
@@ -184,12 +185,33 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             // que es "owner" por definición. Mientras no haya llegado el
             // `editingRoutine` consideramos owner=true para no flashear UI de
             // read-only en el primer frame y luego cambiar.
+            // Una rutina sin creador (catálogo/semilla) no es editable: RLS
+            // rechaza update/delete si `creator_id` no es el usuario.
             final loadedCreatorId = state.editingRoutine?.creatorId;
             final isOwner =
-                widget.routineId == null ||
-                loadedCreatorId == null ||
-                loadedCreatorId == userId;
+                widget.routineId == null || loadedCreatorId == userId;
             final isDirty = state.isDirty && isOwner;
+
+            // Primera carga de una rutina existente: sin datos no se pinta el
+            // formulario (escribir un nombre y guardar la sobrescribía).
+            if (widget.routineId != null && state.editingRoutine == null) {
+              return Scaffold(
+                appBar: AppBar(),
+                body: state.status == RoutineManagementStatus.failure
+                    ? AppErrorState(
+                        message:
+                            state.errorMessage ?? 'No se pudo cargar la rutina',
+                        onRetry: () =>
+                            context.read<RoutineManagementBloc>().add(
+                              LoadRoutineForEditing(
+                                userId: userId,
+                                routineId: widget.routineId!,
+                              ),
+                            ),
+                      )
+                    : const Center(child: AppSpinner()),
+              );
+            }
 
             return PopScope(
               canPop: !isDirty,
@@ -437,7 +459,7 @@ class _ForkBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'No podés editarla. Creá tu copia para personalizarla.',
+                    'No puedes editarla. Crea tu copia para personalizarla.',
                     style: context.text.labelMedium?.copyWith(
                       color: context.colors.textSecondary,
                       fontSize: 11,

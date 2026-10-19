@@ -184,7 +184,8 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.routineEditor,
         builder: (context, state) {
-          final routineId = state.extra as String?;
+          final routineId =
+              state.extra as String? ?? state.uri.queryParameters['id'];
           return TitledPage(
             title: 'Editar rutina',
             child: BlocProvider<RoutineManagementBloc>(

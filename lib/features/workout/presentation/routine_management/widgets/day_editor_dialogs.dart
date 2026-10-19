@@ -18,6 +18,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_managemen
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_state.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_catalog_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/edit_exercise_target_sheet.dart';
+import 'package:gym_flutter/core/ui/molecules/app_error_state.dart';
 
 /// Helpers de presentación para el `DayEditorPage`: muestran los bottom-sheets
 /// (catálogo de ejercicios + edición de objetivos) y despachan el evento al
@@ -55,6 +56,18 @@ class DayEditorDialogs {
                 return const SizedBox(
                   height: 200,
                   child: Center(child: AppSpinner.large()),
+                );
+              }
+              // Antes un fallo se veía como "No hay ejercicios en esta
+              // categoría".
+              if (state.catalogStatus == ExerciseCatalogStatus.failure &&
+                  state.exerciseCatalog.isEmpty) {
+                return SizedBox(
+                  height: 280,
+                  child: AppErrorState(
+                    message: 'No se pudo cargar el catálogo de ejercicios',
+                    onRetry: () => bloc.add(const LoadExerciseCatalog()),
+                  ),
                 );
               }
               return ExerciseCatalogSheet(

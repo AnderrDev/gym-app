@@ -62,6 +62,16 @@ extension RoutineDayHandlers on RoutineManagementBloc {
         clearErrorMessage: true,
       ),
     );
+    if (_trainingRoutineDayId() == event.dayId) {
+      emit(
+        state.copyWith(
+          submissionStatus: RoutineManagementSubmissionStatus.failure,
+          lastAction: RoutineManagementAction.deleteDay,
+          errorMessage: _trainingDeleteMessage,
+        ),
+      );
+      return;
+    }
     // Optimista: el día se quita ya (el `Dismissible` de la tarjeta exige
     // que salga del árbol tras el swipe) y vuelve si el borrado falla.
     final previousDays = state.editingDays;

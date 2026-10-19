@@ -1,6 +1,7 @@
 // ignore_for_file: must_be_immutable
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/models/routine_model.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
@@ -397,13 +398,34 @@ void main() {
       final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
 
       mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._delete = () {
-        fakeFilterBuilder.setData([]);
-        return fakeFilterBuilder;
-      };
+      final deleted = FakePostgrestListFilterBuilder()
+        ..setData([
+          {'exercise_id': 'e1'},
+        ]);
+      fakeQueryBuilder._delete = () => fakeFilterBuilder;
+      fakeFilterBuilder.setSelectMap((_) => deleted);
 
       await dataSource.removeExerciseFromDay('rd1', 'e1');
     });
+
+    test(
+      'si RLS no borra ninguna fila lanza en vez de dar por bueno',
+      () async {
+        final fakeQueryBuilder = FakeSupabaseQueryBuilder();
+        final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
+
+        mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
+        fakeQueryBuilder._delete = () => fakeFilterBuilder;
+        fakeFilterBuilder.setSelectMap(
+          (_) => FakePostgrestListFilterBuilder()..setData([]),
+        );
+
+        await expectLater(
+          dataSource.removeExerciseFromDay('rd1', 'e1'),
+          throwsA(isA<NotFoundException>()),
+        );
+      },
+    );
   });
 
   group('deleteRoutine', () {
@@ -412,12 +434,31 @@ void main() {
       final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
 
       mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
-      fakeQueryBuilder._delete = () {
-        fakeFilterBuilder.setData([]);
-        return fakeFilterBuilder;
-      };
+      fakeQueryBuilder._delete = () => fakeFilterBuilder;
+      fakeFilterBuilder.setSelectMap(
+        (_) => FakePostgrestListFilterBuilder()
+          ..setData([
+            {'id': 'r1'},
+          ]),
+      );
 
       await dataSource.deleteRoutine('r1');
+    });
+
+    test('si RLS no borra la rutina lanza NotFoundException', () async {
+      final fakeQueryBuilder = FakeSupabaseQueryBuilder();
+      final fakeFilterBuilder = FakePostgrestDynamicFilterBuilder();
+
+      mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
+      fakeQueryBuilder._delete = () => fakeFilterBuilder;
+      fakeFilterBuilder.setSelectMap(
+        (_) => FakePostgrestListFilterBuilder()..setData([]),
+      );
+
+      await expectLater(
+        dataSource.deleteRoutine('r1'),
+        throwsA(isA<NotFoundException>()),
+      );
     });
   });
 }

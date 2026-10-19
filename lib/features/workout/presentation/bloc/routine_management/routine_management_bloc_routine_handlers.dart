@@ -31,7 +31,18 @@ extension RoutineEditHandlers on RoutineManagementBloc {
       routineId: event.routineId,
       weekStart: monday,
     );
-    final days = daysRes.fold<List<RoutineDay>>((_) => const [], (d) => d);
+    // Sin días el editor parecería una rutina vacía y AÑADIR DÍA chocaría
+    // con los existentes: mejor un error con reintentar.
+    if (daysRes.isLeft()) {
+      emit(
+        state.copyWith(
+          status: RoutineManagementStatus.failure,
+          errorMessage: daysRes.fold((f) => f.message, (_) => 'Error'),
+        ),
+      );
+      return;
+    }
+    final days = daysRes.getOrElse((_) => const []);
 
     emit(
       state.copyWith(
@@ -126,6 +137,19 @@ extension RoutineEditHandlers on RoutineManagementBloc {
         clearErrorMessage: true,
       ),
     );
+    final training = _trainingRoutineDayId();
+    if (training != null && state.editingDays.any((d) => d.id == training)) {
+      emit(
+        state.copyWith(
+          submissionStatus: RoutineManagementSubmissionStatus.failure,
+          lastAction: RoutineManagementAction.deleteRoutine,
+          errorMessage:
+              'Estás entrenando un día de esta rutina. Finaliza el entreno '
+              'antes de borrarla.',
+        ),
+      );
+      return;
+    }
     final result = await deleteRoutine(event.routineId);
     result.fold(
       (failure) => emit(

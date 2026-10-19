@@ -159,8 +159,20 @@ class RoutineManagementRemoteDataSource {
     return RoutineModel.fromJson(response);
   }
 
+  /// Igual que en `updateExerciseTarget`: si RLS rechaza el borrado
+  /// PostgREST no da error, borra 0 filas. Sin comprobarlo la UI decía
+  /// "eliminada" sin haber borrado nada.
   Future<void> deleteRoutine(String routineId) async {
-    await client.from('routines').delete().eq('id', routineId);
+    final deleted = await client
+        .from('routines')
+        .delete()
+        .eq('id', routineId)
+        .select('id');
+    if (deleted.isEmpty) {
+      throw NotFoundException(
+        'No se pudo eliminar: la rutina no es tuya o ya no existe.',
+      );
+    }
   }
 
   /// Crea una copia privada de una rutina visible para el caller (propia o
@@ -205,7 +217,16 @@ class RoutineManagementRemoteDataSource {
   }
 
   Future<void> deleteRoutineDay(String dayId) async {
-    await client.from('routine_days').delete().eq('id', dayId);
+    final deleted = await client
+        .from('routine_days')
+        .delete()
+        .eq('id', dayId)
+        .select('id');
+    if (deleted.isEmpty) {
+      throw NotFoundException(
+        'No se pudo eliminar el día: la rutina no es tuya o ya no existe.',
+      );
+    }
   }
 
   Future<int> _nextOrder(String dayId) async {
@@ -276,11 +297,17 @@ class RoutineManagementRemoteDataSource {
   }
 
   Future<void> removeExerciseFromDay(String dayId, String exerciseId) async {
-    await client
+    final deleted = await client
         .from('routine_exercises')
         .delete()
         .eq('routine_day_id', dayId)
-        .eq('exercise_id', exerciseId);
+        .eq('exercise_id', exerciseId)
+        .select('exercise_id');
+    if (deleted.isEmpty) {
+      throw NotFoundException(
+        'No se pudo quitar el ejercicio: la rutina no es tuya o ya no está.',
+      );
+    }
   }
 
   /// Una sola RPC en lugar de N UPDATEs paralelos. Cierra C8 del REMASTER_PLAN

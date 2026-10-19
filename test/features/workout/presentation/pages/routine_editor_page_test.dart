@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/core/ui/molecules/app_error_state.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -153,9 +154,43 @@ void main() {
     });
   });
 
+  testWidgets('rutina existente sin cargar: spinner, no formulario', (
+    tester,
+  ) async {
+    when(() => bloc.state).thenReturn(
+      const RoutineManagementState(status: RoutineManagementStatus.loading),
+    );
+    await tester.pumpWidget(createWidgetUnderTest(routineId: 'r1'));
+    await tester.pump();
+    expect(find.text('AÑADIR DÍA'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('si la carga falla muestra error con reintentar', (tester) async {
+    when(() => bloc.state).thenReturn(
+      const RoutineManagementState(
+        status: RoutineManagementStatus.failure,
+        errorMessage: 'sin red',
+      ),
+    );
+    await tester.pumpWidget(createWidgetUnderTest(routineId: 'r1'));
+    await tester.pump();
+    clearInteractions(bloc);
+    tester.widget<AppErrorState>(find.byType(AppErrorState)).onRetry!();
+    verify(() => bloc.add(any(that: isA<LoadRoutineForEditing>()))).called(1);
+  });
+
   testWidgets('AÑADIR DÍA dispara SaveDay con día nuevo', (tester) async {
     when(() => bloc.state).thenReturn(
-      const RoutineManagementState(status: RoutineManagementStatus.ready),
+      const RoutineManagementState(
+        status: RoutineManagementStatus.ready,
+        editingRoutine: Routine(
+          id: 'r1',
+          name: 'Mía',
+          exerciseCount: 0,
+          creatorId: 'user123',
+        ),
+      ),
     );
 
     await tester.pumpWidget(createWidgetUnderTest(routineId: 'r1'));
