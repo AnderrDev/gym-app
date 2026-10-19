@@ -44,11 +44,14 @@ class RoutineEditorDayCardTile extends StatelessWidget {
   Future<void> _openDayEditor(BuildContext context) async {
     final routineId = activeRoutineId;
     if (routineId == null) return;
-    final changed = await pushDayEditor(
+    await pushDayEditor(
       context,
       DayEditorArgs(day: day, routineId: routineId, isOwner: isOwner),
     );
-    if (!context.mounted || changed != true) return;
+    // El editor del día tiene su propio bloc: al volver se recarga siempre.
+    // Volver con el gesto del sistema no devuelve resultado aunque se hayan
+    // guardado ejercicios.
+    if (!context.mounted) return;
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
     context.read<RoutineManagementBloc>().add(

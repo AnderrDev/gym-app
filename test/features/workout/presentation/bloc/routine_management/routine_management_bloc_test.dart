@@ -357,7 +357,7 @@ void main() {
 
   group('AddExerciseToDayEvent', () {
     blocTest<RoutineManagementBloc, RoutineManagementState>(
-      'éxito → recarga días e indica isDirty',
+      'éxito → recarga días; ya guardado, no marca isDirty',
       build: () {
         when(
           () => addExerciseToDay(
@@ -391,14 +391,14 @@ void main() {
           b.state.submissionStatus,
           RoutineManagementSubmissionStatus.success,
         );
-        expect(b.state.isDirty, isTrue);
+        expect(b.state.isDirty, isFalse);
       },
     );
   });
 
   group('AddExercisesToDayEvent', () {
     blocTest<RoutineManagementBloc, RoutineManagementState>(
-      'éxito → emite isDirty y feedback',
+      'éxito → feedback; ya guardado, no marca isDirty',
       build: () {
         when(
           () => addExercisesToDay(any(), any()),
@@ -425,14 +425,14 @@ void main() {
           b.state.submissionStatus,
           RoutineManagementSubmissionStatus.success,
         );
-        expect(b.state.isDirty, isTrue);
+        expect(b.state.isDirty, isFalse);
       },
     );
   });
 
   group('RemoveExerciseFromDayEvent', () {
     blocTest<RoutineManagementBloc, RoutineManagementState>(
-      'éxito → success y isDirty',
+      'éxito → success; ya guardado, no marca isDirty',
       build: () {
         when(
           () => removeExerciseFromDay(any(), any()),
@@ -459,14 +459,86 @@ void main() {
           b.state.submissionStatus,
           RoutineManagementSubmissionStatus.success,
         );
-        expect(b.state.isDirty, isTrue);
+        expect(b.state.isDirty, isFalse);
       },
+    );
+  });
+
+  group('ReorderExercises', () {
+    const day = RoutineDay(id: 'd1', routineId: 'r1', dayOfWeek: 1, name: 'A');
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'éxito → recarga los días para que la lista muestre el orden nuevo',
+      build: () {
+        when(
+          () => reorderExercises(any(), any()),
+        ).thenAnswer((_) async => const Right(null));
+        when(
+          () => getWeeklyPlan(
+            userId: any(named: 'userId'),
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenAnswer((_) async => const Right(<RoutineDay>[day]));
+        return buildBloc();
+      },
+      act: (b) => b.add(
+        const ReorderExercises(
+          userId: 'u1',
+          routineId: 'r1',
+          dayId: 'd1',
+          exerciseIds: ['e2', 'e1'],
+        ),
+      ),
+      verify: (b) {
+        expect(b.state.editingDays, [day]);
+        expect(
+          b.state.submissionStatus,
+          RoutineManagementSubmissionStatus.success,
+        );
+        expect(b.state.isDirty, isFalse);
+      },
+    );
+  });
+
+  group('DeleteDay', () {
+    const d1 = RoutineDay(id: 'd1', routineId: 'r1', dayOfWeek: 1, name: 'A');
+    const d2 = RoutineDay(id: 'd2', routineId: 'r1', dayOfWeek: 2, name: 'B');
+    blocTest<RoutineManagementBloc, RoutineManagementState>(
+      'quita el día al instante y lo restaura si el borrado falla',
+      build: () {
+        when(
+          () => deleteRoutineDay(any()),
+        ).thenAnswer((_) async => const Left(ServerFailure('rls')));
+        return buildBloc();
+      },
+      seed: () => const RoutineManagementState(editingDays: [d1, d2]),
+      act: (b) =>
+          b.add(const DeleteDay(userId: 'u1', routineId: 'r1', dayId: 'd1')),
+      expect: () => [
+        isA<RoutineManagementState>().having(
+          (s) => s.submissionStatus,
+          'submitting',
+          RoutineManagementSubmissionStatus.submitting,
+        ),
+        isA<RoutineManagementState>().having(
+          (s) => s.editingDays,
+          'optimista',
+          [d2],
+        ),
+        isA<RoutineManagementState>()
+            .having((s) => s.editingDays, 'restaurado', [d1, d2])
+            .having(
+              (s) => s.submissionStatus,
+              'failure',
+              RoutineManagementSubmissionStatus.failure,
+            ),
+      ],
     );
   });
 
   group('UpdateExerciseTargetEvent', () {
     blocTest<RoutineManagementBloc, RoutineManagementState>(
-      'éxito → success + isDirty + reload de días',
+      'éxito → success + reload de días, sin isDirty',
       build: () {
         when(
           () => updateExerciseTarget(
@@ -508,7 +580,7 @@ void main() {
           b.state.lastAction,
           RoutineManagementAction.updateExerciseTarget,
         );
-        expect(b.state.isDirty, isTrue);
+        expect(b.state.isDirty, isFalse);
         verify(
           () => updateExerciseTarget(
             'd1',

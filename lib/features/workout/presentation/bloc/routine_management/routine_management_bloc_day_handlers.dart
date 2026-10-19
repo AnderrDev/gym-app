@@ -62,6 +62,14 @@ extension RoutineDayHandlers on RoutineManagementBloc {
         clearErrorMessage: true,
       ),
     );
+    // Optimista: el día se quita ya (el `Dismissible` de la tarjeta exige
+    // que salga del árbol tras el swipe) y vuelve si el borrado falla.
+    final previousDays = state.editingDays;
+    emit(
+      state.copyWith(
+        editingDays: previousDays.where((d) => d.id != event.dayId).toList(),
+      ),
+    );
     final result = await deleteRoutineDay(event.dayId);
     result.fold(
       (failure) => emit(
@@ -69,6 +77,7 @@ extension RoutineDayHandlers on RoutineManagementBloc {
           submissionStatus: RoutineManagementSubmissionStatus.failure,
           lastAction: RoutineManagementAction.deleteDay,
           errorMessage: failure.message,
+          editingDays: previousDays,
         ),
       ),
       (_) => emit(
@@ -76,9 +85,6 @@ extension RoutineDayHandlers on RoutineManagementBloc {
           submissionStatus: RoutineManagementSubmissionStatus.success,
           lastAction: RoutineManagementAction.deleteDay,
           feedbackMessage: 'Día eliminado correctamente',
-          editingDays: state.editingDays
-              .where((d) => d.id != event.dayId)
-              .toList(),
         ),
       ),
     );
@@ -117,7 +123,6 @@ extension RoutineDayHandlers on RoutineManagementBloc {
             submissionStatus: RoutineManagementSubmissionStatus.success,
             lastAction: RoutineManagementAction.addExercise,
             feedbackMessage: 'Ejercicio añadido',
-            isDirty: true,
           ),
         );
       },
@@ -150,7 +155,6 @@ extension RoutineDayHandlers on RoutineManagementBloc {
             submissionStatus: RoutineManagementSubmissionStatus.success,
             lastAction: RoutineManagementAction.addExercises,
             feedbackMessage: 'Ejercicios añadidos',
-            isDirty: true,
           ),
         );
       },
@@ -183,7 +187,6 @@ extension RoutineDayHandlers on RoutineManagementBloc {
             submissionStatus: RoutineManagementSubmissionStatus.success,
             lastAction: RoutineManagementAction.removeExercise,
             feedbackMessage: 'Ejercicio eliminado',
-            isDirty: true,
           ),
         );
       },
@@ -201,22 +204,24 @@ extension RoutineDayHandlers on RoutineManagementBloc {
       ),
     );
     final result = await reorderExercises(event.dayId, event.exerciseIds);
-    result.fold(
-      (failure) => emit(
+    await result.fold(
+      (failure) async => emit(
         state.copyWith(
           submissionStatus: RoutineManagementSubmissionStatus.failure,
           lastAction: RoutineManagementAction.reorderExercises,
           errorMessage: failure.message,
         ),
       ),
-      (_) => emit(
-        state.copyWith(
-          submissionStatus: RoutineManagementSubmissionStatus.success,
-          lastAction: RoutineManagementAction.reorderExercises,
-          feedbackMessage: 'Orden actualizado',
-          isDirty: true,
-        ),
-      ),
+      (_) async {
+        await reloadEditingDays(event.userId, event.routineId, emit);
+        emit(
+          state.copyWith(
+            submissionStatus: RoutineManagementSubmissionStatus.success,
+            lastAction: RoutineManagementAction.reorderExercises,
+            feedbackMessage: 'Orden actualizado',
+          ),
+        );
+      },
     );
   }
 
@@ -253,7 +258,6 @@ extension RoutineDayHandlers on RoutineManagementBloc {
             submissionStatus: RoutineManagementSubmissionStatus.success,
             lastAction: RoutineManagementAction.updateExerciseTarget,
             feedbackMessage: 'Ejercicio actualizado',
-            isDirty: true,
           ),
         );
       },

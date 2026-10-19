@@ -31,7 +31,7 @@ class RoutineListCard extends StatelessWidget {
   final bool isMine;
   final ValueChanged<String> onActivate;
 
-  /// Callback cuando el editor pop-ea con cambios.
+  /// Callback al volver del editor (haya o no cambios).
   final VoidCallback? onEdited;
 
   /// Disparado al tocar "CREAR MI COPIA" para rutinas ajenas públicas.
@@ -40,8 +40,10 @@ class RoutineListCard extends StatelessWidget {
 
   Future<void> _openDetails(BuildContext context) async {
     unawaited(HapticFeedback.selectionClick());
-    final changed = await pushRoutineEditor(context, routineId: routine.id);
-    if (changed == true) onEdited?.call();
+    await pushRoutineEditor(context, routineId: routine.id);
+    // Siempre: el editor guarda días/ejercicios al instante y volver con el
+    // gesto del sistema no trae resultado.
+    onEdited?.call();
   }
 
   @override

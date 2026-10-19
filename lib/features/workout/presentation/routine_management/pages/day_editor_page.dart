@@ -49,6 +49,27 @@ class DayEditorPage extends StatefulWidget {
 class _DayEditorPageState extends State<DayEditorPage> {
   late TextEditingController _nameController;
 
+  /// Añadir/quitar/reordenar/editar ejercicios se guarda al instante; sólo el
+  /// nombre espera a GUARDAR. Esto recuerda si hubo cambios guardados para
+  /// avisar al editor de la rutina al volver, aunque no haya nada pendiente.
+  bool _savedChanges = false;
+
+  /// Orden mostrado mientras el reorder viaja al backend: sin él la lista
+  /// salta al orden viejo hasta que llega la recarga.
+  List<String>? _pendingOrder;
+
+  /// Ejercicios quitados (swipe o papelera) aún sin confirmar por el backend.
+  /// Un `Dismissible` descartado debe salir del árbol en el siguiente frame.
+  final Set<String> _pendingRemovals = {};
+
+  static const _exerciseActions = {
+    RoutineManagementAction.addExercise,
+    RoutineManagementAction.addExercises,
+    RoutineManagementAction.removeExercise,
+    RoutineManagementAction.reorderExercises,
+    RoutineManagementAction.updateExerciseTarget,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +97,17 @@ class _DayEditorPageState extends State<DayEditorPage> {
     // ocultamos. `hide` es no-op si nadie lo mostró.
     AppLoader.hide(context);
     final wasSaveDay = state.lastAction == RoutineManagementAction.saveDay;
+    if (_exerciseActions.contains(state.lastAction)) {
+      // Éxito: la recarga ya trae el estado real. Fallo: se revierte.
+      setState(() {
+        _pendingOrder = null;
+        _pendingRemovals.clear();
+        if (state.submissionStatus ==
+            RoutineManagementSubmissionStatus.success) {
+          _savedChanges = true;
+        }
+      });
+    }
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
       AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
     } else if (state.submissionStatus ==
@@ -108,23 +140,38 @@ class _DayEditorPageState extends State<DayEditorPage> {
     );
   }
 
-  Future<void> _onPopInvoked(bool didPop, bool isDirty) async {
+  Future<void> _onPopInvoked(bool didPop) async {
     if (didPop) return;
     final navigator = GoRouter.of(context);
     final shouldPop = await _confirmDiscard();
     if (!mounted) return;
-    if (shouldPop) navigator.pop(isDirty);
+    if (shouldPop) navigator.pop(_savedChanges);
   }
 
   Future<void> _onBackPressed(bool isDirty) async {
     if (!isDirty) {
-      context.pop(isDirty);
+      context.pop(_savedChanges);
       return;
     }
     final navigator = GoRouter.of(context);
     final shouldPop = await _confirmDiscard();
     if (!mounted) return;
-    if (shouldPop) navigator.pop(isDirty);
+    if (shouldPop) navigator.pop(_savedChanges);
+  }
+
+  List<Exercise> _visibleExercises(RoutineDay day) {
+    var list = day.exercises
+        .where((e) => !_pendingRemovals.contains(e.id))
+        .toList();
+    final order = _pendingOrder;
+    if (order != null) {
+      final byId = {for (final e in list) e.id: e};
+      list = [
+        for (final id in order)
+          if (byId[id] != null) byId[id]!,
+      ];
+    }
+    return list;
   }
 
   void _onReorder(
@@ -137,12 +184,14 @@ class _DayEditorPageState extends State<DayEditorPage> {
     final newExercises = List<Exercise>.from(exercises);
     final item = newExercises.removeAt(oldIndex);
     newExercises.insert(newIndex, item);
+    final ids = newExercises.map((e) => e.id).toList();
+    setState(() => _pendingOrder = ids);
     context.read<RoutineManagementBloc>().add(
       ReorderExercises(
         userId: _userId,
         routineId: widget.routineId,
         dayId: currentDay.id,
-        exerciseIds: newExercises.map((e) => e.id).toList(),
+        exerciseIds: ids,
       ),
     );
     HapticFeedback.lightImpact();
@@ -160,6 +209,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
   }
 
   void _onRemoveExercise(Exercise exercise, RoutineDay currentDay) {
+    setState(() => _pendingRemovals.add(exercise.id));
     context.read<RoutineManagementBloc>().add(
       RemoveExerciseFromDayEvent(
         userId: _userId,
@@ -177,11 +227,11 @@ class _DayEditorPageState extends State<DayEditorPage> {
       listener: _onSubmissionFeedback,
       builder: (context, state) {
         final currentDay = _resolveCurrentDay(state);
-        final exercises = currentDay.exercises;
+        final exercises = _visibleExercises(currentDay);
         final isDirty = state.isDirty && widget.isOwner;
         return PopScope(
           canPop: !isDirty,
-          onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop, isDirty),
+          onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
             body: CustomScrollView(
               physics: AdaptiveScrollPhysics.preferred,

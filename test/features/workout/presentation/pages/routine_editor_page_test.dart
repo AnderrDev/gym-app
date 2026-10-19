@@ -114,11 +114,43 @@ void main() {
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
+    await tester.enterText(find.byType(TextField).first, 'Push Pull Legs');
 
+    // Doble toque: una rutina nueva no debe insertarse dos veces.
+    await tester.tap(find.text('GUARDAR'));
     await tester.tap(find.text('GUARDAR'));
     await tester.pump();
 
     verify(() => bloc.add(any(that: isA<SaveRoutine>()))).called(1);
+  });
+
+  testWidgets('GUARDAR con el nombre vacío no envía nada', (tester) async {
+    when(() => bloc.state).thenReturn(
+      const RoutineManagementState(
+        status: RoutineManagementStatus.ready,
+        isDirty: true,
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await tester.tap(find.text('GUARDAR'));
+    await tester.pump();
+
+    verifyNever(() => bloc.add(any(that: isA<SaveRoutine>())));
+  });
+
+  group('nextFreeDayOfWeek', () {
+    RoutineDay day(int dow) =>
+        RoutineDay(id: 'd$dow', routineId: 'r1', dayOfWeek: dow, name: 'D');
+
+    test('rellena el hueco que deja un día borrado', () {
+      expect(nextFreeDayOfWeek([day(1), day(3)]), 2);
+    });
+
+    test('null cuando están los 7 días', () {
+      expect(nextFreeDayOfWeek([for (var d = 1; d <= 7; d++) day(d)]), isNull);
+    });
   });
 
   testWidgets('AÑADIR DÍA dispara SaveDay con día nuevo', (tester) async {

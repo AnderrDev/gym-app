@@ -40,6 +40,14 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   // toca AÑADIR DÍA en una rutina aún no guardada. Se resetea al consumirse.
   bool _addDayAfterSave = false;
 
+  /// GUARDAR / AÑADIR DÍA enviados y sin respuesta. Bloquea el doble toque:
+  /// en una rutina nueva cada toque hacía un INSERT y creaba duplicados.
+  bool _inFlight = false;
+
+  /// Hubo alguna escritura con éxito (rutina, días). Se devuelve al cerrar
+  /// para que quien abrió el editor recargue.
+  bool _savedChanges = false;
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +90,21 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     String userId,
   ) {
     final bloc = context.read<RoutineManagementBloc>();
+    final chainingAddDay =
+        _addDayAfterSave &&
+        state.lastAction == RoutineManagementAction.saveRoutine &&
+        state.submissionStatus == RoutineManagementSubmissionStatus.success;
+    if (!chainingAddDay) _inFlight = false;
     if (state.submissionStatus == RoutineManagementSubmissionStatus.success) {
+      _savedChanges = true;
+      if (state.lastAction == RoutineManagementAction.deleteRoutine) {
+        // La rutina ya no existe: quedarse en su editor permitía seguir
+        // añadiendo días sobre ella.
+        AppSnackBar.success(context, state.feedbackMessage ?? 'OK');
+        bloc.add(const AcknowledgeFeedback());
+        GoRouter.of(context).pop(true);
+        return;
+      }
       // Caso especial: fork. Antes de hacer ack capturamos el id de la nueva
       // rutina para navegar a su editor. Sin la navegación quedaríamos en la
       // vista previa de la rutina ajena después del fork — confuso.
@@ -119,7 +141,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
               id: '',
               routineId: routine.id,
               name: 'Nuevo Día',
-              dayOfWeek: state.editingDays.length + 1,
+              dayOfWeek: nextFreeDayOfWeek(state.editingDays) ?? 1,
               exercises: const [],
             ),
           ),
@@ -176,7 +198,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 final navigator = GoRouter.of(context);
                 final shouldPop = await _confirmDiscard();
                 if (!mounted) return;
-                if (shouldPop) navigator.pop(true);
+                if (shouldPop) navigator.pop(_savedChanges);
               },
               child: Scaffold(
                 body: CustomScrollView(
@@ -254,11 +276,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                           child: KineticButton(
                             label: 'AÑADIR DÍA',
                             icon: Icons.add_circle_outline_rounded,
-                            onTap: () => _onAddDayPressed(
-                              userId,
-                              activeRoutineId,
-                              days.length,
-                            ),
+                            onTap: () =>
+                                _onAddDayPressed(userId, activeRoutineId, days),
                           ),
                         ),
                       ),
@@ -274,6 +293,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   }
 
   void _onSavePressed(String userId, String? activeRoutineId) {
+    if (_inFlight) return;
+    if (_nameController.text.trim().isEmpty) {
+      AppSnackBar.warning(context, 'Ponle un nombre a la rutina');
+      return;
+    }
+    _inFlight = true;
     context.read<RoutineManagementBloc>().add(
       SaveRoutine(
         userId: userId,
@@ -286,21 +311,36 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   Future<void> _onClosePressed(bool isDirty) async {
     if (!isDirty) {
-      context.pop();
+      context.pop(_savedChanges);
       return;
     }
     final navigator = GoRouter.of(context);
     final shouldPop = await _confirmDiscard();
     if (!mounted) return;
-    if (shouldPop) navigator.pop(true);
+    if (shouldPop) navigator.pop(_savedChanges);
   }
 
-  void _onAddDayPressed(String userId, String? activeRoutineId, int dayCount) {
+  void _onAddDayPressed(
+    String userId,
+    String? activeRoutineId,
+    List<RoutineDay> days,
+  ) {
+    if (_inFlight) return;
+    final dayOfWeek = nextFreeDayOfWeek(days);
+    if (dayOfWeek == null) {
+      AppSnackBar.warning(
+        context,
+        'La rutina ya tiene un día por cada día de la semana',
+      );
+      return;
+    }
     HapticFeedback.heavyImpact();
+    _inFlight = true;
     if (activeRoutineId == null) {
       // Aún no existe la rutina: la guardamos y dejamos marcado el flag.
       // El listener encadenará SaveDay cuando reciba la success del SaveRoutine.
       if (_nameController.text.trim().isEmpty) {
+        _inFlight = false;
         AppSnackBar.warning(context, 'Pon un nombre y pulsa GUARDAR primero');
         return;
       }
@@ -323,7 +363,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           id: '',
           routineId: activeRoutineId,
           name: 'Nuevo Día',
-          dayOfWeek: dayCount + 1,
+          dayOfWeek: dayOfWeek,
           exercises: const [],
         ),
       ),
@@ -440,4 +480,16 @@ class _ForkBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Primer día de la semana (1=lunes … 7=domingo) que ningún día de la rutina
+/// ocupa, o `null` si están los 7. Antes era `días + 1`: tras borrar un día
+/// intermedio se repetía un `dayOfWeek`, y con más de 7 `dayName` rompía.
+@visibleForTesting
+int? nextFreeDayOfWeek(List<RoutineDay> days) {
+  final used = days.map((d) => d.dayOfWeek).toSet();
+  for (var d = 1; d <= 7; d++) {
+    if (!used.contains(d)) return d;
+  }
+  return null;
 }

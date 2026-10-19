@@ -54,6 +54,18 @@ class ExerciseRowCard extends StatelessWidget {
     return s == 0 ? '${m}min' : '${m}m${s.toString().padLeft(2, '0')}s';
   }
 
+  Future<bool> _confirmRemove(BuildContext context) async {
+    final ok = await AppDialog.confirm(
+      context,
+      title: 'Quitar ejercicio',
+      message:
+          'Vas a quitar "${exercise.name}" del día. Puedes volver a añadirlo desde el catálogo.',
+      confirmLabel: 'Quitar',
+      confirmVariant: AppButtonVariant.destructive,
+    );
+    return ok == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent = RoutineColor.byIndex(index);
@@ -154,15 +166,7 @@ class ExerciseRowCard extends StatelessWidget {
                   Builder(
                     builder: (ctx) => IconButton(
                       onPressed: () async {
-                        final ok = await AppDialog.confirm(
-                          ctx,
-                          title: 'Quitar ejercicio',
-                          message:
-                              'Vas a quitar "${exercise.name}" del día. Podés volver a añadirlo desde el catálogo.',
-                          confirmLabel: 'Quitar',
-                          confirmVariant: AppButtonVariant.destructive,
-                        );
-                        if (ok == true) {
+                        if (await _confirmRemove(ctx)) {
                           unawaited(HapticFeedback.heavyImpact());
                           onRemove!();
                         }
@@ -198,6 +202,8 @@ class ExerciseRowCard extends StatelessWidget {
     return Dismissible(
       key: ValueKey('dismiss_${exercise.id}_$index'),
       direction: DismissDirection.endToStart,
+      // Mismo diálogo que la papelera: un swipe accidental no debe borrar.
+      confirmDismiss: (_) => _confirmRemove(context),
       onDismissed: (_) {
         HapticFeedback.heavyImpact();
         onRemove!();

@@ -122,8 +122,8 @@ class _RoutineListPageState extends State<RoutineListPage> {
     return FloatingActionButton.extended(
       onPressed: () async {
         unawaited(HapticFeedback.mediumImpact());
-        final changed = await pushRoutineEditor(context);
-        if (changed == true) _refreshRoutines();
+        await pushRoutineEditor(context);
+        _refreshRoutines();
       },
       elevation: 0,
       highlightElevation: 0,
