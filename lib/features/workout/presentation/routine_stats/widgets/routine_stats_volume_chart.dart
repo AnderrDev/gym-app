@@ -7,6 +7,7 @@ import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
 
 class RoutineStatsVolumeChart extends StatelessWidget {
   const RoutineStatsVolumeChart({super.key, required this.stats});
@@ -113,10 +114,10 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
-                            fmt(value),
+                            compactAxisNumber(value),
                             style: context.text.labelMedium?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 9,
+                              fontSize: 10,
                             ),
                           ),
                         );
@@ -127,9 +128,12 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 24,
+                      interval: dateAxisInterval(chronological.length),
                       getTitlesWidget: (value, meta) {
                         final i = value.toInt();
-                        if (i < 0 || i >= chronological.length) {
+                        if (!isExactIndex(value) ||
+                            i < 0 ||
+                            i >= chronological.length) {
                           return const SizedBox();
                         }
                         return Padding(
@@ -140,7 +144,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                             ),
                             style: context.text.labelMedium?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 9,
+                              fontSize: 10,
                             ),
                           ),
                         );
