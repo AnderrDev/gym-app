@@ -54,7 +54,7 @@ class SyncStatusBadge extends StatelessWidget {
             color: context.colors.textSecondary,
           ),
           const SizedBox(width: 6),
-          Text('$pending pendientes'),
+          Text(_pendingLabel(pending)),
         ],
       );
     }
@@ -68,10 +68,13 @@ class SyncStatusBadge extends StatelessWidget {
             color: context.colors.textSecondary,
           ),
           const SizedBox(width: 6),
-          Text('$pending pendientes'),
+          Text(_pendingLabel(pending)),
         ],
       );
     }
     return const SizedBox.shrink();
   }
 }
+
+String _pendingLabel(int pending) =>
+    pending == 1 ? '1 cambio pendiente' : '$pending cambios pendientes';
