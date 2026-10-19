@@ -22,7 +22,7 @@ extension EmailValidationErrorX on EmailValidationError {
   String get message {
     switch (this) {
       case EmailValidationError.empty:
-        return 'Ingresá tu email';
+        return 'Introduce tu email';
       case EmailValidationError.invalid:
         return 'Formato de email inválido';
     }

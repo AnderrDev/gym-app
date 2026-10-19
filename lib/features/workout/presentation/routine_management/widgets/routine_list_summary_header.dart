@@ -81,7 +81,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
                   Text(
                     hasActive
                         ? 'Activa: ${activeRoutine!.name}'
-                        : 'Activá una para empezar a entrenar',
+                        : 'Activa una para empezar a entrenar',
                     style: context.text.labelMedium?.copyWith(
                       color: hasActive ? accent : context.colors.textSecondary,
                       fontWeight: FontWeight.w700,

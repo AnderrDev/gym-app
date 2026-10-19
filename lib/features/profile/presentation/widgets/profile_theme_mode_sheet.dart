@@ -58,7 +58,7 @@ class ProfileThemeModeSheet extends StatelessWidget {
                 Text('Tema', style: context.text.titleLarge),
                 const SizedBox(height: Spacing.xs),
                 Text(
-                  'Elegí cómo se ve la app. "Sistema" sigue la configuración del dispositivo.',
+                  'Elige cómo se ve la app. "Sistema" sigue la configuración del dispositivo.',
                   style: context.text.bodySmall,
                 ),
                 const SizedBox(height: Spacing.lg),

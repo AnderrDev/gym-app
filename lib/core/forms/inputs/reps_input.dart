@@ -31,7 +31,7 @@ extension RepsValidationErrorX on RepsValidationError {
   String get message {
     switch (this) {
       case RepsValidationError.empty:
-        return 'Ingresá las reps';
+        return 'Introduce las reps';
       case RepsValidationError.notAnInt:
         return 'Solo enteros';
       case RepsValidationError.negative:

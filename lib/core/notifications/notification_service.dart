@@ -18,7 +18,7 @@ class NotificationService {
   static const _activeChannelId = 'active_workout';
   static const _activeChannelName = 'Sesión activa';
   static const _activeChannelDesc =
-      'Notificación persistente mientras tenés un entrenamiento en curso';
+      'Notificación persistente mientras tienes un entrenamiento en curso';
 
   /// Canal separado para la alerta de "fin del descanso". `Importance.high`
   /// para que suene y vibre, channel propio para que el usuario lo pueda

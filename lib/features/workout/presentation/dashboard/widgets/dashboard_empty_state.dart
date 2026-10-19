@@ -18,7 +18,7 @@ class DashboardEmptyState extends StatelessWidget {
       icon: Icons.explore_off_rounded,
       title: 'Sin Rutina Activa',
       subtitle:
-          'Para empezar a entrenar, elegí una rutina del catálogo o creá la tuya.',
+          'Para empezar a entrenar, elige una rutina del catálogo o crea la tuya.',
       primaryActionLabel: 'EXPLORAR CATÁLOGO',
       onPrimaryAction: onExploreCatalog,
       secondaryActionLabel: 'CREAR RUTINA MANUALMENTE',

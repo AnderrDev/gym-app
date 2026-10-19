@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -128,6 +129,11 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
             darkTheme: AppTheme.dark(),
             themeMode: settings.themeMode,
             routerConfig: _appRouter.router,
+            // Sin esto los textos de Material (copiar/pegar, tooltips,
+            // "Pestaña 1 de 4" en lectores de pantalla) salían en inglés.
+            locale: const Locale('es'),
+            supportedLocales: const [Locale('es')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
             // `_SystemUiOverlayChrome` reacciona al brightness resuelto del
             // tema activo (sin reconstruir el Navigator). Va aquí — el
             // `builder` corre ANTES de que el Navigator monte su Overlay,
@@ -193,8 +199,8 @@ class _BootstrapErrorApp extends StatelessWidget {
         return (
           title: 'Tu navegador está bloqueando el almacenamiento',
           body:
-              'Esto suele pasar en el modo privado de Safari. Abrí la app en '
-              'una pestaña normal (sin modo privado) y volvé a intentar.',
+              'Esto suele pasar en el modo privado de Safari. Abre la app en '
+              'una pestaña normal (sin modo privado) y vuelve a intentarlo.',
         );
       }
     }
@@ -210,6 +216,9 @@ class _BootstrapErrorApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
+      locale: const Locale('es'),
+      supportedLocales: const [Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: Builder(
         builder: (context) {
           final palette = Theme.of(context).extension<AppPalette>()!;

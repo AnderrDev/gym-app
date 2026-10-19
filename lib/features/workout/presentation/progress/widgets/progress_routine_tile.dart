@@ -106,7 +106,7 @@ class ProgressEmptyRoutines extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            'Explorá el catálogo desde la pestaña Rutinas.',
+            'Explora el catálogo desde la pestaña Rutinas.',
             style: context.text.bodySmall,
             textAlign: TextAlign.center,
           ),

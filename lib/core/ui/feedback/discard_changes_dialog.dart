@@ -23,7 +23,7 @@ class DiscardChangesDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text('¿Descartar cambios?', style: context.text.headlineMedium),
       content: Text(
-        'Tenés cambios sin guardar. Si salís ahora se perderán.',
+        'Tienes cambios sin guardar. Si sales ahora se perderán.',
         style: context.text.bodyMedium?.copyWith(
           color: context.colors.textSecondary,
         ),

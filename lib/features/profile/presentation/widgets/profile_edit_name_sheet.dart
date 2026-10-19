@@ -91,7 +91,7 @@ class _ProfileEditNameSheetState extends State<ProfileEditNameSheet> {
               Text('Editar nombre', style: context.text.titleLarge),
               const SizedBox(height: Spacing.xs),
               Text(
-                'Así te ven los demás cuando compartís rutinas.',
+                'Así te ven los demás cuando compartes rutinas.',
                 style: context.text.bodySmall?.copyWith(
                   color: context.colors.textSecondary,
                 ),

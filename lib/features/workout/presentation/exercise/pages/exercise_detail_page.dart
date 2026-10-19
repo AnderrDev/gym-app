@@ -242,7 +242,7 @@ class _VideoCTA extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Tocá para copiar el link',
+                      'Toca para copiar el enlace',
                       style: context.text.labelMedium?.copyWith(
                         color: context.colors.textSecondary,
                         fontSize: 11,

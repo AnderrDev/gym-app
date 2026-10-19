@@ -34,7 +34,7 @@ extension WeightValidationErrorX on WeightValidationError {
   String get message {
     switch (this) {
       case WeightValidationError.empty:
-        return 'Ingresá el peso';
+        return 'Introduce el peso';
       case WeightValidationError.notANumber:
         return 'Peso inválido';
       case WeightValidationError.negative:

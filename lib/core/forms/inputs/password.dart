@@ -20,7 +20,7 @@ extension PasswordValidationErrorX on PasswordValidationError {
   String get message {
     switch (this) {
       case PasswordValidationError.empty:
-        return 'Ingresá tu contraseña';
+        return 'Introduce tu contraseña';
       case PasswordValidationError.tooShort:
         return 'Mínimo ${Password.minLength} caracteres';
     }

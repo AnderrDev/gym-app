@@ -176,7 +176,7 @@ class DashboardWeekSummary extends StatelessWidget {
       return '¡Semana completa! 💪 Excelente trabajo.';
     }
     if (inProgress > 0) {
-      return 'Tenés una sesión en curso. Vamos por más.';
+      return 'Tienes una sesión en curso. Vamos por más.';
     }
     final left = total - completed;
     return left == 1
