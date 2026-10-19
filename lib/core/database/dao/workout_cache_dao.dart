@@ -220,6 +220,17 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     return into(cachedSetLogs).insert(row, mode: InsertMode.insertOrReplace);
   }
 
+  /// Series cacheadas de una sesión, por ejercicio y número de serie.
+  Future<List<CachedSetLogRow>> readSessionSetLogs(String sessionId) {
+    final query = select(cachedSetLogs)
+      ..where((t) => t.sessionId.equals(sessionId))
+      ..orderBy([
+        (t) => OrderingTerm.asc(t.exerciseId),
+        (t) => OrderingTerm.asc(t.setIndex),
+      ]);
+    return query.get();
+  }
+
   /// Borra un set log cacheado por su PK compuesta. Sin esto, desmarcar una
   /// serie dejaba la fila en cache y el SWR la devolvía como completada al
   /// reanudar sin red.

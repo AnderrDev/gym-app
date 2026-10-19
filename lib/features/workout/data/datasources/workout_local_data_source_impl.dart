@@ -200,6 +200,27 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   }
 
   @override
+  Future<List<SetLog>> getCachedSetLogs(String sessionId) async {
+    final rows = await _dao.readSessionSetLogs(sessionId);
+    return rows
+        .map(
+          (r) => SetLog(
+            id: r.remoteId,
+            sessionId: r.sessionId,
+            exerciseId: r.exerciseId,
+            actualWeight: r.actualWeight,
+            actualReps: r.actualReps,
+            setIndex: r.setIndex,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r.createdAt,
+              isUtc: true,
+            ),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
   Future<void> upsertCachedSetLog(SetLog log, {String syncStatus = 'pending'}) {
     final now = _nowMs;
     final createdMs = log.createdAt?.toUtc().millisecondsSinceEpoch ?? now;

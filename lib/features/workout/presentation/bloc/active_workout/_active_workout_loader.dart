@@ -26,8 +26,9 @@ class ActiveWorkoutCtx {
 }
 
 /// Carga en paralelo el contexto necesario para arrancar/reanudar una sesión.
-/// Si alguno de los fetches falla, devuelve valores vacíos en lugar de
-/// propagar — la sesión sigue siendo utilizable sin historial.
+/// El plan y las series de la sesión son imprescindibles: si fallan se
+/// propaga el error. El historial y las marcas previas son opcionales y
+/// caen a vacío.
 Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
   WorkoutRepository repository,
   String userId,
@@ -53,7 +54,7 @@ Future<ActiveWorkoutCtx> loadActiveWorkoutContext(
   final recentSessions = (results[1] as Either<Failure, List<WorkoutSession>>)
       .getOrElse((_) => const []);
   final setLogs = (results[2] as Either<Failure, List<SetLog>>).getOrElse(
-    (_) => const [],
+    (failure) => throw failure,
   );
 
   final recentLogs = (await repository.getSetLogsForSessions(

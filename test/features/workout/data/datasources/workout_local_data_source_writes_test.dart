@@ -83,10 +83,32 @@ void main() {
         );
         await local.upsertCachedSetLog(updated);
 
-        // No expone API de read directa de set logs; verificamos via DAO
-        // crudo. Reuse del dao asociado a la misma DB.
+        final logs = await local.getCachedSetLogs('sess-1');
+        expect(logs, hasLength(1));
+        expect(logs.single.actualWeight, 65);
+        expect(logs.single.actualReps, 8);
       },
     );
+
+    test('getCachedSetLogs sólo devuelve las series de esa sesión', () async {
+      for (final (session, idx) in [
+        ('sess-1', 1),
+        ('sess-1', 2),
+        ('otra', 1),
+      ]) {
+        await local.upsertCachedSetLog(
+          SetLog(
+            sessionId: session,
+            exerciseId: 'e1',
+            actualWeight: 50,
+            actualReps: 10,
+            setIndex: idx,
+          ),
+        );
+      }
+      final logs = await local.getCachedSetLogs('sess-1');
+      expect(logs.map((l) => l.setIndex), [1, 2]);
+    });
   });
 
   group('markSessionCompleted', () {

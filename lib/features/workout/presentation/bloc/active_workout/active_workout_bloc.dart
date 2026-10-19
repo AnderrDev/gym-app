@@ -176,9 +176,11 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         event.session.id,
         routineDayId: event.session.routineDayId,
       )).getOrElse((failure) => throw failure);
+      // Si ni el servidor ni la caché local responden, error con Reintentar:
+      // reanudar con 0 series hacía creer que se habían perdido.
       final setLogs = (await repository.getSessionSetLogs(
         event.session.id,
-      )).getOrElse((_) => const []);
+      )).getOrElse((failure) => throw failure);
       // El evento `ResumeActiveWorkout` no trae el routineDayName explícito;
       // cae sobre el contexto persistido como fallback.
       final dayName =
