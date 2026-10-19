@@ -14,6 +14,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/exercise_detail/e
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_info_chips.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_markdown_lite.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_media_hero.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Pantalla fullscreen con el detalle de un ejercicio del catálogo:
 /// hero visual (animación/imagen), chips de metadata, instrucciones y
@@ -194,12 +195,26 @@ class _VideoCTA extends StatelessWidget {
 
   final String url;
 
+  /// Abre el vídeo en el navegador o la app (YouTube…). Sólo http(s): la URL
+  /// viene de la base de datos. Si no se puede abrir, se copia como antes.
   Future<void> _onTap(BuildContext context) async {
+    final uri = Uri.tryParse(url);
+    final isWeb =
+        uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
+    var opened = false;
+    if (isWeb) {
+      try {
+        opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        opened = false;
+      }
+    }
+    if (opened) return;
     await Clipboard.setData(ClipboardData(text: url));
     if (!context.mounted) return;
     AppSnackBar.success(
       context,
-      'Link copiado · pegalo en el navegador para ver el tutorial',
+      'No se pudo abrir el vídeo: enlace copiado para pegarlo en el navegador',
     );
   }
 
@@ -242,7 +257,7 @@ class _VideoCTA extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Toca para copiar el enlace',
+                      'Toca para abrirlo',
                       style: context.text.labelMedium?.copyWith(
                         color: context.colors.textSecondary,
                         fontSize: 11,
@@ -252,7 +267,7 @@ class _VideoCTA extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.content_copy_rounded,
+                Icons.open_in_new_rounded,
                 color: context.colors.primary,
                 size: 18,
               ),
