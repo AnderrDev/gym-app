@@ -25,6 +25,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<LoadWeeklyPlan>(_onLoadWeeklyPlan);
     on<SelectRoutine>(_onSelectRoutine);
     on<ChangeWeek>(_onChangeWeek);
+    on<ClearSelectedRoutine>(
+      (_, emit) => emit(
+        state.copyWith(clearSelectedRoutine: true, clearErrorMessage: true),
+      ),
+    );
   }
 
   final GetAssignedRoutines getAssignedRoutines;
@@ -52,7 +57,18 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         );
       },
       (routines) async {
-        emit(state.copyWith(status: DashboardStatus.ready, routines: routines));
+        // Si la rutina elegida ya no está asignada (se quitó desde RUTINAS),
+        // no se sigue mostrando su plan.
+        final selected = state.selectedRoutine;
+        final stillAssigned =
+            selected != null && routines.any((r) => r.id == selected.id);
+        emit(
+          state.copyWith(
+            status: DashboardStatus.ready,
+            routines: routines,
+            clearSelectedRoutine: selected != null && !stillAssigned,
+          ),
+        );
 
         // Auto-load: si el usuario tiene exactamente una rutina, prefetch su
         // plan semanal para evitar mostrar un selector innecesario.

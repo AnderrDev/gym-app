@@ -225,6 +225,9 @@ class _DashboardPageState extends State<DashboardPage> {
               onNextWeek: () => _changeWeek(1),
               onOpenSelectedRoutineStats: _openSelectedRoutineStats,
               onOpenDay: _openRoutineDay,
+              onChangeRoutine: () => context.read<DashboardBloc>().add(
+                const ClearSelectedRoutine(),
+              ),
               onCurrentWeek: () {
                 final auth = context.read<AuthBloc>().state;
                 if (auth is Authenticated) {
