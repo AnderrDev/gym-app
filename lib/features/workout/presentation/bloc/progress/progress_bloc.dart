@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
@@ -79,7 +80,9 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
     // el hub — se pinta lo que llegó y se guarda el error para la microalerta.
     WeeklyInsights? insights;
     String? insightsError;
+    var exercises = const <Exercise>[];
     if (routines.isNotEmpty) {
+      exercises = await _exercisesOf(routines);
       final results = await Future.wait(
         routines.map(
           (r) => repository.getWeeklyInsights(
@@ -106,8 +109,27 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
         routines: routines,
         insights: insights,
         insightsError: insightsError,
+        exercises: exercises,
       ),
     );
+  }
+
+  /// Ejercicios únicos de las rutinas, ordenados por nombre. Un fallo no
+  /// tumba el hub: esa rutina simplemente no aporta ejercicios.
+  Future<List<Exercise>> _exercisesOf(List<Routine> routines) async {
+    final results = await Future.wait(
+      routines.map((r) => repository.getRoutineDays(r.id)),
+    );
+    final byId = <String, Exercise>{};
+    for (final result in results) {
+      for (final day in result.getOrElse((_) => const [])) {
+        for (final ex in day.exercises) {
+          byId.putIfAbsent(ex.id, () => ex);
+        }
+      }
+    }
+    return byId.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   /// Normaliza una fecha al lunes 00:00 local de su semana. Igual que el
