@@ -124,7 +124,7 @@ class _PendingLabel extends StatelessWidget {
         const SizedBox(width: Spacing.sm),
         Flexible(
           child: Text(
-            '${formatWeight(targetWeight)} kg × $targetReps reps',
+            '${formatLoad(targetWeight)} × $targetReps reps',
             overflow: TextOverflow.ellipsis,
             style: context.text.bodyMedium?.copyWith(
               color: isNext ? colors.textPrimary : colors.textSecondary,

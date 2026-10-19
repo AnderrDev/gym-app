@@ -190,7 +190,7 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
                 _InfoPill(
                   icon: Icons.flag_rounded,
                   label:
-                      'Objetivo ${formatWeight(widget.targetWeight)} kg × '
+                      'Objetivo ${formatLoad(widget.targetWeight)} × '
                       '${widget.targetReps}',
                   color: colors.primary,
                 ),
@@ -198,7 +198,7 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
                   _InfoPill(
                     icon: Icons.history_rounded,
                     label:
-                        'Última vez ${formatWeight(last.actualWeight)} kg × '
+                        'Última vez ${formatLoad(last.actualWeight)} × '
                         '${last.actualReps}',
                     color: colors.textSecondary,
                   ),
@@ -213,10 +213,13 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
               decimal: true,
               onMinus: () => _bumpWeight(-2.5),
               onPlus: () => _bumpWeight(2.5),
+              textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: Spacing.sm),
+            // ±2.5 ya está en los botones redondos; la tira cubre saltos
+            // pequeños (mancuernas) y grandes (barra) sin repetirlo.
             QuickStepStrip(
-              steps: const [-2.5, -1, 1, 2.5],
+              steps: const [-5, -1, 1, 5],
               formatter: (v) {
                 final s = formatWeight(v.abs());
                 return v > 0 ? '+$s' : '-$s';
@@ -233,6 +236,12 @@ class _CompleteSetSheetState extends State<CompleteSetSheet> {
               decimal: false,
               onMinus: () => _bumpReps(-1),
               onPlus: () => _bumpReps(1),
+              // "Hecho" en el teclado confirma la serie: sin esto había que
+              // cerrar el teclado y buscar el botón.
+              textInputAction: TextInputAction.done,
+              onSubmitted: () {
+                if (_isValid) _confirm();
+              },
             ),
             const SizedBox(height: Spacing.xl),
             AppButton(
@@ -305,8 +314,12 @@ class _StepperField extends StatelessWidget {
     required this.decimal,
     required this.onMinus,
     required this.onPlus,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
+  final TextInputAction? textInputAction;
+  final VoidCallback? onSubmitted;
   final Key fieldKey;
   final String label;
   final String suffix;
@@ -339,6 +352,8 @@ class _StepperField extends StatelessWidget {
                 key: fieldKey,
                 controller: controller,
                 textAlign: TextAlign.center,
+                textInputAction: textInputAction,
+                onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
                 keyboardType: TextInputType.numberWithOptions(decimal: decimal),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(
