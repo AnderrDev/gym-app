@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
@@ -73,17 +74,29 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
     }
     final routines = routinesResult.getOrElse((_) => const <Routine>[]);
 
-    // 2) Fetch insights de la primera rutina si existe. Si falla, NO tumba
-    // el hub — guardamos el error para mostrar microalerta inline.
+    // 2) Insights de TODAS las rutinas asignadas, sumados: "esta semana" es
+    // todo lo entrenado, no sólo la primera rutina. Si alguna falla, NO tumba
+    // el hub — se pinta lo que llegó y se guarda el error para la microalerta.
     WeeklyInsights? insights;
     String? insightsError;
     if (routines.isNotEmpty) {
-      final insightsResult = await repository.getWeeklyInsights(
-        routineId: routines.first.id,
-        weekStart: normalizedStart,
+      final results = await Future.wait(
+        routines.map(
+          (r) => repository.getWeeklyInsights(
+            routineId: r.id,
+            weekStart: normalizedStart,
+          ),
+        ),
       );
-      insights = insightsResult.fold((_) => null, (i) => i);
-      insightsError = insightsResult.fold((f) => f.message, (_) => null);
+      final ok = [
+        for (final r in results)
+          ...r.fold((_) => <WeeklyInsights>[], (i) => [i]),
+      ];
+      insights = ok.isEmpty ? null : combineWeeklyInsights(ok);
+      insightsError = results
+          .map((r) => r.fold((f) => f.message, (_) => null))
+          .nonNulls
+          .firstOrNull;
     }
 
     emit(
@@ -103,4 +116,37 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
   static DateTime _normalizeWeekStart(DateTime date) {
     return AppCalendar.startOfWeek(date);
   }
+}
+
+/// Suma los insights de varias rutinas de la misma semana. Los porcentajes se
+/// recalculan sobre los totales (no se promedian) con la misma convención que
+/// `compute_weekly_insights_v1`.
+@visibleForTesting
+WeeklyInsights combineWeeklyInsights(List<WeeklyInsights> all) {
+  if (all.length == 1) return all.single;
+  var planned = 0, completedDays = 0, sessions = 0, prs = 0;
+  var volume = 0.0, previous = 0.0;
+  for (final i in all) {
+    planned += i.plannedDays;
+    completedDays += i.completedDays;
+    sessions += i.completedSessions;
+    prs += i.personalRecords;
+    volume += i.totalVolume;
+    previous += i.previousWeekVolume;
+  }
+  final double trend = previous <= 0
+      ? (volume > 0 ? 100 : 0)
+      : (volume - previous) / previous * 100;
+  return WeeklyInsights(
+    weekStart: all.first.weekStart,
+    weekEnd: all.first.weekEnd,
+    plannedDays: planned,
+    completedDays: completedDays,
+    completedSessions: sessions,
+    adherenceRate: planned == 0 ? 0 : completedDays / planned * 100,
+    totalVolume: volume,
+    previousWeekVolume: previous,
+    volumeTrendPercent: trend,
+    personalRecords: prs,
+  );
 }

@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/utils/date_format.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Card de detalle de una sesión histórica de un ejercicio: fecha + volumen
 /// total + chips con cada serie. Usado por `ExerciseStatsBottomSheet`.
@@ -63,7 +64,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${log.actualWeight.toStringAsFixed(0)}kg x ${log.actualReps}',
+                      '${formatWeight(log.actualWeight)}kg x ${log.actualReps}',
                       style: context.text.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

@@ -118,7 +118,7 @@ class _StatsContent extends StatelessWidget {
           style: context.text.labelMedium?.copyWith(letterSpacing: 2),
         ),
         const SizedBox(height: 16),
-        ...stats.reversed.map((s) => RoutineSessionCard(session: s)),
+        ...stats.map((s) => RoutineSessionCard(session: s)),
       ],
     );
   }

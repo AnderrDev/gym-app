@@ -39,7 +39,9 @@ List<ExerciseHistorySession> mapExerciseLogsToHistory(
 }
 
 /// Convierte filas crudas de `workout_sessions` + join a `routine_days` +
-/// `set_logs` en entidades de historial agregado por sesión.
+/// `set_logs` en entidades de historial agregado por sesión, ordenadas
+/// descendentes (la más reciente primero), igual que el historial por
+/// ejercicio. No depende del `order` de la query.
 List<RoutineHistorySession> mapRoutineSessionRows(
   List<Map<String, dynamic>> rawData,
 ) {
@@ -73,5 +75,6 @@ List<RoutineHistorySession> mapRoutineSessionRows(
         );
       })
       .whereType<RoutineHistorySession>()
-      .toList();
+      .toList()
+    ..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
 }

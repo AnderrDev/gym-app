@@ -194,10 +194,13 @@ class WorkoutSessionRemoteDataSource {
         .from('set_logs')
         .select(
           'id, session_id, exercise_id, actual_weight, actual_reps, '
-          'set_index, created_at, workout_sessions!inner(session_date)',
+          'set_index, created_at, '
+          'workout_sessions!inner(session_date, completed_at)',
         )
         .eq('exercise_id', exerciseId)
         .eq('workout_sessions.user_id', userId)
+        // Sólo sesiones cerradas: una en curso o abandonada no es progreso.
+        .not('workout_sessions.completed_at', 'is', null)
         .order('created_at', ascending: false)
         .limit(_historyLimit);
 
@@ -219,6 +222,8 @@ class WorkoutSessionRemoteDataSource {
         ''')
         .eq('user_id', userId)
         .eq('routine_days.routine_id', routineId)
+        // Sólo sesiones cerradas: una abandonada parecía un bajón de volumen.
+        .not('completed_at', 'is', null)
         .order('session_date', ascending: true);
 
     return List<Map<String, dynamic>>.from(response);

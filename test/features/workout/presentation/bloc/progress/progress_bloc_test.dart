@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_event.dart';
@@ -39,7 +40,7 @@ void main() {
 
   group('LoadProgress', () {
     blocTest<ProgressBloc, ProgressState>(
-      'éxito de routines + insights → Loading → Ready con ambos',
+      'éxito de routines + insights → Ready con los insights sumados',
       build: () {
         when(
           () => getAssignedRoutines(any()),
@@ -57,17 +58,19 @@ void main() {
         isA<ProgressLoading>(),
         isA<ProgressReady>()
             .having((s) => s.routines.length, 'routines.length', 2)
-            .having((s) => s.insights, 'insights', testWeeklyInsights)
+            .having((s) => s.insights?.plannedDays, 'plannedDays', 10)
             .having((s) => s.insightsError, 'insightsError', isNull),
       ],
       verify: (_) {
-        // Insights se piden contra la PRIMERA rutina asignada.
-        verify(
-          () => repository.getWeeklyInsights(
-            routineId: routineA.id,
-            weekStart: any(named: 'weekStart'),
-          ),
-        ).called(1);
+        // "Esta semana" suma todas las rutinas asignadas, no sólo la primera.
+        for (final r in [routineA, routineB]) {
+          verify(
+            () => repository.getWeeklyInsights(
+              routineId: r.id,
+              weekStart: any(named: 'weekStart'),
+            ),
+          ).called(1);
+        }
       },
     );
 
@@ -187,4 +190,57 @@ void main() {
       ],
     );
   });
+
+  group('combineWeeklyInsights', () {
+    WeeklyInsights week({
+      required int planned,
+      required int done,
+      required double volume,
+      required double previous,
+    }) => testWeeklyInsights.copyWithForTest(
+      plannedDays: planned,
+      completedDays: done,
+      completedSessions: done,
+      totalVolume: volume,
+      previousWeekVolume: previous,
+    );
+
+    test('suma totales y recalcula adherencia y tendencia', () {
+      final c = combineWeeklyInsights([
+        week(planned: 4, done: 2, volume: 3000, previous: 2000),
+        week(planned: 2, done: 1, volume: 1000, previous: 2000),
+      ]);
+      expect(c.plannedDays, 6);
+      expect(c.completedDays, 3);
+      expect(c.completedSessions, 3);
+      expect(c.totalVolume, 4000);
+      expect(c.adherenceRate, 50);
+      expect(c.volumeTrendPercent, 0);
+    });
+
+    test('una sola rutina se devuelve tal cual', () {
+      expect(combineWeeklyInsights([testWeeklyInsights]), testWeeklyInsights);
+    });
+  });
+}
+
+extension on WeeklyInsights {
+  WeeklyInsights copyWithForTest({
+    required int plannedDays,
+    required int completedDays,
+    required int completedSessions,
+    required double totalVolume,
+    required double previousWeekVolume,
+  }) => WeeklyInsights(
+    weekStart: weekStart,
+    weekEnd: weekEnd,
+    plannedDays: plannedDays,
+    completedDays: completedDays,
+    completedSessions: completedSessions,
+    adherenceRate: 0,
+    totalVolume: totalVolume,
+    previousWeekVolume: previousWeekVolume,
+    volumeTrendPercent: 0,
+    personalRecords: 0,
+  );
 }

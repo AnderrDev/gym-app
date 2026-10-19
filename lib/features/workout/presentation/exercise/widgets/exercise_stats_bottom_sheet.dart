@@ -16,6 +16,7 @@ import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exerc
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_charts.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_stats_series.dart';
 import 'package:gym_flutter/injection_container.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 class ExerciseStatsBottomSheet extends StatelessWidget {
   final String userId;
@@ -167,7 +168,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         state.history,
                         (s) => s.maxWeight,
                       ),
-                      formatter: (v) => v.toStringAsFixed(0),
+                      formatter: formatWeight,
                       chart: ExerciseMaxWeightChart(history: state.history),
                     ),
                     const SizedBox(height: 32),
