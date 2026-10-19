@@ -95,4 +95,52 @@ void main() {
     expect(find.text('Sustituir ejercicio'), findsNothing);
     expect(find.text('Añadir ejercicio extra'), findsNothing);
   });
+
+  testWidgets('botón fijo "Completar serie" abre la siguiente pendiente', (
+    tester,
+  ) async {
+    const ex = Exercise(
+      id: 'e1',
+      routineDayId: 'd1',
+      name: 'Press banca',
+      targetMuscle: 'Pecho',
+      targetWeight: 60,
+      targetReps: 10,
+      targetSets: 3,
+    );
+    await tester.pumpWidget(
+      view(
+        exercises: const [ex],
+        logs: const [
+          SetLog(
+            sessionId: 's1',
+            exerciseId: 'e1',
+            actualWeight: 60,
+            actualReps: 10,
+            setIndex: 1,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bar = find.byKey(const ValueKey('focus_complete_set_button'));
+    expect(bar, findsOneWidget);
+    expect(find.text('COMPLETAR SERIE 2'), findsOneWidget);
+    // Sólo uno: el de dentro de la tarjeta ya no se pinta en esta vista.
+    expect(find.byKey(const ValueKey('complete_set_button_e1')), findsNothing);
+
+    await tester.tap(bar);
+    await tester.pumpAndSettle();
+    expect(find.text('CONFIRMAR SERIE'), findsOneWidget);
+  });
+
+  testWidgets('en solo lectura no hay botón fijo', (tester) async {
+    await tester.pumpWidget(view(readOnly: true));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('focus_complete_set_button')),
+      findsNothing,
+    );
+  });
 }

@@ -34,6 +34,10 @@ class ExerciseCard extends StatefulWidget {
   final CoachingAnalysis? coachingAnalysis;
   final bool forceExpanded;
 
+  /// `false` cuando el contenedor pinta su propio botón fijo (vista foco del
+  /// entreno) y lo dispara con [ExerciseCardState.openNextPendingSet].
+  final bool showCompleteButton;
+
   const ExerciseCard({
     super.key,
     required this.exercise,
@@ -46,13 +50,14 @@ class ExerciseCard extends StatefulWidget {
     this.readOnly = false,
     this.coachingAnalysis,
     this.forceExpanded = false,
+    this.showCompleteButton = true,
   });
 
   @override
-  State<ExerciseCard> createState() => _ExerciseCardState();
+  State<ExerciseCard> createState() => ExerciseCardState();
 }
 
-class _ExerciseCardState extends State<ExerciseCard>
+class ExerciseCardState extends State<ExerciseCard>
     with TickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -170,6 +175,15 @@ class _ExerciseCardState extends State<ExerciseCard>
       if (!widget.forceExpanded) _isExpanded = true;
     });
     widget.onSetRemoved?.call(setIndex);
+  }
+
+  /// Abre el modal de la siguiente serie pendiente. `false` si no queda
+  /// ninguna o la tarjeta es de solo lectura.
+  bool openNextPendingSet() {
+    final next = _nextPendingSet;
+    if (widget.readOnly || next == null) return false;
+    unawaited(_openSetSheet(next));
+    return true;
   }
 
   int? get _nextPendingSet {
@@ -348,6 +362,7 @@ class _ExerciseCardState extends State<ExerciseCard>
             recommendationText: _getFriendlyRecommendation,
             nextPendingSet: _nextPendingSet,
             onOpenSet: widget.readOnly ? null : _openSetSheet,
+            showCompleteButton: widget.showCompleteButton,
           ),
         ],
       ),
