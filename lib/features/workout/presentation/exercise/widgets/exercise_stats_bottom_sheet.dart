@@ -124,6 +124,17 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                           color: context.colors.error,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: () => context.read<ExerciseStatsBloc>().add(
+                          LoadExerciseStats(
+                            userId: userId,
+                            exerciseId: exerciseId,
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Reintentar'),
+                      ),
                     ],
                   ),
                 );

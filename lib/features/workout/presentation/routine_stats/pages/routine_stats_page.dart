@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:gym_flutter/core/ui/molecules/app_error_state.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_stats/routine_stats_bloc.dart';
@@ -39,13 +39,9 @@ class RoutineStatsPage extends StatelessWidget {
             style: context.text.headlineMedium,
           ),
         ),
-        body: BlocConsumer<RoutineStatsBloc, RoutineStatsState>(
-          listenWhen: (previous, current) => current is RoutineStatsError,
-          listener: (context, state) {
-            if (state is RoutineStatsError) {
-              AppSnackBar.error(context, state.message);
-            }
-          },
+        // El error se muestra en el cuerpo con Reintentar (antes además
+        // salía un snackbar con el mismo texto).
+        body: BlocBuilder<RoutineStatsBloc, RoutineStatsState>(
           buildWhen: (previous, current) =>
               current is RoutineStatsLoading ||
               current is RoutineStatsLoaded ||
@@ -55,10 +51,10 @@ class RoutineStatsPage extends StatelessWidget {
               return const Center(child: AppSpinner.large());
             }
             if (state is RoutineStatsError) {
-              return Center(
-                child: Text(
-                  state.message,
-                  style: TextStyle(color: context.colors.error),
+              return AppErrorState(
+                message: state.message,
+                onRetry: () => context.read<RoutineStatsBloc>().add(
+                  FetchRoutineStats(userId: userId, routineId: routineId),
                 ),
               );
             }
