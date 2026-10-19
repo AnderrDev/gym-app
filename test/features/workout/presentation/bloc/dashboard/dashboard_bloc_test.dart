@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -37,6 +38,9 @@ void main() {
     getAssignedRoutines = _MockGetAssignedRoutines();
     getWeeklyPlan = _MockGetWeeklyPlan();
     repository = MockWorkoutRepository();
+    when(
+      () => repository.getWeekSessions(any(), any(), any()),
+    ).thenAnswer((_) async => const Right(<WorkoutSession>[]));
   });
 
   DashboardBloc buildBloc() => DashboardBloc(

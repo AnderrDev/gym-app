@@ -176,6 +176,18 @@ class _DashboardPageState extends State<DashboardPage> {
     _reloadWeeklyPlan(authState.user.id);
   }
 
+  Future<void> _refreshPlan() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    final bloc = context.read<DashboardBloc>();
+    if (bloc.state.selectedRoutine == null) return;
+    final done = bloc.stream
+        .firstWhere((s) => !s.isLoading)
+        .timeout(const Duration(seconds: 10), onTimeout: () => bloc.state);
+    _reloadWeeklyPlan(authState.user.id);
+    await done;
+  }
+
   void _reloadWeeklyPlan(String userId) {
     final dashboardState = context.read<DashboardBloc>().state;
     final routine = dashboardState.selectedRoutine;
@@ -242,6 +254,7 @@ class _DashboardPageState extends State<DashboardPage> {
               onChangeRoutine: () => context.read<DashboardBloc>().add(
                 const ClearSelectedRoutine(),
               ),
+              onRefresh: _refreshPlan,
               onCurrentWeek: () {
                 final auth = context.read<AuthBloc>().state;
                 if (auth is Authenticated) {

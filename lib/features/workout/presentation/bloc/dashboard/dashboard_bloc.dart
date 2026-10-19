@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -118,6 +119,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         routineId: event.routine.id,
         weekStart: normalized,
       ),
+      repository.getWeekSessions(
+        event.userId,
+        normalized,
+        AppCalendar.addDays(normalized, 6),
+      ),
     ]);
 
     if (request != _planRequest) return;
@@ -133,12 +139,17 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           // `weekStart` ya apunta a la semana pedida: no se pintan los días
           // de otra semana bajo su rango.
           weeklyDays: const [],
+          weekSessions: const [],
         ),
       );
       return;
     }
 
     final days = daysResult.getOrElse((_) => const []);
+    // Best-effort: sólo alimenta el historial; si falla, el historial cae a
+    // la última sesión por día.
+    final weekSessions = (results[2] as Either<Failure, List<WorkoutSession>>)
+        .getOrElse((_) => const []);
     final insights = insightsResult.fold((_) => null, (i) => i);
     final insightsError = insightsResult.fold((f) => f.message, (_) => null);
 
@@ -146,6 +157,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       state.copyWith(
         status: DashboardStatus.ready,
         weeklyDays: days,
+        weekSessions: weekSessions,
         insights: insights,
         insightsError: insightsError,
         clearInsights: insights == null,
