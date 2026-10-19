@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
@@ -105,10 +106,6 @@ class RoutineManagementBloc
   final GetExercisesCatalog getExercisesCatalog;
 
   static DateTime normalizeWeekStart(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
+    return AppCalendar.startOfWeek(date);
   }
 }

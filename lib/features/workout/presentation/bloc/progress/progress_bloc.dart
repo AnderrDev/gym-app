@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -56,7 +57,7 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
     required Emitter<ProgressState> emit,
   }) async {
     final normalizedStart = _normalizeWeekStart(weekStart ?? DateTime.now());
-    final weekEnd = normalizedStart.add(const Duration(days: 6));
+    final weekEnd = AppCalendar.addDays(normalizedStart, 6);
 
     // 1) Fetch rutinas asignadas. Si esto falla, no podemos pintar nada
     // (el hub depende de saber qué rutinas tiene el user incluso para
@@ -100,10 +101,6 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
   /// helper privado de `DashboardBloc` — duplicado a propósito para no
   /// crear acoplamiento entre dos blocs distintos.
   static DateTime _normalizeWeekStart(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
+    return AppCalendar.startOfWeek(date);
   }
 }

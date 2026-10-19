@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -34,11 +35,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   static DateTime _weekStartOf(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
+    return AppCalendar.startOfWeek(date);
   }
 
   late final RoutineAssignmentBus _assignmentBus;
@@ -121,7 +118,7 @@ class _DashboardPageState extends State<DashboardPage> {
     context.read<DashboardBloc>().add(
       ChangeWeek(
         userId: authState.user.id,
-        weekStart: base.add(Duration(days: 7 * delta)),
+        weekStart: AppCalendar.addDays(base, 7 * delta),
       ),
     );
   }

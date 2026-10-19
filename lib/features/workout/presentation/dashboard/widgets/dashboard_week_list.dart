@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -48,7 +49,7 @@ class DashboardWeekList extends StatelessWidget {
   }
 
   Widget _buildDay(int i, DateTime todayDate) {
-    final date = weekStart.add(Duration(days: i));
+    final date = AppCalendar.addDays(weekStart, i);
     final dayOnly = DateTime(date.year, date.month, date.day);
     final dayOfWeek = i + 1;
     final routineDay = daysByDayOfWeek[dayOfWeek];

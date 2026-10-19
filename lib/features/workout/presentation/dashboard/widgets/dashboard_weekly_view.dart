@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
@@ -54,7 +55,7 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
 
   bool get _currentWeek =>
       !_today.isBefore(widget.weekStart) &&
-      _today.isBefore(widget.weekStart.add(const Duration(days: 7)));
+      _today.isBefore(AppCalendar.addDays(widget.weekStart, 7));
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +119,7 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
                   ),
                   Expanded(
                     child: Text(
-                      '${_shortDate(widget.weekStart)} — ${_shortDate(widget.weekStart.add(const Duration(days: 6)))}',
+                      '${_shortDate(widget.weekStart)} — ${_shortDate(AppCalendar.addDays(widget.weekStart, 6))}',
                       textAlign: TextAlign.center,
                       style: context.text.titleSmall,
                     ),

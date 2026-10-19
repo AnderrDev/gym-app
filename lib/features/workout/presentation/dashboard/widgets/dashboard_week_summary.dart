@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -142,7 +143,7 @@ class DashboardWeekSummary extends StatelessWidget {
     final today = DateTime.now();
     final todayDateOnly = DateTime(today.year, today.month, today.day);
     for (var i = 0; i < 7; i++) {
-      final date = weekStart.add(Duration(days: i));
+      final date = AppCalendar.addDays(weekStart, i);
       final dateOnly = DateTime(date.year, date.month, date.day);
       if (dateOnly.isBefore(todayDateOnly)) continue;
       // dayOfWeek: 1..7 (Lun..Dom). Buscamos el día en la lista que matchea.
@@ -156,7 +157,7 @@ class DashboardWeekSummary extends StatelessWidget {
       if (candidate.status == WorkoutDayStatus.completed) continue;
       final label = dateOnly == todayDateOnly
           ? 'HOY'
-          : dateOnly == todayDateOnly.add(const Duration(days: 1))
+          : dateOnly == AppCalendar.addDays(todayDateOnly, 1)
           ? 'MAÑANA'
           : _shortDayLabel(date);
       return _NextWorkout(day: candidate, date: date, relativeLabel: label);

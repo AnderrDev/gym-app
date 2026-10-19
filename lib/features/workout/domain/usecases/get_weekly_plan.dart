@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/routine_day.dart';
@@ -20,7 +21,7 @@ class GetWeeklyPlan {
     if (days.isEmpty) return const Right([]);
 
     // 2. Obtener las sesiones de la semana
-    final weekEnd = weekStart.add(const Duration(days: 6));
+    final weekEnd = AppCalendar.addDays(weekStart, 6);
     final sessionsResult = await repository.getWeekSessions(
       userId,
       weekStart,

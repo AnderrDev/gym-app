@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
@@ -618,7 +619,7 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     final canCache = userId != null && localDataSource != null;
     final fallback = WeeklyInsights(
       weekStart: weekStart,
-      weekEnd: weekStart.add(const Duration(days: 6)),
+      weekEnd: AppCalendar.addDays(weekStart, 6),
       plannedDays: 0,
       completedDays: 0,
       completedSessions: 0,
