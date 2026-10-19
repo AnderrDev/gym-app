@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/forms/inputs/reps_input.dart';
 import 'package:gym_flutter/core/forms/inputs/weight_input.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
-import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
@@ -76,10 +75,11 @@ class _RemoteTargetSheetState extends State<RemoteTargetSheet> {
         targetReps: r,
       ),
     );
-    // El resultado real lo confirma (o lo rechaza) el bloc: si RLS bloquea
-    // el update, emite `actionError` y la página muestra el error.
+    // El resultado lo refleja el bloc: si va bien la tarjeta muestra el
+    // objetivo nuevo; si falla emite `actionError` y la página lo avisa.
+    // Antes se mostraba 'Objetivo enviado' antes de saber el resultado y
+    // luego, si fallaba, un error que lo contradecía.
     Navigator.of(context).pop();
-    AppSnackBar.success(context, 'Objetivo enviado');
   }
 
   @override

@@ -60,8 +60,12 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       case FinishActiveWorkout():
         await _onFinish(event, emit);
       case ResetActiveWorkout():
+        // Salir de la pantalla con la sesión abierta no la termina: la
+        // notificación persistente sigue (sirve para volver). Sólo se quita
+        // si no había sesión abierta.
+        final open = state.isRunning && state.session?.completedAt == null;
         emit(const ActiveWorkoutState());
-        await notifier.onEnded();
+        if (!open) await notifier.onEnded();
     }
   }
 
@@ -183,15 +187,20 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
       )).getOrElse((failure) => throw failure);
       // El evento `ResumeActiveWorkout` no trae el routineDayName explícito;
       // cae sobre el contexto persistido como fallback.
-      final dayName =
-          activeSessionService.getContext()?.routineDayName ?? 'Entrenamiento';
-      await notifier.onStarted(
-        dayName: dayName,
-        sessionStartedAt: DateTime.now(),
-        totalSets: _totalTargetSetsFor(exercises),
-      );
-      if (setLogs.isNotEmpty) {
-        await notifier.onProgress(completedSets: setLogs.length);
+      // Consultar una sesión ya cerrada no es un entreno activo: sin
+      // notificación ni Live Activity.
+      if (event.session.completedAt == null) {
+        final dayName =
+            activeSessionService.getContext()?.routineDayName ??
+            'Entrenamiento';
+        await notifier.onStarted(
+          dayName: dayName,
+          sessionStartedAt: DateTime.now(),
+          totalSets: _totalTargetSetsFor(exercises),
+        );
+        if (setLogs.isNotEmpty) {
+          await notifier.onProgress(completedSets: setLogs.length);
+        }
       }
       emit(
         state.copyWith(
