@@ -209,8 +209,11 @@ class _ExerciseCardState extends State<ExerciseCard>
     }
     final ex = widget.exercise;
     final last = widget.lastPerformance;
-    if (ex.targetWeight <= 0 && !ex.isExtra && ex.replacesExerciseName == null &&
-        last != null && last.actualWeight > 0) {
+    if (ex.targetWeight <= 0 &&
+        !ex.isExtra &&
+        ex.replacesExerciseName == null &&
+        last != null &&
+        last.actualWeight > 0) {
       return (weight: last.actualWeight, reps: last.actualReps);
     }
     return (weight: ex.targetWeight, reps: ex.targetReps);

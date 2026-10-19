@@ -135,21 +135,33 @@ void main() {
   });
 
   group('flujo "Completar serie"', () {
-    testWidgets('un extra conserva el peso cero confirmado aunque exista historial con carga', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 2400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(createWidgetUnderTest(
-        exercise: tExercise.copyWith(targetWeight: 0, isExtra: true),
-        lastPerformance: const SetLog(sessionId: 'old', exerciseId: 'e1', setIndex: 1,
-          actualWeight: 60, actualReps: 10),
-      ));
-      await tester.tap(find.byKey(const ValueKey('complete_set_button_e1')));
-      await tester.pumpAndSettle();
-      final weights = tester.widgetList<TextField>(find.byType(TextField))
-          .map((field) => field.controller?.text).toList();
-      expect(weights, contains('0'));
-      expect(weights, isNot(contains('60')));
-    });
+    testWidgets(
+      'un extra conserva el peso cero confirmado aunque exista historial con carga',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1100, 2400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            exercise: tExercise.copyWith(targetWeight: 0, isExtra: true),
+            lastPerformance: const SetLog(
+              sessionId: 'old',
+              exerciseId: 'e1',
+              setIndex: 1,
+              actualWeight: 60,
+              actualReps: 10,
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const ValueKey('complete_set_button_e1')));
+        await tester.pumpAndSettle();
+        final weights = tester
+            .widgetList<TextField>(find.byType(TextField))
+            .map((field) => field.controller?.text)
+            .toList();
+        expect(weights, contains('0'));
+        expect(weights, isNot(contains('60')));
+      },
+    );
     Future<void> pumpCard(
       WidgetTester tester, {
       void Function(SetLog)? onSetAdded,
