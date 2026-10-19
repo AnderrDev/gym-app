@@ -67,29 +67,24 @@ void main() {
       await tester.pumpWidget(pumpProfile());
       await tester.pump();
 
-      // Tanto el nombre como el email aparecen dos veces: una en el
-      // avatar-header y otra como `value` de su `_InfoRow` en CUENTA.
+      // El nombre aparece en la cabecera y en su fila editable de CUENTA; el
+      // email sólo en la cabecera.
       expect(find.text('Ander Cifuentes'), findsNWidgets(2));
-      expect(find.text('ander@example.com'), findsNWidgets(2));
+      expect(find.text('ander@example.com'), findsOneWidget);
 
       // Sección CUENTA
       expect(find.text('CUENTA'), findsOneWidget);
       expect(find.text('Nombre'), findsOneWidget);
-      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Email'), findsNothing);
 
       // Sección PREFERENCIAS (con valores)
       expect(find.text('PREFERENCIAS'), findsOneWidget);
       expect(find.text('Tema'), findsOneWidget);
       // Default = system → "Sistema".
       expect(find.text('Sistema'), findsOneWidget);
-      expect(find.text('Idioma'), findsOneWidget);
-      expect(find.text('Español'), findsOneWidget);
-      expect(find.text('Unidades'), findsOneWidget);
-      expect(find.text('Kilogramos (kg)'), findsOneWidget);
 
-      // Idioma y Unidades siguen como "PRÓXIMAMENTE"; Tema ya es interactivo
-      // (chevron en vez de tag). El segundo chevron corresponde a "Nombre".
-      expect(find.text('PRÓXIMAMENTE'), findsNWidgets(2));
+      // Sin filas "PRÓXIMAMENTE" sin acción. Chevrons: Nombre y Tema.
+      expect(find.text('PRÓXIMAMENTE'), findsNothing);
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
 
       // CTA sign-out

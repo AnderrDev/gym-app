@@ -110,6 +110,7 @@ class _ProfileContent extends StatelessWidget {
         const SizedBox(height: Spacing.xxl),
         const ProfileSectionTitle('CUENTA'),
         const SizedBox(height: Spacing.sm),
+        // El email ya se ve en la cabecera; repetirlo aquí sólo añadía ruido.
         ProfileInfoCard(
           rows: [
             ProfileInfoRow(
@@ -117,11 +118,6 @@ class _ProfileContent extends StatelessWidget {
               label: 'Nombre',
               value: user.fullName?.isNotEmpty == true ? user.fullName! : '—',
               onTap: () => _onEditName(context),
-            ),
-            ProfileInfoRow(
-              icon: Icons.alternate_email_rounded,
-              label: 'Email',
-              value: user.email,
             ),
           ],
         ),
@@ -139,18 +135,8 @@ class _ProfileContent extends StatelessWidget {
                   value: themeModeLabel(settings.themeMode),
                   onTap: () => _onPickTheme(context),
                 ),
-                const ProfileInfoRow(
-                  icon: Icons.language_rounded,
-                  label: 'Idioma',
-                  value: 'Español',
-                  trailingTag: 'PRÓXIMAMENTE',
-                ),
-                const ProfileInfoRow(
-                  icon: Icons.straighten_rounded,
-                  label: 'Unidades',
-                  value: 'Kilogramos (kg)',
-                  trailingTag: 'PRÓXIMAMENTE',
-                ),
+                // Idioma y unidades no se pueden cambiar todavía: filas
+                // "PRÓXIMAMENTE" sin acción no aportaban nada.
               ],
             );
           },
