@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -132,6 +133,9 @@ void main() {
     di.sl.registerSingleton<NotificationService>(notificationService);
     di.sl.registerSingleton<ActiveWorkoutNotifier>(activeWorkoutNotifier);
     di.sl.registerSingleton<LiveActivitiesBridge>(liveActivitiesBridge);
+    if (!di.sl.isRegistered<Clock>()) {
+      di.sl.registerSingleton<Clock>(const SystemClock());
+    }
 
     when(
       () => routineDayBloc.stream,
@@ -446,6 +450,67 @@ void main() {
       () => activeWorkoutBloc.add(any(that: isA<SaveActiveSetLog>())),
     ).called(1);
     expect(find.text('1:30'), findsOneWidget);
+  });
+
+  testWidgets('el descanso usa el configurado en el ejercicio', (tester) async {
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      ActiveWorkoutState(
+        status: ActiveWorkoutStatus.running,
+        session: tSession,
+        exercises: [tExercise.copyWith(restTimerSeconds: 45)],
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    tester.widget<ExerciseCard>(find.byType(ExerciseCard)).onSetAdded!(
+      const SetLog(
+        sessionId: 's1',
+        exerciseId: 'e1',
+        setIndex: 1,
+        actualWeight: 60,
+        actualReps: 10,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('0:45'), findsOneWidget);
+  });
+
+  testWidgets('editar una serie ya registrada no arranca descanso', (
+    tester,
+  ) async {
+    const saved = SetLog(
+      sessionId: 's1',
+      exerciseId: 'e1',
+      setIndex: 1,
+      actualWeight: 60,
+      actualReps: 10,
+    );
+    when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
+    when(() => activeWorkoutBloc.state).thenReturn(
+      ActiveWorkoutState(
+        status: ActiveWorkoutStatus.running,
+        session: tSession,
+        exercises: const [tExercise],
+        setLogs: const [saved],
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    tester.widget<ExerciseCard>(find.byType(ExerciseCard)).onSetAdded!(
+      saved.copyWith(actualWeight: 62.5),
+    );
+    await tester.pump();
+
+    verify(
+      () => activeWorkoutBloc.add(any(that: isA<SaveActiveSetLog>())),
+    ).called(1);
+    expect(find.text('1:30'), findsNothing);
   });
 
   testWidgets('al pasar a status finished pop con true', (tester) async {

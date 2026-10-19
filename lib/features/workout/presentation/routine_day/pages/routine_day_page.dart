@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
@@ -12,6 +13,7 @@ import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -63,6 +65,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
       liveActivities: di.sl<LiveActivitiesBridge>(),
       notifications: di.sl<NotificationService>(),
       onNaturalEnd: _onRestNaturalEnd,
+      clock: di.sl<Clock>(),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -79,7 +82,19 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   @override
   void dispose() {
     _restController.dispose();
+    _setKeepScreenOn(false);
     super.dispose();
+  }
+
+  /// Entre series el móvil queda apoyado sin tocarlo: mientras la sesión
+  /// está en marcha la pantalla no se apaga. Si la plataforma no lo
+  /// soporta (p. ej. navegador sin Screen Wake Lock) se ignora.
+  bool _keepScreenOn = false;
+
+  void _setKeepScreenOn(bool enabled) {
+    if (_keepScreenOn == enabled) return;
+    _keepScreenOn = enabled;
+    unawaited(WakelockPlus.toggle(enable: enabled).catchError((_) {}));
   }
 
   void _onRestNaturalEnd() {
@@ -120,8 +135,18 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
   }
 
   void _onSetAdded(SetLog log) {
+    final state = context.read<ActiveWorkoutBloc>().state;
+    // Editar una serie ya registrada no es terminar otra: el descanso en
+    // curso no se reinicia.
+    final isEdit = state.setLogs.any(
+      (l) => l.exerciseId == log.exerciseId && l.setIndex == log.setIndex,
+    );
     context.read<ActiveWorkoutBloc>().add(SaveActiveSetLog(log));
-    _restController.start(90);
+    if (isEdit) return;
+    final exercise = state.exercises.firstWhereOrNull(
+      (e) => e.id == log.exerciseId,
+    );
+    _restController.start(exercise?.restTimerSeconds ?? 90);
   }
 
   void _onSetRemoved(String exerciseId, int setIndex) {
@@ -314,6 +339,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             if (_startRequested && state.status != ActiveWorkoutStatus.idle) {
               setState(() => _startRequested = false);
             }
+            _setKeepScreenOn(state.status == ActiveWorkoutStatus.running);
             final actionError = state.actionError;
             if (actionError != null) {
               AppSnackBar.error(context, actionError);

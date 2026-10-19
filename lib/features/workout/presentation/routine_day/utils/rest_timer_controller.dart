@@ -6,12 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
 
 /// Controla el countdown de descanso entre series para `RoutineDayPage`.
 ///
 /// Posee:
-/// - El `Timer.periodic` que decrementa el contador cada segundo.
+/// - El `Timer.periodic` que refresca el contador cada segundo. La cuenta se
+///   calcula contra la hora de fin ([Clock]), no contando ticks: con la
+///   pantalla bloqueada o la pestaña en segundo plano los ticks se congelan,
+///   y al volver el contador debe mostrar el tiempo real restante.
 /// - El `ValueNotifier<RestTimerSnapshot>` que el botón observa para
 ///   rebuildearse sin afectar al resto del scaffold.
 /// - Las integraciones laterales (haptic, Live Activity, notificación push).
@@ -25,18 +29,21 @@ class RestTimerController {
     required this.liveActivities,
     required this.notifications,
     this.onNaturalEnd,
+    this.clock = const SystemClock(),
   });
 
   final ActiveWorkoutNotifier notifier;
   final LiveActivitiesBridge liveActivities;
   final NotificationService notifications;
   final VoidCallback? onNaturalEnd;
+  final Clock clock;
 
   final ValueNotifier<RestTimerSnapshot> snapshot = ValueNotifier(
     const RestTimerSnapshot.idle(),
   );
 
   Timer? _timer;
+  DateTime? _endsAt;
 
   void dispose() {
     _timer?.cancel();
@@ -45,26 +52,47 @@ class RestTimerController {
 
   void start(int seconds) {
     _timer?.cancel();
+    if (seconds <= 0) {
+      _endsAt = null;
+      snapshot.value = const RestTimerSnapshot.idle();
+      return;
+    }
+    _endsAt = clock.now().add(Duration(seconds: seconds));
     snapshot.value = RestTimerSnapshot(
       isResting: true,
       secondsRemaining: seconds,
       totalRestSeconds: seconds,
     );
     unawaited(notifier.onRestStarted(duration: Duration(seconds: seconds)));
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final current = snapshot.value;
-      if (current.secondsRemaining > 0) {
-        final next = current.secondsRemaining - 1;
-        snapshot.value = RestTimerSnapshot(
-          isResting: true,
-          secondsRemaining: next,
-          totalRestSeconds: current.totalRestSeconds,
-        );
-        if (next > 0 && next <= 3) HapticFeedback.lightImpact();
-      } else {
-        _onNaturalEnd();
-      }
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+  }
+
+  int _remainingSeconds() {
+    final endsAt = _endsAt;
+    if (endsAt == null) return 0;
+    final ms = endsAt.difference(clock.now()).inMilliseconds;
+    // Redondeo hacia arriba: con 0.4s restantes se sigue mostrando "1".
+    return ms <= 0 ? 0 : (ms + 999) ~/ 1000;
+  }
+
+  /// Recalcula el restante contra el reloj. Lo llama el `Timer.periodic`;
+  /// expuesto para tests.
+  @visibleForTesting
+  void tick() {
+    final current = snapshot.value;
+    if (!current.isResting) return;
+    final next = _remainingSeconds();
+    if (next <= 0) {
+      _onNaturalEnd();
+      return;
+    }
+    if (next == current.secondsRemaining) return;
+    snapshot.value = RestTimerSnapshot(
+      isResting: true,
+      secondsRemaining: next,
+      totalRestSeconds: current.totalRestSeconds,
+    );
+    if (next <= 3) HapticFeedback.lightImpact();
   }
 
   void _onNaturalEnd() {
@@ -82,8 +110,10 @@ class RestTimerController {
 
   void stop({bool naturalEnd = false}) {
     _timer?.cancel();
+    _endsAt = null;
     snapshot.value = const RestTimerSnapshot.idle();
-    HapticFeedback.heavyImpact();
+    // En el fin natural ya vibró `_onNaturalEnd`; no encadenar otra.
+    if (!naturalEnd) HapticFeedback.heavyImpact();
     unawaited(notifier.onRestEnded(naturalEnd: naturalEnd));
   }
 
@@ -91,7 +121,7 @@ class RestTimerController {
   void adjust(int delta) {
     final current = snapshot.value;
     if (!current.isResting) return;
-    final newRemaining = current.secondsRemaining + delta;
+    final newRemaining = _remainingSeconds() + delta;
     if (newRemaining <= 0) {
       stop();
       return;
@@ -102,6 +132,7 @@ class RestTimerController {
     final newTotal = newRemaining > current.totalRestSeconds
         ? newRemaining
         : current.totalRestSeconds;
+    _endsAt = clock.now().add(Duration(seconds: newRemaining));
     snapshot.value = RestTimerSnapshot(
       isResting: true,
       secondsRemaining: newRemaining,
