@@ -83,6 +83,9 @@ class FocusViewExerciseStepper extends StatelessWidget {
                     state: _stateFor(exercises[i]),
                     isCurrent: i == currentIndex,
                     onTap: () => onTap(i),
+                    semanticLabel:
+                        'Ejercicio ${i + 1} de ${exercises.length}: '
+                        '${exercises[i].name}',
                   ),
                   if (i < exercises.length - 1)
                     const SizedBox(width: Spacing.xs),
@@ -110,7 +113,10 @@ class _StepperDot extends StatelessWidget {
     required this.state,
     required this.isCurrent,
     required this.onTap,
+    required this.semanticLabel,
   });
+
+  final String semanticLabel;
 
   final _DotState state;
   final bool isCurrent;
@@ -125,18 +131,29 @@ class _StepperDot extends StatelessWidget {
     };
     final border = isCurrent ? context.colors.primary : context.colors.divider;
     final width = isCurrent ? 28.0 : 18.0;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Radii.pill),
-      child: AnimatedContainer(
-        duration: AppDurations.fast,
-        curve: Curves.easeOut,
-        width: width,
-        height: 8,
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: BorderRadius.circular(Radii.pill),
-          border: Border.all(color: border, width: 1.5),
+    // El punto mide 8 px de alto; el área táctil se amplía con padding para
+    // poder pulsarlo, y se anuncia como botón a los lectores de pantalla.
+    return Semantics(
+      button: true,
+      selected: isCurrent,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 2),
+          child: AnimatedContainer(
+            duration: AppDurations.fast,
+            curve: Curves.easeOut,
+            width: width,
+            height: 8,
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(Radii.pill),
+              border: Border.all(color: border, width: 1.5),
+            ),
+          ),
         ),
       ),
     );

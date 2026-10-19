@@ -158,8 +158,8 @@ class ExerciseRowCard extends StatelessWidget {
                     tooltip: 'Ver detalle del ejercicio',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                      minWidth: 48,
+                      minHeight: 48,
                     ),
                   ),
                 if (onRemove != null)
@@ -179,8 +179,8 @@ class ExerciseRowCard extends StatelessWidget {
                       tooltip: 'Quitar ejercicio',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
+                        minWidth: 48,
+                        minHeight: 48,
                       ),
                     ),
                   ),
