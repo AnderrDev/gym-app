@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gym_flutter/core/error/failures.dart';
 import '../../../../core/services/active_session_service.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/sign_in_with_email.dart';
@@ -36,6 +37,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<UserProfileUpdated>(_onUserProfileUpdated);
+    on<AuthErrorDismissed>((_, emit) {
+      if (state is AuthError) emit(Unauthenticated());
+    });
 
     _authSubscription = authStateChanges.listen((isAuthenticated) {
       add(AuthStateChanged(isAuthenticated: isAuthenticated));
@@ -114,19 +118,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     await result.fold(
       (failure) async => emit(AuthError(failure.message)),
-      (_) => _emitAuthenticatedFromCurrentUser(emit),
+      (_) => _emitAuthenticatedFromCurrentUser(
+        emit,
+        noSession: AuthAwaitingEmailConfirmation(event.email),
+      ),
     );
   }
 
   Future<void> _emitAuthenticatedFromCurrentUser(
-    Emitter<AuthState> emit,
-  ) async {
+    Emitter<AuthState> emit, {
+    AuthState? noSession,
+  }) async {
     final result = await getCurrentUser();
     result.fold((failure) => emit(AuthError(failure.message)), (user) {
       if (user != null) {
         emit(Authenticated(user));
       } else {
-        emit(Unauthenticated());
+        emit(noSession ?? Unauthenticated());
       }
     });
   }
@@ -149,15 +157,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSubmitting());
     }
     final result = await signOut();
-    await result.fold((failure) async => emit(AuthError(failure.message)), (
-      _,
-    ) async {
-      // Limpiamos la sesión activa local antes de emitir Unauthenticated:
-      // evita que `ActiveSessionWatcherBloc` reanude un entrenamiento del
-      // usuario anterior al volver a entrar.
-      await activeSessionService?.clear();
-      emit(Unauthenticated());
-    });
+    // Sin red el SDK ya borró la sesión local antes de fallar la llamada:
+    // el usuario está fuera igual. Antes se mostraba "signOut failed: …" en
+    // el login y la sesión activa local no se limpiaba.
+    final signedOut = result.fold((f) => f is NetworkFailure, (_) => true);
+    if (!signedOut) {
+      emit(AuthError(result.fold((f) => f.message, (_) => '')));
+      return;
+    }
+    // Limpiamos la sesión activa local antes de emitir Unauthenticated:
+    // evita que `ActiveSessionWatcherBloc` reanude un entrenamiento del
+    // usuario anterior al volver a entrar.
+    await activeSessionService?.clear();
+    emit(Unauthenticated());
   }
 
   @override

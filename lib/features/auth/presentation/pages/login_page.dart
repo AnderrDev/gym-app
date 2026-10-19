@@ -154,8 +154,10 @@ class _LoginForm extends StatelessWidget {
                     uppercaseLabel: false,
                     autofocus: wide,
                     value: state.email.value,
-                    onChanged: (v) =>
-                        context.read<LoginFormBloc>().add(LoginEmailChanged(v)),
+                    onChanged: (v) {
+                      context.read<AuthBloc>().add(AuthErrorDismissed());
+                      context.read<LoginFormBloc>().add(LoginEmailChanged(v));
+                    },
                     errorText: state.email.isPure
                         ? null
                         : state.email.error?.message,
@@ -175,9 +177,12 @@ class _LoginForm extends StatelessWidget {
                     label: 'Contraseña',
                     uppercaseLabel: false,
                     value: state.password.value,
-                    onChanged: (v) => context.read<LoginFormBloc>().add(
-                      LoginPasswordChanged(v),
-                    ),
+                    onChanged: (v) {
+                      context.read<AuthBloc>().add(AuthErrorDismissed());
+                      context.read<LoginFormBloc>().add(
+                        LoginPasswordChanged(v),
+                      );
+                    },
                     errorText: state.password.isPure
                         ? null
                         : state.password.error?.message,

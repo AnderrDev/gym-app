@@ -328,13 +328,13 @@ void main() {
     });
 
     test('supabase.AuthException → AuthFailure', () async {
-      when(
-        () => mockRemoteDataSource.getActiveSessionForUser(any()),
-      ).thenThrow(const supabase.AuthException('expired'));
+      when(() => mockRemoteDataSource.getActiveSessionForUser(any())).thenThrow(
+        const supabase.AuthException('expired', code: 'session_expired'),
+      );
       final result = await repository.getActiveSessionForUser(tUserId);
       result.fold((f) {
         expect(f, isA<AuthFailure>());
-        expect(f.message, 'expired');
+        expect(f.message, 'Tu sesión expiró. Vuelve a iniciar sesión.');
       }, (_) => fail('expected Left'));
     });
 

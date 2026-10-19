@@ -41,6 +41,10 @@ final class SignUpRequested extends AuthEvent {
 
 final class SignOutRequested extends AuthEvent {}
 
+/// El usuario ya vio el error (o empezó a corregir el formulario): vuelve a
+/// `Unauthenticated` para que no reaparezca en otra pantalla de auth.
+final class AuthErrorDismissed extends AuthEvent {}
+
 /// Notifica que el profile del user fue editado (típicamente desde la
 /// pestaña PERFIL). Permite refrescar el `User` global sin re-pedir el
 /// `getCurrentUser` al backend.

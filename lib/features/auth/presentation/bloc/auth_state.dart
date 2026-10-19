@@ -25,6 +25,17 @@ final class Authenticated extends AuthState {
 
 final class Unauthenticated extends AuthState {}
 
+/// Registro correcto pero sin sesión: el proyecto exige confirmar el email.
+/// Antes caía en `Unauthenticated` sin ningún aviso.
+final class AuthAwaitingEmailConfirmation extends AuthState {
+  final String email;
+
+  const AuthAwaitingEmailConfirmation(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}
+
 final class AuthError extends AuthState {
   final String message;
 

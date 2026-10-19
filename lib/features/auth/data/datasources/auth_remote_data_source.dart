@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import 'package:gym_flutter/core/error/exceptions.dart';
+import 'package:gym_flutter/core/error/user_messages.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 
 import '../models/user_model.dart';
@@ -48,9 +53,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         password: password,
       );
     } on supabase.AuthException catch (e) {
-      throw AuthException(e.message);
+      if (e is supabase.AuthRetryableFetchException) throw NetworkException();
+      throw AuthException(authErrorMessage(e));
     } catch (e) {
-      throw ServerException('signIn failed: $e');
+      _throwUnexpected('signIn', e);
     }
     final user = response.user;
     if (user == null) {
@@ -92,9 +98,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'full_name': fullName},
       );
     } on supabase.AuthException catch (e) {
-      throw AuthException(e.message);
+      if (e is supabase.AuthRetryableFetchException) throw NetworkException();
+      throw AuthException(authErrorMessage(e));
     } catch (e) {
-      throw ServerException('signUp failed: $e');
+      _throwUnexpected('signUp', e);
     }
     final user = response.user;
     if (user == null) {
@@ -127,9 +134,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await client.auth.signOut();
     } on supabase.AuthException catch (e) {
-      throw AuthException(e.message);
+      if (e is supabase.AuthRetryableFetchException) throw NetworkException();
+      throw AuthException(authErrorMessage(e));
     } catch (e) {
-      throw ServerException('signOut failed: $e');
+      _throwUnexpected('signOut', e);
     }
   }
 
@@ -168,9 +176,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await client.auth.resetPasswordForEmail(email);
     } on supabase.AuthException catch (e) {
-      throw AuthException(e.message);
+      if (e is supabase.AuthRetryableFetchException) throw NetworkException();
+      throw AuthException(authErrorMessage(e));
     } catch (e) {
       throw ServerException('resetPassword failed: $e');
     }
   }
+}
+
+/// Errores fuera de `AuthException`: sin red el SDK lanza `ClientException`
+/// / `SocketException` / timeout. Antes se envolvían como
+/// `ServerException('signIn failed: ClientException…')` y ese texto llegaba
+/// a la pantalla de login.
+Never _throwUnexpected(String operation, Object error) {
+  AppLogger.instance.warning('$operation failed: $error');
+  if (error is http.ClientException ||
+      error is SocketException ||
+      error is TimeoutException) {
+    throw NetworkException();
+  }
+  throw ServerException(genericErrorMessage);
 }

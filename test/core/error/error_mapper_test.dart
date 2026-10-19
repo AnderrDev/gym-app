@@ -16,10 +16,23 @@ void main() {
       expect(f.message, 'bad creds');
     });
 
-    test('supabase.AuthException → AuthFailure', () {
-      final f = mapToFailure(const supabase.AuthException('expired'));
+    test('supabase.AuthException → AuthFailure con texto en español', () {
+      final f = mapToFailure(
+        const supabase.AuthException(
+          'Invalid login credentials',
+          code: 'invalid_credentials',
+        ),
+      );
       expect(f, isA<AuthFailure>());
-      expect(f.message, 'expired');
+      expect(f.message, 'Email o contraseña incorrectos.');
+    });
+
+    test('AuthRetryableFetchException (sin red) → NetworkFailure', () {
+      final f = mapToFailure(
+        supabase.AuthRetryableFetchException(message: 'ClientException'),
+      );
+      expect(f, isA<NetworkFailure>());
+      expect(f.message, isNot(contains('ClientException')));
     });
 
     test('PostgrestException with PGRST116 → NotFoundFailure', () {
@@ -27,7 +40,7 @@ void main() {
         const supabase.PostgrestException(message: 'no rows', code: 'PGRST116'),
       );
       expect(f, isA<NotFoundFailure>());
-      expect(f.message, 'no rows');
+      expect(f.message, isNot('no rows'));
     });
 
     test('PostgrestException with 23505 → ConflictFailure', () {
@@ -42,7 +55,16 @@ void main() {
         const supabase.PostgrestException(message: 'boom', code: 'X1'),
       );
       expect(f, isA<ServerFailure>());
-      expect(f.message, 'boom');
+      // El texto técnico de Postgres no llega a la UI.
+      expect(f.message, isNot(contains('boom')));
+    });
+
+    test('PostgrestException 42501 (RLS) → AuthFailure sin permiso', () {
+      final f = mapToFailure(
+        const supabase.PostgrestException(message: 'denied', code: '42501'),
+      );
+      expect(f, isA<AuthFailure>());
+      expect(f.message, 'No tienes permiso para hacer esto.');
     });
 
     test('SocketException → NetworkFailure', () {
@@ -87,10 +109,10 @@ void main() {
       expect(identical(f, original), isTrue);
     });
 
-    test('unknown error → ServerFailure with toString', () {
+    test('unknown error → ServerFailure genérico, sin el texto crudo', () {
       final f = mapToFailure(StateError('unexpected'));
       expect(f, isA<ServerFailure>());
-      expect(f.message, contains('unexpected'));
+      expect(f.message, isNot(contains('unexpected')));
     });
   });
 
@@ -112,11 +134,14 @@ void main() {
 
     test('Left(AuthFailure) when supabase.AuthException is thrown', () async {
       final result = await guard<int>(
-        () async => throw const supabase.AuthException('expired'),
+        () async => throw const supabase.AuthException(
+          'expired',
+          code: 'session_expired',
+        ),
       );
       result.fold((failure) {
         expect(failure, isA<AuthFailure>());
-        expect(failure.message, 'expired');
+        expect(failure.message, 'Tu sesión expiró. Vuelve a iniciar sesión.');
       }, (_) => fail('expected Left'));
     });
   });

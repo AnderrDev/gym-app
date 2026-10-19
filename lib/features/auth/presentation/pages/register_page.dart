@@ -55,10 +55,22 @@ class _RegisterView extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
-        listenWhen: (previous, current) => current is AuthError,
+        listenWhen: (previous, current) =>
+            current is AuthError || current is AuthAwaitingEmailConfirmation,
         listener: (context, state) {
+          if (state is AuthAwaitingEmailConfirmation) {
+            AppSnackBar.success(
+              context,
+              'Cuenta creada. Te enviamos un correo a ${state.email} para '
+              'confirmarla; después inicia sesión.',
+            );
+            goToLogin(context);
+            return;
+          }
           if (state is AuthError) {
             AppSnackBar.error(context, state.message);
+            // Ya mostrado: que no reaparezca en línea al ir al login.
+            context.read<AuthBloc>().add(AuthErrorDismissed());
           }
         },
         child: AuthAuraBackground(

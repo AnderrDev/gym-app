@@ -11,6 +11,7 @@ import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/mocks.dart';
 import '../../../../helpers/test_fixtures.dart';
 
 class MockSignInWithEmail extends Mock implements SignInWithEmail {}
@@ -26,6 +27,7 @@ void main() {
   late MockSignUpWithEmail mockSignUpWithEmail;
   late MockSignOut mockSignOut;
   late MockGetCurrentUser mockGetCurrentUser;
+  late MockActiveSessionService activeSessionService;
 
   setUp(() {
     mockSignInWithEmail = MockSignInWithEmail();
@@ -151,5 +153,54 @@ void main() {
     },
     act: (bloc) => bloc.add(SignOutRequested()),
     expect: () => [AuthSubmitting(), const AuthError('boom')],
+  );
+
+  blocTest<AuthBloc, AuthState>(
+    'logout sin red: la sesión local ya se borró → Unauthenticated y limpia '
+    'la sesión activa',
+    build: () => AuthBloc(
+      signInWithEmail: mockSignInWithEmail,
+      signUpWithEmail: mockSignUpWithEmail,
+      signOut: mockSignOut,
+      getCurrentUser: mockGetCurrentUser,
+      authStateChanges: const Stream.empty(),
+      activeSessionService: activeSessionService,
+    ),
+    setUp: () {
+      activeSessionService = MockActiveSessionService();
+      when(() => activeSessionService.clear()).thenAnswer((_) async {});
+      when(
+        () => mockSignOut(),
+      ).thenAnswer((_) async => const Left(NetworkFailure()));
+    },
+    act: (bloc) => bloc.add(SignOutRequested()),
+    expect: () => [AuthSubmitting(), Unauthenticated()],
+    verify: (_) => verify(() => activeSessionService.clear()).called(1),
+  );
+
+  blocTest<AuthBloc, AuthState>(
+    'registro sin sesión (confirmar email) → AuthAwaitingEmailConfirmation',
+    build: buildBloc,
+    setUp: () {
+      when(
+        () => mockSignUpWithEmail(any(), any(), any()),
+      ).thenAnswer((_) async => const Right(testUser));
+      when(
+        () => mockGetCurrentUser(),
+      ).thenAnswer((_) async => const Right(null));
+    },
+    act: (bloc) => bloc.add(const SignUpRequested('a@b.com', 'secret1', 'Ana')),
+    expect: () => [
+      AuthSubmitting(),
+      const AuthAwaitingEmailConfirmation('a@b.com'),
+    ],
+  );
+
+  blocTest<AuthBloc, AuthState>(
+    'AuthErrorDismissed limpia un error ya mostrado',
+    build: buildBloc,
+    seed: () => const AuthError('boom'),
+    act: (bloc) => bloc.add(AuthErrorDismissed()),
+    expect: () => [Unauthenticated()],
   );
 }

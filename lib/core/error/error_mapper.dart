@@ -4,8 +4,11 @@ import 'dart:io';
 import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import 'package:gym_flutter/core/observability/app_logger.dart';
+
 import 'exceptions.dart';
 import 'failures.dart';
+import 'user_messages.dart';
 
 /// Maps any thrown object into a typed [Failure]. Centralizing this avoids
 /// the 30+ `catch (e) { return Left(ServerFailure(e.toString())) }` blocks
@@ -16,15 +19,27 @@ Failure mapToFailure(Object error) {
   if (error is Failure) return error;
 
   if (error is AuthException) return AuthFailure(error.message);
-  if (error is supabase.AuthException) return AuthFailure(error.message);
+  if (error is supabase.AuthException) {
+    _logRaw(error);
+    if (error is supabase.AuthRetryableFetchException) {
+      return const NetworkFailure(networkErrorMessage);
+    }
+    return AuthFailure(authErrorMessage(error));
+  }
 
   if (error is supabase.PostgrestException) {
+    _logRaw(error);
     final code = error.code;
+    final message = postgrestErrorMessage(error);
     if (code == 'PGRST116' || code == 'PGRST106') {
-      return NotFoundFailure(error.message);
+      return NotFoundFailure(message);
     }
-    if (code == '23505') return ConflictFailure(error.message);
-    return ServerFailure(error.message);
+    if (code == '23505') return ConflictFailure(message);
+    if (code == '42501' || code == 'PGRST301' || code == 'PGRST303') {
+      return AuthFailure(message);
+    }
+    if (code == '23514' || code == '22P02') return ValidationFailure(message);
+    return ServerFailure(message);
   }
 
   if (error is NotFoundException) {
@@ -67,8 +82,13 @@ Failure mapToFailure(Object error) {
     return ServerFailure(error.message ?? 'Error del servidor');
   }
 
-  return ServerFailure(error.toString());
+  // Lo desconocido no se muestra en crudo ("StateError: …"): va al log.
+  _logRaw(error);
+  return const ServerFailure(genericErrorMessage);
 }
+
+void _logRaw(Object error) =>
+    AppLogger.instance.warning('mapToFailure: ${error.runtimeType}: $error');
 
 /// Wraps an async operation, returning `Right(value)` on success or
 /// `Left(Failure)` on any throw. Use this in repository implementations
