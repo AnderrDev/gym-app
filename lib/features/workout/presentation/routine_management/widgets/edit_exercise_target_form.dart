@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -65,26 +67,59 @@ class TargetStepperRow extends StatelessWidget {
   }
 }
 
-class _StepperButton extends StatelessWidget {
+/// Botón +/− que repite mientras se mantiene pulsado: pasar de 90 a 600 s
+/// de descanso eran ~34 toques.
+class _StepperButton extends StatefulWidget {
   const _StepperButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
 
   @override
+  State<_StepperButton> createState() => _StepperButtonState();
+}
+
+class _StepperButtonState extends State<_StepperButton> {
+  Timer? _repeat;
+
+  void _startRepeat() {
+    _repeat?.cancel();
+    _repeat = Timer.periodic(
+      const Duration(milliseconds: 90),
+      (_) => widget.onTap(),
+    );
+  }
+
+  void _stopRepeat() {
+    _repeat?.cancel();
+    _repeat = null;
+  }
+
+  @override
+  void dispose() {
+    _stopRepeat();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: context.colors.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onLongPressStart: (_) => _startRepeat(),
+      onLongPressEnd: (_) => _stopRepeat(),
+      onLongPressCancel: _stopRepeat,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: context.colors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(widget.icon, color: context.colors.primary, size: 20),
         ),
-        child: Icon(icon, color: context.colors.primary, size: 20),
       ),
     );
   }
