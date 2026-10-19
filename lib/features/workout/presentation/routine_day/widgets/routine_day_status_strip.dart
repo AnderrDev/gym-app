@@ -1,7 +1,7 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 class RoutineDayStatusStrip extends StatelessWidget {
   final bool isWorkoutStarted;
@@ -21,7 +21,12 @@ class RoutineDayStatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lgPlus,
+          0,
+          Spacing.lgPlus,
+          Spacing.xl,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -31,14 +36,14 @@ class RoutineDayStatusStrip extends StatelessWidget {
                 children: [
                   Text(
                     'VOLUMEN ACTUAL',
-                    style: AppTextStyles.label.copyWith(
+                    style: context.text.labelMedium?.copyWith(
                       letterSpacing: 1.5,
                       fontSize: 10,
                     ),
                   ),
                   Text(
                     '${totalVolume.toStringAsFixed(0)} KG',
-                    style: AppTextStyles.displayNumber,
+                    style: context.text.displayLarge,
                   ),
                 ],
               ),
@@ -50,16 +55,16 @@ class RoutineDayStatusStrip extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isCompleted
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.surfaceHighlight,
+                      ? context.colors.success.withValues(alpha: 0.1)
+                      : context.colors.surfaceHighlight,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isCompleted ? 'COMPLETADO' : 'LECTURA',
-                  style: AppTextStyles.label.copyWith(
+                  style: context.text.labelMedium?.copyWith(
                     color: isCompleted
-                        ? AppColors.success
-                        : AppColors.textSecondary,
+                        ? context.colors.success
+                        : context.colors.textSecondary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

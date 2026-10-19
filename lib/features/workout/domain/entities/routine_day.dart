@@ -1,44 +1,31 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../domain/entities/exercise.dart';
 
-class RoutineDay extends Equatable {
-  final String id;
-  final String routineId;
-  final int dayOfWeek; // 1=Lunes, 7=Domingo
-  final String name;   // "Pecho y Tríceps"
-  final List<Exercise> exercises;
-  final int targetSetsCount;
-  final WorkoutDayStatus status;
+part 'routine_day.freezed.dart';
 
-  const RoutineDay({
-    required this.id,
-    required this.routineId,
-    required this.dayOfWeek,
-    required this.name,
-    this.exercises = const [],
-    this.targetSetsCount = 0,
-    this.status = WorkoutDayStatus.pending,
-  });
+@freezed
+abstract class RoutineDay with _$RoutineDay {
+  const RoutineDay._();
 
-  RoutineDay copyWith({
-    String? id,
-    String? routineId,
-    int? dayOfWeek,
-    String? name,
-    List<Exercise>? exercises,
-    int? targetSetsCount,
-    WorkoutDayStatus? status,
-  }) {
-    return RoutineDay(
-      id: id ?? this.id,
-      routineId: routineId ?? this.routineId,
-      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
-      name: name ?? this.name,
-      exercises: exercises ?? this.exercises,
-      targetSetsCount: targetSetsCount ?? this.targetSetsCount,
-      status: status ?? this.status,
-    );
-  }
+  const factory RoutineDay({
+    required String id,
+    required String routineId,
+    required int dayOfWeek, // 1=Lunes, 7=Domingo
+    required String name, // "Pecho y Tríceps"
+    @Default([]) List<Exercise> exercises,
+    @Default(0) int targetSetsCount,
+    @Default(WorkoutDayStatus.pending) WorkoutDayStatus status,
+
+    /// Fecha real de la sesión representada por el estado semanal.
+    DateTime? lastSessionDate,
+
+    /// Nombres de los ejercicios del día, en orden, sin metadata adicional.
+    /// Lo popula `getRoutineDays` para que `RoutineDayCard` pueda pintar un
+    /// preview ("Press banca · Press militar · …") sin tener que cargar el
+    /// día completo. Vacío cuando el day se construyó desde un contexto que
+    /// no necesita preview.
+    @Default([]) List<String> exerciseNamesPreview,
+  }) = _RoutineDay;
 
   String get dayName {
     const days = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -46,18 +33,24 @@ class RoutineDay extends Equatable {
   }
 
   String get dayNameFull {
-    const days = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const days = [
+      '',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
     return days[dayOfWeek];
   }
-
-  @override
-  List<Object?> get props => [id, routineId, dayOfWeek, name, exercises, targetSetsCount, status];
 }
 
 enum WorkoutDayStatus {
-  completed,   // Sesión finalizada esta semana ✅
+  completed, // Sesión finalizada esta semana ✅
   completedPartial, // Sesión finalizada sin completar todas las series ⚠️
-  inProgress,  // Sesión iniciada pero no terminada ⏱️
-  pending,     // No hay sesión aún ⬜
-  rest,        // No hay entrenamiento este día
+  inProgress, // Sesión iniciada pero no terminada ⏱️
+  pending, // No hay sesión aún ⬜
+  rest, // No hay entrenamiento este día
 }

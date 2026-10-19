@@ -1,7 +1,7 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 
@@ -24,16 +24,16 @@ class DashboardRoutineSelector extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text('Mis Rutinas', style: AppTextStyles.heading2),
+          child: Text('Mis Rutinas', style: context.text.headlineMedium),
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
             itemCount: routines.length,
             itemBuilder: (context, index) {
               final routine = routines[index];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: Spacing.md),
                 child: GlassContainer(
                   opacity: 0.1,
                   borderRadius: BorderRadius.circular(12),
@@ -43,31 +43,31 @@ class DashboardRoutineSelector extends StatelessWidget {
                       vertical: 12,
                     ),
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(Spacing.sm),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                        color: context.colors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.fitness_center,
-                        color: AppColors.primary,
+                      child: Icon(
+                        Icons.local_fire_department_rounded,
+                        color: context.colors.primary,
                       ),
                     ),
-                    title: Text(routine.name, style: AppTextStyles.bodyLarge),
+                    title: Text(routine.name, style: context.text.bodyLarge),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(
-                            Icons.analytics_outlined,
-                            color: AppColors.primary,
+                          icon: Icon(
+                            Icons.analytics_rounded,
+                            color: context.colors.primary,
                             size: 20,
                           ),
                           onPressed: () => onOpenRoutineStats(routine),
                         ),
-                        const Icon(
-                          Icons.calendar_month,
-                          color: AppColors.primary,
+                        Icon(
+                          Icons.calendar_month_rounded,
+                          color: context.colors.primary,
                         ),
                       ],
                     ),

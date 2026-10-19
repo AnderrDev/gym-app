@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,21 +18,136 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- theme-color con media query: iOS Safari adapta el color de la URL
+       bar al esquema activo del usuario. Sin media query, el navegador
+       siempre usa el último meta tag y la status bar no matchea el dark
+       mode in-app. -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0A0A0B">
+
+  <meta name="description" content="Smart Gym Tracker — entrena con sobrecarga progresiva.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="gym_flutter">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Smart Gym">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>gym_flutter</title>
+  <title>Smart Gym Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Los recursos de persistencia se solicitan cuando se necesitan;
+       no competimos con el login mediante descargas especulativas. -->
+
+  <style>
+    /* Fondo pre-paint: adaptado al esquema activo del usuario para que
+       no haya flash blanco→oscuro (o viceversa) entre el bootstrap del
+       browser y el primer paint de Flutter. */
+    html, body {
+      background-color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+
+      /* M2 — bloquea el "pull-to-refresh" del browser y el bounce de
+         iOS al hacer scroll en los bordes. Sin esto, si el usuario
+         scrollea hacia abajo en pleno workout, Chrome/Safari pueden
+         recargar la página y perder la sesión activa. */
+      overscroll-behavior: contain;
+
+      /* M1 — desactiva el flash gris que iOS Safari pinta sobre todo
+         tap. En Flutter canvas se ve mal porque el rectángulo gris
+         queda visible un frame después del tap. */
+      -webkit-tap-highlight-color: transparent;
+
+      /* M1 — `manipulation` permite zoom con pinch pero saca el delay
+         de 300 ms del double-tap-to-zoom legacy. Hace que cada tap se
+         sienta inmediato. */
+      touch-action: manipulation;
+    }
+
+    /* M3 — evita el auto-zoom de iOS Safari cuando un input toma focus.
+       Flutter crea inputs HTML ocultos para capturar el teclado; iOS
+       hace zoom si su font-size es <16 px. Forzarlo a 16 px no altera
+       el render del TextField (que sigue siendo canvas) — solo le
+       miente al heurístico del browser. */
+    input, textarea {
+      font-size: 16px;
+    }
+
+    /* Dark mode pre-paint bg: matchea AppPalette.dark.background. */
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background-color: #0A0A0B;
+      }
+    }
+
+    #boot {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-content: center;
+      gap: 16px;
+      color: #1c1c1e;
+      background: #fff;
+      text-align: center;
+      font: 500 15px/1.5 system-ui, sans-serif;
+    }
+    .boot-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin: 0 auto;
+      background: #007aff;
+      color: #fff;
+      border-radius: 12px;
+    }
+    .boot-title { font-size: 20px; font-weight: 650; }
+    .boot-caption { margin: 0; color: #6e6e73; }
+    #boot button {
+      justify-self: center;
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 10px;
+      background: #007aff;
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+    }
+    #boot button:focus-visible { outline: 3px solid #5ac8fa; outline-offset: 3px; }
+    @media (prefers-color-scheme: dark) {
+      #boot { background: #0a0a0b; color: #f2f2f7; }
+      .boot-caption { color: #a1a1aa; }
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div id="boot" role="status" aria-live="polite">
+    <div class="boot-mark" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/>
+      </svg>
+    </div>
+    <div class="boot-title">Gym Tracker</div>
+    <p id="boot-caption" class="boot-caption">Preparando tu entrenamiento…</p>
+    <button id="boot-retry" type="button" hidden onclick="location.reload()">Recargar</button>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      document.getElementById('boot')?.remove();
+    }, { once: true });
+  </script>
+  <noscript><style>#boot { display: none; }</style>Activa JavaScript en tu navegador para abrir Gym Tracker.</noscript>
+  <!-- El parámetro release evita que el worker antiguo intercepte el nuevo
+       bootstrap antes de que este pueda retirar su caché. -->
+  <script src="flutter_bootstrap.js?release={{flutter_service_worker_version}}" async
+    onerror="document.getElementById('boot-caption').textContent='No pudimos abrir la app. Revisa tu conexión e inténtalo de nuevo.'; document.getElementById('boot-retry').hidden=false;"></script>
 </body>
 </html>

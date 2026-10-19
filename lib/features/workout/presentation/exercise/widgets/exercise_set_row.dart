@@ -1,327 +1,210 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_bloc.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_event.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_parts.dart';
+import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_readonly.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
-class ExerciseSetRow extends StatefulWidget {
-  final int setNumber;
-  final int targetReps;
-  final double targetWeight;
-  final bool isDone;
-  final bool isActive;
-  final SetLog? completedLog;
-  final SetLog? lastPerformanceLog;
-  final String sessionId;
-  final String exerciseId;
-  final bool readOnly;
-  final VoidCallback onActivate;
-  final void Function(SetLog log) onSaved;
-
+/// Fila de una serie en la sesión activa. Muestra el objetivo mientras está
+/// pendiente y lo registrado (con la diferencia vs objetivo) cuando se
+/// completa. El registro ocurre en `CompleteSetSheet`: tocar la fila abre el
+/// modal para esa serie (completar, editar o desmarcar).
+class ExerciseSetRow extends StatelessWidget {
   const ExerciseSetRow({
     super.key,
     required this.setNumber,
     required this.targetReps,
     required this.targetWeight,
-    required this.isDone,
-    required this.isActive,
     required this.completedLog,
-    required this.lastPerformanceLog,
-    required this.sessionId,
-    required this.exerciseId,
     required this.readOnly,
-    required this.onActivate,
-    required this.onSaved,
+    this.isNext = false,
+    this.onTap,
   });
 
-  @override
-  State<ExerciseSetRow> createState() => _ExerciseSetRowState();
-}
+  final int setNumber;
+  final int targetReps;
+  final double targetWeight;
+  final SetLog? completedLog;
+  final bool readOnly;
 
-class _ExerciseSetRowState extends State<ExerciseSetRow> {
-  late final TextEditingController _weightCtrl;
-  late final TextEditingController _repsCtrl;
-  bool _saving = false;
+  /// Primera serie pendiente — se resalta como "la que sigue".
+  final bool isNext;
+  final VoidCallback? onTap;
 
-  @override
-  void initState() {
-    super.initState();
-    final initialWeight = widget.isDone
-        ? widget.completedLog!.actualWeight
-        : widget.lastPerformanceLog?.actualWeight ?? widget.targetWeight;
-    final initialReps = widget.isDone
-        ? widget.completedLog!.actualReps
-        : widget.lastPerformanceLog?.actualReps ?? widget.targetReps;
-
-    _weightCtrl = TextEditingController(
-      text: initialWeight > 0 ? initialWeight.toStringAsFixed(0) : '',
-    );
-    _repsCtrl = TextEditingController(
-      text: initialReps > 0 ? initialReps.toString() : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _weightCtrl.dispose();
-    _repsCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final weight = double.tryParse(_weightCtrl.text) ?? 0.0;
-    final reps = int.tryParse(_repsCtrl.text) ?? 0;
-    if (reps <= 0) return;
-
-    setState(() => _saving = true);
-    final setLog = SetLog(
-      sessionId: widget.sessionId,
-      exerciseId: widget.exerciseId,
-      actualWeight: weight,
-      actualReps: reps,
-      setIndex: widget.setNumber,
-    );
-
-    context.read<WorkoutBloc>().add(AddSetLogEvent(setLog));
-    widget.onSaved(setLog);
-    if (mounted) setState(() => _saving = false);
-  }
+  bool get isDone => completedLog != null;
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isDone && !widget.isActive) {
-      final log = widget.completedLog!;
-      return InkWell(
-        onTap: widget.onActivate,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              _SetCircle(label: '${widget.setNumber}', filled: true),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '${log.actualWeight} kg x ${log.actualReps} reps',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (!widget.readOnly)
-                const Icon(
-                  Icons.edit,
-                  color: Color(0xFF4CAF50),
-                  size: 16,
-                  semanticLabel: 'Editar',
-                ),
-            ],
-          ),
-        ),
+    if (readOnly) {
+      return ExerciseSetRowReadOnly(
+        setNumber: setNumber,
+        isDone: isDone,
+        completedLog: completedLog,
       );
     }
+    final colors = context.colors;
+    final log = completedLog;
+    final borderColor = isDone
+        ? colors.success.withValues(alpha: 0.35)
+        : isNext
+        ? colors.primary.withValues(alpha: 0.6)
+        : colors.divider;
 
-    if (widget.isActive) {
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.06),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.sm),
+      child: Material(
+        color: isDone
+            ? colors.success.withValues(alpha: 0.06)
+            : colors.background,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            width: 1.5,
-          ),
+          side: BorderSide(color: borderColor, width: isNext ? 1.5 : 1),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
               children: [
-                _SetCircle(
-                  label: '${widget.setNumber}',
-                  filled: false,
-                  active: true,
+                SetCircle(label: '$setNumber', filled: isDone, active: isNext),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: log == null
+                      ? _PendingLabel(
+                          targetWeight: targetWeight,
+                          targetReps: targetReps,
+                          isNext: isNext,
+                        )
+                      : _DoneLabel(
+                          log: log,
+                          targetWeight: targetWeight,
+                          targetReps: targetReps,
+                        ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.isDone
-                      ? 'Editando Serie ${widget.setNumber}'
-                      : 'Serie ${widget.setNumber}',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Icon(
+                  isDone ? Icons.check_circle_rounded : Icons.chevron_right,
+                  color: isDone ? colors.success : colors.textSecondary,
+                  size: isDone ? 20 : 18,
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _weightCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Peso (kg)',
-                      labelStyle: AppTextStyles.label,
-                      helperText:
-                          'Objetivo: ${widget.targetWeight.toStringAsFixed(0)}kg',
-                      helperStyle: const TextStyle(
-                        fontSize: 9,
-                        color: AppColors.textSecondary,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _repsCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Reps',
-                      labelStyle: AppTextStyles.label,
-                      helperText: 'Objetivo: ${widget.targetReps}',
-                      helperStyle: const TextStyle(
-                        fontSize: 9,
-                        color: AppColors.textSecondary,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _saving
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Icon(
-                          widget.isDone ? Icons.refresh : Icons.check,
-                          color: Colors.white,
-                        ),
-                      ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: widget.onActivate,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2A2A2A)),
-        ),
-        child: Row(
-          children: [
-            _SetCircle(label: '${widget.setNumber}', filled: false),
-            const SizedBox(width: 12),
-            Text(
-              'Serie ${widget.setNumber} pendiente',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SetCircle extends StatelessWidget {
+class _PendingLabel extends StatelessWidget {
+  const _PendingLabel({
+    required this.targetWeight,
+    required this.targetReps,
+    required this.isNext,
+  });
+
+  final double targetWeight;
+  final int targetReps;
+  final bool isNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      children: [
+        Text(
+          'Objetivo',
+          style: context.text.labelMedium?.copyWith(
+            color: isNext ? colors.primary : colors.textSecondary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: Spacing.sm),
+        Flexible(
+          child: Text(
+            '${formatWeight(targetWeight)} kg × $targetReps reps',
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodyMedium?.copyWith(
+              color: isNext ? colors.textPrimary : colors.textSecondary,
+              fontWeight: isNext ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DoneLabel extends StatelessWidget {
+  const _DoneLabel({
+    required this.log,
+    required this.targetWeight,
+    required this.targetReps,
+  });
+
+  final SetLog log;
+  final double targetWeight;
+  final int targetReps;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final weightDelta = targetWeight > 0 ? log.actualWeight - targetWeight : 0;
+    final repsDelta = log.actualReps - targetReps;
+    final chips = <Widget>[
+      if (weightDelta.abs() >= 0.01)
+        _DeltaChip(
+          label: weightDelta > 0
+              ? '+${formatWeight(weightDelta.toDouble())} kg'
+              : '-${formatWeight(-weightDelta.toDouble())} kg',
+          positive: weightDelta > 0,
+        ),
+      if (repsDelta != 0)
+        _DeltaChip(
+          label: repsDelta > 0 ? '+$repsDelta reps' : '$repsDelta reps',
+          positive: repsDelta > 0,
+        ),
+    ];
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            '${formatWeight(log.actualWeight)} kg × ${log.actualReps} reps',
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodyMedium?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        for (final chip in chips) ...[const SizedBox(width: 6), chip],
+      ],
+    );
+  }
+}
+
+class _DeltaChip extends StatelessWidget {
+  const _DeltaChip({required this.label, required this.positive});
+
   final String label;
-  final bool filled;
-  final bool active;
-
-  const _SetCircle({
-    required this.label,
-    required this.filled,
-    this.active = false,
-  });
+  final bool positive;
 
   @override
   Widget build(BuildContext context) {
-    final bg = filled
-        ? const Color(0xFF4CAF50)
-        : active
-        ? AppColors.primary
-        : Colors.transparent;
-    final border = filled
-        ? const Color(0xFF4CAF50)
-        : active
-        ? AppColors.primary
-        : AppColors.textSecondary;
-    final textColor = (filled || active)
-        ? Colors.white
-        : AppColors.textSecondary;
-
+    final color = positive ? context.colors.success : context.colors.warning;
     return Container(
-      width: 28,
-      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-        border: Border.all(color: border, width: 1.5),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+      child: Text(
+        label,
+        style: context.text.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

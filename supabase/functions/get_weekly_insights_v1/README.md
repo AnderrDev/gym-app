@@ -10,7 +10,7 @@ Calcula insights semanales server-side para una rutina:
 
 ## Request
 
-`POST` con JWT (verify_jwt=true)
+`POST` con JWT (verify_jwt=true). Rate limit: 60 llamadas/min por usuario; excedido → `429 RATE_LIMIT_EXCEEDED`.
 
 ```json
 {

@@ -19,11 +19,11 @@ class RoutineHistorySession extends Equatable {
 
   @override
   List<Object?> get props => [
-        sessionDate,
-        routineDayId,
-        routineDayName,
-        totalVolume,
-        totalReps,
-        exerciseCount,
-      ];
+    sessionDate,
+    routineDayId,
+    routineDayName,
+    totalVolume,
+    totalReps,
+    exerciseCount,
+  ];
 }

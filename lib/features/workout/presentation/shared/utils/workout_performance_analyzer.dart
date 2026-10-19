@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -15,6 +16,7 @@ class WorkoutPerformanceAnalyzer {
     final results = <CoachingAnalysis>[];
 
     for (final ex in exercises) {
+      if (ex.targetSets == 0) continue;
       final exLogs = logs.where((l) => l.exerciseId == ex.id).toList();
       final completedSets = exLogs.length;
 
@@ -81,8 +83,16 @@ class WorkoutPerformanceAnalyzer {
           final isStagnated =
               last['reps']! < ex.targetReps &&
               previous['reps']! < ex.targetReps;
+          // Si hoy subió el peso respecto a la última sesión, la caída de
+          // reps es progresión — no aconsejar bajar por el historial.
+          final increasedWeightToday = currentAvgWeight > last['weight']!;
 
-          if (isRegressing || (isStagnated && currentAvgReps < ex.targetReps)) {
+          if (completedSets >= ex.targetSets &&
+              !repsMet &&
+              currentAvgWeight <= ex.targetWeight &&
+              !increasedWeightToday &&
+              (isRegressing ||
+                  (isStagnated && currentAvgReps < ex.targetReps))) {
             recommendation =
                 '📉 RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
             feedback = 'WEIGHT_REDUCTION_ADVISED';
@@ -99,6 +109,10 @@ class WorkoutPerformanceAnalyzer {
             recommendation =
                 'Peso por debajo del objetivo. Prioriza la técnica hoy, pero intenta subir 1-2kg la próxima sesión.';
             feedback = 'KEEP_CONSISTENCY';
+          } else if (!repsMet && currentAvgWeight > ex.targetWeight) {
+            recommendation =
+                '💪 Subiste el peso por encima del objetivo. Es normal perder algunas reps: mantén este peso hasta completar las ${ex.targetReps} reps.';
+            feedback = 'HEAVIER_CONSOLIDATE';
           } else if (!repsMet) {
             recommendation =
                 'Reps por debajo del objetivo. Si te sientes pesado, baja 2.5kg para asegurar el rango de reps.';
@@ -158,19 +172,6 @@ class WorkoutPerformanceAnalyzer {
   }
 
   static String friendlyRecommendation(String recommendation) {
-    switch (recommendation) {
-      case 'INCREASE_WEIGHT':
-        return '🔥 ¡Increíble! Sube un poco el peso el próximo día.';
-      case 'MANTAIN_WEIGHT':
-        return '✅ Buen trabajo. Mantén este peso para consolidar.';
-      case 'DECREASE_WEIGHT':
-        return '⚠️ Baja un poco el peso para mejorar la técnica.';
-      case 'INCREASE_REPS':
-        return '💪 Casi lo tienes. Intenta hacer 1-2 reps más.';
-      case 'DECREASE_SETS':
-        return '📉 Te has pasado un poco. Baja una serie para recuperar.';
-      default:
-        return recommendation;
-    }
+    return CoachingMessages.long(recommendation);
   }
 }

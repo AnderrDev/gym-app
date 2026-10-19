@@ -26,14 +26,20 @@ class CoachingAnalysis extends Equatable {
   factory CoachingAnalysis.fromJson(Map<String, dynamic> json) {
     return CoachingAnalysis(
       exerciseId: (json['exerciseId'] ?? json['exercise_id']) as String?,
-      exerciseName: (json['exerciseName'] ?? json['exercise_name'] ?? 'Ejercicio') as String,
+      exerciseName:
+          (json['exerciseName'] ?? json['exercise_name'] ?? 'Ejercicio')
+              as String,
       completedSets: (json['completedSets'] ?? json['completed_sets']) as int?,
       targetSets: (json['targetSets'] ?? json['target_sets']) as int?,
       weightMet: (json['weightMet'] ?? json['weight_met']) as bool?,
       repsMet: (json['repsMet'] ?? json['reps_met']) as bool?,
       recommendation: (json['recommendation'] ?? '') as String,
       feedback: json['feedback'] as String?,
-      performanceScore: (json['performanceScore'] ?? json['performance_score'])?.toDouble(),
+      performanceScore:
+          (json['performanceScore'] ?? json['performance_score']) is num
+          ? ((json['performanceScore'] ?? json['performance_score']) as num)
+                .toDouble()
+          : null,
     );
   }
 
@@ -49,6 +55,16 @@ class CoachingAnalysis extends Equatable {
       'feedback': feedback,
       'performanceScore': performanceScore,
     };
+  }
+
+  /// Indica si este coaching aporta una recomendación accionable. Los estados
+  /// `PENDING` (todavía sin generar) y `IN_PROGRESS` (workout en curso, no hay
+  /// veredicto final) son ruido visual durante la sesión activa.
+  bool get hasActionableAdvice {
+    final f = feedback;
+    if (f == null || f.isEmpty) return false;
+    if (f == 'PENDING' || f == 'IN_PROGRESS') return false;
+    return true;
   }
 
   @override

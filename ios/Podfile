@@ -4,6 +4,13 @@
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
+# Xcode 15+ + Widget Extension (Live Activity) cycle fix nuclear: hace que
+# CocoaPods NO escriba input/output paths en los scripts inyectados. Sin esas
+# declaraciones, Xcode no puede inferir el ciclo
+# `[CP] Embed Pods Frameworks ↔ [CP] Copy Pods Resources ↔ .appex copy`.
+# Trade-off: los scripts corren en cada build (~1s c/u).
+install! 'cocoapods', :disable_input_output_paths => true
+
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
@@ -39,5 +46,106 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      # Fix Xcode 15+ build cycle con Widget Extension (`Cycle inside
+      # Runner; building could produce unreliable results`). El sandboxing
+      # de scripts agrega dependencias implícitas entre `[CP] Embed Pods
+      # Frameworks`, `Thin Binary` y la copia del `.appex` a `PlugIns/`.
+      # Desactivarlo le da a Xcode el orden lineal que esperaba.
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    end
   end
+
+  # El cycle vive principalmente en el Runner project (Pods sólo aporta
+  # scripts inyectados). Replicamos el mismo flag ahí.
+  runner_project_path = File.expand_path('Runner.xcodeproj', __dir__)
+  runner_project = Xcodeproj::Project.open(runner_project_path)
+  runner_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    end
+  end
+
+  # Fix Xcode 15+ build cycle con Widget Extension + CocoaPods:
+  #
+  # Xcode infiere dependencias por dos vías:
+  # 1. Los input/output paths declarados por CocoaPods en los `[CP]`
+  #    scripts → ya resuelto por `disable_input_output_paths` global.
+  # 2. El ORDEN de las build phases: si `Thin Binary` queda DESPUÉS del
+  #    copy del `.appex` a `Runner.app/PlugIns/`, Xcode genera un ciclo
+  #    porque el ProcessInfoPlistFile valida que las extensiones existan.
+  #
+  # Solución de orden: enforzamos que Thin Binary corra TEMPRANO (justo
+  # después del compile/link) y que "Embed Foundation Extensions" (copy
+  # del .appex) corra ÚLTIMO. Como CocoaPods regenera el orden en cada
+  # `pod install`, hay que aplicarlo siempre desde acá.
+  runner_target = runner_project.targets.find { |t| t.name == 'Runner' }
+  if runner_target
+    # Marcar [CP] scripts como always-out-of-date por las dudas (no daña
+    # nada incluso si disable_input_output_paths ya está activo).
+    runner_target.build_phases.each do |phase|
+      next unless phase.respond_to?(:shell_script)
+      next unless phase.display_name =~ /\[CP\] (Embed Pods Frameworks|Copy Pods Resources)/
+      phase.always_out_of_date = '1'
+    end
+
+    phases = runner_target.build_phases
+
+    # Xcode 26: el "Thin Binary" inyectado por Flutter declara
+    # `${TARGET_BUILD_DIR}/${INFOPLIST_PATH}` como input. El sistema de
+    # build nuevo tracea la firma del directorio del Info.plist y, como
+    # ProcessInfoPlistFile descubre la PlugIns/.appex de la Live Activity,
+    # genera el back-edge `Thin Binary → Info.plist → appex copy → [CP]
+    # phases → Resources → Thin Binary`. La declaración no se usa porque
+    # el script es `alwaysOutOfDate`, así que borrarla rompe el ciclo
+    # sin efectos colaterales.
+    thin_binary = phases.find do |p|
+      p.respond_to?(:shell_script) && p.display_name == 'Thin Binary'
+    end
+    if thin_binary
+      thin_binary.input_paths = []
+      thin_binary.output_paths = []
+      thin_binary.input_file_list_paths = [] if thin_binary.respond_to?(:input_file_list_paths=)
+      thin_binary.output_file_list_paths = [] if thin_binary.respond_to?(:output_file_list_paths=)
+    end
+
+    # 1. Mover "Embed Foundation Extensions" (copy del .appex a
+    #    Runner.app/PlugIns/) JUSTO después de Link Binary With Libraries,
+    #    antes de Thin Binary y de los [CP] scripts. Así la copia ya
+    #    sucedió cuando ProcessInfoPlistFile va a leer la carpeta PlugIns,
+    #    evitando que esa lectura se convierta en una dependencia hacia
+    #    fases posteriores.
+    embed_ext = phases.find do |p|
+      p.is_a?(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase) &&
+        (p.symbol_dst_subfolder_spec == :plug_ins ||
+         p.dst_subfolder_spec == '13')
+    end
+    link_idx = phases.index do |p|
+      p.is_a?(Xcodeproj::Project::Object::PBXFrameworksBuildPhase)
+    end
+    if embed_ext && link_idx
+      phases.delete(embed_ext)
+      phases.insert(link_idx + 1, embed_ext)
+    end
+
+    # 2. Mover Thin Binary justo después de Embed Foundation Extensions.
+    if thin_binary
+      phases.delete(thin_binary)
+      new_link_idx = phases.index do |p|
+        p.is_a?(Xcodeproj::Project::Object::PBXFrameworksBuildPhase)
+      end
+      # Si embed_ext quedó tras Frameworks, posicionamos thin_binary
+      # justo después de él; si no, lo dejamos pegado a Frameworks.
+      insertion_idx = if embed_ext && new_link_idx
+                        (new_link_idx + 1) + 1
+                      elsif new_link_idx
+                        new_link_idx + 1
+                      else
+                        0
+                      end
+      phases.insert(insertion_idx, thin_binary)
+    end
+  end
+
+  runner_project.save
 end

@@ -1,28 +1,33 @@
+import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gym_flutter/core/constants/app_colors.dart';
-import 'package:gym_flutter/core/constants/app_text_styles.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
-import 'package:gym_flutter/features/workout/presentation/bloc/workout_state.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/workout_performance_analyzer.dart';
 
 class RoutineDayLiveCoachingSection extends StatelessWidget {
-  final DayWorkoutStarted state;
+  final List<Exercise> exercises;
+  final List<WorkoutSession> recentSessions;
+  final Map<String, List<SetLog>> recentSessionsLogs;
   final List<SetLog> logs;
 
   const RoutineDayLiveCoachingSection({
     super.key,
-    required this.state,
+    required this.exercises,
+    required this.recentSessions,
+    required this.recentSessionsLogs,
     required this.logs,
   });
 
   @override
   Widget build(BuildContext context) {
     final analysis = WorkoutPerformanceAnalyzer.analyzePerformance(
-      state.exercises,
+      exercises,
       logs,
-      history: state.recentSessions,
-      historyLogs: state.recentSessionsLogs,
+      history: recentSessions,
+      historyLogs: recentSessionsLogs,
     );
     final relevant = analysis
         .where((a) => a.completedSets! > 0 && a.recommendation.isNotEmpty)
@@ -34,12 +39,12 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(Spacing.lgPlus),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.05),
+          color: context.colors.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: context.colors.primary.withValues(alpha: 0.1),
             width: 1.5,
           ),
         ),
@@ -49,14 +54,14 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(Spacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.colors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.psychology,
-                    color: AppColors.primary,
+                  child: Icon(
+                    Icons.psychology_rounded,
+                    color: context.colors.primary,
                     size: 24,
                   ),
                 ),
@@ -67,16 +72,16 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
                     children: [
                       Text(
                         'ANÁLISIS DE INTELIGENCIA',
-                        style: AppTextStyles.label.copyWith(
-                          color: AppColors.primary,
+                        style: context.text.labelMedium?.copyWith(
+                          color: context.colors.primary,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.2,
                         ),
                       ),
                       Text(
                         'Recomendaciones del Coach Pro',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                        style: context.text.bodySmall?.copyWith(
+                          color: context.colors.textSecondary,
                           fontSize: 11,
                         ),
                       ),
@@ -88,15 +93,15 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
             const SizedBox(height: 20),
             ...relevant.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: Spacing.lg),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(top: Spacing.xs),
                       child: Icon(
                         Icons.arrow_right_rounded,
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         size: 20,
                       ),
                     ),
@@ -107,17 +112,17 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
                         children: [
                           Text(
                             item.exerciseName.toUpperCase(),
-                            style: AppTextStyles.bodySmall.copyWith(
+                            style: context.text.bodySmall?.copyWith(
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
-                              color: AppColors.textPrimary,
+                              color: context.colors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             item.recommendation,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                            style: context.text.bodyMedium?.copyWith(
+                              color: context.colors.textSecondary,
                               fontSize: 13,
                               height: 1.5,
                             ),
@@ -129,12 +134,12 @@ class RoutineDayLiveCoachingSection extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: 32, color: AppColors.surfaceHighlight),
+            Divider(height: 32, color: context.colors.surfaceHighlight),
             Center(
               child: Text(
                 'Ajustes automáticos aplicados para tu próxima sesión.',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textDisabled,
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textDisabled,
                   fontStyle: FontStyle.italic,
                   fontSize: 10,
                 ),

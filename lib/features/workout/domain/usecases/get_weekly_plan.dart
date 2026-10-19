@@ -1,8 +1,8 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/routine_day.dart';
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import '../repositories/workout_repository.dart';
-import '../../data/models/routine_day_model.dart';
 
 class GetWeeklyPlan {
   final WorkoutRepository repository;
@@ -21,8 +21,12 @@ class GetWeeklyPlan {
     if (days.isEmpty) return const Right([]);
 
     // 2. Obtener las sesiones de la semana
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    final sessionsResult = await repository.getWeekSessions(userId, weekStart, weekEnd);
+    final weekEnd = AppCalendar.addDays(weekStart, 6);
+    final sessionsResult = await repository.getWeekSessions(
+      userId,
+      weekStart,
+      weekEnd,
+    );
     final sessions = sessionsResult.getOrElse((_) => []);
 
     // 3. Mapear cada día con su estado semanal:
@@ -31,31 +35,40 @@ class GetWeeklyPlan {
     // - completedPartial: sesión cerrada sin cumplir objetivo completo
     // - pending: sin sesiones
     final enrichedDays = days.map((day) {
-      final sessionsForDay = sessions.where((s) => s.routineDayId == day.id).toList();
+      final sessionsForDay = sessions
+          .where((s) => s.routineDayId == day.id)
+          .toList();
 
       WorkoutDayStatus status;
+      DateTime? lastSessionDate;
       if (sessionsForDay.isEmpty) {
         status = WorkoutDayStatus.pending;
       } else {
-        final activeSession = sessionsForDay.where((s) => s.completedAt == null).toList();
+        final activeSession = sessionsForDay
+            .where((s) => s.completedAt == null)
+            .toList();
 
         if (activeSession.isNotEmpty) {
+          activeSession.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+          lastSessionDate = activeSession.first.sessionDate;
           status = WorkoutDayStatus.inProgress;
         } else {
           sessionsForDay.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
           final latestClosedSession = sessionsForDay.first;
+          lastSessionDate = latestClosedSession.sessionDate;
 
-          final isFullyCompleted = latestClosedSession.completedSetsCount >= day.targetSetsCount;
+          final isFullyCompleted =
+              latestClosedSession.completedSetsCount >=
+              (latestClosedSession.totalTargetSets > 0
+                  ? latestClosedSession.totalTargetSets
+                  : day.targetSetsCount);
           status = isFullyCompleted
               ? WorkoutDayStatus.completed
               : WorkoutDayStatus.completedPartial;
         }
       }
 
-      if (day is RoutineDayModel) {
-        return day.copyWithStatus(status);
-      }
-      return day;
+      return day.copyWith(status: status, lastSessionDate: lastSessionDate);
     }).toList();
 
     return Right(enrichedDays);

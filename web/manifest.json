@@ -1,23 +1,28 @@
 {
-    "name": "gym_flutter",
-    "short_name": "gym_flutter",
+    "name": "Smart Gym Tracker",
+    "short_name": "Smart Gym",
     "start_url": ".",
+    "scope": "./",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "display_override": ["standalone", "minimal-ui", "browser"],
+    "background_color": "#FFFFFF",
+    "theme_color": "#007AFF",
+    "description": "Entrena con sobrecarga progresiva y registra cada serie.",
+    "categories": ["fitness", "health", "lifestyle"],
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-maskable-192.png",

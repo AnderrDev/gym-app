@@ -8,7 +8,11 @@ class SignUpWithEmail {
 
   SignUpWithEmail(this.repository);
 
-  Future<Either<Failure, User>> call(String email, String password, String fullName) async {
+  Future<Either<Failure, User>> call(
+    String email,
+    String password,
+    String fullName,
+  ) async {
     return await repository.signUpWithEmail(email, password, fullName);
   }
 }

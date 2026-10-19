@@ -1,0 +1,34 @@
+name: Contract Smoke (Supabase Edge Functions)
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: 'Supabase project ref (default benadgxgowycjxypyunc)'
+        required: false
+        default: 'benadgxgowycjxypyunc'
+
+jobs:
+  smoke:
+    name: Edge functions end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq postgresql-client
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Login Supabase CLI
+        run: supabase login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+
+      - name: Run smoke script
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ github.event.inputs.project_ref }}
+        run: bash scripts/contract_smoke_supabase.sh

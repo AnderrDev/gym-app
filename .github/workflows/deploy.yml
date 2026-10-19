@@ -1,0 +1,84 @@
+name: Deploy (Supabase + Web)
+
+# Despliega migraciones, edge functions y la web a Firebase Hosting al
+# mergear a main. Cada job es independiente: si una migración falla, las
+# functions y la web siguen probando, pero el job global queda rojo.
+#
+# Secrets requeridos en el repo:
+#   SUPABASE_ACCESS_TOKEN   — para `supabase` CLI
+#   SUPABASE_PROJECT_REF    — ej. benadgxgowycjxypyunc
+#   SUPABASE_DB_PASSWORD    — para `supabase db push`
+#   SUPABASE_URL            — para build web (--dart-define)
+#   SUPABASE_ANON_KEY       — para build web (--dart-define)
+#   FIREBASE_SERVICE_ACCOUNT_JSON — JSON del SA con rol Hosting Admin
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-db:
+    name: Apply DB migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Login
+        run: supabase login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+      - name: Push migrations
+        run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+
+  deploy-functions:
+    name: Deploy Edge Functions
+    runs-on: ubuntu-latest
+    needs: deploy-db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Login
+        run: supabase login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+      - name: Link
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+      - name: Deploy finalize
+        run: supabase functions deploy finalize_workout_session_v1
+      - name: Deploy generate_coaching
+        run: supabase functions deploy generate_coaching_v1
+      - name: Deploy weekly insights
+        run: supabase functions deploy get_weekly_insights_v1
+
+  deploy-web:
+    name: Build & deploy Flutter Web
+    runs-on: ubuntu-latest
+    needs: deploy-functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+      - name: Pub get
+        run: flutter pub get
+      - name: Build web
+        run: |
+          flutter build web --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          projectId: gym-flutter-web-224
+          channelId: live
