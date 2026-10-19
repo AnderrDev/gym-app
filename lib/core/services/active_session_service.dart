@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
@@ -16,6 +18,13 @@ class ActiveSessionService {
 
   ActiveSessionService(this.prefs);
 
+  final _changes = StreamController<ActiveSessionContext?>.broadcast();
+
+  /// Emite tras cada `save`/`clear`. El banner "Retomar" lo escucha para
+  /// aparecer al empezar un entreno y desaparecer al finalizarlo, sin
+  /// esperar a reiniciar la app.
+  Stream<ActiveSessionContext?> get changes => _changes.stream;
+
   Future<void> save({
     required String sessionId,
     required String routineDayId,
@@ -28,6 +37,7 @@ class ActiveSessionService {
     await prefs.setString(_keyUserId, userId);
     await prefs.setString(_keySessionDate, sessionDate.toIso8601String());
     await prefs.setString(_keyRoutineDayName, routineDayName);
+    _changes.add(getContext());
   }
 
   Future<void> clear() async {
@@ -36,6 +46,7 @@ class ActiveSessionService {
     await prefs.remove(_keyUserId);
     await prefs.remove(_keySessionDate);
     await prefs.remove(_keyRoutineDayName);
+    _changes.add(null);
   }
 
   /// Devuelve el contexto de la sesión activa o null si no hay ninguna guardada.

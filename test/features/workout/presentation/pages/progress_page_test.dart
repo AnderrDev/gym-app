@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
+import 'package:gym_flutter/injection_container.dart' show sl;
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
@@ -74,6 +76,41 @@ void main() {
       ),
     );
   }
+
+  testWidgets('volver a la pestaña PROGRESO refresca sin Loading', (
+    tester,
+  ) async {
+    final tabs = ShellTabNotifier();
+    sl.registerSingleton<ShellTabNotifier>(tabs);
+    addTearDown(() => sl.unregister<ShellTabNotifier>());
+    when(() => bloc.state).thenReturn(
+      ProgressReady(
+        weekStart: monday,
+        weekEnd: sunday,
+        routines: const [routineA],
+      ),
+    );
+
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+    clearInteractions(bloc);
+
+    tabs.value = 0; // HOY: no toca nada
+    tabs.value = ShellTabNotifier.progressTab;
+    await tester.pump();
+
+    verify(
+      () => bloc.add(
+        any(
+          that: isA<RefreshProgress>().having(
+            (e) => e.weekStart,
+            'weekStart',
+            monday,
+          ),
+        ),
+      ),
+    ).called(1);
+  });
 
   testWidgets('estado Loading muestra AppSpinner', (tester) async {
     when(() => bloc.state).thenReturn(const ProgressLoading());

@@ -27,6 +27,7 @@ import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/active_session_service.dart';
 import 'core/services/routine_assignment_bus.dart';
+import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
 import 'core/settings/presentation/settings_bloc.dart';
 import 'core/settings/user_preferences_service.dart';
 import 'core/utils/clock.dart';
@@ -313,6 +314,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
   sl.registerLazySingleton(() => WorkoutDraftService(sl()));
   sl.registerLazySingleton(() => RoutineAssignmentBus());
+  sl.registerLazySingleton(() => ShellTabNotifier());
   sl.registerLazySingleton<Clock>(() => const SystemClock());
 
   // ── NOTIFICATIONS ─────────────────────────────────────────────────────────

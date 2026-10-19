@@ -85,14 +85,7 @@ class _DashboardPageState extends State<DashboardPage> {
     // El watcher vive en el shell, así que lo buscamos arriba en el árbol
     // (sigue siendo accesible vía `BlocProvider` ancestral).
     context.read<ActiveSessionWatcherBloc>().add(const ClearActiveSession());
-    final dashboardState = context.read<DashboardBloc>().state;
-    final routine = dashboardState.selectedRoutine;
-    final weekStart = dashboardState.weekStart;
-    if (routine != null && weekStart != null) {
-      context.read<DashboardBloc>().add(
-        LoadWeeklyPlan(userId: userId, routine: routine, weekStart: weekStart),
-      );
-    }
+    _reloadWeeklyPlan(userId);
     AppSnackBar.success(context, '¡Entrenamiento completado!');
   }
 
@@ -176,6 +169,21 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     if (didFinish == true) {
       _handleWorkoutFinished(authState.user.id);
+      return;
+    }
+    // Volver sin finalizar también cambia el plan: una sesión recién
+    // empezada debe verse como "Continuar sesión", no "Entrenar hoy".
+    _reloadWeeklyPlan(authState.user.id);
+  }
+
+  void _reloadWeeklyPlan(String userId) {
+    final dashboardState = context.read<DashboardBloc>().state;
+    final routine = dashboardState.selectedRoutine;
+    final weekStart = dashboardState.weekStart;
+    if (routine != null && weekStart != null) {
+      context.read<DashboardBloc>().add(
+        LoadWeeklyPlan(userId: userId, routine: routine, weekStart: weekStart),
+      );
     }
   }
 

@@ -16,6 +16,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/active_session_wa
 import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_state.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_active_session_banner.dart';
+import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
 import 'package:gym_flutter/injection_container.dart';
 
 /// Shell raíz de la app autenticada.
@@ -63,7 +64,8 @@ class _AppShellView extends StatefulWidget {
   State<_AppShellView> createState() => _AppShellViewState();
 }
 
-class _AppShellViewState extends State<_AppShellView> {
+class _AppShellViewState extends State<_AppShellView>
+    with WidgetsBindingObserver {
   /// True una vez que disparamos `CheckActiveSession` por primera vez.
   /// En web reload el `AuthBloc` empieza en `AuthInitial`. El `initState`
   /// puede correr antes y la lectura síncrona de `AuthBloc.state` salía
@@ -74,6 +76,8 @@ class _AppShellViewState extends State<_AppShellView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _publishTab();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
@@ -83,6 +87,36 @@ class _AppShellViewState extends State<_AppShellView> {
         CheckActiveSession(authState.user.id),
       );
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _AppShellView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _publishTab();
+  }
+
+  /// Cubre tanto el tap en la barra como `context.go(<tab>)` desde código.
+  void _publishTab() {
+    if (!sl.isRegistered<ShellTabNotifier>()) return;
+    sl<ShellTabNotifier>().value = widget.navigationShell.currentIndex;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Al volver a la app la sesión pudo cerrarse o abrirse en otro
+  /// dispositivo: se re-verifica contra el backend.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_initialCheckDispatched) return;
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) return;
+    context.read<ActiveSessionWatcherBloc>().add(
+      CheckActiveSession(authState.user.id),
+    );
   }
 
   Future<void> _resumeActiveSession(ActiveSessionInfo info) async {

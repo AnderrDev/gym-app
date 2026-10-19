@@ -17,6 +17,8 @@ import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_state.dart';
 import 'package:gym_flutter/features/workout/presentation/progress/widgets/progress_routine_tile.dart';
 import 'package:gym_flutter/features/workout/presentation/progress/widgets/weekly_insights_card.dart';
+import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
+import 'package:gym_flutter/injection_container.dart' show sl;
 
 /// Hub `/progress` (pestaña PROGRESO del shell).
 ///
@@ -31,15 +33,42 @@ class ProgressPage extends StatefulWidget {
 }
 
 class _ProgressPageState extends State<ProgressPage> {
+  ShellTabNotifier? _tabs;
+
   @override
   void initState() {
     super.initState();
+    // La pestaña sigue montada en el IndexedStack: sin esto, tras terminar un
+    // entreno PROGRESO seguía con los datos de cuando se abrió por 1ª vez.
+    _tabs = sl.isRegistered<ShellTabNotifier>() ? sl<ShellTabNotifier>() : null;
+    _tabs?.addListener(_onTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
       if (authState is! Authenticated) return;
       context.read<ProgressBloc>().add(LoadProgress(authState.user.id));
     });
+  }
+
+  @override
+  void dispose() {
+    _tabs?.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_tabs?.value != ShellTabNotifier.progressTab) return;
+    final userId = _currentUserId();
+    if (userId == null) return;
+    final bloc = context.read<ProgressBloc>();
+    // Refresh silencioso (sin Loading) sobre la semana que se está viendo.
+    final current = bloc.state;
+    bloc.add(
+      RefreshProgress(
+        userId,
+        weekStart: current is ProgressReady ? current.weekStart : null,
+      ),
+    );
   }
 
   String? _currentUserId() {

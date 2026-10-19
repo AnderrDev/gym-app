@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/services/active_session_service.dart';
@@ -16,7 +18,50 @@ class ActiveSessionWatcherBloc
   }) : super(const ActiveSessionWatcherState()) {
     on<CheckActiveSession>(_onCheck);
     on<ClearActiveSession>(_onClear);
+    on<ActiveSessionContextChanged>(_onContextChanged);
+    _changesSub = activeSessionService.changes.listen(
+      (_) => add(const ActiveSessionContextChanged()),
+    );
   }
+
+  StreamSubscription<ActiveSessionContext?>? _changesSub;
+
+  @override
+  Future<void> close() async {
+    await _changesSub?.cancel();
+    return super.close();
+  }
+
+  void _onContextChanged(
+    ActiveSessionContextChanged event,
+    Emitter<ActiveSessionWatcherState> emit,
+  ) {
+    final ctx = activeSessionService.getContext();
+    if (ctx == null) {
+      emit(
+        state.copyWith(
+          status: ActiveSessionWatcherStatus.none,
+          clearSession: true,
+        ),
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: ActiveSessionWatcherStatus.detected,
+        session: _infoFrom(ctx),
+      ),
+    );
+  }
+
+  static ActiveSessionInfo _infoFrom(ActiveSessionContext ctx) =>
+      ActiveSessionInfo(
+        sessionId: ctx.sessionId,
+        userId: ctx.userId,
+        routineDayId: ctx.routineDayId,
+        routineDayName: ctx.routineDayName,
+        sessionDate: ctx.sessionDate,
+      );
 
   final WorkoutRepository repository;
   final ActiveSessionService activeSessionService;
@@ -34,6 +79,22 @@ class ActiveSessionWatcherBloc
     try {
       final ctx = activeSessionService.getContext();
       final result = await repository.getActiveSessionForUser(event.userId);
+      if (result.isLeft()) {
+        // No saber no es lo mismo que "no hay sesión": sin red (o con un 500)
+        // se conserva lo que había en local en vez de borrarlo.
+        emit(
+          ctx != null && ctx.userId == event.userId
+              ? state.copyWith(
+                  status: ActiveSessionWatcherStatus.detected,
+                  session: _infoFrom(ctx),
+                )
+              : state.copyWith(
+                  status: ActiveSessionWatcherStatus.failure,
+                  errorMessage: result.fold((f) => f.message, (_) => null),
+                ),
+        );
+        return;
+      }
       final session = result.getOrElse((_) => null);
 
       if (session == null || session.completedAt != null) {
@@ -47,7 +108,7 @@ class ActiveSessionWatcherBloc
         return;
       }
 
-      String routineDayName = 'Sesion en curso';
+      String routineDayName = 'Sesión en curso';
       if (ctx != null && ctx.sessionId == session.id) {
         routineDayName = ctx.routineDayName;
       } else {
@@ -80,7 +141,7 @@ class ActiveSessionWatcherBloc
       emit(
         state.copyWith(
           status: ActiveSessionWatcherStatus.failure,
-          errorMessage: 'No pudimos verificar la sesión activa: $e',
+          errorMessage: 'No pudimos verificar la sesión activa.',
         ),
       );
     }

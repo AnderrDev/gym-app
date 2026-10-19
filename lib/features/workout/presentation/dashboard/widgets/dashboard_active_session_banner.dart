@@ -40,7 +40,7 @@ class DashboardActiveSessionBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Sesion en curso: ${session.routineDayName}',
+                  'Sesión en curso: ${session.routineDayName}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: text.bodySmall?.copyWith(color: colors.primary),

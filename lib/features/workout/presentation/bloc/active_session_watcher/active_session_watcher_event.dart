@@ -19,6 +19,12 @@ class CheckActiveSession extends ActiveSessionWatcherEvent {
 }
 
 /// Limpia el estado watcher (cuando la sesión activa termina o se cancela).
+/// Cambió el contexto local (se empezó o finalizó un entreno). Se refleja
+/// sin ir al backend.
+class ActiveSessionContextChanged extends ActiveSessionWatcherEvent {
+  const ActiveSessionContextChanged();
+}
+
 class ClearActiveSession extends ActiveSessionWatcherEvent {
   const ClearActiveSession();
 }
