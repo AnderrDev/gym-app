@@ -85,11 +85,19 @@ class AppRouter {
       }
 
       if (!isAuthenticated && !isAuthRoute) {
-        return AppRoutes.login;
+        // Se recuerda a dónde iba (enlace profundo, recarga en web) para
+        // volver tras iniciar sesión en vez de caer siempre en HOY.
+        final from = state.uri.toString();
+        if (from == AppRoutes.dashboard || from == '/') return AppRoutes.login;
+        return Uri(
+          path: AppRoutes.login,
+          queryParameters: {'from': from},
+        ).toString();
       }
 
       if (isAuthenticated && isAuthRoute) {
-        return AppRoutes.dashboard;
+        return safeRedirectTarget(state.uri.queryParameters['from']) ??
+            AppRoutes.dashboard;
       }
 
       return null;
@@ -351,4 +359,24 @@ class GoRouterRefreshStream extends ChangeNotifier {
     _subscription.cancel();
     super.dispose();
   }
+}
+
+/// Destino de `?from=` sólo si es una ruta interna de la app: evita
+/// redirecciones abiertas (`//evil.com`, `https://…`) y bucles a login.
+@visibleForTesting
+String? safeRedirectTarget(String? from) {
+  if (from == null || !from.startsWith('/') || from.startsWith('//')) {
+    return null;
+  }
+  final path = Uri.tryParse(from)?.path;
+  const notRestorable = {
+    AppRoutes.login,
+    AppRoutes.register,
+    // Necesitan `extra` (objetos en memoria): reabrirlas por URL cae en
+    // "Faltan datos".
+    AppRoutes.routineDay,
+    AppRoutes.dayEditor,
+  };
+  if (path == null || notRestorable.contains(path)) return null;
+  return from;
 }
