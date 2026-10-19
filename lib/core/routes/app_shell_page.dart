@@ -168,110 +168,178 @@ class _AppShellViewState extends State<_AppShellView>
     );
   }
 
+  /// A partir de este ancho (web/escritorio, tablet en horizontal) la
+  /// navegación pasa a un rail lateral: una barra inferior de 1.900 px con
+  /// el contenido centrado a 720 quedaba descuadrada.
+  static const double _railBreakpoint = 900;
+
+  static const _tabs = [
+    (
+      icon: Icons.today_rounded,
+      selected: Icons.today_rounded,
+      label: 'HOY',
+      tooltip: 'Pestaña HOY — resumen del día',
+    ),
+    (
+      icon: Icons.local_fire_department_rounded,
+      selected: Icons.local_fire_department_rounded,
+      label: 'RUTINAS',
+      tooltip: 'Pestaña RUTINAS — gestionar rutinas',
+    ),
+    (
+      icon: Icons.insights_rounded,
+      selected: Icons.insights_rounded,
+      label: 'PROGRESO',
+      tooltip: 'Pestaña PROGRESO — métricas e historial',
+    ),
+    (
+      icon: Icons.person_outline_rounded,
+      selected: Icons.person_rounded,
+      label: 'PERFIL',
+      tooltip: 'Pestaña PERFIL — cuenta y ajustes',
+    ),
+  ];
+
   Widget _buildShell(BuildContext context) {
     final colors = context.colors;
-    final text = context.text;
-    // En web sobre desktop browser (viewport >= 720px) centramos el
-    // contenido en un ancho cómodo de lectura para que la app no se
-    // estire a 1920px (anti-pattern de mobile-app en desktop). En
-    // mobile-web (viewport angosto) o en mobile nativo, passthrough.
-    // La `bottomNavigationBar` queda full-width — esa es la convención
-    // en webapps con tab bar.
     final body = SafeArea(
       bottom: false,
-      child: Column(
+      child: Stack(
         children: [
-          // Badge de sync — solo se renderiza si el SyncStatusBloc está
-          // provisto (plataformas con persistencia local). El badge
-          // mismo es un SizedBox.shrink() cuando no hay nada que mostrar.
-          if (sl.isRegistered<SyncStatusBloc>())
-            const Align(
-              alignment: Alignment.centerRight,
-              child: SyncStatusBadge(),
-            ),
-          BlocSelector<
-            ActiveSessionWatcherBloc,
-            ActiveSessionWatcherState,
-            ActiveSessionInfo?
-          >(
-            selector: (state) => state.hasActiveSession ? state.session : null,
-            builder: (context, session) {
-              if (session == null) return const SizedBox.shrink();
-              return DashboardActiveSessionBanner(
-                session: session,
-                onTap: () => _resumeActiveSession(session),
-              );
-            },
+          Column(
+            children: [
+              BlocSelector<
+                ActiveSessionWatcherBloc,
+                ActiveSessionWatcherState,
+                ActiveSessionInfo?
+              >(
+                selector: (state) =>
+                    state.hasActiveSession ? state.session : null,
+                builder: (context, session) {
+                  if (session == null) return const SizedBox.shrink();
+                  return DashboardActiveSessionBanner(
+                    session: session,
+                    onTap: () => _resumeActiveSession(session),
+                  );
+                },
+              ),
+              Expanded(child: widget.navigationShell),
+            ],
           ),
-          Expanded(child: widget.navigationShell),
+          // Badge de sync superpuesto arriba a la derecha: en su propia
+          // fila empujaba todo el contenido cada vez que aparecía.
+          if (sl.isRegistered<SyncStatusBloc>())
+            const Positioned(
+              top: 4,
+              right: 8,
+              child: IgnorePointer(child: SyncStatusBadge()),
+            ),
         ],
       ),
     );
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: Capabilities.isWeb
-          ? Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: body,
-              ),
-            )
-          : body,
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _railBreakpoint;
+        // En pantallas anchas el contenido se centra en un ancho cómodo de
+        // lectura para que no se estire a todo el monitor.
+        final content = wide || Capabilities.isWeb
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: body,
+                ),
+              )
+            : body;
+        if (!wide) {
+          return Scaffold(
+            backgroundColor: colors.background,
+            body: content,
+            bottomNavigationBar: _buildBottomBar(context),
+          );
+        }
+        return Scaffold(
           backgroundColor: colors.background,
-          indicatorColor: colors.primary.withValues(alpha: 0.16),
-          labelTextStyle: WidgetStatePropertyAll(
-            text.labelMedium?.copyWith(letterSpacing: 1.2),
+          body: Row(
+            children: [
+              SafeArea(child: _buildRail(context)),
+              VerticalDivider(width: 1, color: colors.divider),
+              Expanded(child: content),
+            ],
           ),
-          // a11y/contraste: forzamos `textSecondary` para iconos inactivos y
-          // `primary` para los seleccionados, evitando depender del default
-          // `onSurfaceVariant` del ColorScheme. En dark el ratio sigue
-          // cumpliendo WCAG AA UI (≥3:1) gracias al `palette.textSecondary`
-          // del modo oscuro (#A1A1A6 sobre #0A0A0B).
-          iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return IconThemeData(color: colors.primary, size: 24);
-            }
-            return IconThemeData(color: colors.textSecondary, size: 24);
-          }),
+        );
+      },
+    );
+  }
+
+  Widget _buildRail(BuildContext context) {
+    final colors = context.colors;
+    return NavigationRail(
+      selectedIndex: widget.navigationShell.currentIndex,
+      onDestinationSelected: _onDestinationSelected,
+      backgroundColor: colors.background,
+      labelType: NavigationRailLabelType.all,
+      indicatorColor: colors.primary.withValues(alpha: 0.16),
+      selectedIconTheme: IconThemeData(color: colors.primary, size: 24),
+      unselectedIconTheme: IconThemeData(color: colors.textSecondary, size: 24),
+      selectedLabelTextStyle: context.text.labelMedium?.copyWith(
+        color: colors.primary,
+        letterSpacing: 1.2,
+      ),
+      unselectedLabelTextStyle: context.text.labelMedium?.copyWith(
+        color: colors.textSecondary,
+        letterSpacing: 1.2,
+      ),
+      destinations: [
+        for (final t in _tabs)
+          NavigationRailDestination(
+            icon: Tooltip(message: t.tooltip, child: Icon(t.icon)),
+            selectedIcon: Icon(t.selected),
+            label: Text(t.label),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    final colors = context.colors;
+    final text = context.text;
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+        backgroundColor: colors.background,
+        indicatorColor: colors.primary.withValues(alpha: 0.16),
+        labelTextStyle: WidgetStatePropertyAll(
+          text.labelMedium?.copyWith(letterSpacing: 1.2),
         ),
-        child: NavigationBar(
-          selectedIndex: widget.navigationShell.currentIndex,
-          onDestinationSelected: _onDestinationSelected,
-          // Nota a11y: Material 3 ya envuelve cada `NavigationDestination` en
-          // `Semantics(role: tab, selected: ...)` y agrega un label posicional
-          // localizado (`MaterialLocalizations.tabLabel`, en `es` produce
-          // "Pestaña N de 4"). Solo aportamos `tooltip` explícito por destino
-          // para hover/long-press en web/desktop sin perder el label corto.
-          destinations: const [
+        // a11y/contraste: forzamos `textSecondary` para iconos inactivos y
+        // `primary` para los seleccionados, evitando depender del default
+        // `onSurfaceVariant` del ColorScheme. En dark el ratio sigue
+        // cumpliendo WCAG AA UI (≥3:1) gracias al `palette.textSecondary`
+        // del modo oscuro (#A1A1A6 sobre #0A0A0B).
+        iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: colors.primary, size: 24);
+          }
+          return IconThemeData(color: colors.textSecondary, size: 24);
+        }),
+      ),
+      child: NavigationBar(
+        selectedIndex: widget.navigationShell.currentIndex,
+        onDestinationSelected: _onDestinationSelected,
+        // Nota a11y: Material 3 ya envuelve cada `NavigationDestination` en
+        // `Semantics(role: tab, selected: ...)` y agrega un label posicional
+        // localizado (`MaterialLocalizations.tabLabel`, en `es` produce
+        // "Pestaña N de 4"). Solo aportamos `tooltip` explícito por destino
+        // para hover/long-press en web/desktop sin perder el label corto.
+        destinations: [
+          for (final t in _tabs)
             NavigationDestination(
-              icon: Icon(Icons.today_rounded),
-              selectedIcon: Icon(Icons.today_rounded),
-              label: 'HOY',
-              tooltip: 'Pestaña HOY — resumen del día',
+              icon: Icon(t.icon),
+              selectedIcon: Icon(t.selected),
+              label: t.label,
+              tooltip: t.tooltip,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.local_fire_department_rounded),
-              selectedIcon: Icon(Icons.local_fire_department_rounded),
-              label: 'RUTINAS',
-              tooltip: 'Pestaña RUTINAS — gestionar rutinas',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.insights_rounded),
-              selectedIcon: Icon(Icons.insights_rounded),
-              label: 'PROGRESO',
-              tooltip: 'Pestaña PROGRESO — métricas e historial',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'PERFIL',
-              tooltip: 'Pestaña PERFIL — cuenta y ajustes',
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
