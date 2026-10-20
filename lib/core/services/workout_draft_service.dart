@@ -65,4 +65,14 @@ class WorkoutDraftService {
   Future<void> clear(String userId, String sessionId) async {
     await prefs.remove(_key(userId, sessionId));
   }
+
+  /// Borra los borradores de todas las sesiones de [userId] (p. ej. al
+  /// eliminar la cuenta).
+  Future<void> clearAllForUser(String userId) async {
+    final prefix = 'workout_drafts.$userId.';
+    final keys = prefs.getKeys().where((k) => k.startsWith(prefix)).toList();
+    for (final key in keys) {
+      await prefs.remove(key);
+    }
+  }
 }

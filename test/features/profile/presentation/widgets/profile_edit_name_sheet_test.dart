@@ -36,7 +36,12 @@ void main() {
                   context: context,
                   isScrollControlled: true,
                   builder: (_) => BlocProvider<ProfileBloc>(
-                    create: (_) => ProfileBloc(repository: repository),
+                    create: (_) => ProfileBloc(
+                      repository: repository,
+                      deleteAccount: MockDeleteAccount(),
+                      localDataCleaner: MockLocalUserDataCleaner(),
+                      signOut: MockSignOut(),
+                    ),
                     child: ProfileEditNameSheet(
                       userId: tUserId,
                       initialValue: initialValue,

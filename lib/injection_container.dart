@@ -1,4 +1,6 @@
 import 'package:gym_flutter/core/services/workout_draft_service.dart';
+import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
+import 'package:gym_flutter/features/profile/domain/usecases/delete_account.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/adapt_session_exercise.dart';
 import 'package:gym_flutter/features/workout/data/datasources/session_exercise_remote_data_source.dart';
@@ -124,7 +126,15 @@ Future<void> init() async {
   );
 
   // ── PROFILE ───────────────────────────────────────────────────────────────
-  sl.registerFactory(() => ProfileBloc(repository: sl()));
+  sl.registerFactory(
+    () => ProfileBloc(
+      repository: sl(),
+      deleteAccount: sl(),
+      localDataCleaner: sl(),
+      signOut: sl(),
+    ),
+  );
+  sl.registerLazySingleton(() => DeleteAccount(sl()));
   sl.registerLazySingleton<ProfileRepository>(
     () => ProfileRepositoryImpl(remote: sl()),
   );
@@ -324,6 +334,18 @@ Future<void> init() async {
 
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
   sl.registerLazySingleton(() => WorkoutDraftService(sl()));
+  sl.registerLazySingleton(
+    () => LocalUserDataCleaner(
+      activeSessionService: sl(),
+      draftService: sl(),
+      outbox: sl.isRegistered<OutboxRepository>()
+          ? sl<OutboxRepository>()
+          : null,
+      localDatabase: sl.isRegistered<LocalDatabase>()
+          ? sl<LocalDatabase>()
+          : null,
+    ),
+  );
   sl.registerLazySingleton(() => RoutineAssignmentBus());
   sl.registerLazySingleton(() => ShellTabNotifier());
   sl.registerLazySingleton<Clock>(() => const SystemClock());

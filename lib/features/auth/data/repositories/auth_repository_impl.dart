@@ -51,8 +51,14 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> signOut() {
     return guard(() async {
-      await remoteDataSource.signOut();
-      await localDataSource.clearCache();
+      // El SDK borra la sesión local antes de llamar al servidor, así que
+      // aunque la llamada falle (sin red, usuario ya eliminado) el usuario
+      // queda fuera: el usuario cacheado se limpia siempre.
+      try {
+        await remoteDataSource.signOut();
+      } finally {
+        await localDataSource.clearCache();
+      }
     });
   }
 

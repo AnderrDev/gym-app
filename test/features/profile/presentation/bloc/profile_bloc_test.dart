@@ -9,15 +9,26 @@ import '../../../../helpers/mocks.dart';
 
 void main() {
   late MockProfileRepository repository;
+  late MockDeleteAccount deleteAccount;
+  late MockLocalUserDataCleaner cleaner;
+  late MockSignOut signOut;
 
   const tUserId = 'user-123';
   const tFullName = 'Ander Cifuentes';
 
   setUp(() {
     repository = MockProfileRepository();
+    deleteAccount = MockDeleteAccount();
+    cleaner = MockLocalUserDataCleaner();
+    signOut = MockSignOut();
   });
 
-  ProfileBloc buildBloc() => ProfileBloc(repository: repository);
+  ProfileBloc buildBloc() => ProfileBloc(
+    repository: repository,
+    deleteAccount: deleteAccount,
+    localDataCleaner: cleaner,
+    signOut: signOut,
+  );
 
   group('UpdateFullNameRequested', () {
     blocTest<ProfileBloc, ProfileState>(
@@ -126,6 +137,104 @@ void main() {
       ),
       act: (bloc) => bloc.add(const AcknowledgeProfileFeedback()),
       expect: () => const [ProfileState(status: ProfileSubmissionStatus.idle)],
+    );
+  });
+
+  group('DeleteAccountRequested', () {
+    const event = DeleteAccountRequested(
+      userId: tUserId,
+      confirmation: 'ELIMINAR',
+    );
+
+    blocTest<ProfileBloc, ProfileState>(
+      'éxito: borra en servidor, limpia el dispositivo, emite deleted y '
+      'cierra sesión (en ese orden)',
+      build: () {
+        when(
+          () => deleteAccount(confirmation: any(named: 'confirmation')),
+        ).thenAnswer((_) async => const Right(null));
+        when(() => cleaner.purgeUserData(any())).thenAnswer((_) async {});
+        when(() => signOut()).thenAnswer((_) async => const Right(null));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(event),
+      expect: () => const [
+        ProfileState(deletionStatus: AccountDeletionStatus.deleting),
+        ProfileState(deletionStatus: AccountDeletionStatus.deleted),
+      ],
+      verify: (_) {
+        verifyInOrder([
+          () => deleteAccount(confirmation: 'ELIMINAR'),
+          () => cleaner.purgeUserData(tUserId),
+          () => signOut(),
+        ]);
+      },
+    );
+
+    blocTest<ProfileBloc, ProfileState>(
+      'éxito aunque signOut falle: la cuenta ya no existe, sigue en deleted',
+      build: () {
+        when(
+          () => deleteAccount(confirmation: any(named: 'confirmation')),
+        ).thenAnswer((_) async => const Right(null));
+        when(() => cleaner.purgeUserData(any())).thenAnswer((_) async {});
+        when(
+          () => signOut(),
+        ).thenAnswer((_) async => const Left(AuthFailure('403')));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(event),
+      expect: () => const [
+        ProfileState(deletionStatus: AccountDeletionStatus.deleting),
+        ProfileState(deletionStatus: AccountDeletionStatus.deleted),
+      ],
+    );
+
+    blocTest<ProfileBloc, ProfileState>(
+      'fallo: emite failure con el mensaje y no limpia nada ni cierra sesión',
+      build: () {
+        when(
+          () => deleteAccount(confirmation: any(named: 'confirmation')),
+        ).thenAnswer((_) async => const Left(ServerFailure('sin servidor')));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(event),
+      expect: () => const [
+        ProfileState(deletionStatus: AccountDeletionStatus.deleting),
+        ProfileState(
+          deletionStatus: AccountDeletionStatus.failure,
+          deletionErrorMessage: 'sin servidor',
+        ),
+      ],
+      verify: (_) {
+        verifyNever(() => cleaner.purgeUserData(any()));
+        verifyNever(() => signOut());
+      },
+    );
+
+    blocTest<ProfileBloc, ProfileState>(
+      'ignora una segunda petición mientras ya se está eliminando',
+      build: buildBloc,
+      seed: () =>
+          const ProfileState(deletionStatus: AccountDeletionStatus.deleting),
+      act: (bloc) => bloc.add(event),
+      expect: () => const <ProfileState>[],
+      verify: (_) {
+        verifyNever(
+          () => deleteAccount(confirmation: any(named: 'confirmation')),
+        );
+      },
+    );
+
+    blocTest<ProfileBloc, ProfileState>(
+      'AcknowledgeProfileFeedback devuelve un fallo de borrado a idle',
+      build: buildBloc,
+      seed: () => const ProfileState(
+        deletionStatus: AccountDeletionStatus.failure,
+        deletionErrorMessage: 'x',
+      ),
+      act: (bloc) => bloc.add(const AcknowledgeProfileFeedback()),
+      expect: () => const [ProfileState()],
     );
   });
 }

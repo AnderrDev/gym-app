@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:gym_flutter/core/error/exceptions.dart';
-import 'package:gym_flutter/features/workout/data/datasources/_edge_function_invoker.dart';
+import 'package:gym_flutter/core/network/edge_function_invoker.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';

@@ -15,4 +15,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     required String userId,
     required String fullName,
   }) => guard(() => remote.updateFullName(userId, fullName));
+
+  @override
+  Future<Either<Failure, void>> deleteAccount({required String confirmation}) =>
+      guard(() => remote.deleteAccount(confirmation: confirmation));
 }
