@@ -91,11 +91,15 @@ class EdgeFunctionInvoker {
       // `functions_client` lanza FunctionException en cualquier status no-2xx;
       // el body JSON (con `code`) llega en `details`. Aplicamos aquí también
       // los mapeos del caller para no perder el código estable del contrato.
+      // Si el body trae `code`, manda ese: un 404 del gateway ("función no
+      // encontrada", code `NOT_FOUND`) no debe confundirse con el 404 de la
+      // función (`NOT_FOUND_OR_ALREADY_COMPLETED`), o el SyncWorker
+      // descartaría un finalize que hay que reintentar.
       final body = e.details;
       final bodyCode = body is Map ? body['code']?.toString() : null;
-      final mapped =
-          statusMappings[status] ??
-          (bodyCode != null ? codeMappings[bodyCode] : null);
+      final mapped = bodyCode != null
+          ? codeMappings[bodyCode]
+          : statusMappings[status];
       if (mapped != null) throw mapped;
       final details = e.details?.toString() ?? e.toString();
       if (status == 401) {
