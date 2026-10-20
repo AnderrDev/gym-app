@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -21,8 +22,8 @@ import 'package:gym_flutter/injection_container.dart';
 ///
 /// Supabase canjea el enlace al arrancar y deja una sesión temporal: con ella
 /// el usuario fija la contraseña nueva. Sin sesión (enlace caducado, ya usado
-/// o abierto en otro navegador que el que lo pidió) se explica qué pasó en vez
-/// de rebotar al login sin contexto. Igual que `ForgotPasswordSheet`, es un
+/// o abierto en otro navegador/dispositivo que el que lo pidió) se explica
+/// qué pasó en vez de rebotar al login sin contexto. Igual que `ForgotPasswordSheet`, es un
 /// flujo one-shot que no pasa por `AuthBloc`.
 class ResetPasswordPage extends StatelessWidget {
   const ResetPasswordPage({super.key, this.updatePassword});
@@ -54,9 +55,13 @@ class ResetPasswordPage extends StatelessWidget {
                 _ => AppEmptyState(
                   icon: Icons.link_off_rounded,
                   title: 'El enlace no es válido o ya caducó',
-                  subtitle:
-                      'Ábrelo en el mismo navegador donde lo pediste o '
-                      'solicita uno nuevo desde "¿Olvidaste tu contraseña?".',
+                  subtitle: kIsWeb
+                      ? 'Ábrelo en el mismo navegador donde lo pediste o '
+                            'solicita uno nuevo desde "¿Olvidaste tu '
+                            'contraseña?".'
+                      : 'Ábrelo en el mismo dispositivo donde lo pediste o '
+                            'solicita uno nuevo desde "¿Olvidaste tu '
+                            'contraseña?".',
                   primaryActionLabel: 'Ir a iniciar sesión',
                   onPrimaryAction: () => context.go(AppRoutes.login),
                 ),

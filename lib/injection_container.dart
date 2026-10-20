@@ -83,6 +83,10 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  // Primero (y antes de cualquier `await`): el datasource de auth se
+  // instancia abajo nada más registrarse y necesita el cliente.
+  sl.registerLazySingleton(() => Supabase.instance.client);
+
   // ── AUTH ──────────────────────────────────────────────────────────────────
   sl.registerFactory(
     () => AuthBloc.fromRepository(
@@ -109,6 +113,12 @@ Future<void> init() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(client: sl()),
   );
+  // Instancia eager: se suscribe a `passwordRecovery` en su constructor. En
+  // arranque en frío desde el enlace de recuperación, `supabase_flutter`
+  // canjea el code mientras seguimos inicializando; si esperáramos a que
+  // `AppRouter` lo pidiera, el evento podría quedar tapado por otro posterior
+  // en `onAuthStateChange` y se perdería la navegación a `/reset-password`.
+  sl<AuthRemoteDataSource>();
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(sharedPreferences: sl()),
   );
@@ -312,7 +322,6 @@ Future<void> init() async {
   // UUID generator. Reusado por Phase 1+ (sync queue, optimistic ids, etc.).
   sl.registerLazySingleton<Uuid>(() => const Uuid());
 
-  sl.registerLazySingleton(() => Supabase.instance.client);
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
   sl.registerLazySingleton(() => WorkoutDraftService(sl()));
   sl.registerLazySingleton(() => RoutineAssignmentBus());

@@ -5,10 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import 'package:gym_flutter/core/config/deep_links.dart';
 import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/core/error/user_messages.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/routes/app_routes.dart';
+
+import 'package:gym_flutter/features/auth/data/datasources/password_recovery_buffer.dart';
 
 import '../models/user_model.dart';
 
@@ -28,20 +31,34 @@ abstract class AuthRemoteDataSource {
   Future<void> updatePassword(String newPassword);
 
   /// Emite cuando el usuario vuelve desde el enlace de recuperación de
-  /// contraseña (`AuthChangeEvent.passwordRecovery`).
+  /// contraseña (`AuthChangeEvent.passwordRecovery`). Si el evento llegó
+  /// antes de que nadie escuchara (arranque en frío desde el deep link), se
+  /// entrega al primer oyente — ver [PasswordRecoveryBuffer].
   Stream<void> get passwordRecoveryEvents;
 
   /// Domain-level stream: `true` when an authenticated session is active.
   /// Filters Supabase events down to the ones that affect auth state
-  /// (initialSession, signedIn, userUpdated, signedOut) so consumers in
-  /// upper layers don't depend on the SDK enum.
+  /// (initialSession, signedIn, passwordRecovery, userUpdated, signedOut) so
+  /// consumers in upper layers don't depend on the SDK enum.
   Stream<bool> get authStateChanges;
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final supabase.SupabaseClient client;
 
-  AuthRemoteDataSourceImpl({required this.client});
+  /// Se suscribe a los eventos de recovery en el constructor (no en el
+  /// getter) para no perder el que emite `supabase_flutter` durante el
+  /// arranque. Por eso DI instancia este datasource en cuanto lo registra.
+  AuthRemoteDataSourceImpl({required this.client})
+    : _recovery = PasswordRecoveryBuffer(
+        client.auth.onAuthStateChange
+            .where(
+              (data) => data.event == supabase.AuthChangeEvent.passwordRecovery,
+            )
+            .map((_) {}),
+      );
+
+  final PasswordRecoveryBuffer _recovery;
 
   @override
   Stream<bool> get authStateChanges => client.auth.onAuthStateChange
@@ -49,15 +66,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         (data) =>
             data.event == supabase.AuthChangeEvent.initialSession ||
             data.event == supabase.AuthChangeEvent.signedIn ||
+            // El canje del enlace de recuperación deja una sesión pero emite
+            // `passwordRecovery` en vez de `signedIn`: sin él, `AuthBloc` no
+            // pasaría a `Authenticated` y `ResetPasswordPage` diría que el
+            // enlace no vale.
+            data.event == supabase.AuthChangeEvent.passwordRecovery ||
             data.event == supabase.AuthChangeEvent.userUpdated ||
             data.event == supabase.AuthChangeEvent.signedOut,
       )
       .map((data) => data.session != null);
 
   @override
-  Stream<void> get passwordRecoveryEvents => client.auth.onAuthStateChange
-      .where((data) => data.event == supabase.AuthChangeEvent.passwordRecovery)
-      .map((_) {});
+  Stream<void> get passwordRecoveryEvents => _recovery.events;
 
   @override
   Future<UserModel> signInWithEmail(String email, String password) async {
@@ -189,14 +209,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> sendPasswordResetEmail(String email) async {
     try {
-      // En web el enlace vuelve a esta misma app, a la pantalla que pide la
-      // contraseña nueva. Fuera de web no hay deep link configurado: Supabase
-      // usa la Site URL del proyecto (la app web).
+      // El enlace tiene que volver al mismo sitio que lo pidió: el flujo es
+      // PKCE y el code verifier vive en ese navegador/dispositivo. En web,
+      // a `/reset-password` de esta misma app; en móvil, al deep link propio
+      // (lo canjea `supabase_flutter` y `AppRouter` navega con el evento
+      // `passwordRecovery`). Ambas URLs deben estar en Supabase → Auth →
+      // Redirect URLs o Supabase cae a la Site URL.
       await client.auth.resetPasswordForEmail(
         email,
         redirectTo: kIsWeb
             ? '${Uri.base.origin}${AppRoutes.resetPassword}'
-            : null,
+            : DeepLinks.resetPassword,
       );
     } on supabase.AuthException catch (e) {
       if (e is supabase.AuthRetryableFetchException) throw NetworkException();

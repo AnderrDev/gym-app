@@ -60,9 +60,11 @@ class AppRouter {
   );
 
   AppRouter(this.authBloc, {Stream<void>? passwordRecoveryEvents}) {
-    // El enlace de recuperación ya aterriza en `/reset-password` en web; el
-    // evento cubre el resto de casos (p. ej. un deep link en móvil) llevando
-    // al usuario a fijar la contraseña nueva.
+    // El enlace de recuperación ya aterriza en `/reset-password` en web; en
+    // móvil llega como deep link (`DeepLinks.resetPassword`), lo canjea
+    // `supabase_flutter` y solo nos enteramos por este evento. Si se emitió
+    // antes de construir el router (arranque en frío), el stream lo entrega
+    // al suscribirnos.
     _recoverySubscription = passwordRecoveryEvents?.listen(
       (_) => router.go(AppRoutes.resetPassword),
     );
