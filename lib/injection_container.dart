@@ -152,6 +152,7 @@ Future<void> init() async {
       getAssignedRoutines: sl(),
       getWeeklyPlan: sl(),
       repository: sl(),
+      preferences: sl(),
     ),
   );
 

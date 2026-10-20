@@ -16,12 +16,12 @@ class DashboardEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppEmptyState(
       icon: Icons.explore_off_rounded,
-      title: 'Sin Rutina Activa',
+      title: 'Sin rutina activa',
       subtitle:
           'Para empezar a entrenar, elige una rutina del catálogo o crea la tuya.',
-      primaryActionLabel: 'EXPLORAR CATÁLOGO',
+      primaryActionLabel: 'Explorar catálogo',
       onPrimaryAction: onExploreCatalog,
-      secondaryActionLabel: 'CREAR RUTINA MANUALMENTE',
+      secondaryActionLabel: 'Crear mi rutina',
       onSecondaryAction: onCreateRoutine,
     );
   }

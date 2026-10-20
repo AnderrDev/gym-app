@@ -107,7 +107,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.text('Sin Rutina Activa'), findsOneWidget);
+    expect(find.text('Sin rutina activa'), findsOneWidget);
   });
 
   testWidgets('plan semanal listo renderiza DashboardWeeklyView', (
