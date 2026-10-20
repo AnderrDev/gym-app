@@ -22,6 +22,7 @@ class DashboardWeeklyView extends StatefulWidget {
     required this.onOpenSelectedRoutineStats,
     required this.onOpenDay,
     this.onCurrentWeek,
+    this.onChangeRoutine,
     this.isLoading = false,
     this.errorMessage,
     this.onRetry,
@@ -37,6 +38,9 @@ class DashboardWeeklyView extends StatefulWidget {
   final VoidCallback onOpenSelectedRoutineStats;
   final void Function(RoutineDay day, DateTime date) onOpenDay;
   final VoidCallback? onCurrentWeek;
+
+  /// `null` si el usuario tiene una sola rutina.
+  final VoidCallback? onChangeRoutine;
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback? onRetry;
@@ -61,6 +65,7 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
   Widget build(BuildContext context) {
     final days = [...widget.days]
       ..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
+    final recommended = recommendedDay(days, _today);
     final historyDays =
         days.where((day) => day.lastSessionDate != null).toList()
           ..sort((a, b) => b.lastSessionDate!.compareTo(a.lastSessionDate!));
@@ -71,11 +76,23 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           children: [
-            Text(
-              widget.selectedRoutine?.name ?? 'Tu rutina',
-              style: context.text.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.selectedRoutine?.name ?? 'Tu rutina',
+                    style: context.text.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (widget.onChangeRoutine != null)
+                  TextButton.icon(
+                    onPressed: widget.onChangeRoutine,
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: const Text('Cambiar'),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
@@ -163,11 +180,27 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
                 const Text(
                   'Esta rutina todavía no tiene entrenamientos. Añádelos desde Rutinas.',
                 ),
-              for (final day in days)
+              if (!_currentWeek && !widget.isLoading)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Ya es otra semana. Actualiza el plan.'),
+                      ),
+                      TextButton(
+                        onPressed: widget.onCurrentWeek,
+                        child: const Text('Actualizar'),
+                      ),
+                    ],
+                  ),
+                ),
+              for (final day in _ordered(days, recommended))
                 _TrainingRow(
                   day: day,
                   history: false,
                   today: _today,
+                  recommended: day.id == recommended?.id,
                   enabled:
                       !widget.isLoading &&
                       widget.errorMessage == null &&
@@ -184,6 +217,28 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
 
 String _shortDate(DateTime date) => formatRoutineDayDateLabel(date);
 
+/// El día recomendado arriba, el resto en su orden de la semana.
+List<RoutineDay> _ordered(List<RoutineDay> days, RoutineDay? recommended) => [
+  ?recommended,
+  for (final d in days)
+    if (d.id != recommended?.id) d,
+];
+
+/// "El día que toca": la sesión en curso si la hay; si no, el primer día
+/// sin entrenar esta semana a partir del día de hoy (o el primero pendiente
+/// si los de hoy en adelante ya están hechos). `null` si está todo hecho.
+@visibleForTesting
+RoutineDay? recommendedDay(List<RoutineDay> days, DateTime today) {
+  final sorted = [...days]..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
+  final inProgress = sorted
+      .where((d) => d.status == WorkoutDayStatus.inProgress)
+      .firstOrNull;
+  if (inProgress != null) return inProgress;
+  final pending = sorted.where((d) => d.lastSessionDate == null).toList();
+  return pending.where((d) => d.dayOfWeek >= today.weekday).firstOrNull ??
+      pending.firstOrNull;
+}
+
 class _TrainingRow extends StatelessWidget {
   const _TrainingRow({
     required this.day,
@@ -191,10 +246,12 @@ class _TrainingRow extends StatelessWidget {
     required this.today,
     required this.enabled,
     required this.onOpen,
+    this.recommended = false,
   });
 
   final RoutineDay day;
   final bool history;
+  final bool recommended;
   final DateTime today;
   final bool enabled;
   final VoidCallback onOpen;
@@ -224,12 +281,26 @@ class _TrainingRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border.all(color: context.colors.divider),
+        border: Border.all(
+          color: recommended ? context.colors.primary : context.colors.divider,
+          width: recommended ? 2 : 1,
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (recommended) ...[
+            Text(
+              active ? 'EN CURSO' : 'TE TOCA HOY',
+              style: context.text.labelSmall?.copyWith(
+                color: context.colors.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(
             day.name,
             style: context.text.titleLarge?.copyWith(
@@ -238,7 +309,7 @@ class _TrainingRow extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Programado: ${day.dayNameFull}',
+            'Previsto para el ${day.dayNameFull.toLowerCase()}',
             style: context.text.bodySmall?.copyWith(
               color: context.colors.textSecondary,
             ),
@@ -267,15 +338,28 @@ class _TrainingRow extends StatelessWidget {
               style: context.text.bodySmall,
             ),
           const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: enabled ? onOpen : null,
-            icon: Icon(
-              history || completedToday
-                  ? Icons.arrow_forward_rounded
-                  : Icons.play_arrow_rounded,
+          // Sólo el recomendado lleva el botón principal: con todos iguales
+          // no se distinguía qué entrenar.
+          if (recommended || history)
+            FilledButton.icon(
+              onPressed: enabled ? onOpen : null,
+              icon: Icon(
+                history || completedToday
+                    ? Icons.arrow_forward_rounded
+                    : Icons.play_arrow_rounded,
+              ),
+              label: Text(label),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: enabled ? onOpen : null,
+              icon: Icon(
+                completedToday
+                    ? Icons.arrow_forward_rounded
+                    : Icons.play_arrow_rounded,
+              ),
+              label: Text(label),
             ),
-            label: Text(label),
-          ),
         ],
       ),
     );

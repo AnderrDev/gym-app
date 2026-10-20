@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
@@ -38,7 +39,12 @@ class ActiveWorkoutState extends Equatable {
     this.actionError,
     this.actionErrorNonce = 0,
     this.isAdapting = false,
+    this.finalCoaching = const [],
   });
+
+  /// Recomendaciones del servidor tras finalizar (vacío si no llegaron, p. ej.
+  /// sin red: el cierre quedó en el outbox).
+  final List<CoachingAnalysis> finalCoaching;
 
   final ActiveWorkoutStatus status;
   final WorkoutSession? session;
@@ -77,8 +83,10 @@ class ActiveWorkoutState extends Equatable {
     bool clearErrorMessage = false,
     String? actionError,
     bool? isAdapting,
+    List<CoachingAnalysis>? finalCoaching,
   }) {
     return ActiveWorkoutState(
+      finalCoaching: finalCoaching ?? this.finalCoaching,
       isAdapting: isAdapting ?? this.isAdapting,
       actionError: actionError,
       actionErrorNonce: actionError == null
@@ -112,5 +120,6 @@ class ActiveWorkoutState extends Equatable {
     actionError,
     actionErrorNonce,
     isAdapting,
+    finalCoaching,
   ];
 }

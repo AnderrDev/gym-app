@@ -45,6 +45,56 @@ void main() {
     repository: repository,
   );
 
+  group('cambio de rutina', () {
+    blocTest<DashboardBloc, DashboardState>(
+      'ClearSelectedRoutine vuelve al selector',
+      build: buildBloc,
+      seed: () => DashboardState(
+        status: DashboardStatus.ready,
+        routines: const [routineA, routineB],
+        selectedRoutine: routineA,
+        weekStart: monday,
+      ),
+      act: (b) => b.add(const ClearSelectedRoutine()),
+      verify: (b) {
+        expect(b.state.selectedRoutine, isNull);
+        expect(b.state.hasWeeklyPlan, isFalse);
+      },
+    );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'si la rutina elegida ya no está asignada se deja de mostrar',
+      build: () {
+        when(
+          () => getAssignedRoutines(any()),
+        ).thenAnswer((_) async => const Right([routineB]));
+        when(
+          () => getWeeklyPlan(
+            userId: any(named: 'userId'),
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenAnswer((_) async => const Right([]));
+        when(
+          () => repository.getWeeklyInsights(
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('x')));
+        return buildBloc();
+      },
+      seed: () => DashboardState(
+        status: DashboardStatus.ready,
+        routines: const [routineA, routineB],
+        selectedRoutine: routineA,
+        weekStart: monday,
+      ),
+      act: (b) => b.add(const LoadAssignedRoutines(userId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) => expect(b.state.selectedRoutine?.id, isNot(routineA.id)),
+    );
+  });
+
   group('LoadAssignedRoutines', () {
     blocTest<DashboardBloc, DashboardState>(
       'failure → DashboardStatus.failure con errorMessage',

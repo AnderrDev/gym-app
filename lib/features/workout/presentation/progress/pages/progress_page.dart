@@ -11,6 +11,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_event.dart';
@@ -118,6 +119,19 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
+  void _openExerciseProgress(Exercise exercise) {
+    final userId = _currentUserId();
+    if (userId == null) return;
+    pushExerciseProgress(
+      context,
+      ExerciseProgressArgs(
+        userId: userId,
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,6 +158,7 @@ class _ProgressPageState extends State<ProgressPage> {
                 state: state,
                 onOpenRoutine: _openRoutineStats,
                 onGoToRoutines: () => goToRoutines(context),
+                onOpenExercise: _openExerciseProgress,
               ),
             ),
           };
@@ -209,11 +224,13 @@ class _ProgressReadyView extends StatelessWidget {
     required this.state,
     required this.onOpenRoutine,
     required this.onGoToRoutines,
+    required this.onOpenExercise,
   });
 
   final ProgressReady state;
   final ValueChanged<Routine> onOpenRoutine;
   final VoidCallback onGoToRoutines;
+  final ValueChanged<Exercise> onOpenExercise;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +269,21 @@ class _ProgressReadyView extends StatelessWidget {
               ),
             ),
           ),
+        if (state.exercises.isNotEmpty) ...[
+          const SizedBox(height: Spacing.xxl),
+          const _SectionTitle(text: 'TUS EJERCICIOS'),
+          const SizedBox(height: Spacing.sm),
+          // Antes el progreso de un ejercicio sólo se abría desde la tarjeta
+          // durante un entreno.
+          for (final ex in state.exercises)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(ex.name),
+              subtitle: Text(ex.targetMuscle),
+              trailing: const Icon(Icons.show_chart_rounded),
+              onTap: () => onOpenExercise(ex),
+            ),
+        ],
       ],
     );
   }

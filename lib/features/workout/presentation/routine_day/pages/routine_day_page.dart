@@ -36,6 +36,8 @@ import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/wo
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_bottom_sheet.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/workout_performance_analyzer.dart';
 import 'package:gym_flutter/injection_container.dart' as di;
+import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_finished_coaching.dart';
 
 class RoutineDayPage extends StatefulWidget {
   const RoutineDayPage({
@@ -266,6 +268,22 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
+  Future<void> _showCoachingAndClose(List<CoachingAnalysis> coaching) async {
+    if (coaching.isNotEmpty) {
+      await AdaptiveSheet.show<void>(
+        context,
+        child: Builder(
+          builder: (sheetContext) => WorkoutFinishedCoaching(
+            coaching: coaching,
+            onDone: () => Navigator.of(sheetContext).pop(),
+          ),
+        ),
+      );
+    }
+    if (!mounted) return;
+    context.pop(true);
+  }
+
   void _retry() {
     // Si falló iniciar o reanudar, el error lo tiene ActiveWorkoutBloc y
     // domina la fase: hay que limpiarlo. Reiniciar también RoutineDayBloc
@@ -351,7 +369,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               AppSnackBar.error(context, actionError);
             }
             if (state.status == ActiveWorkoutStatus.finished) {
-              context.pop(true);
+              unawaited(_showCoachingAndClose(state.finalCoaching));
             }
           },
           builder: (context, activeState) {

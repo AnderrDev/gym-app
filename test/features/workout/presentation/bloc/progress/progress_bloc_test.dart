@@ -2,7 +2,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:gym_flutter/core/error/failures.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
@@ -31,6 +33,9 @@ void main() {
   setUp(() {
     getAssignedRoutines = _MockGetAssignedRoutines();
     repository = MockWorkoutRepository();
+    when(
+      () => repository.getRoutineDays(any()),
+    ).thenAnswer((_) async => const Right(<RoutineDay>[]));
   });
 
   ProgressBloc buildBloc() => ProgressBloc(
@@ -190,6 +195,65 @@ void main() {
       ],
     );
   });
+
+  blocTest<ProgressBloc, ProgressState>(
+    'Ready incluye los ejercicios de las rutinas, sin repetir y por nombre',
+    build: () {
+      const press = Exercise(
+        id: 'e1',
+        routineDayId: 'd1',
+        name: 'Press banca',
+        targetMuscle: 'Pecho',
+        targetWeight: 60,
+        targetReps: 8,
+      );
+      const curl = Exercise(
+        id: 'e2',
+        routineDayId: 'd2',
+        name: 'Curl',
+        targetMuscle: 'Bíceps',
+        targetWeight: 12,
+        targetReps: 10,
+      );
+      when(
+        () => getAssignedRoutines(any()),
+      ).thenAnswer((_) async => const Right([routineA, routineB]));
+      when(
+        () => repository.getWeeklyInsights(
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      ).thenAnswer((_) async => Right(testWeeklyInsights));
+      when(() => repository.getRoutineDays('r1')).thenAnswer(
+        (_) async => const Right([
+          RoutineDay(
+            id: 'd1',
+            routineId: 'r1',
+            dayOfWeek: 1,
+            name: 'A',
+            exercises: [press, curl],
+          ),
+        ]),
+      );
+      when(() => repository.getRoutineDays('r2')).thenAnswer(
+        (_) async => const Right([
+          RoutineDay(
+            id: 'd2',
+            routineId: 'r2',
+            dayOfWeek: 1,
+            name: 'B',
+            exercises: [curl],
+          ),
+        ]),
+      );
+      return buildBloc();
+    },
+    act: (b) => b.add(LoadProgress(userId, weekStart: monday)),
+    verify: (b) {
+      final state = b.state as ProgressReady;
+      expect(state.exercises.map((e) => e.name), ['Curl', 'Press banca']);
+    },
+  );
 
   group('combineWeeklyInsights', () {
     WeeklyInsights week({

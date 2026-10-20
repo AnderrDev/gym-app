@@ -61,3 +61,9 @@ class ChangeWeek extends DashboardEvent {
   @override
   List<Object?> get props => [userId, weekStart];
 }
+
+/// Vuelve al selector de rutinas (usuarios con 2+ rutinas). Antes, una vez
+/// elegida una, no había forma de cambiar.
+class ClearSelectedRoutine extends DashboardEvent {
+  const ClearSelectedRoutine();
+}

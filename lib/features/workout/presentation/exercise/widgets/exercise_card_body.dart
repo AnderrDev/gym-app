@@ -23,6 +23,7 @@ class ExerciseCardBody extends StatelessWidget {
 
   /// Abre el modal de la serie indicada. `null` en modo solo lectura.
   final void Function(int setNumber)? onOpenSet;
+  final bool showCompleteButton;
 
   const ExerciseCardBody({
     super.key,
@@ -35,6 +36,7 @@ class ExerciseCardBody extends StatelessWidget {
     required this.recommendationText,
     this.nextPendingSet,
     this.onOpenSet,
+    this.showCompleteButton = true,
   });
 
   @override
@@ -82,7 +84,10 @@ class ExerciseCardBody extends StatelessWidget {
                       );
                     }),
                   ),
-                  if (!readOnly && nextPendingSet != null && onOpenSet != null)
+                  if (showCompleteButton &&
+                      !readOnly &&
+                      nextPendingSet != null &&
+                      onOpenSet != null)
                     Padding(
                       padding: const EdgeInsets.only(top: Spacing.sm),
                       child: AppButton(

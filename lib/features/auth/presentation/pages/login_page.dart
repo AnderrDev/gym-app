@@ -12,6 +12,7 @@ import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/atoms/app_button.dart';
+import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
@@ -36,7 +37,40 @@ class LoginPage extends StatelessWidget {
             ? dotenv.maybeGet('DEV_LOGIN_PASSWORD')
             : null,
       ),
-      child: const _LoginView(),
+      // Mientras se resuelve la sesión guardada (el router no redirige
+      // hasta entonces) se ve un splash: antes el login hacía de splash y un
+      // usuario ya logueado veía el formulario con el botón cargando.
+      child: BlocBuilder<AuthBloc, AuthState>(
+        buildWhen: (p, c) => _isResolving(p) != _isResolving(c),
+        builder: (context, state) =>
+            _isResolving(state) ? const _AuthSplash() : const _LoginView(),
+      ),
+    );
+  }
+
+  static bool _isResolving(AuthState s) => s is AuthInitial || s is AuthLoading;
+}
+
+class _AuthSplash extends StatelessWidget {
+  const _AuthSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.fitness_center_rounded,
+              size: 56,
+              color: context.colors.primary,
+            ),
+            const SizedBox(height: Spacing.lg),
+            const AppSpinner(semanticLabel: 'Comprobando tu sesión'),
+          ],
+        ),
+      ),
     );
   }
 }

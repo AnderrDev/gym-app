@@ -45,6 +45,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
+  testWidgets('mientras se comprueba la sesión no se ve el formulario', (
+    tester,
+  ) async {
+    when(() => auth.state).thenReturn(AuthLoading());
+    await pumpLogin(tester, const Size(400, 800));
+    expect(find.byType(TextField), findsNothing);
+    expect(find.bySemanticsLabel('Comprobando tu sesión'), findsOneWidget);
+  });
+
   testWidgets('el formulario conserva un ancho legible en escritorio', (
     tester,
   ) async {

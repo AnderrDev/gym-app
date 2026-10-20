@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/durations.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -55,6 +56,26 @@ class RoutineDayActiveFocusView extends StatefulWidget {
 
 class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
   late final PageController _pageController;
+
+  /// Para abrir la serie siguiente desde el botón fijo inferior: la tarjeta
+  /// es quien conoce borradores y prefill.
+  final Map<String, GlobalKey<ExerciseCardState>> _cardKeys = {};
+
+  GlobalKey<ExerciseCardState> _cardKeyFor(String exerciseId) =>
+      _cardKeys.putIfAbsent(exerciseId, GlobalKey<ExerciseCardState>.new);
+
+  /// Primera serie objetivo sin registrar del ejercicio, o `null`.
+  int? _nextPendingSetFor(Exercise ex) {
+    final done = widget.completedLogs
+        .where((l) => l.exerciseId == ex.id)
+        .map((l) => l.setIndex)
+        .toSet();
+    for (var n = 1; n <= ex.targetSets; n++) {
+      if (!done.contains(n)) return n;
+    }
+    return null;
+  }
+
   int _currentIndex = 0;
 
   @override
@@ -242,7 +263,7 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                       AbsorbPointer(
                         absorbing: widget.isAdapting,
                         child: ExerciseCard(
-                          key: ValueKey('exercise-card-${ex.id}'),
+                          key: _cardKeyFor(ex.id),
                           exercise: ex,
                           sessionId: widget.sessionId,
                           initialCompletedSets: widget.completedLogs,
@@ -255,6 +276,7 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                           forceExpanded:
                               !widget.effectiveReadOnly &&
                               ex.replacedByExerciseName == null,
+                          showCompleteButton: false,
                           onSetAdded:
                               widget.effectiveReadOnly ||
                                   ex.replacedByExerciseName != null
@@ -289,7 +311,44 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
             },
           ),
         ),
+        _buildCompleteSetBar(context),
       ],
+    );
+  }
+
+  /// Botón "Completar serie" fijo abajo, al alcance del pulgar. Dentro de la
+  /// tarjeta quedaba bajo la lista de series y el consejo del coach.
+  Widget _buildCompleteSetBar(BuildContext context) {
+    if (widget.effectiveReadOnly || widget.exercises.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final ex =
+        widget.exercises[_currentIndex.clamp(0, widget.exercises.length - 1)];
+    final next = _nextPendingSetFor(ex);
+    if (next == null || ex.replacedByExerciseName != null) {
+      return const SizedBox.shrink();
+    }
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lg,
+          Spacing.sm,
+          Spacing.lg,
+          Spacing.md,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            key: const ValueKey('focus_complete_set_button'),
+            label: 'Completar serie $next',
+            icon: Icons.check_rounded,
+            onPressed: widget.isAdapting
+                ? null
+                : () => _cardKeyFor(ex.id).currentState?.openNextPendingSet(),
+          ),
+        ),
+      ),
     );
   }
 }

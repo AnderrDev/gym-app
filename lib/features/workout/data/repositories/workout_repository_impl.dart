@@ -631,6 +631,15 @@ class WorkoutRepositoryImpl extends WorkoutRepository
     await _enqueueFinalize(sessionId, coachingAnalysis);
   });
 
+  @override
+  Future<Either<Failure, List<CoachingAnalysis>>> getSessionCoaching(
+    String sessionId,
+  ) => guard(() async {
+    // Sin red no esperamos un timeout para algo opcional.
+    if (_offlineCapable && !_isOnline) return const <CoachingAnalysis>[];
+    return await remoteDataSource.getSessionCoaching(sessionId) ?? const [];
+  });
+
   Future<void> _enqueueFinalize(
     String sessionId,
     List<CoachingAnalysis>? coachingAnalysis,

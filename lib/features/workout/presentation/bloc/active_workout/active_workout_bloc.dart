@@ -448,10 +448,16 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         }
       }
       await notifier.onEnded();
+      // Best-effort: el coaching ya está guardado en la sesión. Sin él la
+      // pantalla cierra igual (p. ej. el cierre quedó en el outbox).
+      final coaching = (await repository.getSessionCoaching(
+        event.sessionId,
+      )).getOrElse((_) => const []);
       emit(
         state.copyWith(
           status: ActiveWorkoutStatus.finished,
           setDrafts: const [],
+          finalCoaching: coaching,
         ),
       );
     } catch (e) {

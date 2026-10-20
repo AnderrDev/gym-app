@@ -84,6 +84,9 @@ void main() {
       () => repository.getLastExercisePerformances(any()),
     ).thenAnswer((_) async => const Right(<String, SetLog?>{}));
     when(
+      () => repository.getSessionCoaching(any()),
+    ).thenAnswer((_) async => const Right(<CoachingAnalysis>[]));
+    when(
       () => activeSessionService.save(
         sessionId: any(named: 'sessionId'),
         routineDayId: any(named: 'routineDayId'),
@@ -861,6 +864,39 @@ void main() {
       verify: (b) {
         expect(b.state.status, ActiveWorkoutStatus.finished);
         verify(() => activeSessionService.clear()).called(1);
+      },
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'éxito → expone el coaching que guardó el servidor',
+      build: () {
+        when(
+          () => repository.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenAnswer((_) async => const Right(null));
+        when(() => repository.getSessionCoaching(sessionId)).thenAnswer(
+          (_) async => const Right([
+            CoachingAnalysis(
+              exerciseName: 'Press',
+              recommendation: 'INCREASE_WEIGHT',
+            ),
+          ]),
+        );
+        return buildBloc()..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+          ),
+        );
+      },
+      act: (b) => b.add(const FinishActiveWorkout(sessionId: sessionId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.status, ActiveWorkoutStatus.finished);
+        expect(b.state.finalCoaching.single.exerciseName, 'Press');
       },
     );
 

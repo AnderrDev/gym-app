@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
@@ -35,7 +36,12 @@ class ProgressReady extends ProgressState {
     required this.routines,
     this.insights,
     this.insightsError,
+    this.exercises = const [],
   });
+
+  /// Ejercicios de las rutinas asignadas (sin repetir), para abrir su
+  /// progreso desde esta pestaña. Best-effort: vacío si falla la carga.
+  final List<Exercise> exercises;
 
   final DateTime weekStart;
   final DateTime weekEnd;
@@ -53,6 +59,7 @@ class ProgressReady extends ProgressState {
     routines,
     insights,
     insightsError,
+    exercises,
   ];
 }
 
