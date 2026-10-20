@@ -180,6 +180,11 @@ abstract class WorkoutRepository {
     List<CoachingAnalysis>? coachingAnalysis,
   });
 
+  /// Descarta una sesión abierta: la borra con sus series, sin dejar rastro
+  /// en historial ni estadísticas. Requiere red y que no queden cambios
+  /// offline por sincronizar (si no, el SyncWorker la volvería a subir).
+  Future<Either<Failure, void>> discardWorkoutSession(String sessionId);
+
   /// Coaching generado por el servidor al finalizar la sesión.
   Future<Either<Failure, List<CoachingAnalysis>>> getSessionCoaching(
     String sessionId,

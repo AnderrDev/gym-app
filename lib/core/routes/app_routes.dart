@@ -1,6 +1,7 @@
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
+  static const resetPassword = '/reset-password';
 
   // ── Shell branches (bottom navigation) ──────────────────────────────────
   static const dashboard = '/dashboard';

@@ -164,7 +164,7 @@ class ExerciseCardHeader extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Record: ${formatWeight(lastPerformance!.actualWeight)}kg x ${lastPerformance!.actualReps}',
+                                  'Última vez: ${formatWeight(lastPerformance!.actualWeight)}kg x ${lastPerformance!.actualReps}',
                                   style: context.text.labelMedium?.copyWith(
                                     color: context.colors.primary.withValues(
                                       alpha: 0.8,

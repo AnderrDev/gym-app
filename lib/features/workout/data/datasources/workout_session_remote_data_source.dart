@@ -117,6 +117,33 @@ class WorkoutSessionRemoteDataSource {
         .eq('set_index', setIndex);
   }
 
+  /// Borra una sesión ABIERTA del usuario con sus series
+  /// (`discard_workout_session_v1`). Idempotente: si ya no existe, no falla.
+  Future<void> discardWorkoutSession(String sessionId) async {
+    try {
+      await client.rpc<dynamic>(
+        'discard_workout_session_v1',
+        params: {'p_session_id': sessionId},
+      );
+    } on PostgrestException catch (e) {
+      switch (e.code) {
+        case '23514':
+          throw ValidationException(
+            'Este entrenamiento ya se finalizó y no se puede descartar.',
+          );
+        case 'P0002':
+          throw NotFoundException('No encontramos este entrenamiento.');
+        // La función aún no está desplegada en este proyecto.
+        case 'PGRST202':
+          throw ServerException(
+            'Descartar entrenamientos aún no está disponible. '
+            'Inténtalo más tarde.',
+          );
+      }
+      rethrow;
+    }
+  }
+
   Future<WorkoutSessionModel?> getActiveSessionForUser(String userId) async {
     final response = await client
         .from('workout_sessions')

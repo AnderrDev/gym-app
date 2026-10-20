@@ -345,7 +345,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest(lastPerformance: lastPerf));
     await tester.pump();
 
-    expect(find.textContaining('Record: 70kg x 8'), findsOneWidget);
+    expect(find.textContaining('Última vez: 70kg x 8'), findsOneWidget);
   });
 
   testWidgets('abre el bottom sheet de objetivo remoto', (tester) async {

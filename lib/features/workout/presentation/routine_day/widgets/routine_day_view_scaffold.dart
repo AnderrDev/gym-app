@@ -49,6 +49,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     required this.onShowLastSessionDetails,
     required this.onRetry,
     this.isAdapting = false,
+    this.onDiscardWorkout,
     this.onAddExercise,
     this.onReplaceExercise,
   });
@@ -77,6 +78,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
   onShowLastSessionDetails;
   final VoidCallback onRetry;
   final bool isAdapting;
+  final void Function(RoutineDayActivePhase active)? onDiscardWorkout;
   final VoidCallback? onAddExercise;
   final ValueChanged<Exercise>? onReplaceExercise;
 
@@ -135,6 +137,13 @@ class RoutineDayViewScaffold extends StatelessWidget {
                   HapticFeedback.heavyImpact();
                   onFinishWorkout(phase as RoutineDayActivePhase);
                 }
+              : null,
+          onDiscard:
+              isActive &&
+                  !effectiveReadOnly &&
+                  !isAdapting &&
+                  onDiscardWorkout != null
+              ? () => onDiscardWorkout!(phase as RoutineDayActivePhase)
               : null,
         ),
         ..._buildContentSlivers(context),

@@ -17,10 +17,12 @@ RoutineDayPhase resolveRoutineDayPhase({
       active.errorMessage ?? 'Error al iniciar la sesión',
     );
   }
-  if (active.isStarting || active.isFinishing) {
+  if (active.isStarting || active.isFinishing || active.isDiscarding) {
     return RoutineDayLoadingPhase(
       message: active.isFinishing
           ? 'Guardando entrenamiento…'
+          : active.isDiscarding
+          ? 'Descartando entrenamiento…'
           : 'Iniciando entrenamiento…',
     );
   }

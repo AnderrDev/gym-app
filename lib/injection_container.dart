@@ -77,6 +77,7 @@ import 'features/auth/domain/usecases/request_password_reset.dart';
 import 'features/auth/domain/usecases/sign_in_with_email.dart';
 import 'features/auth/domain/usecases/sign_out.dart';
 import 'features/auth/domain/usecases/sign_up_with_email.dart';
+import 'package:gym_flutter/features/auth/domain/usecases/update_password.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 
 final sl = GetIt.instance;
@@ -99,6 +100,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
   sl.registerLazySingleton(() => RequestPasswordReset(sl()));
+  sl.registerLazySingleton(() => UpdatePassword(sl()));
 
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),

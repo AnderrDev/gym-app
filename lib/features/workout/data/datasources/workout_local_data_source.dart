@@ -67,6 +67,9 @@ abstract class WorkoutLocalDataSource {
     required int setIndex,
   });
 
+  /// Borra una sesión cacheada y sus series (entreno descartado).
+  Future<void> deleteCachedSession(String id);
+
   /// Marca una sesión como completada (escribe `completedAt`).
   Future<void> markSessionCompleted(String id, DateTime completedAt);
 

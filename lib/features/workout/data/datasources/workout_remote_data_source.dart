@@ -218,6 +218,10 @@ class WorkoutRemoteDataSourceImpl implements WorkoutRemoteDataSource {
   );
 
   @override
+  Future<void> discardWorkoutSession(String sessionId) =>
+      _sessions.discardWorkoutSession(sessionId);
+
+  @override
   Future<WorkoutSessionModel?> getActiveSessionForUser(String userId) =>
       _sessions.getActiveSessionForUser(userId);
 

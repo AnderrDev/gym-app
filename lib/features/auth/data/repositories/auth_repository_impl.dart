@@ -75,4 +75,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> sendPasswordResetEmail(String email) {
     return guard(() => remoteDataSource.sendPasswordResetEmail(email));
   }
+
+  @override
+  Future<Either<Failure, void>> updatePassword(String newPassword) {
+    return guard(() => remoteDataSource.updatePassword(newPassword));
+  }
+
+  @override
+  Stream<void> get passwordRecoveryEvents =>
+      remoteDataSource.passwordRecoveryEvents;
 }

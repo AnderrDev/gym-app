@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import 'package:gym_flutter/core/error/exceptions.dart';
 import 'package:gym_flutter/core/error/user_messages.dart';
 import 'package:gym_flutter/core/observability/app_logger.dart';
+import 'package:gym_flutter/core/routes/app_routes.dart';
 
 import '../models/user_model.dart';
 
@@ -20,6 +22,14 @@ abstract class AuthRemoteDataSource {
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
   Future<void> sendPasswordResetEmail(String email);
+
+  /// Cambia la contraseña del usuario de la sesión actual (la que abre el
+  /// enlace de recuperación).
+  Future<void> updatePassword(String newPassword);
+
+  /// Emite cuando el usuario vuelve desde el enlace de recuperación de
+  /// contraseña (`AuthChangeEvent.passwordRecovery`).
+  Stream<void> get passwordRecoveryEvents;
 
   /// Domain-level stream: `true` when an authenticated session is active.
   /// Filters Supabase events down to the ones that affect auth state
@@ -43,6 +53,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             data.event == supabase.AuthChangeEvent.signedOut,
       )
       .map((data) => data.session != null);
+
+  @override
+  Stream<void> get passwordRecoveryEvents => client.auth.onAuthStateChange
+      .where((data) => data.event == supabase.AuthChangeEvent.passwordRecovery)
+      .map((_) {});
 
   @override
   Future<UserModel> signInWithEmail(String email, String password) async {
@@ -174,12 +189,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> sendPasswordResetEmail(String email) async {
     try {
-      await client.auth.resetPasswordForEmail(email);
+      // En web el enlace vuelve a esta misma app, a la pantalla que pide la
+      // contraseña nueva. Fuera de web no hay deep link configurado: Supabase
+      // usa la Site URL del proyecto (la app web).
+      await client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb
+            ? '${Uri.base.origin}${AppRoutes.resetPassword}'
+            : null,
+      );
     } on supabase.AuthException catch (e) {
       if (e is supabase.AuthRetryableFetchException) throw NetworkException();
       throw AuthException(authErrorMessage(e));
     } catch (e) {
-      throw ServerException('resetPassword failed: $e');
+      _throwUnexpected('resetPassword', e);
+    }
+  }
+
+  @override
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await client.auth.updateUser(
+        supabase.UserAttributes(password: newPassword),
+      );
+    } on supabase.AuthException catch (e) {
+      if (e is supabase.AuthRetryableFetchException) throw NetworkException();
+      throw AuthException(authErrorMessage(e));
+    } catch (e) {
+      _throwUnexpected('updatePassword', e);
     }
   }
 }

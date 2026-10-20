@@ -21,6 +21,12 @@ enum ActiveWorkoutStatus {
   /// Sesión cerrada con éxito. La página debería pop-ear.
   finished,
 
+  /// Disparamos `DiscardActiveWorkout` y esperamos el borrado.
+  discarding,
+
+  /// Sesión descartada (borrada). La página debería pop-ear sin resumen.
+  discarded,
+
   /// Falla en cualquiera de los pasos anteriores.
   failure,
 }
@@ -68,6 +74,7 @@ class ActiveWorkoutState extends Equatable {
   bool get isRunning => status == ActiveWorkoutStatus.running;
   bool get isStarting => status == ActiveWorkoutStatus.starting;
   bool get isFinishing => status == ActiveWorkoutStatus.finishing;
+  bool get isDiscarding => status == ActiveWorkoutStatus.discarding;
 
   ActiveWorkoutState copyWith({
     ActiveWorkoutStatus? status,

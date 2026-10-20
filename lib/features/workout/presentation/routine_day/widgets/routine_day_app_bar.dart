@@ -19,6 +19,9 @@ class RoutineDayAppBar extends StatelessWidget {
   final int totalSets;
   final VoidCallback onClose;
   final VoidCallback? onFinish;
+
+  /// Si no es `null`, el app bar activo muestra un menú con "Descartar".
+  final VoidCallback? onDiscard;
   final void Function(
     WorkoutSession session,
     List<SetLog> logs,
@@ -40,6 +43,7 @@ class RoutineDayAppBar extends StatelessWidget {
     this.completedSets = 0,
     this.totalSets = 0,
     this.onFinish,
+    this.onDiscard,
   });
 
   @override
@@ -67,6 +71,35 @@ class RoutineDayAppBar extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          if (onDiscard != null)
+            PopupMenuButton<_ActiveMenuAction>(
+              tooltip: 'Más opciones',
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: context.colors.textPrimary,
+              ),
+              onSelected: (action) => switch (action) {
+                _ActiveMenuAction.discard => onDiscard!(),
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ActiveMenuAction.discard,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.delete_outline_rounded,
+                      color: context.colors.error,
+                    ),
+                    title: Text(
+                      'Descartar entrenamiento',
+                      style: TextStyle(color: context.colors.error),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(54),
           child: _ActiveBottomBar(
@@ -128,6 +161,8 @@ class RoutineDayAppBar extends StatelessWidget {
     );
   }
 }
+
+enum _ActiveMenuAction { discard }
 
 class _ActiveBottomBar extends StatelessWidget {
   const _ActiveBottomBar({

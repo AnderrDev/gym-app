@@ -647,6 +647,32 @@ class WorkoutRepositoryImpl extends WorkoutRepository
   });
 
   @override
+  Future<Either<Failure, void>> discardWorkoutSession(String sessionId) =>
+      guard(() async {
+        // Sin outbox para esto a propósito: un borrado encolado detrás de
+        // series pendientes podría ejecutarse antes que el insert de la
+        // sesión creada offline, o al revés dejarla viva. Descartar exige
+        // estar online y con la cola vacía.
+        if (_offlineCapable && !_isOnline) throw core_ex.NetworkException();
+        if (outbox != null && await outbox!.pendingCount() > 0) {
+          throw core_ex.ConflictException(
+            'Aún hay series sin sincronizar. Espera a tener conexión estable '
+            'y vuelve a intentarlo.',
+          );
+        }
+        await remoteDataSource.discardWorkoutSession(sessionId);
+        if (localDataSource != null) {
+          try {
+            await localDataSource!.deleteCachedSession(sessionId);
+          } catch (e) {
+            AppLogger.instance.warning(
+              'discardWorkoutSession: cache delete failed: $e',
+            );
+          }
+        }
+      });
+
+  @override
   Future<Either<Failure, List<CoachingAnalysis>>> getSessionCoaching(
     String sessionId,
   ) => guard(() async {

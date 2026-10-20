@@ -160,8 +160,8 @@ class _ActiveSessionWarning extends StatelessWidget {
           Expanded(
             child: Text(
               dayName != null
-                  ? 'Ya tienes un entrenamiento en curso ($dayName). Finalízalo o retómalo antes de iniciar otro.'
-                  : 'Ya tienes un entrenamiento en curso. Finalízalo o retómalo antes de iniciar otro.',
+                  ? 'Ya tienes un entrenamiento en curso ($dayName). Retómalo para finalizarlo o descartarlo antes de iniciar otro.'
+                  : 'Ya tienes un entrenamiento en curso. Retómalo para finalizarlo o descartarlo antes de iniciar otro.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: context.colors.warning,
               ),

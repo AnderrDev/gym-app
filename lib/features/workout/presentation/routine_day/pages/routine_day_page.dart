@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
@@ -268,6 +269,42 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
+  Future<void> _onDiscardWorkout(RoutineDayActivePhase active) async {
+    final completed = active.setLogs.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Descartar este entrenamiento?'),
+        content: Text(
+          completed == 0
+              ? 'Se borrará la sesión y no quedará en tu historial.'
+              : 'Se borrarán la sesión y las $completed '
+                    '${completed == 1 ? 'serie registrada' : 'series registradas'}. '
+                    'No quedará en tu historial ni en tus estadísticas. '
+                    'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.colors.error,
+              foregroundColor: dialogContext.colors.onPrimary,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(AppStrings.discard),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    context.read<ActiveWorkoutBloc>().add(
+      DiscardActiveWorkout(sessionId: active.session.id),
+    );
+  }
+
   Future<void> _showCoachingAndClose(List<CoachingAnalysis> coaching) async {
     if (coaching.isNotEmpty) {
       await AdaptiveSheet.show<void>(
@@ -324,7 +361,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 content: Text(
                   'Empezaste esta sesión el ${formatRoutineDayDateLabel(existing.sessionDate)}. '
                   'Al continuarla conserva esa fecha y las series guardadas. '
-                  'Finalízala antes de comenzar un entrenamiento nuevo de hoy.',
+                  'Finalízala o descártala (menú ⋮) antes de comenzar un entrenamiento nuevo de hoy.',
                 ),
                 actions: [
                   TextButton(
@@ -371,6 +408,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             if (state.status == ActiveWorkoutStatus.finished) {
               unawaited(_showCoachingAndClose(state.finalCoaching));
             }
+            if (state.status == ActiveWorkoutStatus.discarded) {
+              AppSnackBar.success(context, 'Entrenamiento descartado');
+              context.pop(true);
+            }
           },
           builder: (context, activeState) {
             return BlocBuilder<RoutineDayBloc, RoutineDayState>(
@@ -381,6 +422,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 if (activeState.status == ActiveWorkoutStatus.running ||
                     activeState.isStarting ||
                     activeState.isFinishing ||
+                    activeState.isDiscarding ||
                     activeState.status == ActiveWorkoutStatus.failure) {
                   return false;
                 }
@@ -427,6 +469,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   onSetAdded: _onSetAdded,
                   onSetRemoved: _onSetRemoved,
                   onFinishWorkout: _onFinishWorkout,
+                  onDiscardWorkout: _onDiscardWorkout,
                   onShowLastSessionDetails: _onShowLastSessionDetails,
                   onRetry: _retry,
                   isAdapting: activeState.isAdapting,
