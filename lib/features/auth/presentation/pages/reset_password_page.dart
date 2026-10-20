@@ -23,8 +23,8 @@ import 'package:gym_flutter/injection_container.dart';
 /// Supabase canjea el enlace al arrancar y deja una sesión temporal: con ella
 /// el usuario fija la contraseña nueva. Sin sesión (enlace caducado, ya usado
 /// o abierto en otro navegador/dispositivo que el que lo pidió) se explica
-/// qué pasó en vez de rebotar al login sin contexto. Igual que `ForgotPasswordSheet`, es un
-/// flujo one-shot que no pasa por `AuthBloc`.
+/// qué pasó en vez de rebotar al login sin contexto. Igual que
+/// `ForgotPasswordSheet`, es un flujo one-shot que no pasa por `AuthBloc`.
 class ResetPasswordPage extends StatelessWidget {
   const ResetPasswordPage({super.key, this.updatePassword});
 
