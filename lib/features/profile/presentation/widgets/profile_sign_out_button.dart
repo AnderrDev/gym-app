@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:gym_flutter/core/sync/presentation/sync_status_bloc.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -25,6 +26,9 @@ class _ProfileSignOutButtonState extends State<ProfileSignOutButton> {
 
   Future<void> _confirmAndSignOut(BuildContext context) async {
     final authBloc = context.read<AuthBloc>();
+    // Cambios aún sin subir (series hechas sin red): cerrar sesión ahora
+    // puede dejarlos sin sincronizar, así que se avisa explícitamente.
+    final pending = context.read<SyncStatusBloc?>()?.state.pending ?? 0;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -37,8 +41,14 @@ class _ProfileSignOutButtonState extends State<ProfileSignOutButton> {
           ),
           title: Text('¿Cerrar sesión?', style: text.headlineSmall),
           content: Text(
-            'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
-            style: text.bodyMedium?.copyWith(color: colors.textSecondary),
+            pending > 0
+                ? 'Tienes $pending ${pending == 1 ? 'cambio' : 'cambios'} sin '
+                      'sincronizar. Si cierras sesión ahora podrían perderse: '
+                      'conéctate a internet y espera a que se suban.'
+                : 'Tendrás que volver a iniciar sesión para acceder a tus rutinas.',
+            style: text.bodyMedium?.copyWith(
+              color: pending > 0 ? colors.error : colors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(

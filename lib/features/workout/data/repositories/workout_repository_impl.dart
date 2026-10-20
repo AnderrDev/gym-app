@@ -562,11 +562,26 @@ class WorkoutRepositoryImpl extends WorkoutRepository
 
   @override
   Future<Either<Failure, List<SetLog>>> getSessionSetLogs(String sessionId) =>
-      guard(
-        () async => (await remoteDataSource.getSessionSetLogs(
-          sessionId,
-        )).map((m) => m.toEntity()).toList(),
-      );
+      guard(() async {
+        final canUseCache = _offlineCapable && localDataSource != null;
+        // Sin red (o con la red caída a mitad) las series guardadas en local
+        // —incluidas las que esperan en el outbox— son la mejor fuente.
+        // Antes un fallo aquí reanudaba la sesión con 0 series.
+        if (canUseCache && !_isOnline) {
+          return localDataSource!.getCachedSetLogs(sessionId);
+        }
+        try {
+          return (await remoteDataSource.getSessionSetLogs(
+            sessionId,
+          )).map((m) => m.toEntity()).toList();
+        } catch (e) {
+          if (!canUseCache || mapToFailure(e) is! NetworkFailure) rethrow;
+          AppLogger.instance.warning(
+            'getSessionSetLogs: remote failed, local cache: $e',
+          );
+          return localDataSource!.getCachedSetLogs(sessionId);
+        }
+      });
 
   @override
   Future<Either<Failure, Map<String, List<SetLog>>>> getSetLogsForSessions(

@@ -45,6 +45,63 @@ void main() {
     repository: repository,
   );
 
+  blocTest<DashboardBloc, DashboardState>(
+    'una respuesta lenta de otra semana no pisa a la semana actual',
+    build: () {
+      const dayOld = RoutineDay(
+        id: 'old',
+        routineId: 'r1',
+        dayOfWeek: 1,
+        name: 'Vieja',
+      );
+      const dayNew = RoutineDay(
+        id: 'new',
+        routineId: 'r1',
+        dayOfWeek: 1,
+        name: 'Nueva',
+      );
+      final previousWeek = DateTime(2026, 4, 27);
+      when(
+        () => getWeeklyPlan(
+          userId: any(named: 'userId'),
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      ).thenAnswer((inv) async {
+        final week = inv.namedArguments[#weekStart] as DateTime;
+        if (week == previousWeek) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return const Right([dayOld]);
+        }
+        return const Right([dayNew]);
+      });
+      when(
+        () => repository.getWeeklyInsights(
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      ).thenAnswer((_) async => const Left(ServerFailure('x')));
+      return buildBloc();
+    },
+    act: (b) {
+      b.add(
+        LoadWeeklyPlan(
+          userId: userId,
+          routine: routineA,
+          weekStart: DateTime(2026, 4, 27),
+        ),
+      );
+      b.add(
+        LoadWeeklyPlan(userId: userId, routine: routineA, weekStart: monday),
+      );
+    },
+    wait: const Duration(milliseconds: 200),
+    verify: (b) {
+      expect(b.state.weekStart, monday);
+      expect(b.state.weeklyDays.single.id, 'new');
+    },
+  );
+
   group('cambio de rutina', () {
     blocTest<DashboardBloc, DashboardState>(
       'ClearSelectedRoutine vuelve al selector',

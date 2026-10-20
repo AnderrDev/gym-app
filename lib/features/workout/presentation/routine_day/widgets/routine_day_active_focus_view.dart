@@ -131,6 +131,19 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     return widget.exercises.isEmpty ? 0 : widget.exercises.length - 1;
   }
 
+  /// Primer ejercicio con series objetivo pendientes, o `null` si están
+  /// todos completos.
+  int? _firstPendingIndex() {
+    for (var i = 0; i < widget.exercises.length; i++) {
+      final ex = widget.exercises[i];
+      if (ex.replacedByExerciseName == null &&
+          _doneCountFor(ex) < ex.targetSets) {
+        return i;
+      }
+    }
+    return null;
+  }
+
   int _doneCountFor(Exercise ex) =>
       widget.completedLogs.where((l) => l.exerciseId == ex.id).length;
 
@@ -198,7 +211,14 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
               final ex = widget.exercises[index];
               final allSetsDone = _doneCountFor(ex) >= ex.targetSets;
               final isLast = index == widget.exercises.length - 1;
-              final nextEx = isLast ? null : widget.exercises[index + 1];
+              // En el último ejercicio, si quedó alguno anterior sin terminar
+              // se ofrece volver a él antes que "Finalizar" ('TERMINASTE'
+              // aparecía aunque faltaran series).
+              final pendingIndex = isLast ? _firstPendingIndex() : null;
+              final nextIndex = isLast ? pendingIndex : index + 1;
+              final nextEx = nextIndex == null
+                  ? null
+                  : widget.exercises[nextIndex];
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   Spacing.lg,
@@ -297,8 +317,8 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                         nextExerciseName: nextEx?.name,
                         onTap: () {
                           HapticFeedback.mediumImpact();
-                          if (nextEx != null) {
-                            _jumpTo(index + 1);
+                          if (nextIndex != null) {
+                            _jumpTo(nextIndex);
                           } else if (widget.onFinishWorkout != null) {
                             widget.onFinishWorkout!();
                           }

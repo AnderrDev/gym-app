@@ -174,4 +174,26 @@ void main() {
 
     expect(result, const Left(ServerFailure('boom')));
   });
+
+  test(
+    'si fallan las sesiones devuelve el error en vez de días sin entrenar',
+    () async {
+      when(() => mockRepository.getRoutineDays('r1')).thenAnswer(
+        (_) async => const Right([
+          RoutineDay(id: 'd1', routineId: 'r1', dayOfWeek: 1, name: 'Lunes'),
+        ]),
+      );
+      when(
+        () => mockRepository.getWeekSessions(any(), any(), any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('rls')));
+
+      final result = await usecase(
+        userId: 'user-1',
+        routineId: 'r1',
+        weekStart: DateTime(2024, 1, 1),
+      );
+
+      expect(result.isLeft(), isTrue);
+    },
+  );
 }

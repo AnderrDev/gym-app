@@ -27,6 +27,10 @@ class GetWeeklyPlan {
       weekStart,
       weekEnd,
     );
+    // Sin sesiones conocidas todos los días saldrían "sin entrenar" y se
+    // invitaría a repetir un entreno ya hecho: mejor propagar el error.
+    final sessionsFailure = sessionsResult.fold((f) => f, (_) => null);
+    if (sessionsFailure != null) return Left(sessionsFailure);
     final sessions = sessionsResult.getOrElse((_) => []);
 
     // 3. Mapear cada día con su estado semanal:

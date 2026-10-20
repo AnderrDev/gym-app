@@ -88,10 +88,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     );
   }
 
+  /// Id de la última carga del plan. Los eventos se procesan en paralelo:
+  /// al cambiar de semana rápido, una respuesta lenta llegaba la última y
+  /// pisaba los días de la semana que sí se estaba viendo.
+  int _planRequest = 0;
+
   Future<void> _onLoadWeeklyPlan(
     LoadWeeklyPlan event,
     Emitter<DashboardState> emit,
   ) async {
+    final request = ++_planRequest;
     final normalized = _normalizeWeekStart(event.weekStart);
     emit(
       state.copyWith(
@@ -114,6 +120,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       ),
     ]);
 
+    if (request != _planRequest) return;
+
     final daysResult = results[0] as Either<Failure, List<RoutineDay>>;
     final insightsResult = results[1] as Either<Failure, WeeklyInsights>;
 
@@ -122,6 +130,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         state.copyWith(
           status: DashboardStatus.failure,
           errorMessage: daysResult.fold((f) => f.message, (_) => 'Error'),
+          // `weekStart` ya apunta a la semana pedida: no se pintan los días
+          // de otra semana bajo su rango.
+          weeklyDays: const [],
         ),
       );
       return;

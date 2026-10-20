@@ -200,6 +200,27 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   }
 
   @override
+  Future<List<SetLog>> getCachedSetLogs(String sessionId) async {
+    final rows = await _dao.readSessionSetLogs(sessionId);
+    return rows
+        .map(
+          (r) => SetLog(
+            id: r.remoteId,
+            sessionId: r.sessionId,
+            exerciseId: r.exerciseId,
+            actualWeight: r.actualWeight,
+            actualReps: r.actualReps,
+            setIndex: r.setIndex,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r.createdAt,
+              isUtc: true,
+            ),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
   Future<void> upsertCachedSetLog(SetLog log, {String syncStatus = 'pending'}) {
     final now = _nowMs;
     final createdMs = log.createdAt?.toUtc().millisecondsSinceEpoch ?? now;
@@ -321,7 +342,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     final row = await _dao.readWeeklyInsight(
       userId,
       routineId,
-      _isoDate(weekStart.toUtc()),
+      _isoDate(weekStart),
     );
     if (row == null) return null;
     final decoded = jsonDecode(row.payloadJson);
@@ -340,7 +361,7 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
       CachedWeeklyInsightsCompanion.insert(
         userId: userId,
         routineId: routineId,
-        weekStart: _isoDate(insights.weekStart.toUtc()),
+        weekStart: _isoDate(insights.weekStart),
         payloadJson: jsonEncode(insights.toJson()),
         fetchedAt: now,
       ),
@@ -355,8 +376,8 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   ) async {
     final rows = await _dao.readWeekSessions(
       userId,
-      _isoDate(weekStart.toUtc()),
-      _isoDate(weekEnd.toUtc()),
+      _isoDate(weekStart),
+      _isoDate(weekEnd),
     );
     return rows.map(_mapSession).toList(growable: false);
   }
@@ -422,6 +443,10 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
     );
   }
 
+  /// Fecha de calendario tal cual (sin `toUtc()`): `toUtc()` sobre la
+  /// medianoche local del lunes en España daba el domingo, y la consulta
+  /// offline de la semana se desplazaba un día respecto a cómo se guardan
+  /// las sesiones (`session_date` local).
   String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'

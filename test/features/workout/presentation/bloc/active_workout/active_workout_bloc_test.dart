@@ -518,6 +518,57 @@ void main() {
     },
   );
 
+  group('notificación de entreno activo', () {
+    setUp(() {
+      when(
+        () => repository.getSessionSetLogs(any()),
+      ).thenAnswer((_) async => const Right(<SetLog>[]));
+    });
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'consultar una sesión cerrada no la arranca',
+      build: buildBloc,
+      act: (b) => b.add(
+        ResumeActiveWorkout(
+          session: session.copyWith(completedAt: DateTime(2026, 5, 4, 20)),
+          exercises: const [exerciseA],
+          lastPerformances: const {},
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (_) => verifyNever(
+        () => notifier.onStarted(
+          dayName: any(named: 'dayName'),
+          sessionStartedAt: any(named: 'sessionStartedAt'),
+          totalSets: any(named: 'totalSets'),
+        ),
+      ),
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'salir con la sesión abierta no quita la notificación',
+      build: () => buildBloc()
+        ..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+          ),
+        ),
+      act: (b) => b.add(const ResetActiveWorkout()),
+      wait: const Duration(milliseconds: 50),
+      verify: (_) => verifyNever(() => notifier.onEnded()),
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'reset sin sesión abierta sí la quita',
+      build: buildBloc,
+      act: (b) => b.add(const ResetActiveWorkout()),
+      wait: const Duration(milliseconds: 50),
+      verify: (_) => verify(() => notifier.onEnded()).called(1),
+    );
+  });
+
   group('StartActiveWorkout', () {
     blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
       'éxito → status running con session/exercises/setLogs',

@@ -56,6 +56,10 @@ abstract class WorkoutLocalDataSource {
   /// setIndex)` garantiza que un mismo set se actualice y no duplique.
   Future<void> upsertCachedSetLog(SetLog log, {String syncStatus = 'pending'});
 
+  /// Series de la sesión guardadas en local (incluye las pendientes de
+  /// sincronizar). Fallback cuando el servidor no responde.
+  Future<List<SetLog>> getCachedSetLogs(String sessionId);
+
   /// Borra un set log cacheado (al desmarcar una serie).
   Future<void> deleteCachedSetLog({
     required String sessionId,

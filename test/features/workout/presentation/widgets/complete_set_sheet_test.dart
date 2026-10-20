@@ -87,4 +87,24 @@ void main() {
       expect(tester.widget<AppButton>(getConfirm()).onPressed, isNull);
     });
   }
+
+  testWidgets('objetivo sin carga se muestra como peso corporal', (
+    tester,
+  ) async {
+    await open(tester);
+    expect(find.textContaining('Peso corporal'), findsOneWidget);
+    expect(find.textContaining('0 kg'), findsNothing);
+  });
+
+  testWidgets('"Hecho" en el teclado de repeticiones confirma la serie', (
+    tester,
+  ) async {
+    CompleteSetResult? result;
+    await open(tester, onResult: (value) => result = value);
+    await tester.tap(find.byKey(const ValueKey('complete_set_reps')));
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(result, isA<CompleteSetSave>());
+  });
 }

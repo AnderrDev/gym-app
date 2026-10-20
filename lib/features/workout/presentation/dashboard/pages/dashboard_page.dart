@@ -190,6 +190,20 @@ class _DashboardPageState extends State<DashboardPage> {
   void _retryLoadRoutines() {
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
+    // Con una rutina ya elegida lo que falló fue su plan: recargar las
+    // rutinas sólo re-pedía el plan si había exactamente una.
+    final dash = context.read<DashboardBloc>().state;
+    final routine = dash.selectedRoutine;
+    if (routine != null) {
+      context.read<DashboardBloc>().add(
+        LoadWeeklyPlan(
+          userId: authState.user.id,
+          routine: routine,
+          weekStart: dash.weekStart ?? _weekStartOf(DateTime.now()),
+        ),
+      );
+      return;
+    }
     context.read<DashboardBloc>().add(LoadAssignedRoutines(authState.user.id));
   }
 

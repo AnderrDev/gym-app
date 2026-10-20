@@ -306,6 +306,37 @@ void main() {
     });
   });
 
+  group('getSessionSetLogs con fallback a la caché local', () {
+    const cachedLog = SetLog(
+      sessionId: 'sess-1',
+      exerciseId: 'e1',
+      actualWeight: 60,
+      actualReps: 10,
+      setIndex: 1,
+    );
+
+    test('offline: series guardadas en local', () async {
+      when(() => conn.isOnline).thenReturn(false);
+      when(
+        () => local.getCachedSetLogs('sess-1'),
+      ).thenAnswer((_) async => const [cachedLog]);
+      final result = await repo.getSessionSetLogs('sess-1');
+      expect(result.getOrElse((_) => const []), const [cachedLog]);
+      verifyNever(() => remote.getSessionSetLogs(any()));
+    });
+
+    test('online pero la red cae: series guardadas en local', () async {
+      when(
+        () => remote.getSessionSetLogs(any()),
+      ).thenThrow(const SocketException('timeout'));
+      when(
+        () => local.getCachedSetLogs('sess-1'),
+      ).thenAnswer((_) async => const [cachedLog]);
+      final result = await repo.getSessionSetLogs('sess-1');
+      expect(result.getOrElse((_) => const []), const [cachedLog]);
+    });
+  });
+
   group('legacy fallback (sin outbox/uuid)', () {
     test('startWorkoutForDay: cae al remote cuando no hay outbox', () async {
       final legacyRepo = WorkoutRepositoryImpl(
