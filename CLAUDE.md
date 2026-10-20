@@ -76,7 +76,7 @@ The `ActiveSessionWatcherBloc` provider lives in the shell (`AppShellPage`), not
   - `get_weekly_insights_v1` (dashboard metrics)
   - `delete_account_v1` (App Store 5.1.1(v): borra los datos vía la RPC `delete_account_data_v1` — service_role only — anonimiza las rutinas públicas y borra el usuario de `auth.users`; invocada desde `ProfileRemoteDataSource`)
 
-  Function contracts live in `docs/EDGE_FUNCTIONS.md` and per-function READMEs under `supabase/functions/`. **`supabase.json` sets `verify_jwt: true` for all of them (gateway validates the JWT signature)**, and each function additionally calls `supabaseAdmin.auth.getUser(token)` via the shared `_shared/auth.ts#requireUser` helper as defense in depth. The client passes `Authorization: Bearer <session.access_token>` explicitly when invoking. **Do not loosen `verify_jwt` without a security review.**
+  Function contracts live in `docs/EDGE_FUNCTIONS.md` and per-function READMEs under `supabase/functions/`. **`supabase/config.toml` sets `verify_jwt = true` for all of them (gateway validates the JWT signature; it's what the CLI reads on deploy — `supabase.json` is documentation only, and without the toml a redeploy keeps whatever the remote had)**, and each function additionally calls `supabaseAdmin.auth.getUser(token)` via the shared `_shared/auth.ts#requireUser` helper as defense in depth. The client passes `Authorization: Bearer <session.access_token>` explicitly when invoking. **Do not loosen `verify_jwt` without a security review.**
 
 ### Database / migrations
 

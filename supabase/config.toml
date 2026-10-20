@@ -1,0 +1,17 @@
+# Configuración que lee la CLI de Supabase (`supabase functions deploy`, CI
+# incluida). `supabase.json` es solo documentación: la CLI no lo lee, y sin
+# esta sección un redeploy conserva el `verify_jwt` que tuviera la función en
+# remoto. No aflojar `verify_jwt` sin revisión de seguridad.
+project_id = "gym_flutter"
+
+[functions.finalize_workout_session_v1]
+verify_jwt = true
+
+[functions.generate_coaching_v1]
+verify_jwt = true
+
+[functions.get_weekly_insights_v1]
+verify_jwt = true
+
+[functions.delete_account_v1]
+verify_jwt = true

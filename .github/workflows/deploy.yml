@@ -56,6 +56,8 @@ jobs:
         run: supabase functions deploy generate_coaching_v1
       - name: Deploy weekly insights
         run: supabase functions deploy get_weekly_insights_v1
+      - name: Deploy delete account
+        run: supabase functions deploy delete_account_v1
 
   deploy-web:
     name: Build & deploy Flutter Web
