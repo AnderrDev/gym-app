@@ -51,7 +51,7 @@ void main() {
     // Fuera del espacio principal: ni "Sustituir" ni "Añadir extra" a la vista.
     expect(find.text('Sustituir ejercicio'), findsNothing);
     expect(find.text('Añadir ejercicio extra'), findsNothing);
-    await tester.tap(find.byTooltip('Más opciones'));
+    await tester.tap(find.byTooltip('Opciones del ejercicio'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sustituir ejercicio'));
     await tester.pumpAndSettle();

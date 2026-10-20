@@ -414,7 +414,10 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             }
             if (state.status == ActiveWorkoutStatus.discarded) {
               AppSnackBar.success(context, 'Entrenamiento descartado');
-              context.pop(true);
+              // Sin `true`: HOY lo leería como "finalizado" y tapaba este
+              // aviso con "¡Entrenamiento completado!". Al volver recarga el
+              // plan igualmente.
+              context.pop();
             }
           },
           builder: (context, activeState) {

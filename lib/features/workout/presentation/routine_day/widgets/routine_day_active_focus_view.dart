@@ -69,6 +69,10 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
   GlobalKey<ExerciseCardState> _cardKeyFor(String exerciseId) =>
       _cardKeys.putIfAbsent(exerciseId, GlobalKey<ExerciseCardState>.new);
 
+  /// Barra fija del botón de serie: el aviso "Deshacer" se coloca encima
+  /// de ella, si no la tapaba y el toque de la serie siguiente caía en él.
+  final _completeBarKey = GlobalKey();
+
   /// Primera serie objetivo sin registrar del ejercicio, o `null`.
   int? _nextPendingSetFor(Exercise ex) {
     final done = widget.completedLogs
@@ -341,10 +345,18 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
       return;
     }
     final messenger = ScaffoldMessenger.of(context);
+    final barHeight = _completeBarKey.currentContext?.size?.height ?? 0;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(
+            Spacing.lg,
+            0,
+            Spacing.lg,
+            barHeight + Spacing.sm,
+          ),
           content: Text(
             'Serie ${log.setIndex} registrada · ${_loadLabel(log.actualWeight, log.actualReps)}',
           ),
@@ -384,6 +396,7 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     final preview = card?.quickSetPreview;
     final isFirstSet = _doneCountFor(ex) == 0;
     return SafeArea(
+      key: _completeBarKey,
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(

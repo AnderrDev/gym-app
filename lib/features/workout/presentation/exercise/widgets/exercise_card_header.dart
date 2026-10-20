@@ -200,7 +200,7 @@ class ExerciseCardHeader extends StatelessWidget {
                     color: context.colors.textSecondary,
                   ),
                 PopupMenuButton<_HeaderMenuAction>(
-                  tooltip: 'Más opciones',
+                  tooltip: 'Opciones del ejercicio',
                   icon: Icon(
                     Icons.more_vert_rounded,
                     color: context.colors.textSecondary,
