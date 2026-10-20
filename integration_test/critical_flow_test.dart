@@ -48,13 +48,19 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 1) Login
-      expect(find.text('GYM TRACKER'), findsOneWidget);
+      expect(find.text('Correo electrónico'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, _testEmail);
       await tester.enterText(find.byType(TextField).last, _testPassword);
-      await tester.tap(find.text('INICIAR SESIÓN'));
+      await tester.tap(
+        find
+            .byWidgetPredicate(
+              (w) => w is Text && w.data?.toLowerCase() == 'iniciar sesión',
+            )
+            .last,
+      );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // 2) Dashboard — debería existir el header con "HOY".
+      // 2) HOY — pestaña del shell.
       expect(find.text('HOY'), findsWidgets);
 
       // 3) HOY → tarjeta del día que toca (asume rutina seeded).
@@ -106,7 +112,7 @@ void main() {
 
       // 7) Volver al dashboard y verificar que las insights cargan
       //    (sólo verificamos que el shell sigue navegable).
-      expect(find.text('GYM TRACKER'), findsNothing);
+      expect(find.text('Correo electrónico'), findsNothing);
     });
   });
 }
