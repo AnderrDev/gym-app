@@ -20,6 +20,9 @@ void main() {
     bool busy = false,
     VoidCallback? add,
     ValueChanged<Exercise>? replace,
+    ValueChanged<SetLog>? onAdded,
+    void Function(String exerciseId, int setIndex)? onRemoved,
+    VoidCallback? onUndone,
   }) => MaterialApp(
     home: Scaffold(
       body: RoutineDayActiveFocusView(
@@ -30,29 +33,31 @@ void main() {
         coachingAnalyses: const {},
         effectiveReadOnly: readOnly,
         isAdapting: busy,
-        onSetAdded: (_) {},
+        onSetAdded: onAdded ?? (_) {},
+        onSetRemoved: onRemoved,
+        onQuickSetUndone: onUndone,
         onAddExercise: add ?? () {},
         onReplaceExercise: replace ?? (_) {},
       ),
     ),
   );
 
-  testWidgets(
-    'permite elegir sustitución y añadir un extra durante la sesión',
-    (tester) async {
-      var added = false;
-      Exercise? replaced;
-      await tester.pumpWidget(
-        view(add: () => added = true, replace: (ex) => replaced = ex),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Sustituir ejercicio'));
-      expect(replaced, exercise);
-      await tester.tap(find.text('Añadir ejercicio extra'));
-      expect(added, true);
-      expect(tester.takeException(), isNull);
-    },
-  );
+  testWidgets('sustituir el ejercicio está en el menú ⋮ de la tarjeta', (
+    tester,
+  ) async {
+    Exercise? replaced;
+    await tester.pumpWidget(view(replace: (ex) => replaced = ex));
+    await tester.pumpAndSettle();
+    // Fuera del espacio principal: ni "Sustituir" ni "Añadir extra" a la vista.
+    expect(find.text('Sustituir ejercicio'), findsNothing);
+    expect(find.text('Añadir ejercicio extra'), findsNothing);
+    await tester.tap(find.byTooltip('Más opciones'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sustituir ejercicio'));
+    await tester.pumpAndSettle();
+    expect(replaced, exercise);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'series conservadas muestran sus índices reales aunque haya huecos',
@@ -96,43 +101,84 @@ void main() {
     expect(find.text('Añadir ejercicio extra'), findsNothing);
   });
 
-  testWidgets('botón fijo "Completar serie" abre la siguiente pendiente', (
+  testWidgets(
+    'el botón fijo registra la serie siguiente de un toque y se puede deshacer',
+    (tester) async {
+      const ex = Exercise(
+        id: 'e1',
+        routineDayId: 'd1',
+        name: 'Press banca',
+        targetMuscle: 'Pecho',
+        targetWeight: 60,
+        targetReps: 10,
+        targetSets: 3,
+      );
+      final added = <SetLog>[];
+      final removed = <int>[];
+      var undone = 0;
+      await tester.pumpWidget(
+        view(
+          exercises: const [ex],
+          logs: const [
+            SetLog(
+              sessionId: 's1',
+              exerciseId: 'e1',
+              actualWeight: 62.5,
+              actualReps: 9,
+              setIndex: 1,
+            ),
+          ],
+          onAdded: added.add,
+          onRemoved: (_, i) => removed.add(i),
+          onUndone: () => undone++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final bar = find.byKey(const ValueKey('focus_complete_set_button'));
+      // Propone lo de la serie anterior, no el objetivo.
+      expect(find.text('Serie 2 hecha · 62.5 kg × 9'), findsOneWidget);
+      // Sólo uno: el de dentro de la tarjeta ya no se pinta en esta vista.
+      expect(
+        find.byKey(const ValueKey('complete_set_button_e1')),
+        findsNothing,
+      );
+
+      await tester.tap(bar);
+      await tester.pumpAndSettle();
+      expect(find.text('CONFIRMAR SERIE'), findsNothing);
+      expect(added.single.setIndex, 2);
+      expect(added.single.actualWeight, 62.5);
+      expect(added.single.actualReps, 9);
+
+      await tester.tap(find.text('Deshacer'));
+      await tester.pumpAndSettle();
+      expect(removed, [2]);
+      expect(undone, 1);
+    },
+  );
+
+  testWidgets('sin peso que proponer el botón abre la hoja para confirmar', (
     tester,
   ) async {
-    const ex = Exercise(
+    const bodyweight = Exercise(
       id: 'e1',
       routineDayId: 'd1',
-      name: 'Press banca',
-      targetMuscle: 'Pecho',
-      targetWeight: 60,
-      targetReps: 10,
-      targetSets: 3,
+      name: 'Dominadas',
+      targetMuscle: 'Espalda',
+      targetWeight: 0,
+      targetReps: 8,
     );
+    final added = <SetLog>[];
     await tester.pumpWidget(
-      view(
-        exercises: const [ex],
-        logs: const [
-          SetLog(
-            sessionId: 's1',
-            exerciseId: 'e1',
-            actualWeight: 60,
-            actualReps: 10,
-            setIndex: 1,
-          ),
-        ],
-      ),
+      view(exercises: const [bodyweight], onAdded: added.add),
     );
     await tester.pumpAndSettle();
-
-    final bar = find.byKey(const ValueKey('focus_complete_set_button'));
-    expect(bar, findsOneWidget);
-    expect(find.text('COMPLETAR SERIE 2'), findsOneWidget);
-    // Sólo uno: el de dentro de la tarjeta ya no se pinta en esta vista.
-    expect(find.byKey(const ValueKey('complete_set_button_e1')), findsNothing);
-
-    await tester.tap(bar);
+    expect(find.text('Registrar serie 1'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('focus_complete_set_button')));
     await tester.pumpAndSettle();
     expect(find.text('CONFIRMAR SERIE'), findsOneWidget);
+    expect(added, isEmpty);
   });
 
   testWidgets('en solo lectura no hay botón fijo', (tester) async {

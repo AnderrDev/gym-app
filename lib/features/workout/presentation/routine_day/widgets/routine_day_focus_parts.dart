@@ -34,14 +34,13 @@ class FocusViewExerciseStepper extends StatelessWidget {
         currentIndex >= exercises.length) {
       return const SizedBox.shrink();
     }
-    final current = exercises[currentIndex];
+    // El nombre del ejercicio ya encabeza la tarjeta: aquí sólo posición y
+    // qué viene después.
+    final next = currentIndex + 1 < exercises.length
+        ? exercises[currentIndex + 1]
+        : null;
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
-        Spacing.md,
-        Spacing.lg,
-        Spacing.md,
-      ),
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, 0),
       decoration: BoxDecoration(
         color: context.colors.background,
         border: Border(bottom: BorderSide(color: context.colors.divider)),
@@ -51,29 +50,29 @@ class FocusViewExerciseStepper extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  current.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.w700,
+              Text(
+                'Ejercicio ${currentIndex + 1} de ${exercises.length}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (next != null) ...[
+                const SizedBox(width: Spacing.sm),
+                Expanded(
+                  child: Text(
+                    'Siguiente: ${next.name}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: context.colors.textSecondary,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: Spacing.sm),
-              Text(
-                '${currentIndex + 1}/${exercises.length}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: context.colors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: Spacing.sm),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(

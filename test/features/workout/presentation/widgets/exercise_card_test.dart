@@ -115,7 +115,7 @@ void main() {
   ) async {
     await tester.pumpWidget(createWidgetUnderTest());
     expect(find.text('Press Banca'), findsOneWidget);
-    expect(find.textContaining('TARGET: 60kg x 10'), findsOneWidget);
+    expect(find.textContaining('Objetivo: 60 kg × 10'), findsOneWidget);
     expect(find.text('0/3'), findsOneWidget);
   });
 
@@ -345,7 +345,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest(lastPerformance: lastPerf));
     await tester.pump();
 
-    expect(find.textContaining('Última vez: 70kg x 8'), findsOneWidget);
+    expect(find.textContaining('Última vez: 70 kg × 8'), findsOneWidget);
   });
 
   testWidgets('abre el bottom sheet de objetivo remoto', (tester) async {

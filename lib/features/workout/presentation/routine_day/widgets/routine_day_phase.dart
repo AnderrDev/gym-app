@@ -42,6 +42,7 @@ class RoutineDayPrestartPhase extends RoutineDayPhase {
     required this.userId,
     required this.routineDayId,
     required this.sessionDate,
+    this.isStarting = false,
   });
 
   final List<Exercise> exercises;
@@ -54,6 +55,11 @@ class RoutineDayPrestartPhase extends RoutineDayPhase {
   final String routineDayId;
   final DateTime sessionDate;
 
+  /// El usuario pulsó "Iniciar" y se está creando la sesión: la previa se
+  /// mantiene en pantalla con el botón cargando en vez de saltar a una
+  /// pantalla de carga en blanco.
+  final bool isStarting;
+
   @override
   List<Object?> get props => [
     exercises,
@@ -65,6 +71,7 @@ class RoutineDayPrestartPhase extends RoutineDayPhase {
     userId,
     routineDayId,
     sessionDate,
+    isStarting,
   ];
 }
 

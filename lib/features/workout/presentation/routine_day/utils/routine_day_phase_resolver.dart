@@ -5,19 +5,29 @@ import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/ro
 /// Compone la fase visual de `RoutineDayPage` a partir de los dos estados
 /// que la dominan: `RoutineDayState` (prestart) y `ActiveWorkoutState`
 /// (sesión activa). La sesión activa tiene prioridad sobre el prestart.
+///
+/// [userStarting]: el usuario pulsó "Iniciar" desde la previa. Mientras se
+/// crea la sesión se sigue mostrando la previa (con el botón cargando); la
+/// pantalla de carga queda para reanudar, que no parte de la previa.
 RoutineDayPhase resolveRoutineDayPhase({
   required RoutineDayState routine,
   required ActiveWorkoutState active,
   required String fallbackUserId,
   required String fallbackRoutineDayId,
   required DateTime fallbackSessionDate,
+  bool userStarting = false,
 }) {
+  final startingFromPrestart =
+      userStarting &&
+      routine.status == RoutineDayStatus.ready &&
+      (active.status == ActiveWorkoutStatus.idle || active.isStarting);
   if (active.status == ActiveWorkoutStatus.failure) {
     return RoutineDayErrorPhase(
       active.errorMessage ?? 'Error al iniciar la sesión',
     );
   }
-  if (active.isStarting || active.isFinishing || active.isDiscarding) {
+  if (!startingFromPrestart &&
+      (active.isStarting || active.isFinishing || active.isDiscarding)) {
     return RoutineDayLoadingPhase(
       message: active.isFinishing
           ? 'Guardando entrenamiento…'
@@ -54,6 +64,7 @@ RoutineDayPhase resolveRoutineDayPhase({
         userId: routine.userId ?? fallbackUserId,
         routineDayId: routine.routineDayId ?? fallbackRoutineDayId,
         sessionDate: routine.sessionDate ?? fallbackSessionDate,
+        isStarting: startingFromPrestart,
       );
   }
 }

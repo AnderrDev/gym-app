@@ -397,7 +397,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               p.status != c.status || p.actionErrorNonce != c.actionErrorNonce,
           listener: (context, state) {
             if (!mounted) return;
-            if (_startRequested && state.status != ActiveWorkoutStatus.idle) {
+            // Mientras se crea la sesión la previa sigue visible con el botón
+            // cargando; el flag se suelta cuando hay respuesta.
+            if (_startRequested &&
+                state.status != ActiveWorkoutStatus.idle &&
+                !state.isStarting) {
               setState(() => _startRequested = false);
             }
             _setKeepScreenOn(state.status == ActiveWorkoutStatus.running);
@@ -429,19 +433,14 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 return previous != current;
               },
               builder: (context, routineState) {
-                final phase =
-                    _startRequested &&
-                        activeState.status == ActiveWorkoutStatus.idle
-                    ? const RoutineDayLoadingPhase(
-                        message: 'Iniciando entrenamiento…',
-                      )
-                    : resolveRoutineDayPhase(
-                        routine: routineState,
-                        active: activeState,
-                        fallbackUserId: widget.userId,
-                        fallbackRoutineDayId: widget.routineDay.id,
-                        fallbackSessionDate: widget.sessionDate,
-                      );
+                final phase = resolveRoutineDayPhase(
+                  routine: routineState,
+                  active: activeState,
+                  fallbackUserId: widget.userId,
+                  fallbackRoutineDayId: widget.routineDay.id,
+                  fallbackSessionDate: widget.sessionDate,
+                  userStarting: _startRequested,
+                );
                 final session = activeState.session;
                 final isCompleted = session?.completedAt != null;
                 final totalVolume = activeState.setLogs.fold<double>(

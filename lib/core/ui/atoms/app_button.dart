@@ -24,6 +24,7 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.variant = AppButtonVariant.primary,
     this.isLoading = false,
+    this.loadingLabel,
     this.icon,
     this.expand = true,
     this.uppercaseLabel = true,
@@ -33,6 +34,10 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final bool isLoading;
+
+  /// Texto junto al spinner mientras [isLoading] (p. ej. "Guardando…"). Sin
+  /// él sólo se muestra el spinner.
+  final String? loadingLabel;
   final IconData? icon;
   final bool expand;
   final bool uppercaseLabel;
@@ -47,6 +52,14 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.primary:
         button = ElevatedButton(
           onPressed: disabled ? null : onPressed,
+          // Cargando no es "deshabilitado": se conserva el relleno para que
+          // el spinner (onPrimary) se vea y el botón no parpadee a gris.
+          style: isLoading
+              ? ElevatedButton.styleFrom(
+                  disabledBackgroundColor: colors.primary,
+                  disabledForegroundColor: colors.onPrimary,
+                )
+              : null,
           child: child,
         );
         break;
@@ -88,7 +101,18 @@ class AppButton extends StatelessWidget {
           : variant == AppButtonVariant.primary
           ? colors.onPrimary
           : colors.primary;
-      return AppSpinner(size: 18, color: spinnerColor);
+      // Tamaño fijo: el spinner lleva un `Center` que, en una barra inferior
+      // del Scaffold (alto máximo = pantalla), estiraba el botón entero.
+      final spinner = SizedBox.square(
+        dimension: 18,
+        child: AppSpinner(size: 18, color: spinnerColor),
+      );
+      if (loadingLabel == null) return spinner;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [spinner, const SizedBox(width: 10), Text(loadingLabel!)],
+      );
     }
     final text = Text(uppercaseLabel ? label.toUpperCase() : label);
     if (icon == null) return text;

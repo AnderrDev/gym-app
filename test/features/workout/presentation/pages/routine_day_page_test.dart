@@ -424,12 +424,12 @@ void main() {
       expect(find.text('Serie 1 · 65 kg × 9 reps'), findsOneWidget);
       expect(find.text('Sin series registradas'), findsOneWidget);
       expect(find.byType(PageView), findsNothing);
-      expect(find.text('FINALIZAR'), findsNothing);
+      expect(find.text('Finalizar'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('estado running renderiza ExerciseCard y FINALIZAR', (
+  testWidgets('estado running renderiza ExerciseCard y Finalizar', (
     tester,
   ) async {
     when(() => routineDayBloc.state).thenReturn(const RoutineDayState());
@@ -445,7 +445,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ExerciseCard), findsOneWidget);
-    expect(find.text('FINALIZAR'), findsOneWidget);
+    expect(find.text('Finalizar'), findsOneWidget);
   });
 
   testWidgets('al guardar set arranca el timer 1:30', (tester) async {

@@ -38,6 +38,9 @@ class ExerciseCard extends StatefulWidget {
   /// entreno) y lo dispara con [ExerciseCardState.openNextPendingSet].
   final bool showCompleteButton;
 
+  /// Abre la sustitución del ejercicio (sólo en sesión activa).
+  final VoidCallback? onReplace;
+
   const ExerciseCard({
     super.key,
     required this.exercise,
@@ -51,6 +54,7 @@ class ExerciseCard extends StatefulWidget {
     this.coachingAnalysis,
     this.forceExpanded = false,
     this.showCompleteButton = true,
+    this.onReplace,
   });
 
   @override
@@ -186,6 +190,40 @@ class ExerciseCardState extends State<ExerciseCard>
     return true;
   }
 
+  /// Serie siguiente con los valores que se registrarían de un toque, o
+  /// `null` si no hay pendientes o no hay peso que proponer (ejercicio sin
+  /// objetivo ni historial: mejor confirmar en la hoja que guardar 0 kg).
+  ({int setNumber, double weight, int reps})? get quickSetPreview {
+    final next = _nextPendingSet;
+    if (widget.readOnly || next == null) return null;
+    final p = _prefillFor(next);
+    if (p.weight <= 0 || p.reps <= 0) return null;
+    return (setNumber: next, weight: p.weight, reps: p.reps);
+  }
+
+  /// Registra la serie siguiente con [quickSetPreview] sin abrir la hoja.
+  /// Devuelve la serie registrada para poder deshacerla, o `null`.
+  SetLog? completeNextSetQuick() {
+    final preview = quickSetPreview;
+    if (preview == null) return null;
+    final log = SetLog(
+      sessionId: widget.sessionId,
+      exerciseId: widget.exercise.id,
+      actualWeight: preview.weight,
+      actualReps: preview.reps,
+      setIndex: preview.setNumber,
+    );
+    _drafts.remove(preview.setNumber);
+    _onSetSaved(log, preview.setNumber);
+    return log;
+  }
+
+  /// Deshace una serie registrada (p. ej. desde el aviso "Deshacer").
+  void undoSet(int setIndex) {
+    if (!_completedSets.containsKey(setIndex)) return;
+    _onSetUnsaved(setIndex);
+  }
+
   int? get _nextPendingSet {
     for (var n = 1; n <= _targetSets; n++) {
       if (!_completedSets.containsKey(n)) return n;
@@ -297,8 +335,14 @@ class ExerciseCardState extends State<ExerciseCard>
 
     return Card(
       color: context.colors.surface,
+      // Plana con borde, como `AppCard`: la sombra de elevación se leía
+      // como un contorno oscuro sobre el fondo claro.
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: context.colors.divider),
+      ),
       child: Column(
         children: [
           ExerciseCardHeader(
@@ -351,6 +395,7 @@ class ExerciseCardState extends State<ExerciseCard>
               pushExerciseDetail(context, widget.exercise.id);
             },
             recommendationText: _getFriendlyRecommendation,
+            onReplace: widget.onReplace,
           ),
           ExerciseCardBody(
             isExpanded: _isExpanded,
