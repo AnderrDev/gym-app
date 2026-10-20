@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_section_label.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Detalle de un PR (record personal) computado por el summary.
 class WorkoutSummaryPr {
@@ -50,9 +51,6 @@ class _PrRow extends StatelessWidget {
   const _PrRow({required this.pr});
   final WorkoutSummaryPr pr;
 
-  String _fmt(double v) =>
-      v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -86,7 +84,7 @@ class _PrRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${_fmt(pr.currentWeight)} kg × ${pr.reps} reps',
+                  '${formatLoad(pr.currentWeight)} × ${pr.reps} reps',
                   style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     fontSize: 11,
@@ -96,7 +94,7 @@ class _PrRow extends StatelessWidget {
             ),
           ),
           Text(
-            '+${_fmt(pr.delta)} kg',
+            '+${formatWeight(pr.delta)} kg',
             style: context.text.bodyMedium?.copyWith(
               color: context.colors.warningText,
               fontWeight: FontWeight.w800,

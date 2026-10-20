@@ -218,14 +218,14 @@ void main() {
         '62.5',
       );
       await tester.pump();
-      expect(find.text('+2.5 kg sobre el objetivo'), findsOneWidget);
+      expect(find.text('+2,5 kg sobre el objetivo'), findsOneWidget);
       await confirm(tester);
 
       expect(captured, isNotNull);
       expect(captured!.actualWeight, 62.5);
       expect(captured!.actualReps, 10);
       expect(captured!.setIndex, 1);
-      expect(find.text('62.5 kg × 10 reps'), findsOneWidget);
+      expect(find.text('62,5 kg × 10 reps'), findsOneWidget);
       expect(find.text('COMPLETAR SERIE 2'), findsOneWidget);
 
       // Drenar el timer del live advice (8s).
@@ -246,7 +246,7 @@ void main() {
       expect(find.text('COMPLETAR SERIE 1'), findsOneWidget);
       expect(find.text('65.5 kg × 8 reps'), findsNothing);
       await openNextSet(tester);
-      expect(fieldText(tester, 'complete_set_weight'), '65.5');
+      expect(fieldText(tester, 'complete_set_weight'), '65,5');
       expect(fieldText(tester, 'complete_set_reps'), '8');
     });
 

@@ -4,9 +4,9 @@ import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axi
 void main() {
   test('compactAxisNumber abrevia miles', () {
     expect(compactAxisNumber(850), '850');
-    expect(compactAxisNumber(1250), '1.3k');
+    expect(compactAxisNumber(1250), '1,3k');
     expect(compactAxisNumber(12500), '13k');
-    expect(compactAxisNumber(22.5), '22.5');
+    expect(compactAxisNumber(22.5), '22,5');
   });
 
   test('dateAxisInterval limita las fechas visibles', () {

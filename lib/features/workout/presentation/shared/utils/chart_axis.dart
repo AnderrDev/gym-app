@@ -1,13 +1,16 @@
 // Helpers de ejes compartidos por las gráficas de progreso.
 
-/// "850", "1.2k", "12k" (punto decimal, como el resto de pesos de la app): en el eje Y "12500 kg·reps" a 9 px no cabía.
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
+
+/// "850", "1,2k", "12k" (coma decimal, como el resto de pesos de la app):
+/// en el eje Y "12500 kg·reps" a 9 px no cabía.
 String compactAxisNumber(double v) {
   final abs = v.abs();
   if (abs >= 10000) return '${(v / 1000).toStringAsFixed(0)}k';
   if (abs >= 1000) {
-    return '${(v / 1000).toStringAsFixed(1)}k';
+    return '${(v / 1000).toStringAsFixed(1).replaceAll('.', ',')}k';
   }
-  return v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+  return formatDecimal(v);
 }
 
 /// Intervalo del eje X para no pasar de ~[maxLabels] fechas: con muchas

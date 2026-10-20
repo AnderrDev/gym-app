@@ -112,16 +112,20 @@ class _PendingLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // El objetivo ya está en la cabecera de la tarjeta: repetir "Objetivo"
+    // en cada fila era ruido. Solo la serie que toca lleva etiqueta.
     return Row(
       children: [
-        Text(
-          'Objetivo',
-          style: context.text.labelMedium?.copyWith(
-            color: isNext ? colors.primary : colors.textSecondary,
-            fontWeight: FontWeight.w700,
+        if (isNext) ...[
+          Text(
+            'Siguiente',
+            style: context.text.labelMedium?.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(width: Spacing.sm),
+          const SizedBox(width: Spacing.sm),
+        ],
         Flexible(
           child: Text(
             '${formatLoad(targetWeight)} × $targetReps reps',
@@ -171,7 +175,7 @@ class _DoneLabel extends StatelessWidget {
       children: [
         Flexible(
           child: Text(
-            '${formatWeight(log.actualWeight)} kg × ${log.actualReps} reps',
+            '${formatLoad(log.actualWeight)} × ${log.actualReps} reps',
             overflow: TextOverflow.ellipsis,
             style: context.text.bodyMedium?.copyWith(
               color: colors.textPrimary,

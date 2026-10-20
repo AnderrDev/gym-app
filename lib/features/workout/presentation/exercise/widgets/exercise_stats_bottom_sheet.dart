@@ -190,9 +190,7 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                         state.history,
                         (s) => s.estimated1RM,
                       ),
-                      formatter: (v) => v % 1 == 0
-                          ? v.toStringAsFixed(0)
-                          : v.toStringAsFixed(1),
+                      formatter: formatDecimal,
                       chart: ExerciseEstimated1RMChart(history: state.history),
                     ),
                     const SizedBox(height: 32),

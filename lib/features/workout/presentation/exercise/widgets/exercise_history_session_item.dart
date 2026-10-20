@@ -63,7 +63,7 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${formatWeight(log.actualWeight)}kg x ${log.actualReps}',
+                      '${formatLoad(log.actualWeight)} × ${log.actualReps}',
                       style: context.text.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

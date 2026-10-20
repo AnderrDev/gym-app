@@ -137,7 +137,7 @@ void main() {
 
       final bar = find.byKey(const ValueKey('focus_complete_set_button'));
       // Propone lo de la serie anterior, no el objetivo.
-      expect(find.text('Serie 2 hecha · 62.5 kg × 9'), findsOneWidget);
+      expect(find.text('Serie 2 hecha · 62,5 kg × 9'), findsOneWidget);
       // Sólo uno: el de dentro de la tarjeta ya no se pinta en esta vista.
       expect(
         find.byKey(const ValueKey('complete_set_button_e1')),

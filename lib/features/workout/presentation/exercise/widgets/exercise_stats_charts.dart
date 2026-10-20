@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Charts del bottom sheet de estadísticas por ejercicio. Tres charts:
 /// peso máximo, 1RM estimado, carga movida. Comparten:
@@ -71,8 +72,7 @@ class ExerciseVolumeChart extends StatelessWidget {
 }
 
 String _intFormat(double v) => v.toStringAsFixed(0);
-String _oneDecimalFormat(double v) =>
-    v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+String _oneDecimalFormat(double v) => formatDecimal(v);
 
 /// Implementación compartida: line chart con grid, eje Y con unidad,
 /// tooltip y PR-dots.

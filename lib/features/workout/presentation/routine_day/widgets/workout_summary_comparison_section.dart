@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/workout_summary_section_label.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 class WorkoutSummaryComparison {
   const WorkoutSummaryComparison({
@@ -66,7 +67,7 @@ class _ComparisonRow extends StatelessWidget {
         : Icons.trending_flat_rounded;
     final deltaStr = delta.abs() < 0.05
         ? '='
-        : (delta > 0 ? '+' : '−') + delta.abs().toStringAsFixed(1);
+        : (delta > 0 ? '+' : '−') + formatWeight(delta.abs());
     return Container(
       margin: const EdgeInsets.only(bottom: Spacing.xs),
       padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 10),
@@ -90,8 +91,10 @@ class _ComparisonRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${data.currentAvgWeight.toStringAsFixed(1)} kg avg · '
-                  '${data.currentSets} series',
+                  data.currentAvgWeight == 0
+                      ? 'Peso corporal · ${data.currentSets} series'
+                      : 'Media ${formatWeight(data.currentAvgWeight)} kg · '
+                            '${data.currentSets} series',
                   style: context.text.labelMedium?.copyWith(
                     color: context.colors.textSecondary,
                     fontSize: 11,
@@ -112,14 +115,16 @@ class _ComparisonRow extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                'kg',
-                style: context.text.labelMedium?.copyWith(
-                  color: color,
-                  fontSize: 10,
+              if (deltaStr != '=') ...[
+                const SizedBox(width: 4),
+                Text(
+                  'kg',
+                  style: context.text.labelMedium?.copyWith(
+                    color: color,
+                    fontSize: 10,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

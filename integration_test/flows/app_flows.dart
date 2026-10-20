@@ -45,7 +45,7 @@ void appFlows() {
       expect(find.text('2 ejercicios'), findsOneWidget);
       expect(find.text('5 series'), findsOneWidget);
       expect(find.textContaining('min'), findsWidgets);
-      expect(find.text('Última vez: 57.5 kg × 10'), findsOneWidget);
+      expect(find.text('Última vez: 57,5 kg × 10'), findsOneWidget);
       expect(repo.sessions.where((s) => s.completedAt == null), isEmpty);
 
       await tapText(tester, 'Iniciar entrenamiento');
@@ -58,6 +58,9 @@ void appFlows() {
         find.text('Toca una serie para cambiar peso o repeticiones'),
         findsOneWidget,
       );
+      // El objetivo va en la cabecera; las filas no lo repiten.
+      expect(find.text('Objetivo'), findsNothing);
+      expect(find.text('Siguiente'), findsOneWidget);
 
       // Press banca: 3 series de un toque con el objetivo (60 × 10).
       for (var set = 1; set <= 3; set++) {
@@ -79,10 +82,13 @@ void appFlows() {
         await confirmSetSheet(tester);
       }
       expect(repo.logsOf(sessionId), hasLength(5));
+      expect(find.text('Peso corporal × 8 reps'), findsNWidgets(2));
 
       // Finalizar → resumen → guardar.
       await tapText(tester, 'Finalizar');
       expect(find.text('¡Rutina completada!'), findsOneWidget);
+      expect(find.text('Peso corporal · 2 series'), findsOneWidget);
+      expect(find.text('Media 60 kg · 3 series'), findsOneWidget);
       await tapText(tester, 'FINALIZAR Y GUARDAR');
 
       expect(repo.finishedSessionIds, [sessionId]);
@@ -125,7 +131,7 @@ void appFlows() {
 
       // La siguiente propone lo mismo que la anterior.
       expect(
-        find.textContaining('Serie 2 hecha · 62.5 kg × 10'),
+        find.textContaining('Serie 2 hecha · 62,5 kg × 10'),
         findsOneWidget,
       );
     });

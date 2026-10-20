@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Stripe horizontal con 3 métricas resumen: actual, récord y delta.
 /// Pensado para vivir sobre un chart y darle al usuario la "respuesta"
@@ -35,9 +36,7 @@ class StatStripe extends StatelessWidget {
 
   String _formatDelta(double d) {
     final abs = d.abs();
-    final formatted = abs % 1 == 0
-        ? abs.toStringAsFixed(0)
-        : abs.toStringAsFixed(1);
+    final formatted = formatDecimal(abs);
     if (d > 0) return '+$formatted';
     if (d < 0) return '−$formatted';
     return '0';

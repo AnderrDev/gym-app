@@ -124,6 +124,6 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('HISTORIAL DETALLADO'), findsOneWidget);
-    expect(find.textContaining('60kg x 10'), findsOneWidget);
+    expect(find.textContaining('60 kg × 10'), findsOneWidget);
   });
 }

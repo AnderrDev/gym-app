@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Tarjeta de insights de la semana: 4 métricas (volumen, sesiones,
 /// adherencia, tendencia) en un grid 2×2. Maneja también los estados
@@ -78,7 +79,7 @@ class WeeklyInsightsCard extends StatelessWidget {
                 : Icons.trending_down_rounded,
             label: 'TENDENCIA',
             value:
-                '${i.volumeTrendPercent >= 0 ? '+' : ''}${i.volumeTrendPercent.toStringAsFixed(1)}%',
+                '${i.volumeTrendPercent >= 0 ? '+' : ''}${formatDecimal(i.volumeTrendPercent)}%',
             valueColor: i.volumeTrendPercent >= 0
                 ? context.colors.successText
                 : context.colors.error,

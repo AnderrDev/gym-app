@@ -10,6 +10,7 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_focus_parts.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Vista "One Exercise Focus": un ejercicio ocupa la pantalla completa, swipe
 /// horizontal entre ejercicios. El stepper superior muestra el progreso por
@@ -437,9 +438,4 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
   }
 }
 
-String _loadLabel(double weight, int reps) {
-  final w = weight % 1 == 0
-      ? weight.toStringAsFixed(0)
-      : weight.toStringAsFixed(1);
-  return '$w kg × $reps';
-}
+String _loadLabel(double weight, int reps) => '${formatLoad(weight)} × $reps';

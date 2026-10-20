@@ -9,6 +9,7 @@ import 'package:gym_flutter/core/ui/atoms/app_button.dart';
 import 'package:gym_flutter/core/ui/feedback/app_dialog.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Fila de ejercicio en el editor de un día.
 ///
@@ -39,12 +40,6 @@ class ExerciseRowCard extends StatelessWidget {
   /// Abre el detalle del ejercicio (media + instrucciones). `null` esconde el
   /// botón ⓘ — útil en pruebas o contextos sin nav.
   final VoidCallback? onInfo;
-
-  static String _formatWeight(double w) {
-    if (w == 0) return 'BW'; // bodyweight
-    if (w == w.roundToDouble()) return '${w.toStringAsFixed(0)}kg';
-    return '${w.toStringAsFixed(1)}kg';
-  }
 
   static String _formatRest(int secs) {
     if (secs <= 0) return '—';
@@ -135,7 +130,7 @@ class ExerciseRowCard extends StatelessWidget {
                           ),
                           _StatTag(
                             icon: Icons.local_fire_department_rounded,
-                            label: _formatWeight(exercise.targetWeight),
+                            label: formatLoad(exercise.targetWeight),
                           ),
                           _StatTag(
                             icon: Icons.timer_rounded,

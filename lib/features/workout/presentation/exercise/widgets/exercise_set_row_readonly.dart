@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_set_row_parts.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Variante stateless de la fila de serie: solo lectura para historial.
 /// Sin inputs, sin botón ✓, sin chips — solo el círculo + texto resumido.
@@ -18,9 +19,6 @@ class ExerciseSetRowReadOnly extends StatelessWidget {
   final int setNumber;
   final bool isDone;
   final SetLog? completedLog;
-
-  static String _formatWeight(double w) =>
-      w % 1 == 0 ? w.toStringAsFixed(0) : w.toStringAsFixed(1);
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +44,7 @@ class ExerciseSetRowReadOnly extends StatelessWidget {
           Expanded(
             child: Text(
               log != null
-                  ? '${_formatWeight(log.actualWeight)} kg × ${log.actualReps} reps'
+                  ? '${formatLoad(log.actualWeight)} × ${log.actualReps} reps'
                   : '— sin registro —',
               style: context.text.bodyMedium?.copyWith(
                 fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
