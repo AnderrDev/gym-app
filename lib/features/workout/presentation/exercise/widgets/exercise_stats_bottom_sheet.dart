@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_scroll_physics.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
@@ -24,10 +24,8 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
   final String exerciseName;
 
   /// `true` cuando el widget se monta como página fullscreen
-  /// (`ExerciseProgressPage`) en vez de modal. En ese caso saltamos el
-  /// wrapper glass + el overlay 40% negro — el overlay tiene sentido como
-  /// dimming sobre la pantalla detrás, pero sobre el `Scaffold` blanco
-  /// produce un gris oscuro que se lee como "modo oscuro".
+  /// (`ExerciseProgressPage`) en vez de modal. En ese caso el contenido va
+  /// directo sobre el `Scaffold`, sin el panel con esquinas del modal.
   final bool fullscreen;
 
   const ExerciseStatsBottomSheet({
@@ -146,14 +144,14 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.query_stats_rounded,
-                          color: context.colors.textDisabled,
+                          color: context.colors.textSecondary,
                           size: 64,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Aún no hay datos para este ejercicio',
                           style: context.text.bodyLarge?.copyWith(
-                            color: context.colors.textDisabled,
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -233,21 +231,21 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
       ],
     );
 
-    // En modal: glass blur + dimming oscuro sobre la pantalla detrás.
-    // En fullscreen: sin wrapper — el contenido va directo sobre el
-    // `Scaffold` blanco de `ExerciseProgressPage`.
+    // En modal: panel sólido `background` (las cards internas son
+    // `surface` y así se separan). El dimming de lo que queda detrás lo pone
+    // la barrera del modal, no el panel.
     final Widget content = fullscreen
         ? inner
-        : GlassContainer(
-            blur: 40,
-            opacity: 0.05,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            padding: EdgeInsets.zero,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.85,
-              color: context.colors.overlay.withValues(alpha: 0.4),
-              child: inner,
+        : Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: context.colors.background,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(Radii.xxl),
+              ),
             ),
+            child: inner,
           );
 
     try {

@@ -54,7 +54,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = RoutineColor.accentFor(widget.nameController.text);
+    final accent = RoutineColor.accentFor(context, widget.nameController.text);
     return Container(
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,

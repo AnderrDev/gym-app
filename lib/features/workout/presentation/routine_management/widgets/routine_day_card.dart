@@ -188,7 +188,7 @@ class _IndexTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = RoutineColor.byIndex(index);
+    final color = RoutineColor.byIndex(context, index);
     return Container(
       width: 56,
       height: 56,

@@ -2,10 +2,20 @@ import 'package:flutter/material.dart';
 
 /// Paleta de colores resuelta por brightness, expuesta como `ThemeExtension`.
 ///
-/// Widgets deben leer estos tokens vía `context.colors.X` en lugar de
-/// `AppColors.X` para que el cambio de tema (light/dark) sea automático.
-/// `AppColors` queda solo para colores brand-stable (primary/accent/semantic
-/// y la paleta de acentos por rutina) y para legado durante la migración.
+/// Es la única fuente de color de la app: los widgets leen estos tokens vía
+/// `context.colors.X` para que el cambio de tema (light/dark) sea automático.
+///
+/// Reglas de uso (las garantiza `test/core/theme/palette_contrast_test.dart`):
+/// - Texto sobre `background`/`surface`: `textPrimary`, `textSecondary`,
+///   `primary`, `error`, `info`, `successText`, `warningText` y los
+///   `routineAccents` — todos ≥ 4.5:1.
+/// - `success`/`warning` son colores de RELLENO (dots, barras, fondos de
+///   chip). Como texto en light no llegan a 3:1 — usar `successText` /
+///   `warningText`.
+/// - Sobre un relleno saturado va su `on*`: `onPrimary`, `onSuccess`,
+///   `onWarning`, `onError`.
+/// - `textDisabled` es SOLO para controles deshabilitados (WCAG los exime);
+///   nunca para texto con información.
 @immutable
 class AppPalette extends ThemeExtension<AppPalette> {
   const AppPalette({
@@ -17,17 +27,21 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.textSecondary,
     required this.textDisabled,
     required this.onPrimary,
+    required this.onSuccess,
+    required this.onWarning,
+    required this.onError,
     required this.divider,
     required this.overlay,
-    required this.glassFill,
-    required this.glassBorder,
     required this.primary,
     required this.primaryDark,
     required this.accent,
     required this.success,
+    required this.successText,
     required this.warning,
+    required this.warningText,
     required this.info,
     required this.error,
+    required this.routineAccents,
   });
 
   // Surfaces — jerarquía de "altura" sobre el scaffold.
@@ -41,53 +55,71 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color textSecondary;
   final Color textDisabled;
 
-  /// Color para texto/iconos pintados SOBRE `primary`/`error`/`success`/etc.
+  // Texto/iconos pintados SOBRE el relleno homónimo.
   final Color onPrimary;
+  final Color onSuccess;
+  final Color onWarning;
+  final Color onError;
 
   // Structural
   final Color divider;
   final Color overlay;
 
-  // Glass surfaces (auth, hero cards)
-  final Color glassFill;
-  final Color glassBorder;
-
-  // Brand (estables, idénticos en ambos modos salvo ajuste fino)
+  // Brand
   final Color primary;
   final Color primaryDark;
   final Color accent;
 
   // Semantic
   final Color success;
+  final Color successText;
   final Color warning;
+  final Color warningText;
   final Color info;
   final Color error;
 
-  /// Paleta light (clinical white). Coincide con `AppColors.*` legado.
+  /// Acentos de identidad por rutina/día, en orden estable (consumir vía
+  /// `RoutineColor`). Ajustados por modo para que se lean como texto/icono.
+  final List<Color> routineAccents;
+
+  /// Paleta light (clinical white).
   factory AppPalette.light() => const AppPalette(
     background: Color(0xFFFFFFFF),
     surface: Color(0xFFF1F4F9),
     surfaceHighlight: Color(0xFFE5EAF2),
     surfaceOverlay: Color(0xFFD2DAE5),
     textPrimary: Color(0xFF1C1C1E),
-    textSecondary: Color(0xFF6E6E73),
+    textSecondary: Color(0xFF636366),
     textDisabled: Color(0xFFC7C7CC),
     onPrimary: Color(0xFFFFFFFF),
-    divider: Color(0xFFDCE3EE),
+    onSuccess: Color(0xFF1C1C1E),
+    onWarning: Color(0xFF1C1C1E),
+    onError: Color(0xFFFFFFFF),
+    divider: Color(0xFFCDD5E1),
     overlay: Color(0x99000000),
-    glassFill: Color(0x0F000000),
-    glassBorder: Color(0x1F000000),
-    primary: Color(0xFF007AFF),
-    primaryDark: Color(0xFF0051D5),
+    // Azul iOS oscurecido: #007AFF daba 4.0:1 con texto blanco (botones) y
+    // como texto sobre blanco.
+    primary: Color(0xFF0066CC),
+    primaryDark: Color(0xFF004C99),
     accent: Color(0xFF5AC8FA),
     success: Color(0xFF34C759),
+    successText: Color(0xFF1E7E34),
     warning: Color(0xFFFF9500),
-    info: Color(0xFF5AC8FA),
-    error: Color(0xFFFF3B30),
+    warningText: Color(0xFFB25000),
+    info: Color(0xFF0071A4),
+    error: Color(0xFFD70015),
+    routineAccents: [
+      Color(0xFF4D7A22), // lima
+      Color(0xFFC13B3B), // coral
+      Color(0xFF8A4FD6), // violeta
+      Color(0xFF9E5F00), // ámbar
+      Color(0xFF0F7A73), // cian
+      Color(0xFFB8327F), // rosa
+      Color(0xFF3F63D6), // azul
+    ],
   );
 
-  /// Paleta dark (iOS dark, contrastes Apple). `primary` usa el variant azul
-  /// más claro recomendado para fondos oscuros.
+  /// Paleta dark (iOS dark, contrastes Apple).
   factory AppPalette.dark() => const AppPalette(
     background: Color(0xFF0A0A0B),
     surface: Color(0xFF16171A),
@@ -97,17 +129,29 @@ class AppPalette extends ThemeExtension<AppPalette> {
     textSecondary: Color(0xFFA1A1A6),
     textDisabled: Color(0xFF48484A),
     onPrimary: Color(0xFFFFFFFF),
-    divider: Color(0xFF2C2E33),
+    onSuccess: Color(0xFF1C1C1E),
+    onWarning: Color(0xFF1C1C1E),
+    onError: Color(0xFFFFFFFF),
+    divider: Color(0xFF34373D),
     overlay: Color(0xCC000000),
-    glassFill: Color(0x14FFFFFF),
-    glassBorder: Color(0x24FFFFFF),
     primary: Color(0xFF0A84FF),
     primaryDark: Color(0xFF0040DD),
     accent: Color(0xFF64D2FF),
     success: Color(0xFF30D158),
+    successText: Color(0xFF30D158),
     warning: Color(0xFFFF9F0A),
+    warningText: Color(0xFFFF9F0A),
     info: Color(0xFF64D2FF),
     error: Color(0xFFFF453A),
+    routineAccents: [
+      Color(0xFF8BC34A),
+      Color(0xFFFF6B6B),
+      Color(0xFFB085F5),
+      Color(0xFFFFB454),
+      Color(0xFF4ECDC4),
+      Color(0xFFF15BB5),
+      Color(0xFF82A5FF),
+    ],
   );
 
   @override
@@ -120,17 +164,21 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? textSecondary,
     Color? textDisabled,
     Color? onPrimary,
+    Color? onSuccess,
+    Color? onWarning,
+    Color? onError,
     Color? divider,
     Color? overlay,
-    Color? glassFill,
-    Color? glassBorder,
     Color? primary,
     Color? primaryDark,
     Color? accent,
     Color? success,
+    Color? successText,
     Color? warning,
+    Color? warningText,
     Color? info,
     Color? error,
+    List<Color>? routineAccents,
   }) {
     return AppPalette(
       background: background ?? this.background,
@@ -141,47 +189,58 @@ class AppPalette extends ThemeExtension<AppPalette> {
       textSecondary: textSecondary ?? this.textSecondary,
       textDisabled: textDisabled ?? this.textDisabled,
       onPrimary: onPrimary ?? this.onPrimary,
+      onSuccess: onSuccess ?? this.onSuccess,
+      onWarning: onWarning ?? this.onWarning,
+      onError: onError ?? this.onError,
       divider: divider ?? this.divider,
       overlay: overlay ?? this.overlay,
-      glassFill: glassFill ?? this.glassFill,
-      glassBorder: glassBorder ?? this.glassBorder,
       primary: primary ?? this.primary,
       primaryDark: primaryDark ?? this.primaryDark,
       accent: accent ?? this.accent,
       success: success ?? this.success,
+      successText: successText ?? this.successText,
       warning: warning ?? this.warning,
+      warningText: warningText ?? this.warningText,
       info: info ?? this.info,
       error: error ?? this.error,
+      routineAccents: routineAccents ?? this.routineAccents,
     );
   }
 
   @override
   AppPalette lerp(ThemeExtension<AppPalette>? other, double t) {
     if (other is! AppPalette) return this;
+    Color l(Color a, Color b) => Color.lerp(a, b, t)!;
     return AppPalette(
-      background: Color.lerp(background, other.background, t)!,
-      surface: Color.lerp(surface, other.surface, t)!,
-      surfaceHighlight: Color.lerp(
-        surfaceHighlight,
-        other.surfaceHighlight,
-        t,
-      )!,
-      surfaceOverlay: Color.lerp(surfaceOverlay, other.surfaceOverlay, t)!,
-      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
-      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
-      textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,
-      onPrimary: Color.lerp(onPrimary, other.onPrimary, t)!,
-      divider: Color.lerp(divider, other.divider, t)!,
-      overlay: Color.lerp(overlay, other.overlay, t)!,
-      glassFill: Color.lerp(glassFill, other.glassFill, t)!,
-      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
-      primary: Color.lerp(primary, other.primary, t)!,
-      primaryDark: Color.lerp(primaryDark, other.primaryDark, t)!,
-      accent: Color.lerp(accent, other.accent, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
-      info: Color.lerp(info, other.info, t)!,
-      error: Color.lerp(error, other.error, t)!,
+      background: l(background, other.background),
+      surface: l(surface, other.surface),
+      surfaceHighlight: l(surfaceHighlight, other.surfaceHighlight),
+      surfaceOverlay: l(surfaceOverlay, other.surfaceOverlay),
+      textPrimary: l(textPrimary, other.textPrimary),
+      textSecondary: l(textSecondary, other.textSecondary),
+      textDisabled: l(textDisabled, other.textDisabled),
+      onPrimary: l(onPrimary, other.onPrimary),
+      onSuccess: l(onSuccess, other.onSuccess),
+      onWarning: l(onWarning, other.onWarning),
+      onError: l(onError, other.onError),
+      divider: l(divider, other.divider),
+      overlay: l(overlay, other.overlay),
+      primary: l(primary, other.primary),
+      primaryDark: l(primaryDark, other.primaryDark),
+      accent: l(accent, other.accent),
+      success: l(success, other.success),
+      successText: l(successText, other.successText),
+      warning: l(warning, other.warning),
+      warningText: l(warningText, other.warningText),
+      info: l(info, other.info),
+      error: l(error, other.error),
+      routineAccents: [
+        for (var i = 0; i < routineAccents.length; i++)
+          l(
+            routineAccents[i],
+            other.routineAccents[i % other.routineAccents.length],
+          ),
+      ],
     );
   }
 }

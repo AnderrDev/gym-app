@@ -118,7 +118,7 @@ class _LineMetricChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: yRange == 0 ? null : yRange / 3,
           getDrawingHorizontalLine: (_) =>
-              FlLine(color: colors.surfaceHighlight, strokeWidth: 1),
+              FlLine(color: colors.divider, strokeWidth: 1),
         ),
         titlesData: _buildTitles(context, sessions, unit, valueFormatter),
         borderData: FlBorderData(show: false),
@@ -140,10 +140,10 @@ class _LineMetricChart extends StatelessWidget {
               },
               getDotPainter: (spot, xPercentage, bar, index) {
                 return FlDotCirclePainter(
-                  radius: 4,
+                  radius: 5,
                   color: context.colors.warning,
                   strokeWidth: 2,
-                  strokeColor: context.colors.background,
+                  strokeColor: context.colors.surface,
                 );
               },
             ),
@@ -201,9 +201,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               compactAxisNumber(value),
-              style: context.text.labelMedium?.copyWith(
+              style: context.text.labelSmall?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 10,
               ),
             ),
           );
@@ -223,9 +222,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(top: Spacing.sm),
             child: Text(
               AppDateFormat.dayMonth(sessions[i].sessionDate),
-              style: context.text.labelMedium?.copyWith(
+              style: context.text.labelSmall?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 10,
               ),
             ),
           );
@@ -247,7 +245,7 @@ LineTouchData _buildTooltip(
   return LineTouchData(
     handleBuiltInTouches: true,
     touchTooltipData: LineTouchTooltipData(
-      getTooltipColor: (_) => colors.surface,
+      getTooltipColor: (_) => colors.surfaceHighlight,
       tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       tooltipBorderRadius: const BorderRadius.all(Radius.circular(8)),
       getTooltipItems: (spots) {
@@ -264,9 +262,8 @@ LineTouchData _buildTooltip(
             children: [
               TextSpan(
                 text: '\n$date',
-                style: context.text.labelMedium?.copyWith(
+                style: context.text.labelSmall?.copyWith(
                   color: colors.textSecondary,
-                  fontSize: 10,
                 ),
               ),
             ],

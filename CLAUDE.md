@@ -109,7 +109,7 @@ Repository implementations should NOT use ad-hoc `catch (e) { return Left(Server
 
 ## Conventions
 
-- Dart SDK `^3.10.8`, Flutter, Material 3 dark scheme (`AppColors` in `lib/core/constants`).
+- Dart SDK `^3.10.8`, Flutter, Material 3 light + dark (`AppTheme` in `lib/core/theme`). The only color source is `AppPalette` (`context.colors.*`); its usage rules (text-safe tokens, `on*`, `textDisabled` only for disabled controls) are in its doc comment and enforced by `test/core/theme/palette_contrast_test.dart`. No glass/translucent surfaces — use `AppCard`.
 - Locale: Spanish (`es`) — `intl`/`date_symbol_data_local` initialized in `main.dart`. UI strings and many doc/comment strings are Spanish; preserve language when editing.
 - Functional error handling with `fpdart` — use cases return `Either<Failure, T>`; don't throw from domain code. Use `guard`/`mapToFailure` in repositories.
 - Core domain entities (`Routine`, `RoutineDay`, `Exercise`, `WorkoutSession`, `SetLog`, `User`) are `freezed` classes — `==`/`copyWith`/`hashCode` are generated; the `.freezed.dart` parts are **committed** (like the drift `.g.dart`). Their data-layer models (`XModel`) are **sibling** classes, NOT subclasses: each keeps its hand-written `fromJson`/`toJson` (the JSON is too custom for `json_serializable`) plus `toEntity()`/`fromEntity()`. Models must never escape the data layer — repos convert at the boundary. Never do `List<Entity>.from(models)` (compiles, throws at runtime — analyze won't catch it); map with `.toEntity()`.

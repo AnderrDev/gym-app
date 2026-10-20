@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/molecules/app_card.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 
 /// Card de sesión histórica en la pantalla de stats de rutina: icono +
@@ -15,18 +16,16 @@ class RoutineSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: Spacing.md),
       padding: const EdgeInsets.all(Spacing.lg),
-      borderRadius: BorderRadius.circular(16),
-      opacity: 0.05,
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: context.colors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(Radii.md),
             ),
             child: Icon(
               Icons.local_fire_department_rounded,
@@ -49,9 +48,8 @@ class RoutineSessionCard extends StatelessWidget {
                   AppDateFormat.weekdayLongDayMonth(
                     session.sessionDate,
                   ).toUpperCase(),
-                  style: context.text.labelMedium?.copyWith(
-                    fontSize: 10,
-                    color: context.colors.textDisabled,
+                  style: context.text.labelSmall?.copyWith(
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ],
@@ -69,7 +67,9 @@ class RoutineSessionCard extends StatelessWidget {
               ),
               Text(
                 'VOL. TOTAL',
-                style: context.text.labelMedium?.copyWith(fontSize: 8),
+                style: context.text.labelSmall?.copyWith(
+                  color: context.colors.textSecondary,
+                ),
               ),
             ],
           ),

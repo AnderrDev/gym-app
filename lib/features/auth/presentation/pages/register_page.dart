@@ -5,12 +5,13 @@ import 'package:formz/formz.dart';
 import 'package:gym_flutter/core/forms/inputs/email.dart';
 import 'package:gym_flutter/core/forms/inputs/password.dart';
 import 'package:gym_flutter/core/forms/inputs/required_text.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
 import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
+import 'package:gym_flutter/core/ui/molecules/app_card.dart';
 import 'package:gym_flutter/core/ui/molecules/app_form_field.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
@@ -78,9 +79,9 @@ class _RegisterView extends StatelessWidget {
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(28.0),
-                child: GlassContainer(
+                child: AppCard(
                   padding: const EdgeInsets.all(Spacing.xxl),
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(Radii.xxl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,

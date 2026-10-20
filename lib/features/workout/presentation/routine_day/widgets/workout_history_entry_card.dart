@@ -167,7 +167,7 @@ class _SetRow extends StatelessWidget {
               child: Text(
                 'TOP',
                 style: context.text.labelMedium?.copyWith(
-                  color: context.colors.warning,
+                  color: context.colors.warningText,
                   fontWeight: FontWeight.w900,
                   fontSize: 9,
                   letterSpacing: 0.8,

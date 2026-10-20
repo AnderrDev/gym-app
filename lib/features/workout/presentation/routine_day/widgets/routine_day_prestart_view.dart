@@ -163,7 +163,7 @@ class _ActiveSessionWarning extends StatelessWidget {
                   ? 'Ya tienes un entrenamiento en curso ($dayName). Retómalo para finalizarlo o descartarlo antes de iniciar otro.'
                   : 'Ya tienes un entrenamiento en curso. Retómalo para finalizarlo o descartarlo antes de iniciar otro.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: context.colors.warning,
+                color: context.colors.warningText,
               ),
             ),
           ),

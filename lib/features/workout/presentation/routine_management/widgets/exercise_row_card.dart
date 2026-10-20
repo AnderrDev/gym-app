@@ -68,7 +68,7 @@ class ExerciseRowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = RoutineColor.byIndex(index);
+    final accent = RoutineColor.byIndex(context, index);
 
     final body = Padding(
       padding: const EdgeInsets.only(bottom: Spacing.sm),

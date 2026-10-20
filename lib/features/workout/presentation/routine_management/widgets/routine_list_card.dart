@@ -48,7 +48,7 @@ class RoutineListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = RoutineColor.accentFor(routine.name);
+    final accent = RoutineColor.accentFor(context, routine.name);
     final borderColor = isActive
         ? accent.withValues(alpha: 0.6)
         : context.colors.divider.withValues(alpha: 0.4);

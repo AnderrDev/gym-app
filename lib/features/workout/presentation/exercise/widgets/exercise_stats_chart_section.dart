@@ -58,8 +58,7 @@ class ExerciseStatsChartSection extends StatelessWidget {
                   Text(
                     subtitle,
                     style: context.text.bodySmall?.copyWith(
-                      color: context.colors.textDisabled,
-                      fontSize: 10,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                 ],
@@ -80,9 +79,9 @@ class ExerciseStatsChartSection extends StatelessWidget {
           height: 220,
           padding: const EdgeInsets.fromLTRB(10, 16, 20, 10),
           decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.3),
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: context.colors.surfaceHighlight),
+            border: Border.all(color: context.colors.divider),
           ),
           // Los datos sólo estaban en el tooltip táctil: el lector de
           // pantalla recibe un resumen en texto.

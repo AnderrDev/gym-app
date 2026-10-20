@@ -70,7 +70,7 @@ class WeeklyInsightsCard extends StatelessWidget {
             icon: Icons.flag_circle_rounded,
             label: 'ADHERENCIA',
             value: '${i.adherenceRate.toStringAsFixed(0)}%',
-            valueColor: context.colors.success,
+            valueColor: context.colors.successText,
           ),
           _MetricCell(
             icon: i.volumeTrendPercent >= 0
@@ -80,7 +80,7 @@ class WeeklyInsightsCard extends StatelessWidget {
             value:
                 '${i.volumeTrendPercent >= 0 ? '+' : ''}${i.volumeTrendPercent.toStringAsFixed(1)}%',
             valueColor: i.volumeTrendPercent >= 0
-                ? context.colors.success
+                ? context.colors.successText
                 : context.colors.error,
           ),
         ],

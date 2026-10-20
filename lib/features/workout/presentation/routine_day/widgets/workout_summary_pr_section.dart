@@ -98,7 +98,7 @@ class _PrRow extends StatelessWidget {
           Text(
             '+${_fmt(pr.delta)} kg',
             style: context.text.bodyMedium?.copyWith(
-              color: context.colors.warning,
+              color: context.colors.warningText,
               fontWeight: FontWeight.w800,
             ),
           ),

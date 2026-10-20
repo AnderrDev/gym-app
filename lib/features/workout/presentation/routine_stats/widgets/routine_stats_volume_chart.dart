@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/ui/molecules/app_card.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
@@ -41,9 +42,9 @@ class RoutineStatsVolumeChart extends StatelessWidget {
 
     String fmt(double v) => v.toStringAsFixed(0);
 
-    return GlassContainer(
+    return AppCard(
       padding: const EdgeInsets.all(Spacing.lgPlus),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(Radii.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -69,8 +70,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                     Text(
                       'Suma de peso × reps de cada sesión',
                       style: context.text.bodySmall?.copyWith(
-                        color: context.colors.textDisabled,
-                        fontSize: 10,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -97,10 +97,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: yRange == 0 ? null : yRange / 3,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: context.colors.surfaceHighlight,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: context.colors.divider, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -115,9 +113,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             compactAxisNumber(value),
-                            style: context.text.labelMedium?.copyWith(
+                            style: context.text.labelSmall?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 10,
                             ),
                           ),
                         );
@@ -142,9 +139,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                             AppDateFormat.dayMonth(
                               chronological[i].sessionDate,
                             ),
-                            style: context.text.labelMedium?.copyWith(
+                            style: context.text.labelSmall?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 10,
                             ),
                           ),
                         );
@@ -162,7 +158,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => context.colors.surface,
+                    getTooltipColor: (_) => context.colors.surfaceHighlight,
                     tooltipBorderRadius: const BorderRadius.all(
                       Radius.circular(8),
                     ),
@@ -187,9 +183,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: '\n$date',
-                              style: context.text.labelMedium?.copyWith(
+                              style: context.text.labelSmall?.copyWith(
                                 color: context.colors.textSecondary,
-                                fontSize: 10,
                               ),
                             ),
                           ],
@@ -214,10 +209,10 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                       checkToShowDot: (spot, _) => pr.contains(spot.x.toInt()),
                       getDotPainter: (spot, xPercentage, bar, index) =>
                           FlDotCirclePainter(
-                            radius: 4,
+                            radius: 5,
                             color: context.colors.warning,
                             strokeWidth: 2,
-                            strokeColor: context.colors.background,
+                            strokeColor: context.colors.surface,
                           ),
                     ),
                     belowBarData: BarAreaData(

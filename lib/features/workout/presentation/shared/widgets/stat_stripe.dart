@@ -46,7 +46,7 @@ class StatStripe extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actualColor = recordReached
-        ? context.colors.success
+        ? context.colors.successText
         : context.colors.textPrimary;
     return Row(
       children: [
@@ -64,7 +64,7 @@ class StatStripe extends StatelessWidget {
             caption: 'RÉCORD',
             value: recordLabel,
             unit: unit,
-            valueColor: context.colors.warning,
+            valueColor: context.colors.warningText,
           ),
         ),
         const SizedBox(width: Spacing.xs),
@@ -104,9 +104,8 @@ class _Chip extends StatelessWidget {
         children: [
           Text(
             caption,
-            style: context.text.labelMedium?.copyWith(
+            style: context.text.labelSmall?.copyWith(
               color: context.colors.textSecondary,
-              fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
             ),
@@ -127,9 +126,8 @@ class _Chip extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: context.text.labelMedium?.copyWith(
+                  style: context.text.labelSmall?.copyWith(
                     color: context.colors.textSecondary,
-                    fontSize: 10,
                   ),
                 ),
               ],
@@ -161,7 +159,7 @@ class _DeltaChip extends StatelessWidget {
     final color = isNeutral
         ? context.colors.textSecondary
         : isUp
-        ? context.colors.success
+        ? context.colors.successText
         : isDown
         ? context.colors.error
         : context.colors.textSecondary;
@@ -186,9 +184,8 @@ class _DeltaChip extends StatelessWidget {
         children: [
           Text(
             'VS ANTERIOR',
-            style: context.text.labelMedium?.copyWith(
+            style: context.text.labelSmall?.copyWith(
               color: color,
-              fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
             ),
@@ -215,9 +212,8 @@ class _DeltaChip extends StatelessWidget {
                       if (!isNeutral)
                         TextSpan(
                           text: ' $unit',
-                          style: context.text.labelMedium?.copyWith(
+                          style: context.text.labelSmall?.copyWith(
                             color: color,
-                            fontSize: 10,
                           ),
                         ),
                     ],

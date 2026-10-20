@@ -45,10 +45,10 @@ class RoutineListFilterChips extends StatelessWidget {
           vertical: Spacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? colors.primary : colors.glassFill,
+          color: isSelected ? colors.primary : colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? colors.primary : colors.glassBorder,
+            color: isSelected ? colors.primary : colors.divider,
           ),
         ),
         child: Text(

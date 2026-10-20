@@ -22,7 +22,7 @@ class RoutineListSummaryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasActive = activeRoutine != null;
     final accent = hasActive
-        ? RoutineColor.accentFor(activeRoutine!.name)
+        ? RoutineColor.accentFor(context, activeRoutine!.name)
         : context.colors.primary;
     return Padding(
       // Más aire arriba (después del AppBar) y abajo (antes del buscador)

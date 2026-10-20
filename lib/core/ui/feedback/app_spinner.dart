@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-import 'package:gym_flutter/core/theme/app_colors.dart';
+import 'package:gym_flutter/core/theme/theme_context.dart';
 
 /// Spinner único de la app. Wrap fino sobre [SpinKitFadingCircle] —
 /// premium, neutro y universalmente reconocible como "cargando". Sin
@@ -49,7 +49,10 @@ class AppSpinner extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       liveRegion: true,
-      child: SpinKitFadingCircle(size: size, color: color ?? AppColors.primary),
+      child: SpinKitFadingCircle(
+        size: size,
+        color: color ?? context.colors.primary,
+      ),
     );
   }
 }
