@@ -522,7 +522,9 @@ class _WeekProgress extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '$done de $total entrenamientos hechos',
+                  total == 1
+                      ? '$done de 1 entrenamiento hecho'
+                      : '$done de $total entrenamientos hechos',
                   style: context.text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),

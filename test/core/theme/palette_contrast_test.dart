@@ -72,11 +72,8 @@ void main() {
       test('on* sobre su relleno', () {
         expectContrast('onSuccess / success', p.onSuccess, p.success, _text);
         expectContrast('onWarning / warning', p.onWarning, p.warning, _text);
-        // En dark se mantiene el azul/rojo iOS con texto blanco (3.6 y 3.4):
-        // decisión de marca, cumple el mínimo de texto grande/UI.
-        final fillMin = name == 'light' ? _text : _ui;
-        expectContrast('onPrimary / primary', p.onPrimary, p.primary, fillMin);
-        expectContrast('onError / error', p.onError, p.error, fillMin);
+        expectContrast('onPrimary / primary', p.onPrimary, p.primary, _text);
+        expectContrast('onError / error', p.onError, p.error, _text);
       });
 
       test('rellenos semánticos distinguibles del fondo (UI 3:1)', () {

@@ -80,7 +80,7 @@ class ExerciseCatalogTile extends StatelessWidget {
         subtitle: Text(
           isAlreadyInDay ? 'Ya en tu rutina' : exercise.muscleGroup,
           style: context.text.labelMedium?.copyWith(
-            color: context.colors.textDisabled,
+            color: context.colors.textSecondary,
           ),
         ),
         trailing: isAlreadyInDay

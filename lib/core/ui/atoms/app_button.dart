@@ -67,7 +67,7 @@ class AppButton extends StatelessWidget {
           onPressed: disabled ? null : onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: colors.error,
-            foregroundColor: colors.onPrimary,
+            foregroundColor: colors.onError,
           ),
           child: child,
         );
@@ -79,13 +79,13 @@ class AppButton extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     if (isLoading) {
       final colors = context.colors;
-      // Spinner contrasta con el fondo segun variante: onPrimary sobre
+      // Spinner contrasta con el fondo segun variante: onPrimary/onError sobre
       // primary/destructive (fills saturados), primary sobre secondary/ghost
       // (sin fill). Sin esto el spinner se funde con el fondo en la variante
       // primary (azul sobre azul = invisible).
-      final spinnerColor =
-          variant == AppButtonVariant.primary ||
-              variant == AppButtonVariant.destructive
+      final spinnerColor = variant == AppButtonVariant.destructive
+          ? colors.onError
+          : variant == AppButtonVariant.primary
           ? colors.onPrimary
           : colors.primary;
       return AppSpinner(size: 18, color: spinnerColor);

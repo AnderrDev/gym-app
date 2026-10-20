@@ -103,7 +103,7 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                       decoration: InputDecoration(
                         hintText: 'Nombre de la rutina',
                         hintStyle: context.text.displayLarge?.copyWith(
-                          color: context.colors.textDisabled,
+                          color: context.colors.textSecondary,
                           fontSize: 22,
                           letterSpacing: -0.3,
                         ),

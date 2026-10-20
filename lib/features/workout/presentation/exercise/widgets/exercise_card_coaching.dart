@@ -126,7 +126,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 14,
-              color: context.colors.textDisabled,
+              color: context.colors.textSecondary,
             ),
           ],
         ),

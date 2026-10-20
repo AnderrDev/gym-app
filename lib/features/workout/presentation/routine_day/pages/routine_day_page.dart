@@ -291,7 +291,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: dialogContext.colors.error,
-              foregroundColor: dialogContext.colors.onPrimary,
+              foregroundColor: dialogContext.colors.onError,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text(AppStrings.discard),

@@ -50,14 +50,13 @@ class SectionHeader extends StatelessWidget {
               Icon(
                 Icons.info_outline_rounded,
                 size: 12,
-                color: context.colors.textDisabled,
+                color: context.colors.textSecondary,
               ),
               const SizedBox(width: 4),
               Text(
                 hint!,
-                style: context.text.labelMedium?.copyWith(
-                  color: context.colors.textDisabled,
-                  fontSize: 10,
+                style: context.text.labelSmall?.copyWith(
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],

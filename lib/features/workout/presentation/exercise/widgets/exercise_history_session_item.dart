@@ -41,9 +41,8 @@ class ExerciseHistorySessionItem extends StatelessWidget {
               ),
               Text(
                 '${session.totalVolume.toStringAsFixed(0)} kg Vol.',
-                style: context.text.labelMedium?.copyWith(
-                  fontSize: 10,
-                  color: context.colors.textDisabled,
+                style: context.text.labelSmall?.copyWith(
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],

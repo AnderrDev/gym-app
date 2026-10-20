@@ -102,9 +102,8 @@ class RoutineDayCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _buildPreview(day.exerciseNamesPreview),
-                          style: context.text.labelMedium?.copyWith(
-                            color: context.colors.textDisabled,
-                            fontSize: 10.5,
+                          style: context.text.labelSmall?.copyWith(
+                            color: context.colors.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -136,7 +135,7 @@ class RoutineDayCard extends StatelessWidget {
                   ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: context.colors.textDisabled,
+                  color: context.colors.textSecondary,
                 ),
               ],
             ),
@@ -171,7 +170,7 @@ class RoutineDayCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
         child: Icon(
           Icons.delete_sweep_rounded,
-          color: context.colors.onPrimary,
+          color: context.colors.onError,
           size: 26,
         ),
       ),

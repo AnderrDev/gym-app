@@ -229,7 +229,7 @@ class ExerciseRowCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
         child: Icon(
           Icons.delete_sweep_rounded,
-          color: context.colors.onPrimary,
+          color: context.colors.onError,
           size: 26,
         ),
       ),

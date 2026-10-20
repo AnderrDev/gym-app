@@ -43,12 +43,12 @@ class RoutineListSearchBar extends StatelessWidget {
           decoration: InputDecoration(
             icon: Icon(
               Icons.search_rounded,
-              color: context.colors.textDisabled,
+              color: context.colors.textSecondary,
               size: 20,
             ),
             hintText: 'Buscar rutina por nombre…',
             hintStyle: context.text.bodyMedium?.copyWith(
-              color: context.colors.textDisabled,
+              color: context.colors.textSecondary,
             ),
             border: InputBorder.none,
             isDense: true,
@@ -58,7 +58,7 @@ class RoutineListSearchBar extends StatelessWidget {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: context.colors.textDisabled,
+                      color: context.colors.textSecondary,
                     ),
                     onPressed: onClear,
                   ),

@@ -128,10 +128,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
     textPrimary: Color(0xFFF2F2F7),
     textSecondary: Color(0xFFA1A1A6),
     textDisabled: Color(0xFF48484A),
-    onPrimary: Color(0xFFFFFFFF),
+    // Como en Material 3 dark: rellenos brillantes con texto oscuro encima.
+    // El blanco sobre #0A84FF / #FF453A daba 3.6 y 3.4 (< 4.5 en botones).
+    onPrimary: Color(0xFF00132B),
     onSuccess: Color(0xFF1C1C1E),
     onWarning: Color(0xFF1C1C1E),
-    onError: Color(0xFFFFFFFF),
+    onError: Color(0xFF2A0000),
     divider: Color(0xFF34373D),
     overlay: Color(0xCC000000),
     primary: Color(0xFF0A84FF),

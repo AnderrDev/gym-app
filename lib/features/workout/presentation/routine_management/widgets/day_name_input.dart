@@ -51,7 +51,7 @@ class DayNameInput extends StatelessWidget {
             decoration: InputDecoration(
               hintText: 'Pull Day · Espalda/Bíceps',
               hintStyle: context.text.displayLarge?.copyWith(
-                color: context.colors.textDisabled,
+                color: context.colors.textSecondary,
                 fontSize: 22,
                 letterSpacing: -0.4,
               ),

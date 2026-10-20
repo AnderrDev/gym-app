@@ -35,7 +35,7 @@ class AppTheme {
       onSurface: palette.textPrimary,
       surfaceContainerHighest: palette.surfaceHighlight,
       error: palette.error,
-      onError: palette.onPrimary,
+      onError: palette.onError,
       outline: palette.divider,
       outlineVariant: palette.surfaceOverlay,
     );

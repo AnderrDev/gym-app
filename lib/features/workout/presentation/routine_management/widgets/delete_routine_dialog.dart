@@ -48,7 +48,7 @@ class DeleteRoutineDialog extends StatelessWidget {
           child: Text(
             'ELIMINAR',
             style: context.text.labelMedium?.copyWith(
-              color: context.colors.onPrimary,
+              color: context.colors.onError,
               fontWeight: FontWeight.bold,
             ),
           ),
