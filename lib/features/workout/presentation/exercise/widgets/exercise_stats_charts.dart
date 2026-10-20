@@ -5,6 +5,7 @@ import 'package:gym_flutter/core/utils/date_format.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
 
 /// Charts del bottom sheet de estadísticas por ejercicio. Tres charts:
 /// peso máximo, 1RM estimado, carga movida. Comparten:
@@ -194,13 +195,15 @@ FlTitlesData _buildTitles(
           if (value == meta.min || value == meta.max) {
             return const SizedBox.shrink();
           }
+          // La unidad ya va en el título de la sección; en cada marca no
+          // cabía.
           return Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Text(
-              '${formatter(value)} $unit',
+              compactAxisNumber(value),
               style: context.text.labelMedium?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 9,
+                fontSize: 10,
               ),
             ),
           );
@@ -210,16 +213,19 @@ FlTitlesData _buildTitles(
     bottomTitles: AxisTitles(
       sideTitles: SideTitles(
         showTitles: true,
+        interval: dateAxisInterval(sessions.length),
         getTitlesWidget: (value, meta) {
           final i = value.toInt();
-          if (i < 0 || i >= sessions.length) return const SizedBox();
+          if (!isExactIndex(value) || i < 0 || i >= sessions.length) {
+            return const SizedBox();
+          }
           return Padding(
             padding: const EdgeInsets.only(top: Spacing.sm),
             child: Text(
               AppDateFormat.dayMonth(sessions[i].sessionDate),
               style: context.text.labelMedium?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 9,
+                fontSize: 10,
               ),
             ),
           );

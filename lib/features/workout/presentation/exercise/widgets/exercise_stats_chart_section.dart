@@ -84,9 +84,29 @@ class ExerciseStatsChartSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: context.colors.surfaceHighlight),
           ),
-          child: chart,
+          // Los datos sólo estaban en el tooltip táctil: el lector de
+          // pantalla recibe un resumen en texto.
+          child: Semantics(
+            label: _semanticSummary(),
+            excludeSemantics: true,
+            child: chart,
+          ),
         ),
       ],
     );
+  }
+
+  String _semanticSummary() {
+    if (series.values.isEmpty) return '$title: sin datos';
+    final delta = series.delta;
+    final change = delta == null
+        ? ''
+        : delta == 0
+        ? ', igual que la sesión anterior'
+        : ', ${delta > 0 ? 'sube' : 'baja'} ${formatter(delta.abs())} $unit '
+              'respecto a la anterior';
+    return '$title: ${series.values.length} sesiones. Última '
+        '${formatter(series.actual)} $unit, récord '
+        '${formatter(series.record)} $unit$change.';
   }
 }

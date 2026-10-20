@@ -5,6 +5,7 @@ import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/utils/routine_day_phase_resolver.dart';
 
 /// Elegir qué entrenar y consultar el historial son dos tareas distintas.
@@ -13,6 +14,7 @@ class DashboardWeeklyView extends StatefulWidget {
   const DashboardWeeklyView({
     super.key,
     required this.days,
+    this.weekSessions = const [],
     required this.weekStart,
     required this.selectedRoutine,
     required this.insights,
@@ -23,12 +25,14 @@ class DashboardWeeklyView extends StatefulWidget {
     required this.onOpenDay,
     this.onCurrentWeek,
     this.onChangeRoutine,
+    this.onRefresh,
     this.isLoading = false,
     this.errorMessage,
     this.onRetry,
   });
 
   final List<RoutineDay> days;
+  final List<WorkoutSession> weekSessions;
   final DateTime weekStart;
   final Routine? selectedRoutine;
   final WeeklyInsights? insights;
@@ -41,6 +45,10 @@ class DashboardWeeklyView extends StatefulWidget {
 
   /// `null` si el usuario tiene una sola rutina.
   final VoidCallback? onChangeRoutine;
+
+  /// Recarga el plan. Tirar hacia abajo en móvil; botón en la cabecera para
+  /// web/escritorio, donde con ratón no hay pull-to-refresh.
+  final Future<void> Function()? onRefresh;
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback? onRetry;
@@ -66,156 +74,203 @@ class _DashboardWeeklyViewState extends State<DashboardWeeklyView> {
     final days = [...widget.days]
       ..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
     final recommended = recommendedDay(days, _today);
-    final historyDays =
-        days.where((day) => day.lastSessionDate != null).toList()
-          ..sort((a, b) => b.lastSessionDate!.compareTo(a.lastSessionDate!));
+    final historyDays = historyEntries(days, widget.weekSessions);
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 880),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.selectedRoutine?.name ?? 'Tu rutina',
-                    style: context.text.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (widget.onChangeRoutine != null)
-                  TextButton.icon(
-                    onPressed: widget.onChangeRoutine,
-                    icon: const Icon(Icons.swap_horiz_rounded),
-                    label: const Text('Cambiar'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Elige qué entrenar. Cada sesión nueva se registra con la fecha de hoy.',
-              style: context.text.bodyMedium?.copyWith(
-                color: context.colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: false, label: Text('Entrenar')),
-                ButtonSegment(value: true, label: Text('Historial')),
-              ],
-              selected: {_history},
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) {
-                setState(() => _history = selection.single);
-                if (!_history && !_currentWeek) widget.onCurrentWeek?.call();
-              },
-            ),
-            const SizedBox(height: 24),
-            if (widget.isLoading) const LinearProgressIndicator(),
-            if (widget.errorMessage != null) ...[
-              Text(
-                widget.errorMessage!,
-                style: TextStyle(color: context.colors.error),
-              ),
-              TextButton(
-                onPressed: widget.onRetry,
-                child: const Text('Reintentar'),
-              ),
-            ],
-            if (_history) ...[
+        child: _maybeRefreshable(
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            children: [
               Row(
                 children: [
-                  IconButton(
-                    tooltip: 'Semana anterior',
-                    onPressed: widget.isLoading ? null : widget.onPreviousWeek,
-                    icon: const Icon(Icons.chevron_left_rounded),
-                  ),
                   Expanded(
                     child: Text(
-                      '${_shortDate(widget.weekStart)} — ${_shortDate(AppCalendar.addDays(widget.weekStart, 6))}',
-                      textAlign: TextAlign.center,
-                      style: context.text.titleSmall,
+                      widget.selectedRoutine?.name ?? 'Tu rutina',
+                      style: context.text.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Semana siguiente',
-                    onPressed: widget.isLoading || _currentWeek
-                        ? null
-                        : widget.onNextWeek,
-                    icon: const Icon(Icons.chevron_right_rounded),
-                  ),
+                  if (widget.onRefresh != null)
+                    IconButton(
+                      tooltip: 'Actualizar',
+                      onPressed: widget.isLoading ? null : widget.onRefresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  if (widget.onChangeRoutine != null)
+                    TextButton.icon(
+                      onPressed: widget.onChangeRoutine,
+                      icon: const Icon(Icons.swap_horiz_rounded),
+                      label: const Text('Cambiar'),
+                    ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (historyDays.isEmpty && !widget.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('No hay entrenamientos registrados esta semana.'),
-                ),
-              for (final day in historyDays)
-                _TrainingRow(
-                  day: day,
-                  history: true,
-                  today: _today,
-                  enabled: !widget.isLoading && widget.errorMessage == null,
-                  onOpen: () => widget.onOpenDay(day, day.lastSessionDate!),
-                ),
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: widget.onOpenSelectedRoutineStats,
-                icon: const Icon(Icons.insights_rounded),
-                label: const Text('Ver historial completo'),
-              ),
-            ] else ...[
+              const SizedBox(height: 8),
               Text(
-                'Hoy · ${_shortDate(_today)}',
-                style: context.text.titleMedium,
+                'Elige qué entrenar. Cada sesión nueva se registra con la fecha de hoy.',
+                style: context.text.bodyMedium?.copyWith(
+                  color: context.colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 16),
-              if (days.isEmpty && !widget.isLoading)
-                const Text(
-                  'Esta rutina todavía no tiene entrenamientos. Añádelos desde Rutinas.',
+              const SizedBox(height: 24),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Entrenar')),
+                  ButtonSegment(value: true, label: Text('Historial')),
+                ],
+                selected: {_history},
+                showSelectedIcon: false,
+                onSelectionChanged: (selection) {
+                  setState(() => _history = selection.single);
+                  if (!_history && !_currentWeek) widget.onCurrentWeek?.call();
+                },
+              ),
+              const SizedBox(height: 24),
+              if (widget.isLoading) const LinearProgressIndicator(),
+              if (widget.errorMessage != null) ...[
+                Text(
+                  widget.errorMessage!,
+                  style: TextStyle(color: context.colors.error),
                 ),
-              if (!_currentWeek && !widget.isLoading)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text('Ya es otra semana. Actualiza el plan.'),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Reintentar'),
+                ),
+              ],
+              if (_history) ...[
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Semana anterior',
+                      onPressed: widget.isLoading
+                          ? null
+                          : widget.onPreviousWeek,
+                      icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${_shortDate(widget.weekStart)} — ${_shortDate(AppCalendar.addDays(widget.weekStart, 6))}',
+                        textAlign: TextAlign.center,
+                        style: context.text.titleSmall,
                       ),
-                      TextButton(
-                        onPressed: widget.onCurrentWeek,
-                        child: const Text('Actualizar'),
-                      ),
-                    ],
+                    ),
+                    IconButton(
+                      tooltip: 'Semana siguiente',
+                      onPressed: widget.isLoading || _currentWeek
+                          ? null
+                          : widget.onNextWeek,
+                      icon: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (historyDays.isEmpty && !widget.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'No hay entrenamientos registrados esta semana.',
+                    ),
                   ),
+                for (final day in historyDays)
+                  _TrainingRow(
+                    day: day,
+                    history: true,
+                    today: _today,
+                    enabled: !widget.isLoading && widget.errorMessage == null,
+                    onOpen: () => widget.onOpenDay(day, day.lastSessionDate!),
+                  ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: widget.onOpenSelectedRoutineStats,
+                  icon: const Icon(Icons.insights_rounded),
+                  label: const Text('Ver historial completo'),
                 ),
-              for (final day in _ordered(days, recommended))
-                _TrainingRow(
-                  day: day,
-                  history: false,
-                  today: _today,
-                  recommended: day.id == recommended?.id,
-                  enabled:
-                      !widget.isLoading &&
-                      widget.errorMessage == null &&
-                      _currentWeek,
-                  onOpen: () => widget.onOpenDay(day, _today),
+              ] else ...[
+                Text(
+                  'Hoy · ${_shortDate(_today)}',
+                  style: context.text.titleMedium,
                 ),
+                const SizedBox(height: 16),
+                if (days.isEmpty && !widget.isLoading)
+                  const Text(
+                    'Esta rutina todavía no tiene entrenamientos. Añádelos desde Rutinas.',
+                  ),
+                if (!_currentWeek && !widget.isLoading)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text('Ya es otra semana. Actualiza el plan.'),
+                        ),
+                        TextButton(
+                          onPressed: widget.onCurrentWeek,
+                          child: const Text('Actualizar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                for (final day in _ordered(days, recommended))
+                  _TrainingRow(
+                    day: day,
+                    history: false,
+                    today: _today,
+                    recommended: day.id == recommended?.id,
+                    enabled:
+                        !widget.isLoading &&
+                        widget.errorMessage == null &&
+                        _currentWeek,
+                    onOpen: () => widget.onOpenDay(day, _today),
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _maybeRefreshable({required Widget child}) {
+    final onRefresh = widget.onRefresh;
+    if (onRefresh == null) return child;
+    return RefreshIndicator(onRefresh: onRefresh, child: child);
+  }
 }
 
 String _shortDate(DateTime date) => formatRoutineDayDateLabel(date);
+
+/// Una entrada por sesión de la semana (la más reciente primero), con el
+/// día de rutina al que pertenece. Sin sesiones conocidas cae a la última
+/// sesión de cada día (lo único que trae `days`).
+@visibleForTesting
+List<RoutineDay> historyEntries(
+  List<RoutineDay> days,
+  List<WorkoutSession> sessions,
+) {
+  if (sessions.isEmpty) {
+    return days.where((day) => day.lastSessionDate != null).toList()
+      ..sort((a, b) => b.lastSessionDate!.compareTo(a.lastSessionDate!));
+  }
+  final byId = {for (final d in days) d.id: d};
+  final sorted = [...sessions]
+    ..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+  return [
+    for (final s in sorted)
+      if (byId[s.routineDayId] case final day?)
+        day.copyWith(
+          lastSessionDate: s.sessionDate,
+          status: s.completedAt == null
+              ? WorkoutDayStatus.inProgress
+              : s.totalTargetSets > 0 &&
+                    s.completedSetsCount < s.totalTargetSets
+              ? WorkoutDayStatus.completedPartial
+              : WorkoutDayStatus.completed,
+        ),
+  ];
+}
 
 /// El día recomendado arriba, el resto en su orden de la semana.
 List<RoutineDay> _ordered(List<RoutineDay> days, RoutineDay? recommended) => [

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_weekly_view.dart';
 
 void main() {
@@ -40,5 +41,29 @@ void main() {
   test('semana completa → ninguno', () {
     final days = [day(1, last: wednesday), day(3, last: wednesday)];
     expect(recommendedDay(days, wednesday), isNull);
+  });
+
+  test('historial: una entrada por sesión aunque se repita el día', () {
+    final monday = DateTime(2026, 10, 19);
+    final entries = historyEntries(
+      [day(1, last: wednesday)],
+      [
+        WorkoutSession(
+          id: 's1',
+          userId: 'u1',
+          routineDayId: 'd1',
+          sessionDate: monday,
+          completedAt: monday,
+        ),
+        WorkoutSession(
+          id: 's2',
+          userId: 'u1',
+          routineDayId: 'd1',
+          sessionDate: wednesday,
+          completedAt: wednesday,
+        ),
+      ],
+    );
+    expect(entries.map((d) => d.lastSessionDate), [wednesday, monday]);
   });
 }

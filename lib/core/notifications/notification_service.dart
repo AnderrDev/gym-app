@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/platform/capabilities.dart';
@@ -52,6 +54,9 @@ class NotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
     );
+    // `zonedSchedule` exige la base de zonas; se programa en UTC (instante
+    // absoluto), así que no hace falta conocer la zona local.
+    tz_data.initializeTimeZones();
 
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
@@ -182,33 +187,72 @@ class NotificationService {
   Future<void> showRestEnded() async {
     if (!_isSupported) return;
     try {
-      final androidDetails = AndroidNotificationDetails(
-        _restEndChannelId,
-        _restEndChannelName,
-        channelDescription: _restEndChannelDesc,
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: true,
-        enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 250, 100, 250]),
-        autoCancel: true,
-        ongoing: false,
-        ticker: '¡A entrenar!',
-      );
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: false,
-        presentSound: true,
-        interruptionLevel: InterruptionLevel.timeSensitive,
-      );
       await _plugin.show(
         restEndNotificationId,
         '¡A entrenar!',
         'Próxima serie te espera',
-        NotificationDetails(android: androidDetails, iOS: iosDetails),
+        _restEndDetails(),
       );
     } catch (e) {
       AppLogger.instance.warning('NotificationService.showRestEnded: $e');
     }
+  }
+
+  /// Programa la alerta de fin de descanso en el sistema. En iOS la app se
+  /// suspende con la pantalla bloqueada y el `Timer` de Dart no dispara:
+  /// sólo una notificación programada suena a tiempo. Reprogramar con el
+  /// mismo id sustituye a la anterior.
+  Future<void> scheduleRestEnded(Duration after) async {
+    if (!_isSupported || !_initialized) return;
+    try {
+      await _plugin.zonedSchedule(
+        restEndNotificationId,
+        '¡A entrenar!',
+        'Próxima serie te espera',
+        tz.TZDateTime.now(tz.UTC).add(after),
+        _restEndDetails(),
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        // Inexacta: no requiere el permiso de alarmas exactas. En Android la
+        // alerta la da el Timer (el proceso sigue vivo en segundo plano).
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      AppLogger.instance.warning('NotificationService.scheduleRestEnded: $e');
+    }
+  }
+
+  /// Cancela la alerta programada (descanso saltado, ajustado o terminado
+  /// con la app en primer plano).
+  Future<void> cancelRestEnded() async {
+    if (!_isSupported) return;
+    try {
+      await _plugin.cancel(restEndNotificationId);
+    } catch (e) {
+      AppLogger.instance.warning('NotificationService.cancelRestEnded: $e');
+    }
+  }
+
+  NotificationDetails _restEndDetails() {
+    final androidDetails = AndroidNotificationDetails(
+      _restEndChannelId,
+      _restEndChannelName,
+      channelDescription: _restEndChannelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 250, 100, 250]),
+      autoCancel: true,
+      ongoing: false,
+      ticker: '¡A entrenar!',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+    return NotificationDetails(android: androidDetails, iOS: iosDetails);
   }
 }

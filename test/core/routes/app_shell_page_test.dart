@@ -154,6 +154,22 @@ void main() {
     expect(find.text('PERFIL'), findsOneWidget);
   });
 
+  testWidgets('en pantalla ancha usa rail lateral y cambia de pestaña', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    await tester.tap(find.text('PROGRESO'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
+  });
+
   testWidgets('arranca en /dashboard (branch 0)', (tester) async {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();

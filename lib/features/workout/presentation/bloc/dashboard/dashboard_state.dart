@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
+import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 
 /// Estados granulares del dashboard, modelados como Status enum + data
 /// (en lugar de sealed class por subestado) para evitar la explosión que
@@ -30,6 +31,7 @@ class DashboardState extends Equatable {
     this.routines = const [],
     this.selectedRoutine,
     this.weeklyDays = const [],
+    this.weekSessions = const [],
     this.weekStart,
     this.insights,
     this.insightsError,
@@ -40,6 +42,10 @@ class DashboardState extends Equatable {
   final List<Routine> routines;
   final Routine? selectedRoutine;
   final List<RoutineDay> weeklyDays;
+
+  /// Todas las sesiones de la semana. `weeklyDays` sólo guarda la última de
+  /// cada día de rutina, así que el historial perdía las repetidas.
+  final List<WorkoutSession> weekSessions;
   final DateTime? weekStart;
   final WeeklyInsights? insights;
   final String? insightsError;
@@ -57,6 +63,7 @@ class DashboardState extends Equatable {
     Routine? selectedRoutine,
     bool clearSelectedRoutine = false,
     List<RoutineDay>? weeklyDays,
+    List<WorkoutSession>? weekSessions,
     DateTime? weekStart,
     WeeklyInsights? insights,
     bool clearInsights = false,
@@ -72,6 +79,7 @@ class DashboardState extends Equatable {
           ? null
           : (selectedRoutine ?? this.selectedRoutine),
       weeklyDays: weeklyDays ?? this.weeklyDays,
+      weekSessions: weekSessions ?? this.weekSessions,
       weekStart: weekStart ?? this.weekStart,
       insights: clearInsights ? null : (insights ?? this.insights),
       insightsError: clearInsightsError
@@ -89,6 +97,7 @@ class DashboardState extends Equatable {
     routines,
     selectedRoutine,
     weeklyDays,
+    weekSessions,
     weekStart,
     insights,
     insightsError,
