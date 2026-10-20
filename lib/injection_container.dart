@@ -264,12 +264,17 @@ Future<void> init() async {
     () => SettingsBloc(preferences: sl<UserPreferencesService>()),
   );
 
-  // Local database (drift): se abre eagerly y se valida con `ping()` para
-  // detectar corrupción/migrations rotas en bootstrap. En web la persistencia
-  // local llegará en Phase W; mientras tanto no se registra el singleton.
+  // Local database (drift): se valida con `ping()` para detectar
+  // corrupción/migrations rotas en bootstrap. En nativo se espera (un fallo
+  // muestra `_BootstrapErrorApp`). En web el `ping()` es lo que descarga y
+  // compila `drift_worker.dart.js` + `sqlite3.wasm` (~540 KB gzip): lo
+  // dejamos correr en paralelo al primer frame — el login no usa la base y
+  // cualquier query posterior espera la misma apertura del `LazyDatabase`.
+  Future<void>? localDbReady;
   if (Capabilities.hasLocalDatabase) {
     final localDb = LocalDatabase.open();
-    await localDb.ping();
+    localDbReady = localDb.ping();
+    if (!Capabilities.isWeb) await localDbReady;
     sl.registerLazySingleton<LocalDatabase>(() => localDb);
 
     sl.registerLazySingleton<WorkoutCacheDao>(
@@ -335,14 +340,18 @@ Future<void> init() async {
   // para que la cadena de dependencias esté lista. En web es no-op (no se
   // registra el SyncWorker).
   if (Capabilities.hasOfflineSync && sl.isRegistered<SyncWorker>()) {
-    try {
-      await sl<OutboxRepository>().releaseStaleLocks(
-        const Duration(seconds: 60),
-      );
-      sl<SyncWorker>().start();
-      AppLogger.instance.info('sync_worker started');
-    } catch (e) {
-      AppLogger.instance.warning('sync_worker.start_failed: $e');
-    }
+    final syncBootstrap = _startSyncWorker(localDbReady);
+    if (!Capabilities.isWeb) await syncBootstrap;
+  }
+}
+
+Future<void> _startSyncWorker(Future<void>? localDbReady) async {
+  try {
+    await localDbReady;
+    await sl<OutboxRepository>().releaseStaleLocks(const Duration(seconds: 60));
+    sl<SyncWorker>().start();
+    AppLogger.instance.info('sync_worker started');
+  } catch (e) {
+    AppLogger.instance.warning('sync_worker.start_failed: $e');
   }
 }

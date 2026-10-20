@@ -68,11 +68,19 @@ jobs:
           channel: stable
           flutter-version: 3.38.9
           cache: true
+      # `.env` es un asset declarado en pubspec pero está gitignored: sin él
+      # `flutter build` falla con `No file or variants found for asset: .env`.
+      # Vacío basta (las credenciales llegan por --dart-define).
+      - name: Placeholder .env
+        run: touch .env
       - name: Pub get
         run: flutter pub get
+      # `--wasm` genera dart2wasm + skwasm para navegadores con WasmGC
+      # (Chrome/Edge/Firefox recientes) y conserva main.dart.js + CanvasKit
+      # como fallback; `flutter_bootstrap.js` elige en runtime.
       - name: Build web
         run: |
-          flutter build web --release \
+          flutter build web --release --wasm \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - name: Deploy to Firebase Hosting

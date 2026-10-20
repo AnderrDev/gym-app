@@ -45,6 +45,13 @@
   <!-- Los recursos de persistencia se solicitan cuando se necesitan;
        no competimos con el login mediante descargas especulativas. -->
 
+  <!-- El motor (CanvasKit/skwasm) llega desde www.gstatic.com y la fuente
+       de respaldo Roboto desde fonts.gstatic.com. Abrir las conexiones
+       mientras se descarga el bootstrap ahorra DNS + TLS en el camino al
+       primer frame, sin descargar nada todavía. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <style>
     /* Fondo pre-paint: adaptado al esquema activo del usuario para que
        no haya flash blanco→oscuro (o viceversa) entre el bootstrap del

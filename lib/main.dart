@@ -4,13 +4,13 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:gym_flutter/core/config/supabase_config.dart';
 import 'package:gym_flutter/core/error/error_reporter.dart';
+import 'package:gym_flutter/core/i18n/spanish_localizations.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
@@ -46,10 +46,15 @@ void main() {
 
     await initializeDateFormatting('es', null);
 
-    try {
-      await dotenv.load(fileName: '.env');
-    } catch (_) {
-      // `.env` ausente en builds release/CI: las credenciales llegan vía --dart-define.
+    // Con --dart-define (CI/release) el `.env` sobra. En Firebase Hosting,
+    // además, el asset no se sube y la petición caía en el rewrite a
+    // `index.html`: una ida y vuelta de red inútil antes del primer frame.
+    if (!SupabaseConfig.hasDartDefines) {
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (_) {
+        // `.env` ausente: `SupabaseConfig.init()` reporta qué falta.
+      }
     }
 
     try {
@@ -133,7 +138,7 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
             // "Pestaña 1 de 4" en lectores de pantalla) salían en inglés.
             locale: const Locale('es'),
             supportedLocales: const [Locale('es')],
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            localizationsDelegates: spanishLocalizationsDelegates,
             // `_SystemUiOverlayChrome` reacciona al brightness resuelto del
             // tema activo (sin reconstruir el Navigator). Va aquí — el
             // `builder` corre ANTES de que el Navigator monte su Overlay,
@@ -218,7 +223,7 @@ class _BootstrapErrorApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      localizationsDelegates: spanishLocalizationsDelegates,
       home: Builder(
         builder: (context) {
           final palette = Theme.of(context).extension<AppPalette>()!;
