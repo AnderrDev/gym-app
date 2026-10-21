@@ -9,7 +9,7 @@ confirmar contra producción.
 | # | Problema | Impacto | Estado |
 |---|---|---|---|
 | B1 | `discard_workout_session_v1` no anula `exercise_plan` antes de borrar series. Si la sesión abierta tiene un ejercicio **sustituido con series**, el trigger `guard_session_set_log_v1` rechaza el borrado (`23514 retained original logs are immutable`) | No se puede descartar ese entrenamiento; el cliente muestra "ya se finalizó" | ✅ **arreglado** (2026-10-21) en `20261021120000_fix_discard_session_with_replaced_exercise.sql` + test `supabase/tests/discard_workout_session.sql`. **Pendiente de desplegar** |
-| B2 | `finalize_workout_session_v1` acepta `coaching_analysis` del cliente y lo guarda sin validar (array ≤ 64 KB) | Coaching falsificable / basura en historial | ✅ **arreglado** (2026-10-21): la función ignora el valor del cliente y genera siempre en servidor. **Pendiente de desplegar**. Ojo: la RLS `sessions_update` sigue dejando escribir `coaching_analysis` directamente por PostgREST (ver [01](01_esquema.md)) |
+| B2 | `finalize_workout_session_v1` acepta `coaching_analysis` del cliente y lo guarda sin validar (array ≤ 64 KB) | Coaching falsificable / basura en historial | ✅ **arreglado** (2026-10-21): la función ignora el valor del cliente y genera siempre en servidor. **Pendiente de desplegar**. El hueco por PostgREST (`sessions_update` dejaba escribir `coaching_analysis`/`completed_at` directamente) queda cerrado con el trigger `guard_session_completion_v1` (`20261021130000_guard_session_completion_columns.sql` + test `supabase/tests/session_completion_guard.sql`). **Pendiente de desplegar** |
 | B3 | El servidor devuelve `NOT_FOUND_OR_COMPLETED`; el cliente Dart espera `NOT_FOUND_OR_ALREADY_COMPLETED` | El 404 de la función trae `code`, así que el invoker no usaba el mapeo por status: quedaba `FINALIZE_FUNCTION_ERROR_404`, el reintento no se trataba como éxito y el SyncWorker reintentaba en vez de descartar | ✅ **arreglado** (2026-10-21) en el cliente: acepta `NOT_FOUND_OR_COMPLETED` y el código antiguo. Sale con la próxima build |
 | B4 | El motor de coaching en vivo guarda `recommendation`/`feedback` cruzados respecto al servidor | `hasActionableAdvice` y el icono del badge evalúan mal según el origen | verificado en código |
 | B5 | `compute_weekly_insights_v1` no comprueba que la rutina sea visible o del usuario | Fuga menor: nº de días de una rutina ajena | inferido |
@@ -41,7 +41,7 @@ confirmar contra producción.
   ejercicio del catálogo **borra historial**.
 - Sin UNIQUE `(user_id, routine_day_id, session_date)`: un segundo cliente puede
   crear duplicados y el `maybeSingle()` de "sesión existente" fallaría.
-- `sessions_update` permite reabrir una sesión desde el cliente (`completed_at = NULL`).
+- ~~`sessions_update` permite reabrir una sesión desde el cliente (`completed_at = NULL`).~~ Cerrado por `guard_session_completion_v1` (20261021130000, pendiente de desplegar).
 - Rutina asignada que deja de ser visible → el usuario pierde lectura de sus días.
 - Configuración de Auth solo en el dashboard; **Site URL aún en localhost**.
 
@@ -49,7 +49,7 @@ confirmar contra producción.
 
 ### Antes de empezar (backend)
 1. Dump del esquema de producción → migración baseline + revisar [01](01_esquema.md#verificación-pendiente).
-2. ~~Arreglar **B1** y **B2**; unificar el código de **B3**.~~ Hecho (2026-10-21); falta desplegar la migración `20261021120000` y la función `finalize_workout_session_v1`.
+2. ~~Arreglar **B1** y **B2**; unificar el código de **B3**.~~ Hecho (2026-10-21); falta desplegar las migraciones `20261021120000` y `20261021130000` y la función `finalize_workout_session_v1`.
 3. Site URL = dominio definitivo de la web; añadir `<web>/reset-password` y
    `localhost` a Redirect URLs.
 4. Generar tipos: `supabase gen types typescript --linked > src/lib/database.types.ts`

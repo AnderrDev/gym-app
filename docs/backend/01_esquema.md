@@ -97,8 +97,8 @@ Asignar = `upsert(..., onConflict: 'user_id')`.
 | user_id | uuid NOT NULL | FK `profiles` ON DELETE CASCADE |
 | routine_day_id | uuid NOT NULL* | FK `routine_days` **sin ON DELETE** (NO ACTION). *NOT NULL condicional en 20260514205817 |
 | session_date | date NOT NULL default CURRENT_DATE | **fecha local** del usuario, la manda el cliente |
-| completed_at | timestamptz NULL | NULL = sesión abierta. Lo pone el servidor (UTC) al finalizar |
-| coaching_analysis | jsonb NULL | CHECK array o NULL. Lo escribe `finalize_workout_session_v1` |
+| completed_at | timestamptz NULL | NULL = sesión abierta. Lo pone el servidor (UTC) al finalizar; el cliente no puede escribirlo (trigger) |
+| coaching_analysis | jsonb NULL | CHECK array o NULL. Solo lo escribe `finalize_workout_session_v1` (trigger) |
 | exercise_plan | jsonb NULL | CHECK array ≤ 100. **Snapshot** de ejercicios; solo lo escriben RPCs (trigger) |
 
 Índices:
@@ -179,9 +179,12 @@ RLS activo en todas las tablas de `public`.
 
 Notas:
 - Un UPDATE/DELETE bloqueado por RLS **no da error**: afecta 0 filas.
-- `sessions_update` permite al cliente tocar `completed_at`/`coaching_analysis`
-  directamente (incluso reabrir). El cliente actual no lo hace: cierra por la
-  Edge Function.
+- `sessions_update` deja al dueño hacer UPDATE de su fila, pero desde
+  `20261021130000` el trigger `guard_session_completion_v1` rechaza que
+  `authenticated`/`anon` cambien `completed_at`/`coaching_analysis` (ni cerrar,
+  ni forjar coaching, ni reabrir) o los inserten no nulos. Cerrar = Edge Function
+  (escribe con `service_role`). El cliente solo inserta
+  `(id, user_id, routine_day_id, session_date)` y no hace UPDATE.
 - Si una rutina asignada deja de ser visible (el dueño la hace privada, o queda
   anonimizada y privada), el usuario asignado pierde la lectura de días y ejercicios.
 
@@ -191,6 +194,7 @@ Notas:
 |---|---|---|
 | `on_auth_user_created` → `handle_new_user()` | `auth.users` AFTER INSERT | crea `profiles(id, full_name)`. **Creado en el dashboard, no está en migraciones** |
 | `guard_session_exercise_plan_v1` | `workout_sessions` BEFORE INSERT/UPDATE | si el rol es `authenticated`/`anon` y se intenta escribir `exercise_plan` → `42501 'exercise_plan is managed by session RPCs'` |
+| `guard_session_completion_v1` | `workout_sessions` BEFORE INSERT/UPDATE | si el rol es `authenticated`/`anon`: INSERT con `completed_at`/`coaching_analysis` no nulos o UPDATE que los cambie → `42501 'completed_at/coaching_analysis are managed by finalize_workout_session_v1'` (20261021130000). `service_role` y las RPC SECURITY DEFINER pasan |
 | `guard_session_set_log_v1` | `set_logs` BEFORE INSERT/UPDATE/DELETE | si la sesión tiene snapshot: rechaza sesión cerrada (`'session closed'`), ejercicio fuera del plan, tocar logs de un original sustituido (`'retained original logs are immutable'`) y cambiar la identidad del log. Todo con `23514`. Sesiones legacy: sin restricción |
 
 ## Storage
