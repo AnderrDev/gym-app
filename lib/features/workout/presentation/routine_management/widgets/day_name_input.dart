@@ -21,9 +21,9 @@ class DayNameInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
+        Spacing.lgPlus,
         Spacing.sm,
-        Spacing.lg,
+        Spacing.lgPlus,
         Spacing.lg,
       ),
       child: Column(
@@ -44,20 +44,27 @@ class DayNameInput extends StatelessWidget {
             onChanged: onChanged,
             readOnly: readOnly,
             enabled: !readOnly,
-            style: context.text.displayLarge?.copyWith(
-              fontSize: 22,
+            style: context.text.headlineSmall?.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
               letterSpacing: -0.4,
             ),
             decoration: InputDecoration(
               hintText: 'Pull Day · Espalda/Bíceps',
-              hintStyle: context.text.displayLarge?.copyWith(
+              hintStyle: context.text.headlineSmall?.copyWith(
                 color: context.colors.textSecondary,
-                fontSize: 22,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
               ),
               isDense: true,
+              // Sin relleno: el nombre es el título de la pantalla y se edita
+              // en sitio, con solo la línea inferior como affordance.
+              filled: false,
               contentPadding: const EdgeInsets.symmetric(vertical: 6),
               border: InputBorder.none,
+              // Vista previa (read-only): sin línea, se lee como título.
+              disabledBorder: InputBorder.none,
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(color: context.colors.divider),
               ),

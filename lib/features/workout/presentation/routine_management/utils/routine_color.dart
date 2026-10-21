@@ -30,4 +30,12 @@ class RoutineColor {
     final pal = context.colors.routineAccents;
     return pal[index % pal.length];
   }
+
+  /// Relleno suave para poner [accent] (o `primary`) como texto encima:
+  /// 8 % del acento sobre `background`, no sobre `surface`. Sobre el gris de
+  /// las cards en light ningún tinte llega a 4.5:1; así todos superan 4.5.
+  static Color tint(BuildContext context, Color accent) => Color.alphaBlend(
+    accent.withValues(alpha: 0.08),
+    context.colors.background,
+  );
 }

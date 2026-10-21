@@ -102,8 +102,8 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.text('PRESS BANCA'), findsOneWidget);
-    // El nombre del día ahora vive en un TextField (sin uppercase).
+    expect(find.text('Press Banca'), findsOneWidget);
+    // El nombre del día vive en un TextField.
     expect(find.text('Pecho y Triceps'), findsOneWidget);
   });
 

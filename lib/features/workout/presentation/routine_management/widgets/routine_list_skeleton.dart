@@ -15,26 +15,29 @@ class RoutineListSkeleton extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,
         separatorBuilder: (_, _) => const SizedBox(height: Spacing.lg),
+        // Misma forma que `RoutineListCard`: avatar + nombre/metadatos y
+        // la acción abajo a la derecha.
         itemBuilder: (_, _) => const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            AppSkeletonTile.line(width: 200, height: 18),
+            Row(
+              children: [
+                AppSkeletonTile(width: 44, height: 44),
+                SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSkeletonTile.line(width: 160, height: 18),
+                      SizedBox(height: Spacing.sm),
+                      AppSkeletonTile.line(width: 200, height: 12),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             SizedBox(height: Spacing.md),
-            Row(
-              children: [
-                AppSkeletonTile(width: 100, height: 28),
-                SizedBox(width: Spacing.sm),
-                AppSkeletonTile(width: 100, height: 28),
-              ],
-            ),
-            SizedBox(height: Spacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppSkeletonTile(width: 70, height: 14),
-                AppSkeletonTile(width: 90, height: 36),
-              ],
-            ),
+            AppSkeletonTile(width: 110, height: 44),
           ],
         ),
       ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/i18n/app_strings.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_card.dart';
 
 /// Card de información de la rutina: avatar de color (acento por nombre),
 /// input grande del nombre, switch público con descripción corta.
@@ -23,7 +24,7 @@ class RoutineInfoCard extends StatefulWidget {
   final VoidCallback onNameChanged;
   final ValueChanged<bool> onPublicChanged;
 
-  /// Cuando `true` deshabilita la edición del nombre y el switch público.
+  /// Cuando `true` deshabilita la edición del nombre y oculta el switch público.
   /// Se usa al abrir una rutina ajena (vista previa antes de forkear).
   final bool readOnly;
 
@@ -64,8 +65,10 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
       ),
       decoration: BoxDecoration(
         color: context.colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(Radii.xl),
+        border: Border.all(
+          color: context.colors.divider.withValues(alpha: 0.6),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,18 +76,10 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: accent,
-                  size: 22,
-                ),
+              RoutineAvatar(
+                name: widget.nameController.text,
+                accent: accent,
+                size: 48,
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
@@ -96,20 +91,28 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                       readOnly: widget.readOnly,
                       enabled: !widget.readOnly,
                       onChanged: (_) => widget.onNameChanged(),
-                      style: context.text.displayLarge?.copyWith(
+                      style: context.text.headlineSmall?.copyWith(
                         fontSize: 22,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Nombre de la rutina',
-                        hintStyle: context.text.displayLarge?.copyWith(
+                        hintStyle: context.text.headlineSmall?.copyWith(
                           color: context.colors.textSecondary,
                           fontSize: 22,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: -0.3,
                         ),
                         isDense: true,
+                        filled: false,
                         contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                        // El tema define enabled/focused/disabledBorder, que tienen
+                        // prioridad sobre `border`: sin anularlos sale un marco doble.
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
                       ),
                     ),
                     if (widget.readOnly &&
@@ -119,9 +122,8 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'Por ${widget.creatorName}',
-                          style: context.text.labelMedium?.copyWith(
+                          style: context.text.bodySmall?.copyWith(
                             color: context.colors.textSecondary,
-                            fontSize: 11,
                           ),
                         ),
                       ),
@@ -130,45 +132,44 @@ class _RoutineInfoCardState extends State<RoutineInfoCard> {
               ),
             ],
           ),
-          const SizedBox(height: Spacing.sm),
-          Divider(color: context.colors.divider, height: 1),
-          const SizedBox(height: Spacing.xs),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.isPublic ? AppStrings.public : AppStrings.private,
-                      style: context.text.labelMedium?.copyWith(
-                        color: widget.isPublic
-                            ? accent
-                            : context.colors.textSecondary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        fontSize: 11,
+          // Compartir solo aplica a las rutinas propias: en la vista previa
+          // de una ajena el switch deshabilitado solo confundía.
+          if (!widget.readOnly) ...[
+            const SizedBox(height: Spacing.sm),
+            Divider(color: context.colors.divider, height: 1),
+            const SizedBox(height: Spacing.xs),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Compartir con la comunidad',
+                        style: context.text.bodyMedium?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    Text(
-                      widget.isPublic
-                          ? 'Visible para toda la comunidad'
-                          : 'Solo tú puedes usarla',
-                      style: context.text.labelMedium?.copyWith(
-                        color: context.colors.textSecondary,
-                        fontSize: 10,
+                      Text(
+                        widget.isPublic
+                            ? 'Pública · cualquiera puede verla y copiarla'
+                            : 'Privada · solo tú puedes usarla',
+                        style: context.text.bodySmall?.copyWith(
+                          color: context.colors.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Switch(
-                value: widget.isPublic,
-                activeThumbColor: accent,
-                onChanged: widget.readOnly ? null : widget.onPublicChanged,
-              ),
-            ],
-          ),
+                Switch(
+                  value: widget.isPublic,
+                  activeThumbColor: accent,
+                  onChanged: widget.onPublicChanged,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

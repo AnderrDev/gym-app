@@ -48,7 +48,11 @@ class RoutineEditorAppBar extends StatelessWidget {
       actions: [
         if (isExisting && isOwner)
           IconButton(
-            icon: Icon(Icons.delete_outline_rounded, color: colors.error),
+            // Neutro: borrar pide confirmación y no debe competir con GUARDAR.
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: colors.textSecondary,
+            ),
             tooltip: 'Eliminar rutina',
             onPressed: onDelete,
           ),

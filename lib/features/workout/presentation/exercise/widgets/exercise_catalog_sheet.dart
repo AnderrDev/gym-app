@@ -195,7 +195,12 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
               color: context.colors.textSecondary,
               fontSize: 14,
             ),
+            // El tema define enabled/focused/disabledBorder, que tienen
+            // prioridad sobre `border`: sin anularlos sale un marco doble.
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
           ),
         ),
       ),

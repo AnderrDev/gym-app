@@ -101,8 +101,8 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.text('PUSH'), findsOneWidget);
-    expect(find.text('COMMUNITY'), findsOneWidget);
+    expect(find.text('Push'), findsOneWidget);
+    expect(find.text('Community'), findsOneWidget);
   });
 
   testWidgets('estado failure muestra mensaje', (tester) async {

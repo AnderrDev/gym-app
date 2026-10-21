@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 
 /// Buscador de rutinas por nombre. Renderiza el frame con borde + un
@@ -29,9 +30,9 @@ class RoutineListSearchBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         decoration: BoxDecoration(
           color: context.colors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(Radii.md),
           border: Border.all(
-            color: context.colors.divider.withValues(alpha: 0.5),
+            color: context.colors.divider.withValues(alpha: 0.6),
           ),
         ),
         child: TextField(
@@ -50,11 +51,19 @@ class RoutineListSearchBar extends StatelessWidget {
             hintStyle: context.text.bodyMedium?.copyWith(
               color: context.colors.textSecondary,
             ),
+            // El tema define enabled/focused/disabledBorder, que tienen
+            // prioridad sobre `border`: sin anularlos sale un marco doble.
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
             isDense: true,
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(vertical: Spacing.md),
             suffixIcon: query.isEmpty
                 ? null
                 : IconButton(
+                    tooltip: 'Borrar búsqueda',
                     icon: Icon(
                       Icons.close_rounded,
                       size: 18,

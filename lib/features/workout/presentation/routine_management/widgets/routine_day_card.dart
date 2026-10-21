@@ -4,18 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 
 /// Card que representa un día dentro del editor de rutina.
 ///
-/// Diseño "split-tile":
-/// - Cuadro numerado prominente a la izquierda (color por índice).
-/// - Nombre del día + contador de ejercicios + chevron.
-/// - Botón de basura visible (mouse + touch + accesibilidad) cuando hay
-///   `onDelete`; el swipe izquierdo se mantiene como alternativa de
-///   gesture para usuarios de mobile.
+/// - Cuadro con el día de la semana (LUN…DOM): es el dato que ordena la
+///   lista, así que va primero y en grande.
+/// - Nombre del día + ejercicios y preview de nombres + chevron.
+/// - Borrar va en el menú "Más opciones" (mouse, touch y lector de
+///   pantalla) en lugar de una papelera roja por fila; el swipe izquierdo se
+///   mantiene como atajo en mobile.
 class RoutineDayCard extends StatelessWidget {
   const RoutineDayCard({
     super.key,
@@ -32,7 +33,7 @@ class RoutineDayCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final Future<bool> Function()? confirmDelete;
 
-  static const _dayLabels = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];
+  static const _dayLabels = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
   String get _dayShortLabel {
     final dow = day.dayOfWeek;
@@ -47,98 +48,112 @@ class RoutineDayCard extends StatelessWidget {
     return '${names.take(3).join(' · ')} · +${names.length - 3}';
   }
 
+  Future<void> _delete() async {
+    final ok = (await confirmDelete?.call()) ?? true;
+    if (!ok) return;
+    unawaited(HapticFeedback.heavyImpact());
+    onDelete!();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final exerciseCount = day.exercises.length;
     final card = Material(
-      color: Colors.transparent,
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        side: BorderSide(color: colors.divider.withValues(alpha: 0.6)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: context.colors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: context.colors.divider.withValues(alpha: 0.4),
-            ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            Spacing.md,
+            Spacing.md,
+            onDelete == null ? Spacing.sm : 0,
+            Spacing.md,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.md,
-              vertical: Spacing.sm,
-            ),
-            child: Row(
-              children: [
-                _IndexTile(index: index, label: _dayShortLabel),
-                const SizedBox(width: Spacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        day.name.toUpperCase(),
-                        style: context.text.headlineMedium?.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              _WeekdayTile(label: _dayShortLabel),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      day.name,
+                      style: context.text.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        exerciseCount == 0
-                            ? 'Sin ejercicios · toca para añadir'
-                            : '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
-                        style: context.text.labelMedium?.copyWith(
-                          color: exerciseCount == 0
-                              ? context.colors.primary
-                              : context.colors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                      if (day.exerciseNamesPreview.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _buildPreview(day.exerciseNamesPreview),
-                          style: context.text.labelSmall?.copyWith(
-                            color: context.colors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (onDelete != null)
-                  IconButton(
-                    onPressed: () async {
-                      final ok = (await confirmDelete?.call()) ?? true;
-                      if (!ok) return;
-                      unawaited(HapticFeedback.heavyImpact());
-                      onDelete!();
-                    },
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: context.colors.error,
-                      size: 20,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    tooltip: 'Eliminar día',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                    const SizedBox(height: 2),
+                    Text(
+                      exerciseCount == 0
+                          ? 'Sin ejercicios · toca para añadir'
+                          : day.exerciseNamesPreview.isNotEmpty
+                          ? _buildPreview(day.exerciseNamesPreview)
+                          : '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
+                      style: context.text.bodySmall?.copyWith(
+                        color: exerciseCount == 0
+                            ? colors.primary
+                            : colors.textSecondary,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (exerciseCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: Spacing.sm),
+                  child: Text(
+                    '$exerciseCount',
+                    semanticsLabel:
+                        '$exerciseCount ${exerciseCount == 1 ? "ejercicio" : "ejercicios"}',
+                    style: context.text.titleMedium?.copyWith(
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: context.colors.textSecondary,
                 ),
-              ],
-            ),
+              if (onDelete != null)
+                PopupMenuButton<bool>(
+                  tooltip: 'Más opciones',
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    color: colors.textSecondary,
+                  ),
+                  onSelected: (_) => _delete(),
+                  itemBuilder: (context) => [
+                    // Un `value` null cuenta como cancelar y no llega a
+                    // `onSelected`.
+                    PopupMenuItem<bool>(
+                      value: true,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          Icons.delete_outline_rounded,
+                          color: colors.error,
+                        ),
+                        title: Text(
+                          'Eliminar día',
+                          style: TextStyle(color: colors.error),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+            ],
           ),
         ),
       ),
@@ -164,7 +179,7 @@ class RoutineDayCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: Spacing.md),
         decoration: BoxDecoration(
           color: context.colors.error.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(Radii.lg),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
@@ -179,46 +194,28 @@ class RoutineDayCard extends StatelessWidget {
   }
 }
 
-class _IndexTile extends StatelessWidget {
-  const _IndexTile({required this.index, required this.label});
+class _WeekdayTile extends StatelessWidget {
+  const _WeekdayTile({required this.label});
 
-  final int index;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    final color = RoutineColor.byIndex(context, index);
     return Container(
-      width: 56,
-      height: 56,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: RoutineColor.tint(context, context.colors.primary),
+        borderRadius: BorderRadius.circular(Radii.md),
       ),
       alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '${index + 1}',
-            style: context.text.displayLarge?.copyWith(
-              fontSize: 20,
-              color: color,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: color.withValues(alpha: 0.9),
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: context.text.labelLarge?.copyWith(
+          color: context.colors.primary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
