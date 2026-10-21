@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
@@ -81,8 +82,14 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
     WeeklyInsights? insights;
     String? insightsError;
     var exercises = const <Exercise>[];
+    var history = const <RoutineHistorySession>[];
     if (routines.isNotEmpty) {
-      exercises = await _exercisesOf(routines);
+      final extras = await (
+        _exercisesOf(routines),
+        _historyOf(userId, routines),
+      ).wait;
+      exercises = extras.$1;
+      history = extras.$2;
       final results = await Future.wait(
         routines.map(
           (r) => repository.getWeeklyInsights(
@@ -110,8 +117,24 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
         insights: insights,
         insightsError: insightsError,
         exercises: exercises,
+        history: history,
       ),
     );
+  }
+
+  /// Sesiones cerradas de todas las rutinas, de la más reciente a la más
+  /// antigua, para el histórico semanal. Best-effort como [_exercisesOf].
+  Future<List<RoutineHistorySession>> _historyOf(
+    String userId,
+    List<Routine> routines,
+  ) async {
+    final results = await Future.wait(
+      routines.map((r) => repository.getRoutineStats(userId, r.id)),
+    );
+    return [
+      for (final result in results)
+        ...result.getOrElse((_) => const <RoutineHistorySession>[]),
+    ]..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
   }
 
   /// Ejercicios únicos de las rutinas, ordenados por nombre. Un fallo no

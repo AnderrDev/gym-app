@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/presentation/widgets/kinetic_button.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/edit_exercise_target_form.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Resultado del sheet de edición de targets de un ejercicio.
 class EditExerciseTargetResult {
@@ -40,13 +41,8 @@ class _EditExerciseTargetSheetState extends State<EditExerciseTargetSheet> {
   late int _reps = widget.exercise.targetReps;
   late int _rest = widget.exercise.restTimerSeconds;
   late final TextEditingController _weightController = TextEditingController(
-    text: _formatWeight(widget.exercise.targetWeight),
+    text: formatWeight(widget.exercise.targetWeight),
   );
-
-  static String _formatWeight(double w) {
-    if (w == w.roundToDouble()) return w.toStringAsFixed(0);
-    return w.toStringAsFixed(1);
-  }
 
   @override
   void dispose() {

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
@@ -268,6 +269,42 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
   }
 
+  Future<void> _onDiscardWorkout(RoutineDayActivePhase active) async {
+    final completed = active.setLogs.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Descartar este entrenamiento?'),
+        content: Text(
+          completed == 0
+              ? 'Se borrará la sesión y no quedará en tu historial.'
+              : 'Se borrarán la sesión y las $completed '
+                    '${completed == 1 ? 'serie registrada' : 'series registradas'}. '
+                    'No quedará en tu historial ni en tus estadísticas. '
+                    'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.colors.error,
+              foregroundColor: dialogContext.colors.onError,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(AppStrings.discard),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    context.read<ActiveWorkoutBloc>().add(
+      DiscardActiveWorkout(sessionId: active.session.id),
+    );
+  }
+
   Future<void> _showCoachingAndClose(List<CoachingAnalysis> coaching) async {
     if (coaching.isNotEmpty) {
       await AdaptiveSheet.show<void>(
@@ -324,7 +361,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 content: Text(
                   'Empezaste esta sesión el ${formatRoutineDayDateLabel(existing.sessionDate)}. '
                   'Al continuarla conserva esa fecha y las series guardadas. '
-                  'Finalízala antes de comenzar un entrenamiento nuevo de hoy.',
+                  'Finalízala o descártala (menú ⋮) antes de comenzar un entrenamiento nuevo de hoy.',
                 ),
                 actions: [
                   TextButton(
@@ -360,7 +397,11 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
               p.status != c.status || p.actionErrorNonce != c.actionErrorNonce,
           listener: (context, state) {
             if (!mounted) return;
-            if (_startRequested && state.status != ActiveWorkoutStatus.idle) {
+            // Mientras se crea la sesión la previa sigue visible con el botón
+            // cargando; el flag se suelta cuando hay respuesta.
+            if (_startRequested &&
+                state.status != ActiveWorkoutStatus.idle &&
+                !state.isStarting) {
               setState(() => _startRequested = false);
             }
             _setKeepScreenOn(state.status == ActiveWorkoutStatus.running);
@@ -370,6 +411,13 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
             }
             if (state.status == ActiveWorkoutStatus.finished) {
               unawaited(_showCoachingAndClose(state.finalCoaching));
+            }
+            if (state.status == ActiveWorkoutStatus.discarded) {
+              AppSnackBar.success(context, 'Entrenamiento descartado');
+              // Sin `true`: HOY lo leería como "finalizado" y tapaba este
+              // aviso con "¡Entrenamiento completado!". Al volver recarga el
+              // plan igualmente.
+              context.pop();
             }
           },
           builder: (context, activeState) {
@@ -381,25 +429,21 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                 if (activeState.status == ActiveWorkoutStatus.running ||
                     activeState.isStarting ||
                     activeState.isFinishing ||
+                    activeState.isDiscarding ||
                     activeState.status == ActiveWorkoutStatus.failure) {
                   return false;
                 }
                 return previous != current;
               },
               builder: (context, routineState) {
-                final phase =
-                    _startRequested &&
-                        activeState.status == ActiveWorkoutStatus.idle
-                    ? const RoutineDayLoadingPhase(
-                        message: 'Iniciando entrenamiento…',
-                      )
-                    : resolveRoutineDayPhase(
-                        routine: routineState,
-                        active: activeState,
-                        fallbackUserId: widget.userId,
-                        fallbackRoutineDayId: widget.routineDay.id,
-                        fallbackSessionDate: widget.sessionDate,
-                      );
+                final phase = resolveRoutineDayPhase(
+                  routine: routineState,
+                  active: activeState,
+                  fallbackUserId: widget.userId,
+                  fallbackRoutineDayId: widget.routineDay.id,
+                  fallbackSessionDate: widget.sessionDate,
+                  userStarting: _startRequested,
+                );
                 final session = activeState.session;
                 final isCompleted = session?.completedAt != null;
                 final totalVolume = activeState.setLogs.fold<double>(
@@ -427,6 +471,7 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
                   onSetAdded: _onSetAdded,
                   onSetRemoved: _onSetRemoved,
                   onFinishWorkout: _onFinishWorkout,
+                  onDiscardWorkout: _onDiscardWorkout,
                   onShowLastSessionDetails: _onShowLastSessionDetails,
                   onRetry: _retry,
                   isAdapting: activeState.isAdapting,

@@ -58,8 +58,7 @@ class ExerciseStatsChartSection extends StatelessWidget {
                   Text(
                     subtitle,
                     style: context.text.bodySmall?.copyWith(
-                      color: context.colors.textDisabled,
-                      fontSize: 10,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                 ],
@@ -74,15 +73,27 @@ class ExerciseStatsChartSection extends StatelessWidget {
           delta: series.delta,
           unit: unit,
           recordReached: series.actualIsRecord,
+          deltaCaption: 'VS SESIÓN ANT.',
+          formatter: formatter,
         ),
+        if (series.values.length >= 2) ...[
+          const SizedBox(height: Spacing.sm),
+          PeriodChangeLine(
+            since: series.firstDate!,
+            first: series.values.first,
+            last: series.actual,
+            unit: unit,
+            formatter: formatter,
+          ),
+        ],
         const SizedBox(height: 12),
         Container(
           height: 220,
           padding: const EdgeInsets.fromLTRB(10, 16, 20, 10),
           decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.3),
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: context.colors.surfaceHighlight),
+            border: Border.all(color: context.colors.divider),
           ),
           // Los datos sólo estaban en el tooltip táctil: el lector de
           // pantalla recibe un resumen en texto.

@@ -16,7 +16,7 @@ See `CLAUDE.md#Commands`. Local dev uses `.env` at the repo root (loaded by `flu
 - Seeds: `supabase/seed_mock_data.sql` and `supabase/assign_mock.sql` (idempotent).
 
 ## Edge Functions
-- Registered in `supabase.json`: `finalize_workout_session_v1`, `generate_coaching_v1`, `get_weekly_insights_v1` — all with `verify_jwt: true`.
+- Registered in `supabase.json`: `finalize_workout_session_v1`, `generate_coaching_v1`, `get_weekly_insights_v1`, `delete_account_v1` — all with `verify_jwt: true`.
 - Auth helper: `supabase/functions/_shared/auth.ts#requireUser(req)` validates the bearer token via `supabaseAdmin.auth.getUser`. Don't decode JWTs by hand. Don't loosen `verify_jwt` without a security review.
 
 ## Offline-first wiring

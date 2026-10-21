@@ -22,6 +22,7 @@ import 'package:gym_flutter/core/routes/app_router.dart';
 import 'package:gym_flutter/core/settings/presentation/settings_bloc.dart';
 import 'package:gym_flutter/core/theme/app_palette.dart';
 import 'package:gym_flutter/core/theme/app_theme.dart';
+import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/core/platform/capabilities.dart';
@@ -102,7 +103,10 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
     super.initState();
     _authBloc = di.sl<AuthBloc>()..add(AppStarted());
     _settingsBloc = di.sl<SettingsBloc>();
-    _appRouter = AppRouter(_authBloc);
+    _appRouter = AppRouter(
+      _authBloc,
+      passwordRecoveryEvents: di.sl<AuthRepository>().passwordRecoveryEvents,
+    );
   }
 
   @override

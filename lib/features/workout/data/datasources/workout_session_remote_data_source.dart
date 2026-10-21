@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:gym_flutter/core/error/exceptions.dart';
-import 'package:gym_flutter/features/workout/data/datasources/_edge_function_invoker.dart';
+import 'package:gym_flutter/core/network/edge_function_invoker.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
 import 'package:gym_flutter/features/workout/data/models/workout_session_model.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
@@ -115,6 +115,33 @@ class WorkoutSessionRemoteDataSource {
         .eq('session_id', sessionId)
         .eq('exercise_id', exerciseId)
         .eq('set_index', setIndex);
+  }
+
+  /// Borra una sesión ABIERTA del usuario con sus series
+  /// (`discard_workout_session_v1`). Idempotente: si ya no existe, no falla.
+  Future<void> discardWorkoutSession(String sessionId) async {
+    try {
+      await client.rpc<dynamic>(
+        'discard_workout_session_v1',
+        params: {'p_session_id': sessionId},
+      );
+    } on PostgrestException catch (e) {
+      switch (e.code) {
+        case '23514':
+          throw ValidationException(
+            'Este entrenamiento ya se finalizó y no se puede descartar.',
+          );
+        case 'P0002':
+          throw NotFoundException('No encontramos este entrenamiento.');
+        // La función aún no está desplegada en este proyecto.
+        case 'PGRST202':
+          throw ServerException(
+            'Descartar entrenamientos aún no está disponible. '
+            'Inténtalo más tarde.',
+          );
+      }
+      rethrow;
+    }
   }
 
   Future<WorkoutSessionModel?> getActiveSessionForUser(String userId) async {

@@ -69,12 +69,12 @@ class _ProfileSignOutButtonState extends State<ProfileSignOutButton> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: FilledButton.styleFrom(
                 backgroundColor: colors.error,
-                foregroundColor: colors.onPrimary,
+                foregroundColor: colors.onError,
               ),
               child: Text(
                 'CERRAR SESIÓN',
                 style: text.labelMedium?.copyWith(
-                  color: colors.onPrimary,
+                  color: colors.onError,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
                 ),

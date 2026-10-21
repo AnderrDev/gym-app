@@ -253,6 +253,9 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   }
 
   @override
+  Future<void> deleteCachedSession(String id) => _dao.deleteCachedSession(id);
+
+  @override
   Future<void> markSessionCompleted(String id, DateTime completedAt) {
     return _dao.markSessionCompleted(
       id,

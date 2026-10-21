@@ -68,11 +68,6 @@ class Capabilities {
     return Platform.isIOS || Platform.isMacOS;
   }
 
-  /// `BackdropFilter` con blur tiene costo alto en canvaskit. Los
-  /// widgets adaptive (`AdaptiveBlur`) lo evitan en web y usan un tint
-  /// sólido equivalente.
-  static bool get supportsCheapBlur => !kIsWeb;
-
   /// En mobile las modales subiendo desde abajo (`BottomSheet`) son
   /// idiomáticas. En web (browser) un `Dialog` centrado se siente más
   /// nativo y aprovecha mejor la ventana.

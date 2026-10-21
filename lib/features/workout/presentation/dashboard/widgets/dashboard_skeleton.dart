@@ -16,72 +16,79 @@ class DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // En ventanas bajas el esqueleto no cabe entero: se recorta en vez de
+    // desbordar (es decorativo, no hace falta poder desplazarlo).
     return AppSkeleton(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header strip
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.lg,
-              Spacing.md,
-              Spacing.lg,
-              Spacing.md,
-            ),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: context.colors.divider)),
-            ),
-            child: const Row(
-              children: [
-                AppSkeletonTile(width: 40, height: 40),
-                SizedBox(width: Spacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppSkeletonTile.line(width: 140, height: 16),
-                      SizedBox(height: 6),
-                      AppSkeletonTile.line(width: 90, height: 12),
-                    ],
-                  ),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header strip
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.lg,
+                Spacing.md,
+                Spacing.lg,
+                Spacing.md,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: context.colors.divider),
                 ),
-                SizedBox(width: Spacing.md),
-                AppSkeletonTile(width: 40, height: 40),
-              ],
+              ),
+              child: const Row(
+                children: [
+                  AppSkeletonTile(width: 40, height: 40),
+                  SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppSkeletonTile.line(width: 140, height: 16),
+                        SizedBox(height: 6),
+                        AppSkeletonTile.line(width: 90, height: 12),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: Spacing.md),
+                  AppSkeletonTile(width: 40, height: 40),
+                ],
+              ),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(
-              Spacing.lg,
-              Spacing.md,
-              Spacing.lg,
-              Spacing.xxl,
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                Spacing.lg,
+                Spacing.md,
+                Spacing.lg,
+                Spacing.xxl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _DayCardSkeleton(height: 64),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 64),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 96, isToday: true),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 64),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 64),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 64),
+                  SizedBox(height: 10),
+                  _DayCardSkeleton(height: 40, isRest: true),
+                  SizedBox(height: Spacing.xl),
+                  // Skeleton del tile "Resumen de la semana":
+                  // header label + 3 stats grandes + barra de progreso.
+                  _WeekSummarySkeleton(),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _DayCardSkeleton(height: 64),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 64),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 96, isToday: true),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 64),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 64),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 64),
-                SizedBox(height: 10),
-                _DayCardSkeleton(height: 40, isRest: true),
-                SizedBox(height: Spacing.xl),
-                // Skeleton del tile "Resumen de la semana":
-                // header label + 3 stats grandes + barra de progreso.
-                _WeekSummarySkeleton(),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

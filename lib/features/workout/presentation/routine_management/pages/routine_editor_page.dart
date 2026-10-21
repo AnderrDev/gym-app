@@ -430,11 +430,8 @@ class _ForkBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(Spacing.md),
         decoration: BoxDecoration(
-          color: context.colors.primary.withValues(alpha: 0.10),
+          color: context.colors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: context.colors.primary.withValues(alpha: 0.35),
-          ),
         ),
         child: Row(
           children: [
@@ -449,20 +446,17 @@ class _ForkBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'RUTINA AJENA',
-                    style: context.text.labelMedium?.copyWith(
-                      color: context.colors.primary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                      fontSize: 10,
+                    'Solo lectura',
+                    style: context.text.bodyMedium?.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'No puedes editarla. Crea tu copia para personalizarla.',
-                    style: context.text.labelMedium?.copyWith(
+                    'Crea tu copia para personalizarla.',
+                    style: context.text.bodySmall?.copyWith(
                       color: context.colors.textSecondary,
-                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -477,10 +471,8 @@ class _ForkBanner extends StatelessWidget {
                   alpha: 0.4,
                 ),
                 foregroundColor: context.colors.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.md,
-                  vertical: Spacing.sm,
-                ),
+                minimumSize: const Size(0, 44),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -491,9 +483,9 @@ class _ForkBanner extends StatelessWidget {
                       'CREAR MI COPIA',
                       style: context.text.labelMedium?.copyWith(
                         color: context.colors.onPrimary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        fontSize: 12,
                       ),
                     ),
             ),

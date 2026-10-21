@@ -5,16 +5,17 @@ import 'package:flutter/services.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_card_actions.dart';
 
-/// Card de rutina en el listado. Diseño "split":
-/// - Banda lateral de color (hash del nombre) como identidad visual.
-/// - Bloque central con nombre, stats y atribución.
-/// - Footer con CTA secundaria (DETALLES) y CTA primaria contextual
-///   (ACTIVAR / ACTIVA según `isActive`).
+/// Card de rutina en el listado:
+/// - Avatar con la inicial sobre el acento de la rutina (identidad visual).
+/// - Nombre y una línea de metadatos (ejercicios · autor · pública).
+/// - Footer: "Rutina activa" o las acciones (ACTIVAR / CREAR MI COPIA).
+/// Tocar la card abre el editor (o la vista previa si es ajena).
 class RoutineListCard extends StatelessWidget {
   const RoutineListCard({
     super.key,
@@ -48,74 +49,56 @@ class RoutineListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = RoutineColor.accentFor(routine.name);
-    final borderColor = isActive
-        ? accent.withValues(alpha: 0.6)
-        : context.colors.divider.withValues(alpha: 0.4);
+    final colors = context.colors;
+    final accent = RoutineColor.accentFor(context, routine.name);
+    final radius = BorderRadius.circular(Radii.xl);
 
     return Material(
-      color: Colors.transparent,
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(
+          color: isActive ? accent : colors.divider.withValues(alpha: 0.6),
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _openDetails(context),
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: context.colors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: borderColor, width: isActive ? 1.6 : 1),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.lg,
+            Spacing.lg,
+            Spacing.sm,
+            Spacing.md,
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Banda de identidad
-                Container(
-                  width: 6,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      bottomLeft: Radius.circular(24),
-                    ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  RoutineAvatar(name: routine.name, accent: accent),
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: _Title(routine: routine, isMine: isMine),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Spacing.lgPlus,
-                      Spacing.lg,
-                      Spacing.lgPlus,
-                      Spacing.md,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _Header(
-                          name: routine.name,
-                          isActive: isActive,
-                          accent: accent,
-                        ),
-                        const SizedBox(height: Spacing.md),
-                        _StatsRow(
-                          routine: routine,
-                          isMine: isMine,
-                          accent: accent,
-                        ),
-                        const SizedBox(height: Spacing.md),
-                        RoutineCardActions(
-                          isActive: isActive,
-                          accent: accent,
-                          onActivate: () => onActivate(routine.id),
-                          onFork: onFork == null
-                              ? null
-                              : () => onFork!(routine.id),
-                        ),
-                      ],
-                    ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.textSecondary,
                   ),
+                ],
+              ),
+              const SizedBox(height: Spacing.md),
+              Padding(
+                padding: const EdgeInsets.only(right: Spacing.sm),
+                child: RoutineCardActions(
+                  isActive: isActive,
+                  accent: accent,
+                  onActivate: () => onActivate(routine.id),
+                  onFork: onFork == null ? null : () => onFork!(routine.id),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -123,134 +106,95 @@ class RoutineListCard extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
+/// Cuadrado redondeado con la inicial de la rutina sobre su acento. Se
+/// reutiliza en el editor para que la rutina se reconozca entre pantallas.
+class RoutineAvatar extends StatelessWidget {
+  const RoutineAvatar({
+    super.key,
     required this.name,
-    required this.isActive,
     required this.accent,
+    this.size = 44,
   });
 
   final String name;
-  final bool isActive;
   final Color accent;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Text(
-            name.toUpperCase(),
-            style: context.text.headlineMedium?.copyWith(
-              fontSize: 16,
-              letterSpacing: 1.1,
-              fontWeight: FontWeight.w800,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+    final initial = name.trim().isEmpty
+        ? null
+        : name.trim().characters.first.toUpperCase();
+    return ExcludeSemantics(
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: RoutineColor.tint(context, accent),
+          borderRadius: BorderRadius.circular(Radii.md),
         ),
-        if (isActive)
-          Container(
-            margin: const EdgeInsets.only(left: Spacing.sm),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'ACTIVA',
-              style: context.text.labelMedium?.copyWith(
-                color: context.colors.background,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
+        child: initial == null
+            ? Icon(Icons.fitness_center_rounded, color: accent, size: 20)
+            : Text(
+                initial,
+                style: context.text.titleLarge?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                  fontSize: size * 0.42,
+                  height: 1,
+                ),
               ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
 
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({
-    required this.routine,
-    required this.isMine,
-    required this.accent,
-  });
+class _Title extends StatelessWidget {
+  const _Title({required this.routine, required this.isMine});
 
   final Routine routine;
   final bool isMine;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
+    final count = routine.exerciseCount;
     final author = isMine
         ? 'Mi rutina'
         : (routine.creatorName?.isNotEmpty == true
-              ? routine.creatorName!
+              ? 'Por ${routine.creatorName}'
               : 'Comunidad');
-    return Wrap(
-      spacing: Spacing.sm,
-      runSpacing: Spacing.xs,
+    final meta = [
+      count == 0
+          ? 'Sin ejercicios'
+          : '$count ${count == 1 ? 'ejercicio' : 'ejercicios'}',
+      author,
+      if (routine.isPublic && !isMine) 'Pública',
+    ].join(' · ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _StatChip(
-          icon: Icons.local_fire_department_rounded,
-          label: '${routine.exerciseCount} ejercicios',
-          accent: accent,
-        ),
-        _StatChip(
-          icon: isMine ? Icons.person_rounded : Icons.public_rounded,
-          label: author,
-          accent: accent,
-        ),
-        if (routine.isPublic && !isMine)
-          _StatChip(
-            icon: Icons.share_rounded,
-            label: 'Pública',
-            accent: accent,
+        Text(
+          routine.name,
+          style: context.text.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 17,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          meta,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.textSecondary,
+            fontSize: 13,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.accent,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: accent),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: context.colors.textPrimary.withValues(alpha: 0.85),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

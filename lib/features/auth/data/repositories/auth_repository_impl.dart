@@ -51,8 +51,14 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> signOut() {
     return guard(() async {
-      await remoteDataSource.signOut();
-      await localDataSource.clearCache();
+      // El SDK borra la sesión local antes de llamar al servidor, así que
+      // aunque la llamada falle (sin red, usuario ya eliminado) el usuario
+      // queda fuera: el usuario cacheado se limpia siempre.
+      try {
+        await remoteDataSource.signOut();
+      } finally {
+        await localDataSource.clearCache();
+      }
     });
   }
 
@@ -75,4 +81,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> sendPasswordResetEmail(String email) {
     return guard(() => remoteDataSource.sendPasswordResetEmail(email));
   }
+
+  @override
+  Future<Either<Failure, void>> updatePassword(String newPassword) {
+    return guard(() => remoteDataSource.updatePassword(newPassword));
+  }
+
+  @override
+  Stream<void> get passwordRecoveryEvents =>
+      remoteDataSource.passwordRecoveryEvents;
 }

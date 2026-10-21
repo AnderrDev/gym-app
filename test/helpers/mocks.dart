@@ -6,12 +6,17 @@ import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
+import 'package:gym_flutter/core/services/workout_draft_service.dart';
 import 'package:gym_flutter/core/sync/connectivity_service.dart';
 import 'package:gym_flutter/core/sync/outbox_repository.dart';
 import 'package:gym_flutter/core/sync/sync_worker.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
+import 'package:gym_flutter/features/auth/domain/usecases/sign_out.dart';
+import 'package:gym_flutter/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:gym_flutter/features/profile/domain/repositories/profile_repository.dart';
+import 'package:gym_flutter/features/profile/domain/usecases/delete_account.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
@@ -19,6 +24,17 @@ import 'package:gym_flutter/features/workout/domain/repositories/workout_reposit
 class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
+
+class MockProfileRemoteDataSource extends Mock
+    implements ProfileRemoteDataSource {}
+
+class MockDeleteAccount extends Mock implements DeleteAccount {}
+
+class MockSignOut extends Mock implements SignOut {}
+
+class MockLocalUserDataCleaner extends Mock implements LocalUserDataCleaner {}
+
+class MockWorkoutDraftService extends Mock implements WorkoutDraftService {}
 
 class MockWorkoutRepository extends Mock implements WorkoutRepository {}
 

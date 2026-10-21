@@ -19,6 +19,12 @@ class RoutineDayAppBar extends StatelessWidget {
   final int totalSets;
   final VoidCallback onClose;
   final VoidCallback? onFinish;
+
+  /// Si no es `null`, el app bar activo muestra un menú con "Descartar".
+  final VoidCallback? onDiscard;
+
+  /// Si no es `null`, el menú activo ofrece "Añadir ejercicio extra".
+  final VoidCallback? onAddExercise;
   final void Function(
     WorkoutSession session,
     List<SetLog> logs,
@@ -40,6 +46,8 @@ class RoutineDayAppBar extends StatelessWidget {
     this.completedSets = 0,
     this.totalSets = 0,
     this.onFinish,
+    this.onDiscard,
+    this.onAddExercise,
   });
 
   @override
@@ -67,6 +75,46 @@ class RoutineDayAppBar extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          if (onDiscard != null || onAddExercise != null)
+            PopupMenuButton<_ActiveMenuAction>(
+              tooltip: 'Más opciones',
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: context.colors.textPrimary,
+              ),
+              onSelected: (action) => switch (action) {
+                _ActiveMenuAction.add => onAddExercise?.call(),
+                _ActiveMenuAction.discard => onDiscard?.call(),
+              },
+              itemBuilder: (context) => [
+                if (onAddExercise != null)
+                  const PopupMenuItem(
+                    value: _ActiveMenuAction.add,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.add_rounded),
+                      title: Text('Añadir ejercicio extra'),
+                    ),
+                  ),
+                if (onDiscard != null)
+                  PopupMenuItem(
+                    value: _ActiveMenuAction.discard,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: context.colors.error,
+                      ),
+                      title: Text(
+                        'Descartar entrenamiento',
+                        style: TextStyle(color: context.colors.error),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(54),
           child: _ActiveBottomBar(
@@ -128,6 +176,8 @@ class RoutineDayAppBar extends StatelessWidget {
     );
   }
 }
+
+enum _ActiveMenuAction { add, discard }
 
 class _ActiveBottomBar extends StatelessWidget {
   const _ActiveBottomBar({
@@ -220,6 +270,7 @@ class _ActiveBottomBar extends StatelessWidget {
               const Spacer(),
               if (hasLastSession && onOpenHistory != null)
                 IconButton(
+                  tooltip: 'Ver la última sesión',
                   icon: Icon(
                     Icons.history_rounded,
                     color: context.colors.primary,
@@ -238,23 +289,21 @@ class _ActiveBottomBar extends StatelessWidget {
                   onPressed: onFinish,
                   style: TextButton.styleFrom(
                     foregroundColor: context.colors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    minimumSize: const Size(0, 30),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    minimumSize: const Size(0, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
                         color: context.colors.primary.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
                   child: Text(
-                    'FINALIZAR',
-                    style: context.text.labelMedium?.copyWith(
+                    'Finalizar',
+                    style: context.text.labelLarge?.copyWith(
                       color: context.colors.primary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
-                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),

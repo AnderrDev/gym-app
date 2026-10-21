@@ -6,9 +6,10 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Charts del bottom sheet de estadísticas por ejercicio. Tres charts:
-/// peso máximo, 1RM estimado, carga movida. Comparten:
+/// peso máximo, 1RM estimado y volumen. Comparten:
 /// - Eje Y con grid + labels con unidad.
 /// - Tooltip en tap mostrando fecha + valor exacto.
 /// - Dot resaltado cuando la sesión rompió récord histórico.
@@ -26,7 +27,7 @@ class ExerciseMaxWeightChart extends StatelessWidget {
       values: values,
       color: context.colors.primary,
       unit: 'kg',
-      valueFormatter: _intFormat,
+      valueFormatter: formatDecimal,
     );
   }
 }
@@ -64,15 +65,13 @@ class ExerciseVolumeChart extends StatelessWidget {
       sessions: reversed,
       values: values,
       color: context.colors.primary.withValues(alpha: 0.85),
-      unit: 'kg·reps',
-      valueFormatter: _intFormat,
+      unit: 'kg',
+      valueFormatter: formatVolume,
     );
   }
 }
 
-String _intFormat(double v) => v.toStringAsFixed(0);
-String _oneDecimalFormat(double v) =>
-    v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+String _oneDecimalFormat(double v) => formatDecimal(v);
 
 /// Implementación compartida: line chart con grid, eje Y con unidad,
 /// tooltip y PR-dots.
@@ -118,7 +117,7 @@ class _LineMetricChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: yRange == 0 ? null : yRange / 3,
           getDrawingHorizontalLine: (_) =>
-              FlLine(color: colors.surfaceHighlight, strokeWidth: 1),
+              FlLine(color: colors.divider, strokeWidth: 1),
         ),
         titlesData: _buildTitles(context, sessions, unit, valueFormatter),
         borderData: FlBorderData(show: false),
@@ -140,10 +139,10 @@ class _LineMetricChart extends StatelessWidget {
               },
               getDotPainter: (spot, xPercentage, bar, index) {
                 return FlDotCirclePainter(
-                  radius: 4,
+                  radius: 5,
                   color: context.colors.warning,
                   strokeWidth: 2,
-                  strokeColor: context.colors.background,
+                  strokeColor: context.colors.surface,
                 );
               },
             ),
@@ -201,9 +200,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               compactAxisNumber(value),
-              style: context.text.labelMedium?.copyWith(
+              style: context.text.labelSmall?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 10,
               ),
             ),
           );
@@ -223,9 +221,8 @@ FlTitlesData _buildTitles(
             padding: const EdgeInsets.only(top: Spacing.sm),
             child: Text(
               AppDateFormat.dayMonth(sessions[i].sessionDate),
-              style: context.text.labelMedium?.copyWith(
+              style: context.text.labelSmall?.copyWith(
                 color: colors.textSecondary,
-                fontSize: 10,
               ),
             ),
           );
@@ -247,7 +244,7 @@ LineTouchData _buildTooltip(
   return LineTouchData(
     handleBuiltInTouches: true,
     touchTooltipData: LineTouchTooltipData(
-      getTooltipColor: (_) => colors.surface,
+      getTooltipColor: (_) => colors.surfaceHighlight,
       tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       tooltipBorderRadius: const BorderRadius.all(Radius.circular(8)),
       getTooltipItems: (spots) {
@@ -264,9 +261,8 @@ LineTouchData _buildTooltip(
             children: [
               TextSpan(
                 text: '\n$date',
-                style: context.text.labelMedium?.copyWith(
+                style: context.text.labelSmall?.copyWith(
                   color: colors.textSecondary,
-                  fontSize: 10,
                 ),
               ),
             ],

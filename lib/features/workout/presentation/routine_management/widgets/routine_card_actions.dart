@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
 
-/// Footer del `RoutineListCard` con el botón ACTIVAR / ACTIVADA. El
-/// disabled state se usa cuando la rutina ya es la activa del usuario.
+/// Footer del `RoutineListCard`. La rutina activa muestra un estado
+/// ("Rutina activa"), no un botón deshabilitado; el resto ofrece ACTIVAR
+/// como acción tonal (no rellena: con varias cards en pantalla no debe
+/// competir con el FAB) y, si es ajena y pública, CREAR MI COPIA.
 class RoutineCardActions extends StatelessWidget {
   const RoutineCardActions({
     super.key,
@@ -24,70 +28,65 @@ class RoutineCardActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isActive ? accent.withValues(alpha: 0.15) : accent;
-    final fg = isActive ? accent : context.colors.background;
-    final label = isActive ? 'ACTIVADA' : 'ACTIVAR';
-    final icon = isActive
-        ? Icons.check_circle_rounded
-        : Icons.play_arrow_rounded;
+    // Va como `textStyle` del botón (sin color) para que el texto tome el
+    // `foregroundColor`; un `style` en el `Text` lo pisaría.
+    final labelStyle = context.text.labelLarge?.copyWith(
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.8,
+      fontSize: 13,
+    );
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(Radii.md),
+    );
+
+    if (isActive) {
+      return SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: accent, size: 20),
+            const SizedBox(width: Spacing.sm),
+            Text(
+              'Rutina activa',
+              style: context.text.bodyMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (onFork != null) ...[
           TextButton.icon(
             onPressed: onFork,
-            icon: Icon(
-              Icons.copy_all_rounded,
-              color: context.colors.textSecondary,
-              size: 16,
-            ),
-            label: Text(
-              'CREAR MI COPIA',
-              style: context.text.labelMedium?.copyWith(
-                color: context.colors.textSecondary,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-                fontSize: 11,
-              ),
-            ),
+            icon: const Icon(Icons.copy_all_rounded, size: 18),
+            label: const Text('CREAR MI COPIA'),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.md,
-                vertical: Spacing.sm,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: context.colors.divider.withValues(alpha: 0.6),
-                ),
-              ),
+              foregroundColor: context.colors.textSecondary,
+              textStyle: labelStyle,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+              shape: shape,
             ),
           ),
-          const SizedBox(width: Spacing.sm),
+          const SizedBox(width: Spacing.xs),
         ],
         TextButton.icon(
-          onPressed: isActive ? null : onActivate,
-          icon: Icon(icon, color: fg, size: 18),
-          label: Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-              fontSize: 12,
-            ),
-          ),
+          onPressed: onActivate,
+          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+          label: const Text('ACTIVAR'),
           style: TextButton.styleFrom(
-            backgroundColor: bg,
-            disabledBackgroundColor: bg,
-            disabledForegroundColor: fg,
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.lg,
-              vertical: Spacing.sm,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            foregroundColor: accent,
+            textStyle: labelStyle,
+            backgroundColor: RoutineColor.tint(context, accent),
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+            shape: shape,
           ),
         ),
       ],

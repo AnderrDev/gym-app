@@ -20,7 +20,7 @@ class AppSnackBar {
       context,
       message: message,
       background: colors.success,
-      foreground: colors.onPrimary,
+      foreground: colors.onSuccess,
       duration: duration,
       icon: Icons.check_circle_outline_rounded,
     );
@@ -36,7 +36,7 @@ class AppSnackBar {
       context,
       message: message,
       background: colors.error,
-      foreground: colors.onPrimary,
+      foreground: colors.onError,
       duration: duration,
       icon: Icons.error_outline_rounded,
     );
@@ -71,7 +71,7 @@ class AppSnackBar {
       context,
       message: message,
       background: colors.warning,
-      foreground: colors.onPrimary,
+      foreground: colors.onWarning,
       duration: duration,
       icon: Icons.warning_amber_rounded,
     );

@@ -124,7 +124,7 @@ class SetCircle extends StatelessWidget {
         ? context.colors.primary
         : context.colors.textSecondary;
     final textColor = filled
-        ? context.colors.onPrimary
+        ? context.colors.onSuccess
         : active
         ? context.colors.primary
         : context.colors.textSecondary;

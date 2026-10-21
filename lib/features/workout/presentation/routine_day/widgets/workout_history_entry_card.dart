@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/workout_performance_analyzer.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Tarjeta con el detalle de un ejercicio dentro del history sheet:
 /// header con nombre + resumen, filas por serie destacando la TOP set,
@@ -101,9 +102,6 @@ class _SetRow extends StatelessWidget {
   final SetLog log;
   final bool isTopSet;
 
-  String _fmtWeight(double w) =>
-      w % 1 == 0 ? w.toStringAsFixed(0) : w.toStringAsFixed(1);
-
   @override
   Widget build(BuildContext context) {
     final accent = isTopSet ? context.colors.warning : context.colors.primary;
@@ -125,14 +123,16 @@ class _SetRow extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: _fmtWeight(log.actualWeight),
+                    text: log.actualWeight == 0
+                        ? 'Peso corporal'
+                        : formatWeight(log.actualWeight),
                     style: context.text.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: context.colors.textPrimary,
                     ),
                   ),
                   TextSpan(
-                    text: ' kg × ',
+                    text: log.actualWeight == 0 ? ' × ' : ' kg × ',
                     style: context.text.labelMedium?.copyWith(
                       color: context.colors.textSecondary,
                     ),
@@ -167,7 +167,7 @@ class _SetRow extends StatelessWidget {
               child: Text(
                 'TOP',
                 style: context.text.labelMedium?.copyWith(
-                  color: context.colors.warning,
+                  color: context.colors.warningText,
                   fontWeight: FontWeight.w900,
                   fontSize: 9,
                   letterSpacing: 0.8,

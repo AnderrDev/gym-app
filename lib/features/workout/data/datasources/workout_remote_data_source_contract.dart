@@ -85,6 +85,9 @@ abstract class WorkoutRemoteDataSource {
 
   /// Busca cualquier sesión sin completar para el usuario (reanudación).
   Future<WorkoutSessionModel?> getActiveSessionForUser(String userId);
+
+  /// Borra una sesión abierta del usuario junto con sus series.
+  Future<void> discardWorkoutSession(String sessionId);
   Future<String?> getRoutineDayNameById(String routineDayId);
 
   Future<RoutineModel> saveRoutine(RoutineModel routine);

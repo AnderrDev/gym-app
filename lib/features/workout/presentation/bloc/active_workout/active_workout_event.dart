@@ -135,6 +135,16 @@ class FinishActiveWorkout extends ActiveWorkoutEvent {
   List<Object?> get props => [sessionId, coachingAnalysis];
 }
 
+/// Descarta la sesión abierta: la borra con sus series (sin historial).
+class DiscardActiveWorkout extends ActiveWorkoutEvent {
+  const DiscardActiveWorkout({required this.sessionId});
+
+  final String sessionId;
+
+  @override
+  List<Object?> get props => [sessionId];
+}
+
 /// Resetea el bloc al estado inicial (al salir de la pantalla).
 class ResetActiveWorkout extends ActiveWorkoutEvent {
   const ResetActiveWorkout();

@@ -8,7 +8,7 @@ import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card_coaching.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
-enum _HeaderMenuAction { target, insights, progress, howTo }
+enum _HeaderMenuAction { replace, target, insights, progress, howTo }
 
 class _HeaderMenuTile extends StatelessWidget {
   const _HeaderMenuTile({required this.icon, required this.label});
@@ -35,6 +35,8 @@ class _HeaderMenuTile extends StatelessWidget {
   }
 }
 
+String _load(double kg) => kg <= 0 ? 'peso corporal' : '${formatWeight(kg)} kg';
+
 class ExerciseCardHeader extends StatelessWidget {
   final Exercise exercise;
   final SetLog? lastPerformance;
@@ -52,6 +54,9 @@ class ExerciseCardHeader extends StatelessWidget {
   final VoidCallback onOpenInsights;
   final VoidCallback onOpenProgress;
   final VoidCallback onOpenHowTo;
+
+  /// Si no es `null`, el menú ofrece "Sustituir ejercicio" (sesión activa).
+  final VoidCallback? onReplace;
   final String Function(String) recommendationText;
   final bool showExpandChevron;
 
@@ -75,6 +80,7 @@ class ExerciseCardHeader extends StatelessWidget {
     required this.onOpenHowTo,
     required this.recommendationText,
     this.showExpandChevron = true,
+    this.onReplace,
   });
 
   @override
@@ -137,10 +143,9 @@ class ExerciseCardHeader extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'TARGET: ${formatWeight(exercise.targetWeight)}kg x ${exercise.targetReps}',
-                              style: context.text.labelMedium?.copyWith(
+                              'Objetivo: ${_load(exercise.targetWeight)} × ${exercise.targetReps}',
+                              style: context.text.labelSmall?.copyWith(
                                 color: context.colors.primary,
-                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -157,18 +162,14 @@ class ExerciseCardHeader extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.history_rounded,
-                                  size: 12,
-                                  color: context.colors.primary.withValues(
-                                    alpha: 0.7,
-                                  ),
+                                  size: 14,
+                                  color: context.colors.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Record: ${formatWeight(lastPerformance!.actualWeight)}kg x ${lastPerformance!.actualReps}',
+                                  'Última vez: ${_load(lastPerformance!.actualWeight)} × ${lastPerformance!.actualReps}',
                                   style: context.text.labelMedium?.copyWith(
-                                    color: context.colors.primary.withValues(
-                                      alpha: 0.8,
-                                    ),
+                                    color: context.colors.textSecondary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -199,7 +200,7 @@ class ExerciseCardHeader extends StatelessWidget {
                     color: context.colors.textSecondary,
                   ),
                 PopupMenuButton<_HeaderMenuAction>(
-                  tooltip: 'Más opciones',
+                  tooltip: 'Opciones del ejercicio',
                   icon: Icon(
                     Icons.more_vert_rounded,
                     color: context.colors.textSecondary,
@@ -208,6 +209,8 @@ class ExerciseCardHeader extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   onSelected: (action) {
                     switch (action) {
+                      case _HeaderMenuAction.replace:
+                        onReplace?.call();
                       case _HeaderMenuAction.target:
                         onOpenTargetEditor();
                       case _HeaderMenuAction.insights:
@@ -219,6 +222,15 @@ class ExerciseCardHeader extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => [
+                    if (onReplace != null)
+                      const PopupMenuItem(
+                        key: ValueKey('menu_replace'),
+                        value: _HeaderMenuAction.replace,
+                        child: _HeaderMenuTile(
+                          icon: Icons.swap_horiz_rounded,
+                          label: 'Sustituir ejercicio',
+                        ),
+                      ),
                     if (!readOnly)
                       const PopupMenuItem(
                         key: ValueKey('menu_target'),

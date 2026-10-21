@@ -59,6 +59,8 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         await _onAdaptExercise(event, emit);
       case FinishActiveWorkout():
         await _onFinish(event, emit);
+      case DiscardActiveWorkout():
+        await _onDiscard(event, emit);
       case ResetActiveWorkout():
         // Salir de la pantalla con la sesión abierta no la termina: la
         // notificación persistente sigue (sirve para volver). Sólo se quita
@@ -479,6 +481,52 @@ class ActiveWorkoutBloc extends Bloc<ActiveWorkoutEvent, ActiveWorkoutState> {
         ),
       );
     }
+  }
+
+  Future<void> _onDiscard(
+    DiscardActiveWorkout event,
+    Emitter<ActiveWorkoutState> emit,
+  ) async {
+    final current = state.session;
+    if (!state.isRunning ||
+        current == null ||
+        current.id != event.sessionId ||
+        current.completedAt != null) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: ActiveWorkoutStatus.discarding,
+        clearErrorMessage: true,
+      ),
+    );
+    final result = await repository.discardWorkoutSession(event.sessionId);
+    final failure = result.fold<Failure?>((f) => f, (_) => null);
+    if (failure != null) {
+      // Igual que al finalizar: la sesión sigue intacta, se vuelve al
+      // entreno con un aviso.
+      emit(
+        state.copyWith(
+          status: ActiveWorkoutStatus.running,
+          actionError: _describe('No se pudo descartar', failure),
+        ),
+      );
+      return;
+    }
+    await activeSessionService.clear();
+    try {
+      await draftService?.clear(current.userId, current.id);
+    } catch (e) {
+      AppLogger.instance.warning('No se pudieron limpiar los borradores: $e');
+    }
+    await notifier.onEnded();
+    emit(
+      state.copyWith(
+        status: ActiveWorkoutStatus.discarded,
+        setLogs: const [],
+        setDrafts: const [],
+      ),
+    );
   }
 
   /// Mensaje para el usuario: los `Failure` ya traen texto legible; otras

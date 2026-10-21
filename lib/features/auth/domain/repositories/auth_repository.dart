@@ -17,6 +17,12 @@ abstract class AuthRepository {
   /// no garantiza que haya cuenta — solo que la petición fue aceptada.
   Future<Either<Failure, void>> sendPasswordResetEmail(String email);
 
+  /// Fija una contraseña nueva para el usuario de la sesión actual.
+  Future<Either<Failure, void>> updatePassword(String newPassword);
+
+  /// Emite cuando el usuario llega desde el enlace de recuperación.
+  Stream<void> get passwordRecoveryEvents;
+
   /// Emits `true` when an authenticated session is active, `false` otherwise.
   /// Includes the initial restored-from-storage session, so subscribers get
   /// the bootstrap state without polling.

@@ -49,6 +49,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
     required this.onShowLastSessionDetails,
     required this.onRetry,
     this.isAdapting = false,
+    this.onDiscardWorkout,
     this.onAddExercise,
     this.onReplaceExercise,
   });
@@ -77,6 +78,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
   onShowLastSessionDetails;
   final VoidCallback onRetry;
   final bool isAdapting;
+  final void Function(RoutineDayActivePhase active)? onDiscardWorkout;
   final VoidCallback? onAddExercise;
   final ValueChanged<Exercise>? onReplaceExercise;
 
@@ -136,6 +138,16 @@ class RoutineDayViewScaffold extends StatelessWidget {
                   onFinishWorkout(phase as RoutineDayActivePhase);
                 }
               : null,
+          onAddExercise: isActive && !effectiveReadOnly && !isAdapting
+              ? onAddExercise
+              : null,
+          onDiscard:
+              isActive &&
+                  !effectiveReadOnly &&
+                  !isAdapting &&
+                  onDiscardWorkout != null
+              ? () => onDiscardWorkout!(phase as RoutineDayActivePhase)
+              : null,
         ),
         ..._buildContentSlivers(context),
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -169,6 +181,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
       final prestart = phase as RoutineDayPrestartPhase;
       return _PrestartBottomBar(
         locked: prestart.hasAnotherActiveSession,
+        isStarting: prestart.isStarting,
         onStartWorkout: onStartWorkout,
       );
     }
@@ -196,6 +209,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
             exercises: current.exercises,
             recentSessions: current.recentSessions,
             recentSessionsLogs: current.recentSessionsLogs,
+            lastPerformances: current.lastPerformances,
             hasAnotherActiveSession: current.hasAnotherActiveSession,
             anotherActiveSessionDayName: current.anotherActiveSessionDayName,
             onOpenLastSession: onShowLastSessionDetails,
@@ -243,6 +257,7 @@ class RoutineDayViewScaffold extends StatelessWidget {
             isAdapting: isAdapting,
             onAddExercise: onAddExercise,
             onReplaceExercise: onReplaceExercise,
+            onQuickSetUndone: onSkipRest,
             onSetAdded: (log) {
               onSetAdded(log);
               HapticFeedback.selectionClick();
@@ -283,10 +298,12 @@ class RoutineDayViewScaffold extends StatelessWidget {
 class _PrestartBottomBar extends StatelessWidget {
   const _PrestartBottomBar({
     required this.locked,
+    required this.isStarting,
     required this.onStartWorkout,
   });
 
   final bool locked;
+  final bool isStarting;
   final VoidCallback onStartWorkout;
 
   @override
@@ -319,7 +336,9 @@ class _PrestartBottomBar extends StatelessWidget {
                 icon: locked
                     ? Icons.lock_outline_rounded
                     : Icons.play_arrow_rounded,
-                onPressed: locked ? null : onStartWorkout,
+                isLoading: isStarting,
+                loadingLabel: 'Iniciando entrenamiento…',
+                onPressed: locked || isStarting ? null : onStartWorkout,
               ),
             ),
           ),

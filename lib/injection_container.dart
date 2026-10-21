@@ -1,4 +1,7 @@
 import 'package:gym_flutter/core/services/workout_draft_service.dart';
+import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
+import 'package:gym_flutter/features/profile/domain/usecases/delete_account.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_session_detail.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/adapt_session_exercise.dart';
 import 'package:gym_flutter/features/workout/data/datasources/session_exercise_remote_data_source.dart';
@@ -77,11 +80,16 @@ import 'features/auth/domain/usecases/request_password_reset.dart';
 import 'features/auth/domain/usecases/sign_in_with_email.dart';
 import 'features/auth/domain/usecases/sign_out.dart';
 import 'features/auth/domain/usecases/sign_up_with_email.dart';
+import 'package:gym_flutter/features/auth/domain/usecases/update_password.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  // Primero (y antes de cualquier `await`): el datasource de auth se
+  // instancia abajo nada más registrarse y necesita el cliente.
+  sl.registerLazySingleton(() => Supabase.instance.client);
+
   // ── AUTH ──────────────────────────────────────────────────────────────────
   sl.registerFactory(
     () => AuthBloc.fromRepository(
@@ -99,6 +107,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
   sl.registerLazySingleton(() => RequestPasswordReset(sl()));
+  sl.registerLazySingleton(() => UpdatePassword(sl()));
 
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
@@ -107,12 +116,26 @@ Future<void> init() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(client: sl()),
   );
+  // Instancia eager: se suscribe a `passwordRecovery` en su constructor. En
+  // arranque en frío desde el enlace de recuperación, `supabase_flutter`
+  // canjea el code mientras seguimos inicializando; si esperáramos a que
+  // `AppRouter` lo pidiera, el evento podría quedar tapado por otro posterior
+  // en `onAuthStateChange` y se perdería la navegación a `/reset-password`.
+  sl<AuthRemoteDataSource>();
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(sharedPreferences: sl()),
   );
 
   // ── PROFILE ───────────────────────────────────────────────────────────────
-  sl.registerFactory(() => ProfileBloc(repository: sl()));
+  sl.registerFactory(
+    () => ProfileBloc(
+      repository: sl(),
+      deleteAccount: sl(),
+      localDataCleaner: sl(),
+      signOut: sl(),
+    ),
+  );
+  sl.registerLazySingleton(() => DeleteAccount(sl()));
   sl.registerLazySingleton<ProfileRepository>(
     () => ProfileRepositoryImpl(remote: sl()),
   );
@@ -130,6 +153,7 @@ Future<void> init() async {
       getAssignedRoutines: sl(),
       getWeeklyPlan: sl(),
       repository: sl(),
+      preferences: sl(),
     ),
   );
 
@@ -193,6 +217,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateExerciseTarget(sl()));
   sl.registerLazySingleton(() => GetExercisesCatalog(sl()));
   sl.registerLazySingleton(() => GetSessionExercises(sl()));
+  sl.registerLazySingleton(() => GetSessionDetail(sl()));
   sl.registerLazySingleton(() => AdaptSessionExercise(sl()));
   sl.registerLazySingleton(() => GetExerciseDetail(sl()));
 
@@ -310,9 +335,20 @@ Future<void> init() async {
   // UUID generator. Reusado por Phase 1+ (sync queue, optimistic ids, etc.).
   sl.registerLazySingleton<Uuid>(() => const Uuid());
 
-  sl.registerLazySingleton(() => Supabase.instance.client);
   sl.registerLazySingleton(() => ActiveSessionService(sl()));
   sl.registerLazySingleton(() => WorkoutDraftService(sl()));
+  sl.registerLazySingleton(
+    () => LocalUserDataCleaner(
+      activeSessionService: sl(),
+      draftService: sl(),
+      outbox: sl.isRegistered<OutboxRepository>()
+          ? sl<OutboxRepository>()
+          : null,
+      localDatabase: sl.isRegistered<LocalDatabase>()
+          ? sl<LocalDatabase>()
+          : null,
+    ),
+  );
   sl.registerLazySingleton(() => RoutineAssignmentBus());
   sl.registerLazySingleton(() => ShellTabNotifier());
   sl.registerLazySingleton<Clock>(() => const SystemClock());

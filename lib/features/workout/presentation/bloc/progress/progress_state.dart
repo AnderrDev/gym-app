@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 
 /// Estados del hub `/progress`.
@@ -37,7 +38,12 @@ class ProgressReady extends ProgressState {
     this.insights,
     this.insightsError,
     this.exercises = const [],
+    this.history = const [],
   });
+
+  /// Sesiones cerradas de todas las rutinas (más reciente primero), para el
+  /// histórico de semanas. Best-effort: vacío si falla la carga.
+  final List<RoutineHistorySession> history;
 
   /// Ejercicios de las rutinas asignadas (sin repetir), para abrir su
   /// progreso desde esta pestaña. Best-effort: vacío si falla la carga.
@@ -60,6 +66,7 @@ class ProgressReady extends ProgressState {
     insights,
     insightsError,
     exercises,
+    history,
   ];
 }
 

@@ -115,7 +115,7 @@ void main() {
   ) async {
     await tester.pumpWidget(createWidgetUnderTest());
     expect(find.text('Press Banca'), findsOneWidget);
-    expect(find.textContaining('TARGET: 60kg x 10'), findsOneWidget);
+    expect(find.textContaining('Objetivo: 60 kg × 10'), findsOneWidget);
     expect(find.text('0/3'), findsOneWidget);
   });
 
@@ -218,14 +218,14 @@ void main() {
         '62.5',
       );
       await tester.pump();
-      expect(find.text('+2.5 kg sobre el objetivo'), findsOneWidget);
+      expect(find.text('+2,5 kg sobre el objetivo'), findsOneWidget);
       await confirm(tester);
 
       expect(captured, isNotNull);
       expect(captured!.actualWeight, 62.5);
       expect(captured!.actualReps, 10);
       expect(captured!.setIndex, 1);
-      expect(find.text('62.5 kg × 10 reps'), findsOneWidget);
+      expect(find.text('62,5 kg × 10 reps'), findsOneWidget);
       expect(find.text('COMPLETAR SERIE 2'), findsOneWidget);
 
       // Drenar el timer del live advice (8s).
@@ -246,7 +246,7 @@ void main() {
       expect(find.text('COMPLETAR SERIE 1'), findsOneWidget);
       expect(find.text('65.5 kg × 8 reps'), findsNothing);
       await openNextSet(tester);
-      expect(fieldText(tester, 'complete_set_weight'), '65.5');
+      expect(fieldText(tester, 'complete_set_weight'), '65,5');
       expect(fieldText(tester, 'complete_set_reps'), '8');
     });
 
@@ -345,7 +345,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest(lastPerformance: lastPerf));
     await tester.pump();
 
-    expect(find.textContaining('Record: 70kg x 8'), findsOneWidget);
+    expect(find.textContaining('Última vez: 70 kg × 8'), findsOneWidget);
   });
 
   testWidgets('abre el bottom sheet de objetivo remoto', (tester) async {

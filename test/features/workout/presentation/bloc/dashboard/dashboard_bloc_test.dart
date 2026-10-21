@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:gym_flutter/core/settings/user_preferences_service.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
@@ -12,6 +13,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboa
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_state.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../../helpers/mocks.dart';
 
@@ -345,6 +347,97 @@ void main() {
             .having((s) => s.status, 'status', DashboardStatus.failure)
             .having((s) => s.errorMessage, 'errorMessage', 'week down'),
       ],
+    );
+  });
+
+  group('rutina recordada', () {
+    late UserPreferencesService prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = UserPreferencesService(await SharedPreferences.getInstance());
+      when(
+        () => getWeeklyPlan(
+          userId: any(named: 'userId'),
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      ).thenAnswer((_) async => const Right(<RoutineDay>[]));
+      when(
+        () => repository.getWeeklyInsights(
+          routineId: any(named: 'routineId'),
+          weekStart: any(named: 'weekStart'),
+        ),
+      ).thenAnswer((_) async => const Left(ServerFailure('nope')));
+      when(
+        () => getAssignedRoutines(any()),
+      ).thenAnswer((_) async => const Right([routineA, routineB]));
+    });
+
+    DashboardBloc buildWithPrefs() => DashboardBloc(
+      getAssignedRoutines: getAssignedRoutines,
+      getWeeklyPlan: getWeeklyPlan,
+      repository: repository,
+      preferences: prefs,
+    );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'con varias rutinas carga la última elegida sin pasar por el selector',
+      build: () {
+        prefs.setLastRoutineId(userId, routineB.id);
+        return buildWithPrefs();
+      },
+      act: (b) => b.add(const LoadAssignedRoutines(userId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.selectedRoutine, routineB);
+        verify(
+          () => getWeeklyPlan(
+            userId: userId,
+            routineId: routineB.id,
+            weekStart: any(named: 'weekStart'),
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'sin preferencia muestra el selector (no carga ningún plan)',
+      build: buildWithPrefs,
+      act: (b) => b.add(const LoadAssignedRoutines(userId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) {
+        expect(b.state.status, DashboardStatus.ready);
+        expect(b.state.selectedRoutine, isNull);
+        verifyNever(
+          () => getWeeklyPlan(
+            userId: any(named: 'userId'),
+            routineId: any(named: 'routineId'),
+            weekStart: any(named: 'weekStart'),
+          ),
+        );
+      },
+    );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'SelectRoutine guarda la elección',
+      build: buildWithPrefs,
+      act: (b) => b.add(
+        SelectRoutine(userId: userId, routine: routineA, weekStart: monday),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (_) => expect(prefs.getLastRoutineId(userId), routineA.id),
+    );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'una rutina recordada que ya no está asignada se ignora',
+      build: () {
+        prefs.setLastRoutineId(userId, 'borrada');
+        return buildWithPrefs();
+      },
+      act: (b) => b.add(const LoadAssignedRoutines(userId)),
+      wait: const Duration(milliseconds: 50),
+      verify: (b) => expect(b.state.selectedRoutine, isNull),
     );
   });
 }

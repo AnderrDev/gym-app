@@ -1,6 +1,7 @@
 // ignore_for_file: must_be_immutable
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_flutter/core/config/deep_links.dart';
 import 'package:gym_flutter/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -74,13 +75,23 @@ void main() {
   late AuthRemoteDataSourceImpl dataSource;
   late MockSupabaseClient mockSupabaseClient;
   late MockGoTrueClient mockGoTrueClient;
+  late StreamController<AuthState> authEvents;
 
   setUp(() {
     mockSupabaseClient = MockSupabaseClient();
     mockGoTrueClient = MockGoTrueClient();
     mockSupabaseClient.setAuth(mockGoTrueClient);
+    authEvents = StreamController<AuthState>.broadcast();
+    when(
+      () => mockGoTrueClient.onAuthStateChange,
+    ).thenAnswer((_) => authEvents.stream);
     dataSource = AuthRemoteDataSourceImpl(client: mockSupabaseClient);
   });
+
+  tearDown(() => authEvents.close());
+
+  Session session() =>
+      Session(accessToken: 'token', tokenType: 'bearer', user: MockUser());
 
   const tEmail = 'test@example.com';
   const tPassword = 'password';
@@ -129,5 +140,78 @@ void main() {
       final result = await dataSource.getCurrentUser();
       expect(result, isNull);
     });
+  });
+
+  group('sendPasswordResetEmail', () {
+    test('en móvil usa el deep link propio como redirectTo', () async {
+      when(
+        () => mockGoTrueClient.resetPasswordForEmail(
+          any(),
+          redirectTo: any(named: 'redirectTo'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await dataSource.sendPasswordResetEmail(tEmail);
+
+      verify(
+        () => mockGoTrueClient.resetPasswordForEmail(
+          tEmail,
+          redirectTo: DeepLinks.resetPassword,
+        ),
+      ).called(1);
+      expect(
+        DeepLinks.resetPassword,
+        'com.gymtracker.gymflutter://reset-password',
+      );
+    });
+  });
+
+  group('authStateChanges', () {
+    test('passwordRecovery con sesión cuenta como autenticado', () async {
+      final emitted = <bool>[];
+      final sub = dataSource.authStateChanges.listen(emitted.add);
+
+      authEvents.add(const AuthState(AuthChangeEvent.initialSession, null));
+      authEvents.add(AuthState(AuthChangeEvent.passwordRecovery, session()));
+      await pumpEventQueue();
+
+      expect(emitted, [false, true]);
+      await sub.cancel();
+    });
+  });
+
+  group('passwordRecoveryEvents', () {
+    test('entrega el recovery emitido antes de que nadie escuche aunque '
+        'después llegue otro evento', () async {
+      // Arranque en frío: Supabase canjea el code y emite `passwordRecovery`
+      // antes de que exista `AppRouter`; luego `recoverSession()` refresca el
+      // token. El BehaviorSubject del SDK solo repetiría `tokenRefreshed`.
+      authEvents.add(AuthState(AuthChangeEvent.passwordRecovery, session()));
+      authEvents.add(AuthState(AuthChangeEvent.tokenRefreshed, session()));
+      await pumpEventQueue();
+
+      var count = 0;
+      final sub = dataSource.passwordRecoveryEvents.listen((_) => count++);
+      await pumpEventQueue();
+
+      expect(count, 1);
+      await sub.cancel();
+    });
+
+    test(
+      'con la app abierta emite en caliente e ignora otros eventos',
+      () async {
+        var count = 0;
+        final sub = dataSource.passwordRecoveryEvents.listen((_) => count++);
+        await pumpEventQueue();
+
+        authEvents.add(AuthState(AuthChangeEvent.signedIn, session()));
+        authEvents.add(AuthState(AuthChangeEvent.passwordRecovery, session()));
+        await pumpEventQueue();
+
+        expect(count, 1);
+        await sub.cancel();
+      },
+    );
   });
 }

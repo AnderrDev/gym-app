@@ -10,6 +10,7 @@ class UserPreferencesService {
   final SharedPreferences _prefs;
 
   static const _kThemeMode = 'app.theme_mode';
+  static const _kLastRoutinePrefix = 'dashboard.last_routine.';
 
   /// Lee el `ThemeMode` persistido. Default `ThemeMode.system` cuando no hay
   /// preferencia almacenada (primera vez, o tras logout limpio).
@@ -23,6 +24,15 @@ class UserPreferencesService {
   /// arriba.
   Future<void> setThemeMode(ThemeMode mode) =>
       _prefs.setString(_kThemeMode, _encodeThemeMode(mode));
+
+  /// Última rutina elegida en HOY por [userId] (con varias asignadas), para
+  /// no pedir que se elija otra vez en cada arranque. Por usuario porque el
+  /// dispositivo puede compartirse entre cuentas.
+  String? getLastRoutineId(String userId) =>
+      _prefs.getString('$_kLastRoutinePrefix$userId');
+
+  Future<void> setLastRoutineId(String userId, String routineId) =>
+      _prefs.setString('$_kLastRoutinePrefix$userId', routineId);
 
   static String _encodeThemeMode(ThemeMode mode) {
     switch (mode) {

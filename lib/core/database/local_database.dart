@@ -78,4 +78,24 @@ class LocalDatabase extends _$LocalDatabase {
     final epochMs = int.parse(row.value);
     return DateTime.fromMillisecondsSinceEpoch(epochMs, isUtc: true);
   }
+
+  /// Borra todo el espejo local de datos del usuario (cachés SWR, sesiones y
+  /// series escribibles). NO toca el outbox — eso es responsabilidad de
+  /// `OutboxRepository.purgeAll` — ni `app_meta`, que es bookkeeping del
+  /// esquema y debe sobrevivir para que `ping()` siga funcionando.
+  ///
+  /// Se usa tras eliminar la cuenta: la caché es de un solo usuario por
+  /// dispositivo y no debe quedar nada del usuario borrado.
+  Future<void> wipeCachedUserData() {
+    return transaction(() async {
+      await delete(cachedSetLogs).go();
+      await delete(cachedWorkoutSessions).go();
+      await delete(cachedRoutineExercises).go();
+      await delete(cachedRoutineDays).go();
+      await delete(cachedExercises).go();
+      await delete(cachedLastPerformances).go();
+      await delete(cachedAssignedRoutines).go();
+      await delete(cachedWeeklyInsights).go();
+    });
+  }
 }

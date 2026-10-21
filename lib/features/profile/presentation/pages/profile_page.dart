@@ -11,6 +11,7 @@ import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:gym_flutter/features/profile/presentation/widgets/profile_delete_account_section.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_edit_name_sheet.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gym_flutter/features/profile/presentation/widgets/profile_info_card.dart';
@@ -21,7 +22,8 @@ import 'package:gym_flutter/injection_container.dart';
 /// Pestaña "PERFIL".
 ///
 /// Renderiza info del user autenticado (consumiendo `AuthBloc`) y permite
-/// editar el `full_name` vía `ProfileBloc` + bottom sheet. El resto de
+/// editar el `full_name` vía `ProfileBloc` + bottom sheet. Al final, la
+/// zona de peligro permite eliminar la cuenta. El resto de
 /// preferencias (idioma, unidades, theme) sigue como placeholder hasta que
 /// cada feature aterrice.
 class ProfilePage extends StatelessWidget {
@@ -145,6 +147,10 @@ class _ProfileContent extends StatelessWidget {
         const ProfileSectionTitle('SESIÓN'),
         const SizedBox(height: Spacing.sm),
         const ProfileSignOutButton(),
+        const SizedBox(height: Spacing.xxl),
+        const ProfileSectionTitle('ZONA DE PELIGRO'),
+        const SizedBox(height: Spacing.sm),
+        ProfileDeleteAccountSection(userId: user.id),
       ],
     );
   }

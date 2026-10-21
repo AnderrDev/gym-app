@@ -176,7 +176,12 @@ class TargetWeightField extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 isDense: true,
+                // El tema define enabled/focused/disabledBorder, que tienen
+                // prioridad sobre `border`: sin anularlos sale un marco doble.
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
                 suffixText: AppStrings.kg,
                 suffixStyle: context.text.labelMedium?.copyWith(
                   color: context.colors.textSecondary,

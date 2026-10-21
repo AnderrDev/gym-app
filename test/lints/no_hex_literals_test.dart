@@ -8,11 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// Garantía mecánica de que ningún archivo bajo `lib/features/` introduce
 /// un color hex literal ni un color estático de Material (`Colors.amber`,
 /// `Colors.black`, etc.). La paleta vive en `core/theme/app_palette.dart`
-/// (`context.colors.*`, theme-aware) y `core/theme/app_colors.dart`
-/// (`AppColors.*`, brand-stable). Los features deben consumir siempre esos
+/// (`context.colors.*`, theme-aware). Los features deben consumir siempre esos
 /// tokens — un `Colors.*` estático no se adapta a dark mode.
 ///
-/// Si este test rompe: añadí el color faltante a `AppPalette`/`AppColors` y
+/// Si este test rompe: añadí el color faltante a `AppPalette` y
 /// reemplazá el literal por el token. Nunca añadas excepciones aquí.
 /// `Colors.transparent` está exento — es brightness-agnostic por definición.
 void main() {
@@ -47,7 +46,7 @@ void main() {
       isEmpty,
       reason:
           'Se encontraron literales de color en lib/features/. Reemplazá '
-          'por context.colors.* / AppColors.* o agregá un token nuevo:\n'
+          'por context.colors.* o agregá un token nuevo:\n'
           '${offenders.join('\n')}',
     );
   });

@@ -11,6 +11,10 @@
     {
       "slug": "get_weekly_insights_v1",
       "verify_jwt": true
+    },
+    {
+      "slug": "delete_account_v1",
+      "verify_jwt": true
     }
   ]
 }

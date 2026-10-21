@@ -97,6 +97,11 @@ Hallazgos remotos confirmados:
 - En remoto, `routine_exercises` incluye `rest_timer_seconds`.
 - En remoto, `workout_sessions` incluye `completed_at` y `coaching_analysis`.
 
+Auth → URL Configuration → Redirect URLs (configuracion manual en el dashboard de Supabase):
+- `<origen web>/reset-password` (p. ej. el dominio de Firebase Hosting y `http://localhost:<puerto>/reset-password` en dev).
+- `com.gymtracker.gymflutter://reset-password` (deep link de la app movil; constante `DeepLinks.resetPassword`).
+- Si falta alguna, Supabase usa la Site URL y el enlace de recuperacion falla (PKCE: el code verifier solo existe en el dispositivo/navegador que lo pidio).
+
 ## 6) Avances Comprobados
 Hecho:
 - Autenticacion con Supabase y cache local de usuario (`auth_local_data_source.dart`).

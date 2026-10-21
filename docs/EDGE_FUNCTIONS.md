@@ -11,6 +11,7 @@ Todas las functions invocan `enforceRateLimit` (`supabase/functions/_shared/rate
 | `finalize_workout_session_v1` | 30 |
 | `generate_coaching_v1` | 30 |
 | `get_weekly_insights_v1` | 60 |
+| `delete_account_v1` | 5 |
 
 Cuando el usuario supera el límite la function devuelve `429 RATE_LIMIT_EXCEEDED` con `error.reset_at` indicando cuándo termina la ventana. Si la RPC `enforce_rate_limit` falla por motivos de plataforma, se hace *fail open* (la llamada procede) y el error queda logueado como `RATE_LIMIT_RPC_ERROR`.
 
@@ -93,10 +94,46 @@ Response:
 - `data.volume_trend_percent`
 - `data.personal_records`
 
+## 4) delete_account_v1
+
+Objetivo:
+- Eliminar la cuenta del usuario autenticado (App Store 5.1.1(v)).
+
+Request (POST):
+- `confirm` (string, requerido): exactamente `"ELIMINAR"`.
+
+Comportamiento:
+- Requiere JWT válido (`verify_jwt=true`) + `requireUser`.
+- Sin `confirm` correcto → `400 CONFIRMATION_REQUIRED` (no borra nada).
+- Llama con service_role a la RPC `delete_account_data_v1(p_user_id)` (sólo
+  ejecutable por service_role), que en una transacción borra series, sesiones,
+  asignación, rutinas privadas (días + ejercicios), rate limits y perfil, y
+  **anonimiza** (`creator_id = NULL`) las rutinas públicas del usuario y las
+  privadas que use otro usuario. Una rutina sin dueño no la puede editar nadie;
+  la app la muestra como "Comunidad".
+- Después borra el usuario con `auth.admin.deleteUser`. Si falla, repite la
+  RPC (idempotente) y reintenta una vez.
+
+Response:
+- `success`
+- `code` (`ACCOUNT_DELETED`)
+- `data.user_id`
+- `data.deleted` (conteos por tabla)
+
+Errores: `INVALID_JSON` 400, `CONFIRMATION_REQUIRED` 400, `UNAUTHORIZED` 401,
+`METHOD_NOT_ALLOWED` 405, `RATE_LIMIT_EXCEEDED` 429,
+`DELETE_ACCOUNT_DATA_ERROR` 500, `DELETE_AUTH_USER_ERROR` 500. Detalle en
+`supabase/functions/delete_account_v1/README.md`.
+
+Cliente: `ProfileRemoteDataSource.deleteAccount` (feature `profile`). Tras el
+éxito la app purga el outbox, la caché drift, la sesión activa y los borradores
+locales y cierra sesión en local.
+
 ## Estados remotos (verificados)
 - `finalize_workout_session_v1`: ACTIVE (version 3)
 - `generate_coaching_v1`: ACTIVE (version 2)
 - `get_weekly_insights_v1`: ACTIVE (version 1)
+- `delete_account_v1`: pendiente de desplegar (requiere antes la migración `20261020130000_delete_account.sql`)
 
 ## Integración Flutter actual
 - `lib/features/workout/data/datasources/workout_remote_data_source.dart`

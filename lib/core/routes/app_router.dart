@@ -7,6 +7,7 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import 'package:gym_flutter/features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import '../../features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
@@ -58,12 +59,24 @@ class AppRouter {
     debugLabel: 'shell-profile',
   );
 
-  AppRouter(this.authBloc);
+  AppRouter(this.authBloc, {Stream<void>? passwordRecoveryEvents}) {
+    // El enlace de recuperación ya aterriza en `/reset-password` en web; en
+    // móvil llega como deep link (`DeepLinks.resetPassword`), lo canjea
+    // `supabase_flutter` y solo nos enteramos por este evento. Si se emitió
+    // antes de construir el router (arranque en frío), el stream lo entrega
+    // al suscribirnos.
+    _recoverySubscription = passwordRecoveryEvents?.listen(
+      (_) => router.go(AppRoutes.resetPassword),
+    );
+  }
 
-  /// Cancela la suscripción interna al `authBloc.stream`. Llamar desde
-  /// `dispose()` del widget que crea este router.
+  StreamSubscription<void>? _recoverySubscription;
+
+  /// Cancela las suscripciones internas (`authBloc.stream` y eventos de
+  /// recuperación). Llamar desde `dispose()` del widget que crea este router.
   void dispose() {
     _refreshListenable.dispose();
+    _recoverySubscription?.cancel();
   }
 
   late final GoRouter router = GoRouter(
@@ -83,6 +96,10 @@ class AppRouter {
         // Wait until auth state is determined
         return null;
       }
+
+      // Pública en ambos sentidos: con la sesión del enlace muestra el
+      // formulario y sin ella explica que el enlace no sirve.
+      if (state.matchedLocation == AppRoutes.resetPassword) return null;
 
       if (!isAuthenticated && !isAuthRoute) {
         // Se recuerda a dónde iba (enlace profundo, recarga en web) para
@@ -113,6 +130,13 @@ class AppRouter {
         path: AppRoutes.register,
         builder: (context, state) =>
             const TitledPage(title: 'Crear cuenta', child: RegisterPage()),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) => const TitledPage(
+          title: 'Nueva contraseña',
+          child: ResetPasswordPage(),
+        ),
       ),
 
       // ── Shell con bottom navigation persistente ────────────────────────
@@ -372,6 +396,7 @@ String? safeRedirectTarget(String? from) {
   const notRestorable = {
     AppRoutes.login,
     AppRoutes.register,
+    AppRoutes.resetPassword,
     // Necesitan `extra` (objetos en memoria): reabrirlas por URL cae en
     // "Faltan datos".
     AppRoutes.routineDay,

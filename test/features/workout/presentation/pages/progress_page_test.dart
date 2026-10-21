@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -136,11 +138,80 @@ void main() {
     await tester.pumpWidget(wrap());
     await tester.pump();
 
-    expect(find.text('ESTA SEMANA'), findsOneWidget);
-    expect(find.text('TUS RUTINAS'), findsOneWidget);
-    expect(find.text(routineA.name), findsOneWidget);
-    // Una métrica de muestra para confirmar que se rindió la grid.
+    expect(find.text('CAMBIO'), findsOneWidget);
     expect(find.text('VOLUMEN'), findsOneWidget);
+    expect(find.text('ÚLTIMAS 8 SEMANAS'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text(routineA.name), 200);
+    expect(find.text('HISTORIAL POR RUTINA'), findsOneWidget);
+    expect(find.text(routineA.name), findsOneWidget);
+  });
+
+  testWidgets('el selector va a la semana anterior y no pasa de la actual', (
+    tester,
+  ) async {
+    final thisWeek = AppCalendar.startOfWeek(DateTime.now());
+    when(() => bloc.state).thenReturn(
+      ProgressReady(
+        weekStart: thisWeek,
+        weekEnd: AppCalendar.addDays(thisWeek, 6),
+        routines: const [routineA],
+        insights: testWeeklyInsights,
+      ),
+    );
+
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    expect(find.text('Esta semana'), findsOneWidget);
+    final next = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
+    );
+    expect(next.onPressed, isNull);
+
+    clearInteractions(bloc);
+    await tester.tap(find.byTooltip('Semana anterior'));
+    await tester.pump();
+
+    expect(find.text('Semana pasada'), findsOneWidget);
+    final event =
+        verify(() => bloc.add(captureAny())).captured.single as RefreshProgress;
+    expect(event.weekStart, AppCalendar.addDays(thisWeek, -7));
+  });
+
+  testWidgets('sin volumen la semana anterior no inventa un +100 %', (
+    tester,
+  ) async {
+    when(() => bloc.state).thenReturn(
+      ProgressReady(
+        weekStart: monday,
+        weekEnd: sunday,
+        routines: const [routineA],
+        insights: WeeklyInsights(
+          weekStart: monday,
+          weekEnd: sunday,
+          plannedDays: 3,
+          completedDays: 1,
+          completedSessions: 1,
+          adherenceRate: 33,
+          totalVolume: 12450,
+          previousWeekVolume: 0,
+          volumeTrendPercent: 100,
+          personalRecords: 2,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    expect(find.text('12.450 kg'), findsOneWidget);
+    expect(find.text('de 3 planificados'), findsOneWidget);
+    expect(
+      find.text('vs semana anterior, que no tuvo volumen'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('100'), findsNothing);
+    expect(find.text('2 récords personales esta semana'), findsOneWidget);
   });
 
   testWidgets('Ready sin rutinas muestra empty state con CTA IR A RUTINAS', (

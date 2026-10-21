@@ -48,19 +48,25 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 1) Login
-      expect(find.text('GYM TRACKER'), findsOneWidget);
+      expect(find.text('Correo electrónico'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, _testEmail);
       await tester.enterText(find.byType(TextField).last, _testPassword);
-      await tester.tap(find.text('INICIAR SESIÓN'));
+      await tester.tap(
+        find
+            .byWidgetPredicate(
+              (w) => w is Text && w.data?.toLowerCase() == 'iniciar sesión',
+            )
+            .last,
+      );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // 2) Dashboard — debería existir el header con "HOY".
+      // 2) HOY — pestaña del shell.
       expect(find.text('HOY'), findsWidgets);
 
-      // 3) Tappar la day card de hoy (asume rutina seeded).
-      //    El day card concreto depende del usuario de prueba, por lo que
-      //    buscamos el primer botón de "EMPEZAR" / "CONTINUAR" disponible.
-      final startBtn = find.textContaining(RegExp(r'EMPEZAR|CONTINUAR'));
+      // 3) HOY → tarjeta del día que toca (asume rutina seeded).
+      final startBtn = find.textContaining(
+        RegExp(r'Entrenar hoy|Continuar sesión'),
+      );
       if (startBtn.evaluate().isEmpty) {
         fail(
           'El usuario de prueba no tiene rutina asignada con día hoy. '
@@ -70,25 +76,43 @@ void main() {
       await tester.tap(startBtn.first);
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      // 4) RoutineDay: marcar 3 sets como completados.
-      //    El sets-row tiene un check button — buscamos los primeros 3.
-      final checks = find.byIcon(Icons.check_rounded);
-      expect(checks, findsAtLeastNWidgets(1), reason: 'no hay set rows');
-      for (var i = 0; i < 3 && i < checks.evaluate().length; i++) {
-        await tester.tap(checks.at(i));
-        await tester.pump(const Duration(milliseconds: 500));
+      // 4) Previa → "Iniciar entrenamiento" (no aparece si se reanuda).
+      final begin = find.text('Iniciar entrenamiento');
+      if (begin.evaluate().isNotEmpty) {
+        await tester.tap(begin);
+        await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
-      // 5) Finalizar workout.
-      final finishBtn = find.textContaining(RegExp(r'FINALIZAR|TERMINAR'));
+      // 5) Registrar 3 series con el botón fijo inferior. Con peso propuesto
+      //    registra de un toque; sin él abre la hoja y se confirma.
+      final completeBtn = find.byKey(
+        const ValueKey('focus_complete_set_button'),
+      );
+      for (var i = 0; i < 3 && completeBtn.evaluate().isNotEmpty; i++) {
+        await tester.tap(completeBtn);
+        await tester.pumpAndSettle(const Duration(milliseconds: 500));
+        final confirm = find.text('CONFIRMAR SERIE');
+        if (confirm.evaluate().isNotEmpty) {
+          await tester.tap(confirm);
+          await tester.pumpAndSettle(const Duration(milliseconds: 500));
+        }
+      }
+
+      // 6) Finalizar → resumen → "Finalizar y guardar".
+      final finishBtn = find.text('Finalizar');
       if (finishBtn.evaluate().isNotEmpty) {
         await tester.tap(finishBtn.first);
-        await tester.pumpAndSettle(const Duration(seconds: 5));
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+        final save = find.text('FINALIZAR Y GUARDAR');
+        if (save.evaluate().isNotEmpty) {
+          await tester.tap(save);
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+        }
       }
 
-      // 6) Volver al dashboard y verificar que las insights cargan
+      // 7) Volver al dashboard y verificar que las insights cargan
       //    (sólo verificamos que el shell sigue navegable).
-      expect(find.text('GYM TRACKER'), findsNothing);
+      expect(find.text('Correo electrónico'), findsNothing);
     });
   });
 }

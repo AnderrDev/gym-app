@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:gym_flutter/core/settings/user_preferences_service.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
@@ -21,6 +22,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     required this.getAssignedRoutines,
     required this.getWeeklyPlan,
     required this.repository,
+    this.preferences,
   }) : super(const DashboardState()) {
     on<LoadAssignedRoutines>(_onLoadAssignedRoutines);
     on<LoadWeeklyPlan>(_onLoadWeeklyPlan);
@@ -36,6 +38,10 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final GetAssignedRoutines getAssignedRoutines;
   final GetWeeklyPlan getWeeklyPlan;
   final WorkoutRepository repository;
+
+  /// Recuerda la rutina elegida cuando hay varias. Opcional: sin él el
+  /// selector aparece en cada carga.
+  final UserPreferencesService? preferences;
 
   Future<void> _onLoadAssignedRoutines(
     LoadAssignedRoutines event,
@@ -63,24 +69,33 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         final selected = state.selectedRoutine;
         final stillAssigned =
             selected != null && routines.any((r) => r.id == selected.id);
+        // Auto-load: con una sola rutina, o con varias y una elegida antes
+        // en este dispositivo, se carga su plan sin pasar por el selector.
+        final keepSelected = selected != null && stillAssigned;
+        final lastId = preferences?.getLastRoutineId(event.userId);
+        final remembered = routines.length > 1 && !keepSelected
+            ? routines.where((r) => r.id == lastId).firstOrNull
+            : null;
+        final autoRoutine = routines.length == 1 ? routines.first : remembered;
         emit(
           state.copyWith(
-            status: DashboardStatus.ready,
+            // Con la rutina recordada se pasa directo a "cargando plan": si
+            // no, el selector parpadeaba un frame antes del plan.
+            status: remembered != null
+                ? DashboardStatus.loadingWeeklyPlan
+                : DashboardStatus.ready,
             routines: routines,
             clearSelectedRoutine: selected != null && !stillAssigned,
           ),
         );
 
-        // Auto-load: si el usuario tiene exactamente una rutina, prefetch su
-        // plan semanal para evitar mostrar un selector innecesario.
-        if (routines.length == 1) {
-          final only = routines.first;
+        if (autoRoutine != null) {
           final weekStart =
               state.weekStart ?? _normalizeWeekStart(DateTime.now());
           add(
             LoadWeeklyPlan(
               userId: event.userId,
-              routine: only,
+              routine: autoRoutine,
               weekStart: weekStart,
             ),
           );
@@ -170,6 +185,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     SelectRoutine event,
     Emitter<DashboardState> emit,
   ) async {
+    await preferences?.setLastRoutineId(event.userId, event.routine.id);
     add(
       LoadWeeklyPlan(
         userId: event.userId,

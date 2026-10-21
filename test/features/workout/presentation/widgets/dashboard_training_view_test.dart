@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/presentation/dashboard/widgets/dashboard_weekly_view.dart';
 
 void main() {
@@ -140,5 +141,105 @@ void main() {
     await tester.tap(find.text('Entrenar hoy'));
     expect(opened, today);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('con todos los días hechos muestra "semana completada"', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await tester.pumpWidget(
+      view([
+        RoutineDay(
+          id: 'd1',
+          routineId: 'r1',
+          dayOfWeek: 1,
+          name: 'Pecho',
+          status: WorkoutDayStatus.completed,
+          lastSessionDate: today,
+        ),
+      ], (_, _) {}),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('¡Semana completada!'), findsOneWidget);
+    expect(find.text('TE TOCA HOY'), findsNothing);
+  });
+
+  testWidgets('pinta las métricas de la semana cuando hay sesiones', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DashboardWeeklyView(
+            days: const [
+              RoutineDay(id: 'd1', routineId: 'r1', dayOfWeek: 1, name: 'A'),
+            ],
+            weekStart: weekStart,
+            selectedRoutine: const Routine(
+              id: 'r1',
+              name: 'Fuerza',
+              exerciseCount: 3,
+            ),
+            insights: WeeklyInsights(
+              weekStart: weekStart,
+              weekEnd: weekStart.add(const Duration(days: 6)),
+              plannedDays: 4,
+              completedDays: 2,
+              completedSessions: 2,
+              adherenceRate: 50,
+              totalVolume: 12345,
+              previousWeekVolume: 10000,
+              volumeTrendPercent: 23.4,
+              personalRecords: 1,
+            ),
+            insightsError: null,
+            onPreviousWeek: () {},
+            onNextWeek: () {},
+            onOpenSelectedRoutineStats: () {},
+            onOpenDay: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('12.345 kg'), findsOneWidget);
+    expect(find.text('+23 %'), findsOneWidget);
+    expect(find.text('50 %'), findsOneWidget);
+  });
+
+  testWidgets('un plan de otra semana vuelve solo a la semana actual', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastWeek = today.subtract(Duration(days: today.weekday - 1 + 7));
+    var refreshes = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DashboardWeeklyView(
+            days: const [
+              RoutineDay(id: 'd1', routineId: 'r1', dayOfWeek: 1, name: 'A'),
+            ],
+            weekStart: lastWeek,
+            selectedRoutine: null,
+            insights: null,
+            insightsError: null,
+            onPreviousWeek: () {},
+            onNextWeek: () {},
+            onOpenSelectedRoutineStats: () {},
+            onOpenDay: (_, _) {},
+            onCurrentWeek: () => refreshes++,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump();
+    expect(refreshes, 1);
   });
 }

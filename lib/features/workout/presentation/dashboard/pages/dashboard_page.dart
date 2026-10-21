@@ -234,7 +234,9 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
-          title: Text('Smart Gym Tracker', style: context.text.headlineMedium),
+          // La fecha y la rutina van en la cabecera del contenido; aquí sólo
+          // el nombre de la pestaña, como en el resto del shell.
+          title: Text('Hoy', style: context.text.headlineMedium),
         ),
         body: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, dashState) {

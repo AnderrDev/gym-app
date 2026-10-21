@@ -187,15 +187,20 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
           decoration: InputDecoration(
             icon: Icon(
               Icons.search_rounded,
-              color: context.colors.textDisabled,
+              color: context.colors.textSecondary,
               size: 20,
             ),
             hintText: 'Press banca, sentadilla...',
             hintStyle: TextStyle(
-              color: context.colors.textDisabled,
+              color: context.colors.textSecondary,
               fontSize: 14,
             ),
+            // El tema define enabled/focused/disabledBorder, que tienen
+            // prioridad sobre `border`: sin anularlos sale un marco doble.
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
           ),
         ),
       ),
@@ -264,7 +269,7 @@ class _ExerciseCatalogSheetState extends State<ExerciseCatalogSheet> {
             _searchQuery.isEmpty
                 ? 'No hay ejercicios en esta categoría'
                 : 'No encontramos nada para "$_searchQuery"',
-            style: TextStyle(color: context.colors.textDisabled),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
         ],
       ),

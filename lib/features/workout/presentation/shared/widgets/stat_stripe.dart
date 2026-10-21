@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
+import 'package:gym_flutter/core/utils/date_format.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Stripe horizontal con 3 métricas resumen: actual, récord y delta.
 /// Pensado para vivir sobre un chart y darle al usuario la "respuesta"
@@ -15,7 +17,16 @@ class StatStripe extends StatelessWidget {
     required this.delta,
     required this.unit,
     this.recordReached = false,
+    this.deltaCaption = 'VS ANTERIOR',
+    this.formatter = formatDecimal,
   });
+
+  /// Formato de la diferencia, el mismo que el de [actualLabel] (p. ej.
+  /// `formatVolume` para que salga "+1.855" y no "+1855").
+  final String Function(double) formatter;
+
+  /// Frente a qué se compara [delta]: "VS SESIÓN ANTERIOR", etc.
+  final String deltaCaption;
 
   /// Texto del valor actual (ya formateado, sin unidad). Ej `82.5`.
   final String actualLabel;
@@ -35,9 +46,7 @@ class StatStripe extends StatelessWidget {
 
   String _formatDelta(double d) {
     final abs = d.abs();
-    final formatted = abs % 1 == 0
-        ? abs.toStringAsFixed(0)
-        : abs.toStringAsFixed(1);
+    final formatted = formatter(abs);
     if (d > 0) return '+$formatted';
     if (d < 0) return '−$formatted';
     return '0';
@@ -46,7 +55,7 @@ class StatStripe extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actualColor = recordReached
-        ? context.colors.success
+        ? context.colors.successText
         : context.colors.textPrimary;
     return Row(
       children: [
@@ -64,12 +73,17 @@ class StatStripe extends StatelessWidget {
             caption: 'RÉCORD',
             value: recordLabel,
             unit: unit,
-            valueColor: context.colors.warning,
+            valueColor: context.colors.warningText,
           ),
         ),
         const SizedBox(width: Spacing.xs),
         Expanded(
-          child: _DeltaChip(delta: delta, unit: unit, formatter: _formatDelta),
+          child: _DeltaChip(
+            delta: delta,
+            unit: unit,
+            caption: deltaCaption,
+            formatter: _formatDelta,
+          ),
         ),
       ],
     );
@@ -104,9 +118,8 @@ class _Chip extends StatelessWidget {
         children: [
           Text(
             caption,
-            style: context.text.labelMedium?.copyWith(
+            style: context.text.labelSmall?.copyWith(
               color: context.colors.textSecondary,
-              fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
             ),
@@ -127,9 +140,8 @@ class _Chip extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: context.text.labelMedium?.copyWith(
+                  style: context.text.labelSmall?.copyWith(
                     color: context.colors.textSecondary,
-                    fontSize: 10,
                   ),
                 ),
               ],
@@ -145,10 +157,12 @@ class _DeltaChip extends StatelessWidget {
   const _DeltaChip({
     required this.delta,
     required this.unit,
+    required this.caption,
     required this.formatter,
   });
 
   final double? delta;
+  final String caption;
   final String unit;
   final String Function(double) formatter;
 
@@ -161,7 +175,7 @@ class _DeltaChip extends StatelessWidget {
     final color = isNeutral
         ? context.colors.textSecondary
         : isUp
-        ? context.colors.success
+        ? context.colors.successText
         : isDown
         ? context.colors.error
         : context.colors.textSecondary;
@@ -185,10 +199,11 @@ class _DeltaChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'VS ANTERIOR',
-            style: context.text.labelMedium?.copyWith(
+            caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.labelSmall?.copyWith(
               color: color,
-              fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
             ),
@@ -215,9 +230,8 @@ class _DeltaChip extends StatelessWidget {
                       if (!isNeutral)
                         TextSpan(
                           text: ' $unit',
-                          style: context.text.labelMedium?.copyWith(
+                          style: context.text.labelSmall?.copyWith(
                             color: color,
-                            fontSize: 10,
                           ),
                         ),
                     ],
@@ -228,6 +242,71 @@ class _DeltaChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Desde el 6 oct: +7,5 kg (+15 %)": el cambio en todo el periodo
+/// mostrado, no sólo frente a la sesión anterior.
+class PeriodChangeLine extends StatelessWidget {
+  const PeriodChangeLine({
+    super.key,
+    required this.since,
+    required this.first,
+    required this.last,
+    required this.unit,
+    required this.formatter,
+  });
+
+  final DateTime since;
+  final double first;
+  final double last;
+  final String unit;
+  final String Function(double) formatter;
+
+  @override
+  Widget build(BuildContext context) {
+    final diff = last - first;
+    final color = diff > 0
+        ? context.colors.successText
+        : diff < 0
+        ? context.colors.error
+        : context.colors.textSecondary;
+    final sign = diff > 0
+        ? '+'
+        : diff < 0
+        ? '−'
+        : '';
+    final pct = first > 0
+        ? ' ($sign${(diff.abs() / first * 100).toStringAsFixed(0)} %)'
+        : '';
+    return Row(
+      children: [
+        Icon(
+          Icons.history_rounded,
+          size: 16,
+          color: context.colors.textSecondary,
+        ),
+        const SizedBox(width: Spacing.xs),
+        Text(
+          'Desde el ${AppDateFormat.dayMonthShort(since)}: ',
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.textSecondary,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            diff == 0
+                ? 'sin cambios'
+                : '$sign${formatter(diff.abs())} $unit$pct',
+            style: context.text.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

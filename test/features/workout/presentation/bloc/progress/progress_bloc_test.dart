@@ -5,6 +5,7 @@ import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
@@ -36,6 +37,9 @@ void main() {
     when(
       () => repository.getRoutineDays(any()),
     ).thenAnswer((_) async => const Right(<RoutineDay>[]));
+    when(
+      () => repository.getRoutineStats(any(), any()),
+    ).thenAnswer((_) async => const Right(<RoutineHistorySession>[]));
   });
 
   ProgressBloc buildBloc() => ProgressBloc(

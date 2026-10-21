@@ -2,9 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:gym_flutter/core/error/exceptions.dart';
 
-/// Helper interno para invocar Edge Functions de Supabase de manera consistente:
-/// refresca el token si hace falta, aplica un timeout, mapea los códigos de
-/// error frecuentes a `WorkoutFunctionException` y devuelve `data` parseado.
+/// Helper compartido para invocar Edge Functions de Supabase de manera
+/// consistente (workout y profile): refresca el token si hace falta, aplica
+/// un timeout, mapea los códigos de error frecuentes a
+/// `WorkoutFunctionException` y devuelve `data` parseado.
 ///
 /// Las funciones del proyecto comparten contrato `{ success: bool, code?: str,
 /// data?: object }`; este wrapper centraliza esa convención.
@@ -87,6 +88,19 @@ class EdgeFunctionInvoker {
       rethrow;
     } on FunctionException catch (e) {
       final status = e.status;
+      // `functions_client` lanza FunctionException en cualquier status no-2xx;
+      // el body JSON (con `code`) llega en `details`. Aplicamos aquí también
+      // los mapeos del caller para no perder el código estable del contrato.
+      // Si el body trae `code`, manda ese: un 404 del gateway ("función no
+      // encontrada", code `NOT_FOUND`) no debe confundirse con el 404 de la
+      // función (`NOT_FOUND_OR_ALREADY_COMPLETED`), o el SyncWorker
+      // descartaría un finalize que hay que reintentar.
+      final body = e.details;
+      final bodyCode = body is Map ? body['code']?.toString() : null;
+      final mapped = bodyCode != null
+          ? codeMappings[bodyCode]
+          : statusMappings[status];
+      if (mapped != null) throw mapped;
       final details = e.details?.toString() ?? e.toString();
       if (status == 401) {
         throw const WorkoutFunctionException(

@@ -4,6 +4,7 @@ import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/workout_completion.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Consulta de una sesión cerrada: resultados reales, sin controles de edición.
 class RoutineDayCompletedView extends StatelessWidget {
@@ -108,7 +109,7 @@ class _ExerciseResult extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
-              'Serie ${log.setIndex} · ${log.actualWeight.toStringAsFixed(log.actualWeight % 1 == 0 ? 0 : 1)} kg × ${log.actualReps} reps',
+              'Serie ${log.setIndex} · ${formatLoad(log.actualWeight)} × ${log.actualReps} reps',
               style: context.text.bodyMedium,
             ),
           ),

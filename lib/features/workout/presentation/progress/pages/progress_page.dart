@@ -9,6 +9,8 @@ import 'package:gym_flutter/core/routes/args/routing_args.dart';
 import 'package:gym_flutter/core/routes/router_helpers.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/feedback/app_spinner.dart';
+import 'package:gym_flutter/core/ui/molecules/app_card.dart';
+import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
@@ -17,15 +19,18 @@ import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_event.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_state.dart';
 import 'package:gym_flutter/features/workout/presentation/progress/widgets/progress_routine_tile.dart';
+import 'package:gym_flutter/features/workout/presentation/progress/widgets/weekly_history_chart.dart';
 import 'package:gym_flutter/features/workout/presentation/progress/widgets/weekly_insights_card.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/training_history.dart';
 import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
 import 'package:gym_flutter/injection_container.dart' show sl;
 
 /// Hub `/progress` (pestaña PROGRESO del shell).
 ///
-/// Dos secciones: (1) métricas de la semana en curso, (2) lista de rutinas
-/// asignadas que enlazan a `/routine-stats`. Sin gráficos por ahora —
-/// el desglose por sesión/ejercicio vive una pantalla más abajo.
+/// (1) Resumen de una semana con selector ‹ › (por defecto la actual),
+/// (2) histórico de las últimas 8 semanas (tocar una barra abre esa semana),
+/// (3) historial por rutina → `/routine-stats` y (4) progreso por
+/// ejercicio → `/exercise-progress`.
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
 
@@ -35,6 +40,10 @@ class ProgressPage extends StatefulWidget {
 
 class _ProgressPageState extends State<ProgressPage> {
   ShellTabNotifier? _tabs;
+
+  /// Semana pedida y aún no cargada: el selector la muestra al instante y
+  /// una barra de progreso indica que el resumen se está actualizando.
+  DateTime? _pendingWeek;
 
   @override
   void initState() {
@@ -99,10 +108,28 @@ class _ProgressPageState extends State<ProgressPage> {
         sub.cancel();
       }
     });
-    bloc.add(RefreshProgress(userId));
+    // Refresca la semana que se está viendo, no vuelve a la actual.
+    final current = bloc.state;
+    bloc.add(
+      RefreshProgress(
+        userId,
+        weekStart: current is ProgressReady ? current.weekStart : null,
+      ),
+    );
     await completer.future.timeout(
       const Duration(seconds: 10),
       onTimeout: () => sub.cancel(),
+    );
+  }
+
+  void _selectWeek(DateTime weekStart) {
+    final userId = _currentUserId();
+    if (userId == null) return;
+    final current = context.read<ProgressBloc>().state;
+    if (current is ProgressReady && current.weekStart == weekStart) return;
+    setState(() => _pendingWeek = weekStart);
+    context.read<ProgressBloc>().add(
+      RefreshProgress(userId, weekStart: weekStart),
     );
   }
 
@@ -137,12 +164,19 @@ class _ProgressPageState extends State<ProgressPage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        // Mismo margen que RUTINAS y que el contenido de abajo.
+        titleSpacing: Spacing.lgPlus,
         title: Text(
           'PROGRESO',
           style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
         ),
       ),
-      body: BlocBuilder<ProgressBloc, ProgressState>(
+      body: BlocConsumer<ProgressBloc, ProgressState>(
+        listener: (context, state) {
+          if (state is ProgressReady || state is ProgressFailure) {
+            setState(() => _pendingWeek = null);
+          }
+        },
         builder: (context, state) {
           return switch (state) {
             ProgressInitial() ||
@@ -156,6 +190,8 @@ class _ProgressPageState extends State<ProgressPage> {
               color: context.colors.primary,
               child: _ProgressReadyView(
                 state: state,
+                pendingWeek: _pendingWeek,
+                onSelectWeek: _selectWeek,
                 onOpenRoutine: _openRoutineStats,
                 onGoToRoutines: () => goToRoutines(context),
                 onOpenExercise: _openExerciseProgress,
@@ -222,40 +258,64 @@ class _ProgressErrorView extends StatelessWidget {
 class _ProgressReadyView extends StatelessWidget {
   const _ProgressReadyView({
     required this.state,
+    required this.pendingWeek,
+    required this.onSelectWeek,
     required this.onOpenRoutine,
     required this.onGoToRoutines,
     required this.onOpenExercise,
   });
 
   final ProgressReady state;
+  final DateTime? pendingWeek;
+  final ValueChanged<DateTime> onSelectWeek;
   final ValueChanged<Routine> onOpenRoutine;
   final VoidCallback onGoToRoutines;
   final ValueChanged<Exercise> onOpenExercise;
 
   @override
   Widget build(BuildContext context) {
+    final currentWeek = AppCalendar.startOfWeek(DateTime.now());
+    final shownWeek = pendingWeek ?? state.weekStart;
     // `AlwaysScrollableScrollPhysics` es necesario para que el
     // `RefreshIndicator` funcione cuando el contenido no llena la pantalla
     // (empty state, error de insights, etc).
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
-        Spacing.xl,
-        Spacing.lg,
-        Spacing.xl,
+        Spacing.lgPlus,
+        Spacing.md,
+        Spacing.lgPlus,
         Spacing.xxl + 80,
       ),
       children: [
-        _WeekRangeLabel(weekStart: state.weekStart, weekEnd: state.weekEnd),
-        const SizedBox(height: Spacing.xs),
-        const _SectionTitle(text: 'ESTA SEMANA'),
+        _WeekSelector(
+          weekStart: shownWeek,
+          currentWeek: currentWeek,
+          onSelectWeek: onSelectWeek,
+        ),
+        SizedBox(
+          height: 2,
+          child: pendingWeek == null
+              ? null
+              : LinearProgressIndicator(color: context.colors.primary),
+        ),
         const SizedBox(height: Spacing.sm),
         WeeklyInsightsCard(
           insights: state.insights,
           error: state.insightsError,
         ),
+        if (state.routines.isNotEmpty) ...[
+          const SizedBox(height: Spacing.xxl),
+          const _SectionTitle(text: 'ÚLTIMAS 8 SEMANAS'),
+          const SizedBox(height: Spacing.sm),
+          WeeklyHistoryChart(
+            weeks: weeklyTotals(state.history, lastWeekStart: currentWeek),
+            selectedWeekStart: shownWeek,
+            onSelectWeek: onSelectWeek,
+          ),
+        ],
         const SizedBox(height: Spacing.xxl),
-        const _SectionTitle(text: 'TUS RUTINAS'),
+        const _SectionTitle(text: 'HISTORIAL POR RUTINA'),
         const SizedBox(height: Spacing.sm),
         if (state.routines.isEmpty)
           ProgressEmptyRoutines(onGoToRoutines: onGoToRoutines)
@@ -271,18 +331,46 @@ class _ProgressReadyView extends StatelessWidget {
           ),
         if (state.exercises.isNotEmpty) ...[
           const SizedBox(height: Spacing.xxl),
-          const _SectionTitle(text: 'TUS EJERCICIOS'),
+          const _SectionTitle(text: 'PROGRESO POR EJERCICIO'),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            'Peso, 1RM estimado y volumen de cada ejercicio a lo largo del tiempo.',
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
           const SizedBox(height: Spacing.sm),
           // Antes el progreso de un ejercicio sólo se abría desde la tarjeta
           // durante un entreno.
-          for (final ex in state.exercises)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(ex.name),
-              subtitle: Text(ex.targetMuscle),
-              trailing: const Icon(Icons.show_chart_rounded),
-              onTap: () => onOpenExercise(ex),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final (i, ex) in state.exercises.indexed) ...[
+                  if (i > 0) Divider(height: 1, color: context.colors.divider),
+                  ListTile(
+                    title: Text(
+                      ex.name,
+                      style: context.text.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      ex.targetMuscle,
+                      style: context.text.bodySmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right_rounded,
+                      color: context.colors.textSecondary,
+                    ),
+                    onTap: () => onOpenExercise(ex),
+                  ),
+                ],
+              ],
             ),
+          ),
         ],
       ],
     );
@@ -291,21 +379,66 @@ class _ProgressReadyView extends StatelessWidget {
 
 // ── Pieces ────────────────────────────────────────────────────────────────
 
-class _WeekRangeLabel extends StatelessWidget {
-  const _WeekRangeLabel({required this.weekStart, required this.weekEnd});
+/// "‹ Esta semana · 19 – 25 oct ›". No deja avanzar más allá de la semana
+/// en curso.
+class _WeekSelector extends StatelessWidget {
+  const _WeekSelector({
+    required this.weekStart,
+    required this.currentWeek,
+    required this.onSelectWeek,
+  });
 
   final DateTime weekStart;
-  final DateTime weekEnd;
+  final DateTime currentWeek;
+  final ValueChanged<DateTime> onSelectWeek;
+
+  String get _title {
+    final weeksAgo = currentWeek.difference(weekStart).inDays ~/ 7;
+    return switch (weeksAgo) {
+      0 => 'Esta semana',
+      1 => 'Semana pasada',
+      _ => 'Hace $weeksAgo semanas',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final text =
-        '${AppDateFormat.dayMonthShort(weekStart)} – ${AppDateFormat.dayMonthShort(weekEnd)}';
-    return Text(
-      text,
-      style: context.text.bodySmall?.copyWith(
-        color: context.colors.textSecondary,
-      ),
+    final weekEnd = AppCalendar.addDays(weekStart, 6);
+    final isCurrent = !weekStart.isBefore(currentWeek);
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'Semana anterior',
+          icon: const Icon(Icons.chevron_left_rounded),
+          onPressed: () => onSelectWeek(AppCalendar.addDays(weekStart, -7)),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                _title,
+                style: context.text.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                '${AppDateFormat.dayMonthShort(weekStart)} – '
+                '${AppDateFormat.dayMonthShort(weekEnd)}',
+                style: context.text.bodySmall?.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Semana siguiente',
+          icon: const Icon(Icons.chevron_right_rounded),
+          onPressed: isCurrent
+              ? null
+              : () => onSelectWeek(AppCalendar.addDays(weekStart, 7)),
+        ),
+      ],
     );
   }
 }

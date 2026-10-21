@@ -75,9 +75,8 @@ class WorkoutMetricCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 metric.label,
-                style: context.text.labelMedium?.copyWith(
+                style: context.text.labelSmall?.copyWith(
                   color: context.colors.textSecondary,
-                  fontSize: 9,
                   letterSpacing: 0.8,
                   fontWeight: FontWeight.w700,
                 ),
@@ -101,9 +100,8 @@ class WorkoutMetricCard extends StatelessWidget {
                 if (metric.secondary != null)
                   TextSpan(
                     text: ' ${metric.secondary}',
-                    style: context.text.labelMedium?.copyWith(
+                    style: context.text.labelSmall?.copyWith(
                       color: context.colors.textSecondary,
-                      fontSize: 10,
                     ),
                   ),
               ],

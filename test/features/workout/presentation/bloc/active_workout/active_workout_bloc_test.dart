@@ -978,4 +978,93 @@ void main() {
       },
     );
   });
+
+  group('DiscardActiveWorkout', () {
+    const log = SetLog(
+      sessionId: sessionId,
+      exerciseId: 'e1',
+      setIndex: 1,
+      actualWeight: 80,
+      actualReps: 10,
+    );
+    ActiveWorkoutBloc runningBloc({WorkoutDraftService? drafts}) =>
+        ActiveWorkoutBloc(
+          repository: repository,
+          activeSessionService: activeSessionService,
+          notifier: notifier,
+          draftService: drafts,
+          clock: clock,
+        )..emit(
+          ActiveWorkoutState(
+            status: ActiveWorkoutStatus.running,
+            session: session,
+            exercises: const [exerciseA],
+            setLogs: const [log],
+          ),
+        );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'éxito → discarded, limpia sesión activa, borradores y notificación',
+      setUp: () => when(
+        () => repository.discardWorkoutSession(sessionId),
+      ).thenAnswer((_) async => const Right(null)),
+      build: () {
+        final drafts = _MockWorkoutDraftService();
+        when(() => drafts.clear(any(), any())).thenAnswer((_) async {});
+        return runningBloc(drafts: drafts);
+      },
+      act: (b) => b.add(const DiscardActiveWorkout(sessionId: sessionId)),
+      expect: () => [
+        isA<ActiveWorkoutState>().having(
+          (s) => s.status,
+          'status',
+          ActiveWorkoutStatus.discarding,
+        ),
+        isA<ActiveWorkoutState>()
+            .having((s) => s.status, 'status', ActiveWorkoutStatus.discarded)
+            .having((s) => s.setLogs, 'setLogs', isEmpty),
+      ],
+      verify: (_) {
+        verify(() => activeSessionService.clear()).called(1);
+        verify(() => notifier.onEnded()).called(1);
+        verifyNever(() => repository.finishWorkoutSession(any()));
+      },
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'si falla vuelve al entreno con aviso y conserva las series',
+      setUp: () => when(
+        () => repository.discardWorkoutSession(sessionId),
+      ).thenAnswer((_) async => const Left(NetworkFailure())),
+      build: runningBloc,
+      act: (b) => b.add(const DiscardActiveWorkout(sessionId: sessionId)),
+      expect: () => [
+        isA<ActiveWorkoutState>().having(
+          (s) => s.status,
+          'status',
+          ActiveWorkoutStatus.discarding,
+        ),
+        isA<ActiveWorkoutState>()
+            .having((s) => s.status, 'status', ActiveWorkoutStatus.running)
+            .having((s) => s.setLogs, 'setLogs', const [log])
+            .having(
+              (s) => s.actionError,
+              'actionError',
+              startsWith('No se pudo descartar'),
+            ),
+      ],
+      verify: (_) {
+        verifyNever(() => activeSessionService.clear());
+        verifyNever(() => notifier.onEnded());
+      },
+    );
+
+    blocTest<ActiveWorkoutBloc, ActiveWorkoutState>(
+      'ignora descartar una sesión distinta a la abierta',
+      build: runningBloc,
+      act: (b) => b.add(const DiscardActiveWorkout(sessionId: 'otra')),
+      expect: () => const <ActiveWorkoutState>[],
+      verify: (_) => verifyNever(() => repository.discardWorkoutSession(any())),
+    );
+  });
 }

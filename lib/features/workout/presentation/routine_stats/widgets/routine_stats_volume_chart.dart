@@ -3,17 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:gym_flutter/core/utils/date_format.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
-import 'package:gym_flutter/core/presentation/widgets/glass_container.dart';
+import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
-import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
+import 'package:gym_flutter/core/ui/molecules/app_card.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/widgets/stat_stripe.dart';
 import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axis.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
+/// Un punto de la gráfica: fecha (de la sesión o del lunes de la semana) y
+/// volumen.
+typedef VolumePoint = ({DateTime date, double volume});
+
+/// Volumen a lo largo del tiempo con actual / récord / cambio frente al
+/// punto anterior y desde el primero. Cada punto es una sesión de un mismo
+/// día de rutina o una semana: mezclar sesiones de días distintos (Torso
+/// contra Pierna) daba subidas y bajadas que no significaban nada.
 class RoutineStatsVolumeChart extends StatelessWidget {
-  const RoutineStatsVolumeChart({super.key, required this.stats});
+  const RoutineStatsVolumeChart({
+    super.key,
+    required this.points,
+    required this.subtitle,
+    required this.deltaCaption,
+  });
 
-  /// `stats` viene en orden descendente; el chart lo trabaja cronológico.
-  final List<RoutineHistorySession> stats;
+  /// En orden cronológico.
+  final List<VolumePoint> points;
+  final String subtitle;
+
+  /// Frente a qué es el cambio, p. ej. "VS ANTERIOR".
+  final String deltaCaption;
 
   static Set<int> _computePrIndices(List<double> values) {
     final prs = <int>{};
@@ -27,8 +45,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chronological = stats.reversed.toList();
-    final values = chronological.map((s) => s.totalVolume).toList();
+    final chronological = points;
+    final values = chronological.map((p) => p.volume).toList();
     final actual = values.last;
     final record = values.reduce((a, b) => a > b ? a : b);
     final delta = values.length < 2 ? null : actual - values[values.length - 2];
@@ -39,11 +57,11 @@ class RoutineStatsVolumeChart extends StatelessWidget {
     final yRange = (yMax - yMin).abs();
     final yPad = yRange == 0 ? (yMax == 0 ? 1.0 : yMax * 0.1) : yRange * 0.15;
 
-    String fmt(double v) => v.toStringAsFixed(0);
+    String fmt(double v) => formatVolume(v);
 
-    return GlassContainer(
+    return AppCard(
       padding: const EdgeInsets.all(Spacing.lgPlus),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(Radii.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -60,17 +78,16 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'CARGA MOVIDA',
+                      'VOLUMEN',
                       style: context.text.labelMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1,
                       ),
                     ),
                     Text(
-                      'Suma de peso × reps de cada sesión',
+                      subtitle,
                       style: context.text.bodySmall?.copyWith(
-                        color: context.colors.textDisabled,
-                        fontSize: 10,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -83,9 +100,21 @@ class RoutineStatsVolumeChart extends StatelessWidget {
             actualLabel: fmt(actual),
             recordLabel: fmt(record),
             delta: delta,
-            unit: 'kg·reps',
+            deltaCaption: deltaCaption,
+            formatter: fmt,
+            unit: 'kg',
             recordReached: actualIsRecord,
           ),
+          if (values.length >= 2) ...[
+            const SizedBox(height: Spacing.sm),
+            PeriodChangeLine(
+              since: chronological.first.date,
+              first: values.first,
+              last: actual,
+              unit: 'kg',
+              formatter: fmt,
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             height: 200,
@@ -97,10 +126,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: yRange == 0 ? null : yRange / 3,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: context.colors.surfaceHighlight,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: context.colors.divider, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -115,9 +142,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             compactAxisNumber(value),
-                            style: context.text.labelMedium?.copyWith(
+                            style: context.text.labelSmall?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 10,
                             ),
                           ),
                         );
@@ -139,12 +165,9 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            AppDateFormat.dayMonth(
-                              chronological[i].sessionDate,
-                            ),
-                            style: context.text.labelMedium?.copyWith(
+                            AppDateFormat.dayMonth(chronological[i].date),
+                            style: context.text.labelSmall?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 10,
                             ),
                           ),
                         );
@@ -162,7 +185,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => context.colors.surface,
+                    getTooltipColor: (_) => context.colors.surfaceHighlight,
                     tooltipBorderRadius: const BorderRadius.all(
                       Radius.circular(8),
                     ),
@@ -175,10 +198,10 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                         final i = s.x.toInt();
                         if (i < 0 || i >= chronological.length) return null;
                         final date = AppDateFormat.dayMonthShort(
-                          chronological[i].sessionDate,
+                          chronological[i].date,
                         );
                         return LineTooltipItem(
-                          '${fmt(s.y)} kg·reps',
+                          '${fmt(s.y)} kg',
                           (context.text.bodySmall ?? const TextStyle())
                               .copyWith(
                                 color: context.colors.textPrimary,
@@ -187,9 +210,8 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: '\n$date',
-                              style: context.text.labelMedium?.copyWith(
+                              style: context.text.labelSmall?.copyWith(
                                 color: context.colors.textSecondary,
-                                fontSize: 10,
                               ),
                             ),
                           ],
@@ -211,13 +233,18 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
-                      checkToShowDot: (spot, _) => pr.contains(spot.x.toInt()),
+                      // Con un solo punto no hay línea: sin punto visible la
+                      // gráfica parecía vacía.
+                      checkToShowDot: (spot, _) =>
+                          values.length == 1 || pr.contains(spot.x.toInt()),
                       getDotPainter: (spot, xPercentage, bar, index) =>
                           FlDotCirclePainter(
-                            radius: 4,
-                            color: context.colors.warning,
+                            radius: 5,
+                            color: pr.contains(spot.x.toInt())
+                                ? context.colors.warning
+                                : context.colors.primary,
                             strokeWidth: 2,
-                            strokeColor: context.colors.background,
+                            strokeColor: context.colors.surface,
                           ),
                     ),
                     belowBarData: BarAreaData(

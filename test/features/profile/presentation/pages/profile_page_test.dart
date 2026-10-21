@@ -8,9 +8,13 @@ import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_event.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_state.dart';
+import 'package:gym_flutter/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:gym_flutter/features/profile/presentation/pages/profile_page.dart';
+import 'package:gym_flutter/injection_container.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../helpers/mocks.dart';
 
 class _MockAuthBloc extends Mock implements AuthBloc {}
 
@@ -34,10 +38,19 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     settingsBloc = SettingsBloc(preferences: UserPreferencesService(prefs));
+    sl.registerFactory<ProfileBloc>(
+      () => ProfileBloc(
+        repository: MockProfileRepository(),
+        deleteAccount: MockDeleteAccount(),
+        localDataCleaner: MockLocalUserDataCleaner(),
+        signOut: MockSignOut(),
+      ),
+    );
   });
 
   tearDown(() async {
     await settingsBloc.close();
+    await sl.unregister<ProfileBloc>();
   });
 
   Widget pumpProfile() {
@@ -89,6 +102,10 @@ void main() {
 
       // CTA sign-out
       expect(find.text('CERRAR SESIÓN'), findsOneWidget);
+
+      // Zona de peligro al final con "Eliminar cuenta".
+      expect(find.text('ZONA DE PELIGRO'), findsOneWidget);
+      expect(find.text('ELIMINAR CUENTA'), findsOneWidget);
     },
   );
 

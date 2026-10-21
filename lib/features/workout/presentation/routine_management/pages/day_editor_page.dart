@@ -281,10 +281,9 @@ class _DayEditorPageState extends State<DayEditorPage> {
         label: 'Ejercicios',
         trailing: Text(
           '${exercises.length}',
-          style: context.text.labelMedium?.copyWith(
-            color: context.colors.primary,
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.textSecondary,
+            fontWeight: FontWeight.w600,
           ),
         ),
         hint: exercises.length >= 2
@@ -317,7 +316,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
     // sólo si es propia (DayEditorDialogs ya respeta isOwner si lo pasamos).
     if (!widget.isOwner) {
       return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.lgPlus),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final ex = exercises[index];
@@ -333,7 +332,7 @@ class _DayEditorPageState extends State<DayEditorPage> {
       );
     }
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lgPlus),
       sliver: SliverReorderableList(
         itemCount: exercises.length,
         onReorder: (oldIdx, newIdx) =>
@@ -372,17 +371,13 @@ class _DayEditorPageState extends State<DayEditorPage> {
       elevation: 0,
       highlightElevation: 0,
       backgroundColor: context.colors.primary,
-      icon: Icon(
-        Icons.search_rounded,
-        color: context.colors.onPrimary,
-        size: 22,
-      ),
+      icon: Icon(Icons.add_rounded, color: context.colors.onPrimary, size: 24),
       label: Text(
-        'CATÁLOGO',
+        'AÑADIR EJERCICIOS',
         style: context.text.labelMedium?.copyWith(
           color: context.colors.onPrimary,
           fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
+          letterSpacing: 1,
         ),
       ),
     );

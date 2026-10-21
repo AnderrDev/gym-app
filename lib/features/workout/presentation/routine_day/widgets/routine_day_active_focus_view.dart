@@ -10,6 +10,7 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/routine_day_focus_parts.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Vista "One Exercise Focus": un ejercicio ocupa la pantalla completa, swipe
 /// horizontal entre ejercicios. El stepper superior muestra el progreso por
@@ -33,6 +34,7 @@ class RoutineDayActiveFocusView extends StatefulWidget {
     this.isAdapting = false,
     this.onAddExercise,
     this.onReplaceExercise,
+    this.onQuickSetUndone,
   });
 
   final String sessionId;
@@ -49,6 +51,10 @@ class RoutineDayActiveFocusView extends StatefulWidget {
   final VoidCallback? onAddExercise;
   final ValueChanged<Exercise>? onReplaceExercise;
 
+  /// Tras "Deshacer" una serie registrada de un toque (p. ej. para cortar el
+  /// descanso que arrancó al registrarla).
+  final VoidCallback? onQuickSetUndone;
+
   @override
   State<RoutineDayActiveFocusView> createState() =>
       _RoutineDayActiveFocusViewState();
@@ -63,6 +69,10 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
 
   GlobalKey<ExerciseCardState> _cardKeyFor(String exerciseId) =>
       _cardKeys.putIfAbsent(exerciseId, GlobalKey<ExerciseCardState>.new);
+
+  /// Barra fija del botón de serie: el aviso "Deshacer" se coloca encima
+  /// de ella, si no la tapaba y el toque de la serie siguiente caía en él.
+  final _completeBarKey = GlobalKey();
 
   /// Primera serie objetivo sin registrar del ejercicio, o `null`.
   int? _nextPendingSetFor(Exercise ex) {
@@ -183,15 +193,6 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     }
     return Column(
       children: [
-        if (!widget.effectiveReadOnly && widget.onAddExercise != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: widget.isAdapting ? null : widget.onAddExercise,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Añadir ejercicio extra'),
-            ),
-          ),
         if (widget.isAdapting) const LinearProgressIndicator(),
         FocusViewExerciseStepper(
           exercises: widget.exercises,
@@ -205,7 +206,10 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
             itemCount: widget.exercises.length,
             onPageChanged: (i) {
               HapticFeedback.selectionClick();
-              setState(() => _currentIndex = i);
+              setState(() {
+                _currentIndex = i;
+                _previewRetryScheduled = false;
+              });
             },
             itemBuilder: (context, index) {
               final ex = widget.exercises[index];
@@ -240,19 +244,6 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                               ? 'Series conservadas · Continuar con ${ex.replacedByExerciseName}'
                               : 'Ejercicio extra · Solo esta sesión',
                           style: context.text.bodySmall,
-                        ),
-                      ),
-                    if (!widget.effectiveReadOnly &&
-                        !allSetsDone &&
-                        widget.onReplaceExercise != null)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: widget.isAdapting
-                              ? null
-                              : () => widget.onReplaceExercise!(ex),
-                          icon: const Icon(Icons.swap_horiz_rounded),
-                          label: const Text('Sustituir ejercicio'),
                         ),
                       ),
                     if (ex.replacedByExerciseName != null)
@@ -297,6 +288,13 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                               !widget.effectiveReadOnly &&
                               ex.replacedByExerciseName == null,
                           showCompleteButton: false,
+                          onReplace:
+                              !widget.effectiveReadOnly &&
+                                  !allSetsDone &&
+                                  !widget.isAdapting &&
+                                  widget.onReplaceExercise != null
+                              ? () => widget.onReplaceExercise!(ex)
+                              : null,
                           onSetAdded:
                               widget.effectiveReadOnly ||
                                   ex.replacedByExerciseName != null
@@ -336,8 +334,49 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     );
   }
 
-  /// Botón "Completar serie" fijo abajo, al alcance del pulgar. Dentro de la
-  /// tarjeta quedaba bajo la lista de series y el consejo del coach.
+  /// La tarjeta aún no existe en el primer frame (el `PageView` la monta
+  /// después): se repinta una vez para poder leer la serie propuesta.
+  bool _previewRetryScheduled = false;
+
+  void _completeQuick(Exercise ex) {
+    final card = _cardKeyFor(ex.id).currentState;
+    final log = card?.completeNextSetQuick();
+    if (card == null || log == null) {
+      card?.openNextPendingSet();
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    final barHeight = _completeBarKey.currentContext?.size?.height ?? 0;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(
+            Spacing.lg,
+            0,
+            Spacing.lg,
+            barHeight + Spacing.sm,
+          ),
+          content: Text(
+            'Serie ${log.setIndex} registrada · ${_loadLabel(log.actualWeight, log.actualReps)}',
+          ),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Deshacer',
+            onPressed: () {
+              _cardKeyFor(ex.id).currentState?.undoSet(log.setIndex);
+              widget.onQuickSetUndone?.call();
+            },
+          ),
+        ),
+      );
+  }
+
+  /// Botón fijo abajo, al alcance del pulgar: registra la serie siguiente
+  /// con el peso y las reps propuestos de un toque. Para cambiarlos se
+  /// pulsa la fila de la serie (abre la hoja). Sin valores que proponer
+  /// abre directamente la hoja.
   Widget _buildCompleteSetBar(BuildContext context) {
     if (widget.effectiveReadOnly || widget.exercises.isEmpty) {
       return const SizedBox.shrink();
@@ -348,27 +387,55 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     if (next == null || ex.replacedByExerciseName != null) {
       return const SizedBox.shrink();
     }
+    final card = _cardKeyFor(ex.id).currentState;
+    if (card == null && !_previewRetryScheduled) {
+      _previewRetryScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    }
+    final preview = card?.quickSetPreview;
+    final isFirstSet = _doneCountFor(ex) == 0;
     return SafeArea(
+      key: _completeBarKey,
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           Spacing.lg,
-          Spacing.sm,
+          Spacing.xs,
           Spacing.lg,
           Spacing.md,
         ),
-        child: SizedBox(
-          width: double.infinity,
-          child: AppButton(
-            key: const ValueKey('focus_complete_set_button'),
-            label: 'Completar serie $next',
-            icon: Icons.check_rounded,
-            onPressed: widget.isAdapting
-                ? null
-                : () => _cardKeyFor(ex.id).currentState?.openNextPendingSet(),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isFirstSet && preview != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.xs),
+                child: Text(
+                  'Toca una serie para cambiar peso o repeticiones',
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.colors.textSecondary,
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                key: const ValueKey('focus_complete_set_button'),
+                label: preview == null
+                    ? 'Registrar serie $next'
+                    : 'Serie $next hecha · ${_loadLabel(preview.weight, preview.reps)}',
+                uppercaseLabel: false,
+                icon: Icons.check_rounded,
+                onPressed: widget.isAdapting ? null : () => _completeQuick(ex),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+String _loadLabel(double weight, int reps) => '${formatLoad(weight)} × $reps';

@@ -166,6 +166,14 @@ class WorkoutCacheDao extends DatabaseAccessor<LocalDatabase>
     ).insert(row, mode: InsertMode.insertOrReplace);
   }
 
+  /// Borra una sesión cacheada y sus set logs (entreno descartado).
+  Future<void> deleteCachedSession(String id) {
+    return transaction(() async {
+      await (delete(cachedSetLogs)..where((t) => t.sessionId.equals(id))).go();
+      await (delete(cachedWorkoutSessions)..where((t) => t.id.equals(id))).go();
+    });
+  }
+
   /// Marca una sesión como completada en local. No toca el resto de la
   /// fila — quien aplique coaching debe usar [`applyCoachingForSession`]
   /// por separado.

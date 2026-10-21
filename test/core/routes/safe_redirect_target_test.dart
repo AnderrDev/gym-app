@@ -20,6 +20,7 @@ void main() {
     test('rechaza login/registro y rutas que necesitan extra', () {
       expect(safeRedirectTarget('/login'), isNull);
       expect(safeRedirectTarget('/register'), isNull);
+      expect(safeRedirectTarget('/reset-password'), isNull);
       expect(safeRedirectTarget('/routine-day'), isNull);
       expect(safeRedirectTarget('/day-editor'), isNull);
       expect(safeRedirectTarget(null), isNull);

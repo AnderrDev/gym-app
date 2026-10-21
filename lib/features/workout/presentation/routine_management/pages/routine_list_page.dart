@@ -126,13 +126,10 @@ class _RoutineListPageState extends State<RoutineListPage> {
       centerTitle: false,
       titleSpacing: Spacing.lgPlus,
       iconTheme: IconThemeData(color: colors.textPrimary),
+      // Mismo estilo que el título de PROGRESO: las pestañas se leen igual.
       title: Text(
-        'MIS RUTINAS',
-        style: context.text.headlineMedium?.copyWith(
-          letterSpacing: 1.8,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-        ),
+        'RUTINAS',
+        style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
       ),
     );
   }
@@ -149,11 +146,11 @@ class _RoutineListPageState extends State<RoutineListPage> {
       backgroundColor: context.colors.primary,
       icon: Icon(Icons.add_rounded, color: context.colors.onPrimary, size: 24),
       label: Text(
-        'CREAR PROPIA',
+        'NUEVA RUTINA',
         style: context.text.labelMedium?.copyWith(
           color: context.colors.onPrimary,
           fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
+          letterSpacing: 1,
         ),
       ),
     );
@@ -232,7 +229,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
       delegate: SliverChildBuilderDelegate((context, index) {
         final routine = filteredRoutines[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: Spacing.lgPlus),
+          padding: const EdgeInsets.only(bottom: Spacing.md),
           child: RoutineListCard(
             routine: routine,
             isActive: state.activeRoutineId == routine.id,
@@ -299,13 +296,13 @@ class _RoutineListPageState extends State<RoutineListPage> {
                 // ── Filtros ──────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    // `md` arriba y abajo: separa visualmente el buscador y el
-                    // primer card sin amontonar.
+                    // `md` arriba y `lg` abajo: separa el buscador de los
+                    // filtros y éstos del primer card sin amontonar.
                     padding: const EdgeInsets.fromLTRB(
                       Spacing.lgPlus,
                       Spacing.md,
                       Spacing.lgPlus,
-                      Spacing.md,
+                      Spacing.lg,
                     ),
                     child: RoutineListFilterChips(
                       selected: _selectedFilter,
@@ -318,7 +315,7 @@ class _RoutineListPageState extends State<RoutineListPage> {
                   const SliverFillRemaining(child: RoutineListSkeleton())
                 else if (routines.isNotEmpty)
                   SliverPadding(
-                    // Vertical 0 acá; cada card ya trae `bottom: lgPlus`.
+                    // Vertical 0 acá; cada card ya trae `bottom: md`.
                     padding: const EdgeInsets.fromLTRB(
                       Spacing.lgPlus,
                       0,

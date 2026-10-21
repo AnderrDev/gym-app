@@ -21,12 +21,10 @@ class RoutineEditorWeekHeader extends StatelessWidget {
       child: SectionHeader(
         label: 'Estructura semanal',
         trailing: Text(
-          '$dayCount ${dayCount == 1 ? "DÍA" : "DÍAS"}',
-          style: context.text.labelMedium?.copyWith(
-            color: context.colors.primary,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
+          '$dayCount ${dayCount == 1 ? "día" : "días"}',
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.textSecondary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
