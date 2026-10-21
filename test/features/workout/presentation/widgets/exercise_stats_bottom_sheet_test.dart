@@ -108,7 +108,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
-    expect(find.text('BENCH PRESS'), findsOneWidget);
+    expect(find.text('Bench Press'), findsOneWidget);
     expect(find.text('PESO MÁXIMO'), findsOneWidget);
     // Una sola gráfica: las otras métricas se eligen arriba.
     expect(find.text('1RM ESTIMADO'), findsNothing);

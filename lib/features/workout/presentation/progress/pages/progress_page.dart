@@ -164,6 +164,8 @@ class _ProgressPageState extends State<ProgressPage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        // Mismo margen que RUTINAS y que el contenido de abajo.
+        titleSpacing: Spacing.lgPlus,
         title: Text(
           'PROGRESO',
           style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
@@ -280,9 +282,9 @@ class _ProgressReadyView extends StatelessWidget {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
-        Spacing.xl,
+        Spacing.lgPlus,
         Spacing.md,
-        Spacing.xl,
+        Spacing.lgPlus,
         Spacing.xxl + 80,
       ),
       children: [
@@ -347,8 +349,18 @@ class _ProgressReadyView extends StatelessWidget {
                 for (final (i, ex) in state.exercises.indexed) ...[
                   if (i > 0) Divider(height: 1, color: context.colors.divider),
                   ListTile(
-                    title: Text(ex.name),
-                    subtitle: Text(ex.targetMuscle),
+                    title: Text(
+                      ex.name,
+                      style: context.text.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      ex.targetMuscle,
+                      style: context.text.bodySmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                     trailing: Icon(
                       Icons.chevron_right_rounded,
                       color: context.colors.textSecondary,

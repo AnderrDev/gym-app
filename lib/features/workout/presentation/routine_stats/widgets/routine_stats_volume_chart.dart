@@ -30,7 +30,7 @@ class RoutineStatsVolumeChart extends StatelessWidget {
   final List<VolumePoint> points;
   final String subtitle;
 
-  /// Frente a qué es el cambio: "VS SESIÓN ANT.", "VS SEMANA ANT.".
+  /// Frente a qué es el cambio, p. ej. "VS ANTERIOR".
   final String deltaCaption;
 
   static Set<int> _computePrIndices(List<double> values) {
@@ -233,11 +233,16 @@ class RoutineStatsVolumeChart extends StatelessWidget {
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
-                      checkToShowDot: (spot, _) => pr.contains(spot.x.toInt()),
+                      // Con un solo punto no hay línea: sin punto visible la
+                      // gráfica parecía vacía.
+                      checkToShowDot: (spot, _) =>
+                          values.length == 1 || pr.contains(spot.x.toInt()),
                       getDotPainter: (spot, xPercentage, bar, index) =>
                           FlDotCirclePainter(
                             radius: 5,
-                            color: context.colors.warning,
+                            color: pr.contains(spot.x.toInt())
+                                ? context.colors.warning
+                                : context.colors.primary,
                             strokeWidth: 2,
                             strokeColor: context.colors.surface,
                           ),

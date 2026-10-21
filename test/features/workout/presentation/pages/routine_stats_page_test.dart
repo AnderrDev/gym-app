@@ -75,13 +75,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('3 SESIONES'), findsOneWidget);
-    expect(find.text('VS SEMANA ANT.'), findsOneWidget);
+    expect(
+      find.text('Peso × reps sumado de cada semana entrenada'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Torso'));
     await tester.pumpAndSettle();
 
     expect(find.text('2 SESIONES'), findsOneWidget);
-    expect(find.text('VS SESIÓN ANT.'), findsOneWidget);
+    expect(
+      find.text('Peso × reps sumado de cada sesión de Torso'),
+      findsOneWidget,
+    );
     // Torso de 4.000 a 5.000: la sesión de Pierna ya no cuenta.
     expect(find.text('+1.000 kg (+25 %)'), findsOneWidget);
     expect(find.text('Pierna'), findsOneWidget); // sólo el chip

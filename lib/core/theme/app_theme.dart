@@ -31,6 +31,13 @@ class AppTheme {
       onPrimary: palette.onPrimary,
       secondary: palette.accent,
       onSecondary: palette.onPrimary,
+      // Relleno de SegmentedButton (segmento elegido) y FilledButton.tonal.
+      // Sin definirlo Material usaba `accent` con texto blanco (≈1.9:1).
+      secondaryContainer: Color.alphaBlend(
+        palette.primary.withValues(alpha: 0.12),
+        palette.background,
+      ),
+      onSecondaryContainer: palette.primary,
       surface: palette.surface,
       onSurface: palette.textPrimary,
       surfaceContainerHighest: palette.surfaceHighlight,

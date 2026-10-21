@@ -4,6 +4,8 @@ import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/utils/routine_color.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/routine_list_card.dart';
 
 /// Fila clickable de rutina dentro del tab "Progreso": navega a las stats
 /// de esa rutina al tocar.
@@ -27,7 +29,7 @@ class ProgressRoutineTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.lg,
+            horizontal: Spacing.md,
             vertical: Spacing.md,
           ),
           decoration: BoxDecoration(
@@ -36,10 +38,12 @@ class ProgressRoutineTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.show_chart_rounded,
-                size: 20,
-                color: context.colors.primary,
+              // Mismo avatar que en RUTINAS: la rutina se reconoce igual en
+              // ambas pestañas.
+              RoutineAvatar(
+                name: routine.name,
+                accent: RoutineColor.accentFor(context, routine.name),
+                size: 40,
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
@@ -57,8 +61,14 @@ class ProgressRoutineTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Sesiones y volumen de cada día',
-                      style: context.text.bodySmall,
+                      routine.exerciseCount == 0
+                          ? 'Sin ejercicios'
+                          : '${routine.exerciseCount} '
+                                '${routine.exerciseCount == 1 ? 'ejercicio' : 'ejercicios'}'
+                                ' · Ver historial',
+                      style: context.text.bodySmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),

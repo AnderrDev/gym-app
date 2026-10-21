@@ -59,10 +59,11 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
       children: [
         if (!fullscreen) const BottomSheetHandle(),
         Padding(
+          // Mismo margen lateral que la lista de abajo (`lgPlus`).
           padding: const EdgeInsets.fromLTRB(
-            Spacing.xl,
-            Spacing.xl,
-            Spacing.xl,
+            Spacing.lgPlus,
+            Spacing.lg,
+            Spacing.lgPlus,
             Spacing.lg,
           ),
           child: Row(
@@ -73,15 +74,18 @@ class ExerciseStatsBottomSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      exerciseName.toUpperCase(),
-                      style: context.text.displayLarge?.copyWith(fontSize: 24),
+                      exerciseName,
+                      style: context.text.headlineSmall?.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      'ANÁLISIS DE PROGRESIÓN',
-                      style: context.text.labelMedium?.copyWith(
-                        color: context.colors.primary,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w900,
+                      'Progreso del ejercicio',
+                      style: context.text.bodyMedium?.copyWith(
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],

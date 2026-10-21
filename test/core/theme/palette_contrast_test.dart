@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/core/theme/app_palette.dart';
+import 'package:gym_flutter/core/theme/app_theme.dart';
 
 /// Ratio de contraste WCAG 2.x entre dos colores opacos.
 double _contrast(Color a, Color b) {
@@ -74,6 +75,18 @@ void main() {
         expectContrast('onWarning / warning', p.onWarning, p.warning, _text);
         expectContrast('onPrimary / primary', p.onPrimary, p.primary, _text);
         expectContrast('onError / error', p.onError, p.error, _text);
+      });
+
+      test('ColorScheme: texto sobre secondaryContainer', () {
+        // Segmento elegido de SegmentedButton y FilledButton.tonal.
+        final theme = name == 'light' ? AppTheme.light() : AppTheme.dark();
+        final scheme = theme.colorScheme;
+        expectContrast(
+          'onSecondaryContainer / secondaryContainer',
+          scheme.onSecondaryContainer,
+          scheme.secondaryContainer,
+          _text,
+        );
       });
 
       test('rellenos semánticos distinguibles del fondo (UI 3:1)', () {

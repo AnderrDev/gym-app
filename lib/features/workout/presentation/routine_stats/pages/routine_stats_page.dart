@@ -181,7 +181,13 @@ class _StatsContentState extends State<_StatsContent> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(Spacing.lg),
+      // Mismo margen lateral que PROGRESO y RUTINAS.
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lgPlus,
+        Spacing.lg,
+        Spacing.lgPlus,
+        Spacing.lg,
+      ),
       children: [
         if (days.length > 1) ...[
           SingleChildScrollView(
@@ -210,7 +216,9 @@ class _StatsContentState extends State<_StatsContent> {
           subtitle: dayId == null
               ? 'Peso × reps sumado de cada semana entrenada'
               : 'Peso × reps sumado de cada sesión de ${days[dayId]}',
-          deltaCaption: dayId == null ? 'VS SEMANA ANT.' : 'VS SESIÓN ANT.',
+          // Corto: dentro de la card la celda no da para "VS SEMANA ANT." y
+          // el subtítulo ya dice si se compara por semana o por sesión.
+          deltaCaption: 'VS ANTERIOR',
         ),
         const SizedBox(height: 24),
         Text(

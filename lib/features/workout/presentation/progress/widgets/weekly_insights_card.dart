@@ -47,9 +47,11 @@ class WeeklyInsightsCard extends StatelessWidget {
     }
 
     final change = percentChange(i.totalVolume, i.previousWeekVolume);
-    final changeColor = change == null
+    // Verde/rojo solo cuando hay algo que celebrar o vigilar: "+0 %" o un
+    // "0 %" a mitad de semana no son un logro.
+    final changeColor = change == null || change.round() == 0
         ? context.colors.textSecondary
-        : change >= 0
+        : change > 0
         ? context.colors.successText
         : context.colors.error;
 
@@ -80,7 +82,9 @@ class WeeklyInsightsCard extends StatelessWidget {
                   label: 'CONSTANCIA',
                   value: '${i.adherenceRate.toStringAsFixed(0)} %',
                   caption: 'del plan cumplido',
-                  valueColor: context.colors.successText,
+                  valueColor: i.adherenceRate >= 80
+                      ? context.colors.successText
+                      : context.colors.textPrimary,
                 ),
               ),
             ],
