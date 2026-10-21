@@ -112,6 +112,9 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _pageController.hasClients) {
           _pageController.jumpToPage(addedIndex);
+          // El salto puede notificar una página intermedia a `onPageChanged`
+          // y la cabecera quedaría en el ejercicio anterior.
+          setState(() => _currentIndex = addedIndex);
         }
       });
       return;
