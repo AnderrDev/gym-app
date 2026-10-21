@@ -25,4 +25,4 @@ Removed. Runtime is remote-only. See `CLAUDE.md#Known drift` §1. Re-introductio
 ## Web hosting (Firebase)
 - Hosting output is `build/web` (`firebase.json`).
 - Default Firebase project: `gym-flutter-web-224` (`.firebaserc`).
-- Deploy: `flutter build web` then `firebase deploy --only hosting`.
+- Deploy: `flutter build web --wasm --dart-define-from-file=.env` then `firebase deploy --only hosting`.

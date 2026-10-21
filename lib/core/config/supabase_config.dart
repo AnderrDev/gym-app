@@ -17,6 +17,11 @@ class SupabaseConfig {
     'SUPABASE_ANON_KEY',
   );
 
+  /// `true` si las credenciales llegaron por `--dart-define`; en ese caso
+  /// `main()` no necesita cargar `.env`.
+  static bool get hasDartDefines =>
+      _defineUrl.isNotEmpty && _defineAnonKey.isNotEmpty;
+
   SupabaseClient get client => Supabase.instance.client;
 
   String _resolve(String key, String fromDefine) {

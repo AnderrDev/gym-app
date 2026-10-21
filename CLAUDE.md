@@ -25,7 +25,7 @@ flutter run -d chrome            # web
 Releases / CI pass the defines explicitly (the `.env` asset is optional — if missing, dotenv silently skips and the dart-defines take over):
 
 ```bash
-flutter build web --dart-define-from-file=.env
+flutter build web --wasm --dart-define-from-file=.env
 ```
 
 - Install deps: `flutter pub get`
@@ -36,7 +36,7 @@ flutter build web --dart-define-from-file=.env
 - End-to-end flows (real app — router, shell, BLoCs, pages — over the in-memory backend in `integration_test/support/fake_backend.dart`; no Supabase needed): `flutter test test/integration/app_flows_test.dart` (runs in CI with the rest of `flutter test`). Same flows in a real browser: start `chromedriver --port=4444` (matching your Chrome) and run `flutter drive --driver=test_driver/app_flows_driver.dart --target=integration_test/app_flows_test.dart -d web-server --profile --browser-name=chrome` (`flutter drive` doesn't print why a flow failed: read `build/integration_response_data.json`; add `--dart-define=FLOW_SCREENSHOTS=true` for a screenshot per failure in `build/flow_screenshots/`). There's no macOS desktop project; on iOS/Android use `flutter test integration_test/app_flows_test.dart -d <device>`. In tests use the helpers in `app_flows.dart` (`typeText`, `settle`, `pumpUntilFound`) — `enterText`/plain `pumpAndSettle` don't work reliably in the browser. Flows live in `integration_test/flows/app_flows.dart`; when you add a repository call to a flow, implement it in `FakeWorkoutRepository` (unimplemented methods throw).
 - Real-backend smoke: `integration_test/critical_flow_test.dart` — needs `--dart-define-from-file=.env` plus `TEST_EMAIL`/`TEST_PASSWORD` of a test account with a routine assigned (skips otherwise).
 - Edge-function contract smoke test: `bash scripts/contract_smoke_supabase.sh` (requires `supabase` CLI auth, `psql`, `jq`, and `SUPABASE_DB_PASSWORD` env var; creates a real test user via admin API and exercises all three Edge Functions end-to-end)
-- Firebase web deploy: `flutter build web --dart-define-from-file=.env` (or with explicit `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`) then `firebase deploy --only hosting`. **Never build without dart-define for a real deploy** — `firebase.json`'s default `"**/.*"` ignore rule strips the bundled `.env` asset from every upload, so a build that relied on the asset instead of dart-define ships with empty Supabase credentials and crashes at boot (`SupabaseConfig.init()` throws `StateError`, shown as `_BootstrapErrorApp`).
+- Firebase web deploy: `flutter build web --wasm --dart-define-from-file=.env` (or with explicit `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`) then `firebase deploy --only hosting`. **Never build without dart-define for a real deploy** — `firebase.json`'s default `"**/.*"` ignore rule strips the bundled `.env` asset from every upload, so a build that relied on the asset instead of dart-define ships with empty Supabase credentials and crashes at boot (`SupabaseConfig.init()` throws `StateError`, shown as `_BootstrapErrorApp`).
 
 ## High-level architecture
 
@@ -102,7 +102,9 @@ Repository implementations should NOT use ad-hoc `catch (e) { return Left(Server
   - `web/sqlite3.wasm` — the sqlite3 binary. **Must match the `sqlite3` Dart package version pinned in `pubspec.lock`**. Mismatch produces `LinkError: ... function import requires a callable` at first query. Re-download when you upgrade `sqlite3`: `curl -sSLfo web/sqlite3.wasm "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-<VERSION>/sqlite3.wasm"`.
   - `web/drift_worker.dart.js` — the worker entrypoint, **compiled** from `tool/drift_worker.dart`. When `drift` or `sqlite3` is upgraded, regenerate with: `dart compile js tool/drift_worker.dart -o web/drift_worker.dart.js`. The `.deps` / `.map` sidecars are gitignored.
 
-`Capabilities.hasLocalDatabase` returns `true` everywhere — DI registers `LocalDatabase`, `OutboxRepository`, `SyncWorker`, `SyncStatusBloc` on all platforms. The bootstrap calls `localDb.ping()` synchronously after `LocalDatabase.open()`; on web that triggers the actual `WasmDatabase.open()` async, so the error path in `_BootstrapErrorApp` catches IndexedDB-blocked-by-Safari-private cases via the same heuristic as `localStorage`.
+`Capabilities.hasLocalDatabase` returns `true` everywhere — DI registers `LocalDatabase`, `OutboxRepository`, `SyncWorker`, `SyncStatusBloc` on all platforms. On native the bootstrap awaits `localDb.ping()` right after `LocalDatabase.open()` (a failure shows `_BootstrapErrorApp`). **On web the ping is NOT awaited**: it is what downloads/compiles `drift_worker.dart.js` + `sqlite3.wasm` (~540 KB gzip), so it runs in parallel with the first frame and the sync worker starts when it resolves; a web DB failure is logged (`sync_worker.start_failed`) instead of blocking boot. Don't re-add the await on web.
+
+**Web build is `--wasm`** (dart2wasm + skwasm with automatic `main.dart.js` + CanvasKit fallback). Material/Cupertino/Widgets localizations use `spanishLocalizationsDelegates` (`lib/core/i18n/spanish_localizations.dart`) instead of `GlobalMaterialLocalizations.delegates` so the other ~80 locales are tree-shaken. Manrope TTFs are subset to Latin (see `assets/fonts/README.md`).
 
 ### Other constraints
 
