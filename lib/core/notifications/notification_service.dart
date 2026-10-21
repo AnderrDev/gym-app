@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
@@ -36,13 +35,26 @@ class NotificationService {
   static const int activeWorkoutNotificationId = 1001;
   static const int restEndNotificationId = 1002;
 
+  /// Nombre del archivo de sonido de fin de descanso en el bundle iOS.
+  static const String restAlarmSoundIos = 'rest_alarm.caf';
+
   bool _initialized = false;
+  Future<void>? _initFuture;
 
   bool get _isSupported => Capabilities.supportsLocalNotifications;
 
-  Future<void> init() async {
-    if (!_isSupported || _initialized) return;
+  /// Inicializa el plugin. Idempotente y compartido: llamadas concurrentes
+  /// (el arranque diferido de `main.dart` y un uso temprano desde la UI)
+  /// esperan al mismo `Future`. Si falla, se puede reintentar.
+  Future<void> init() {
+    if (!_isSupported || _initialized) return Future<void>.value();
+    return _initFuture ??= _doInit().catchError((Object e) {
+      _initFuture = null;
+      throw e;
+    });
+  }
 
+  Future<void> _doInit() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
       // Permisos se piden explícitamente vía requestPermission().
@@ -52,11 +64,14 @@ class NotificationService {
     );
 
     await _plugin.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
+      settings: const InitializationSettings(
+        android: androidInit,
+        iOS: iosInit,
+      ),
     );
-    // `zonedSchedule` exige la base de zonas; se programa en UTC (instante
-    // absoluto), así que no hace falta conocer la zona local.
-    tz_data.initializeTimeZones();
+    // No se carga la base IANA (`initializeTimeZones`): se programa en
+    // `tz.UTC` (instante absoluto), que es una constante del paquete y el
+    // plugin no consulta `tz.local`.
 
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
@@ -94,6 +109,7 @@ class NotificationService {
   Future<bool> requestPermission() async {
     if (!_isSupported) return false;
     try {
+      await init();
       final androidPlugin = _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
@@ -139,6 +155,7 @@ class NotificationService {
   }) async {
     if (!_isSupported) return;
     try {
+      await init();
       final androidDetails = AndroidNotificationDetails(
         _activeChannelId,
         _activeChannelName,
@@ -162,10 +179,13 @@ class NotificationService {
         interruptionLevel: InterruptionLevel.passive,
       );
       await _plugin.show(
-        activeWorkoutNotificationId,
-        title,
-        body,
-        NotificationDetails(android: androidDetails, iOS: iosDetails),
+        id: activeWorkoutNotificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
+        ),
       );
     } catch (e) {
       AppLogger.instance.warning('NotificationService.showActiveWorkout: $e');
@@ -175,7 +195,8 @@ class NotificationService {
   Future<void> cancelActiveWorkout() async {
     if (!_isSupported) return;
     try {
-      await _plugin.cancel(activeWorkoutNotificationId);
+      await init();
+      await _plugin.cancel(id: activeWorkoutNotificationId);
     } catch (e) {
       AppLogger.instance.warning('NotificationService.cancelActiveWorkout: $e');
     }
@@ -187,11 +208,12 @@ class NotificationService {
   Future<void> showRestEnded() async {
     if (!_isSupported) return;
     try {
+      await init();
       await _plugin.show(
-        restEndNotificationId,
-        '¡A entrenar!',
-        'Próxima serie te espera',
-        _restEndDetails(),
+        id: restEndNotificationId,
+        title: '¡A entrenar!',
+        body: 'Próxima serie te espera',
+        notificationDetails: _restEndDetails(),
       );
     } catch (e) {
       AppLogger.instance.warning('NotificationService.showRestEnded: $e');
@@ -203,16 +225,22 @@ class NotificationService {
   /// sólo una notificación programada suena a tiempo. Reprogramar con el
   /// mismo id sustituye a la anterior.
   Future<void> scheduleRestEnded(Duration after) async {
-    if (!_isSupported || !_initialized) return;
+    if (!_isSupported) return;
     try {
+      // El init puede estar diferido tras el primer frame: se espera (o se
+      // fuerza) en vez de descartar el aviso de descanso.
+      await init();
+      if (!_initialized) return;
+      // Desde flutter_local_notifications 19 no existe
+      // `uiLocalNotificationDateInterpretation`: en iOS el trigger se arma
+      // con la fecha en la zona del `TZDateTime` (UTC → instante absoluto),
+      // igual que hacía `absoluteTime`.
       await _plugin.zonedSchedule(
-        restEndNotificationId,
-        '¡A entrenar!',
-        'Próxima serie te espera',
-        tz.TZDateTime.now(tz.UTC).add(after),
-        _restEndDetails(),
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        id: restEndNotificationId,
+        title: '¡A entrenar!',
+        body: 'Próxima serie te espera',
+        scheduledDate: tz.TZDateTime.now(tz.UTC).add(after),
+        notificationDetails: _restEndDetails(),
         // Inexacta: no requiere el permiso de alarmas exactas. En Android la
         // alerta la da el Timer (el proceso sigue vivo en segundo plano).
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -227,7 +255,8 @@ class NotificationService {
   Future<void> cancelRestEnded() async {
     if (!_isSupported) return;
     try {
-      await _plugin.cancel(restEndNotificationId);
+      await init();
+      await _plugin.cancel(id: restEndNotificationId);
     } catch (e) {
       AppLogger.instance.warning('NotificationService.cancelRestEnded: $e');
     }
@@ -251,6 +280,12 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
+      // Tono propio (≤ 30 s) empaquetado en el bundle de Runner
+      // (`ios/Runner/rest_alarm.caf`, fase Resources). iOS respeta el
+      // interruptor de silencio salvo con AlarmKit (P8).
+      sound: restAlarmSoundIos,
+      // Requiere el entitlement
+      // `com.apple.developer.usernotifications.time-sensitive`.
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
     return NotificationDetails(android: androidDetails, iOS: iosDetails);

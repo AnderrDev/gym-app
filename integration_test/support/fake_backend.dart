@@ -8,6 +8,7 @@ import 'package:gym_flutter/core/error/failures.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
@@ -756,6 +757,11 @@ class _NoopAsync {
 
 class NoopNotificationService extends _NoopAsync
     implements NotificationService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => _noop(invocation);
+}
+
+class NoopRestAlarmScheduler extends _NoopAsync implements RestAlarmScheduler {
   @override
   dynamic noSuchMethod(Invocation invocation) => _noop(invocation);
 }

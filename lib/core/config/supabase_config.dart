@@ -1,4 +1,6 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gym_flutter/core/auth/secure_session_storage.dart';
+import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Bootstrap de Supabase. Credenciales en orden de prioridad:
@@ -41,6 +43,31 @@ class SupabaseConfig {
       );
     }
 
-    await Supabase.initialize(url: url, anonKey: anonKey);
+    // En iOS/Android la sesión vive en el Keychain/Keystore. La clave es la
+    // misma que usa el storage por defecto (`sb-<ref>-auth-token`) para
+    // migrar la sesión ya guardada en SharedPreferences. El code verifier
+    // PKCE (`pkceAsyncStorage`) sigue en SharedPreferences: es de un solo
+    // uso y de vida corta (reset de contraseña).
+    final authOptions = Capabilities.supportsSecureSessionStorage
+        ? FlutterAuthClientOptions(
+            localStorage: SecureSessionStorage(
+              persistSessionKey: sessionStorageKey(url),
+            ),
+          )
+        : const FlutterAuthClientOptions();
+
+    await Supabase.initialize(
+      url: url,
+      // `anonKey` está deprecado desde supabase_flutter 2.13: el mismo valor
+      // (anon key legacy o publishable key `sb_publishable_…`) va en
+      // `publishableKey`. El nombre de la variable de entorno no cambia.
+      publishableKey: anonKey,
+      authOptions: authOptions,
+    );
   }
+
+  /// Clave con la que `supabase_flutter` persiste la sesión por defecto
+  /// (ver `Supabase.initialize`): `sb-<subdominio del host>-auth-token`.
+  static String sessionStorageKey(String url) =>
+      'sb-${Uri.parse(url).host.split('.').first}-auth-token';
 }

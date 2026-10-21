@@ -10,8 +10,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
-import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'package:gym_flutter/core/ui/adaptive/adaptive_sheet.dart';
 import 'package:gym_flutter/core/ui/feedback/app_snack_bar.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
@@ -65,8 +65,8 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     super.initState();
     _restController = RestTimerController(
       notifier: di.sl<ActiveWorkoutNotifier>(),
-      liveActivities: di.sl<LiveActivitiesBridge>(),
       notifications: di.sl<NotificationService>(),
+      restAlarm: di.sl<RestAlarmScheduler>(),
       onNaturalEnd: _onRestNaturalEnd,
       clock: di.sl<Clock>(),
     );

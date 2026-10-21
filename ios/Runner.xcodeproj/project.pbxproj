@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		1E28E81D47CF311914BF959F /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A552F3386C525B3883AFF953 /* Pods_RunnerTests.framework */; };
+		22256A60001ECEEE287864A9 /* RestAlarmChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B5B6DFB4D5C605077190224 /* RestAlarmChannel.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		38F9831A67A3C250525B3BCC /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1797BD48B2D077364989AC28 /* Pods_Runner.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -19,6 +20,7 @@
 		BE4C1A922FB6212600050DC0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE4C1A912FB6212500050DC0 /* WidgetKit.framework */; };
 		BE4C1A942FB6212600050DC0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE4C1A932FB6212600050DC0 /* SwiftUI.framework */; };
 		BE4C1AA32FB6212700050DC0 /* SmartGymTrackerActivityExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BE4C1A902FB6212500050DC0 /* SmartGymTrackerActivityExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C07BED7F7F61BB6C209A0F4A /* rest_alarm.caf in Resources */ = {isa = PBXBuildFile; fileRef = A4DCC86448C7FF0CB16F5560 /* rest_alarm.caf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +74,7 @@
 		429D5CC172C9CFAF951540AE /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		503BB485C5B87A3B2AEF123E /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		5CF520012439DA017C21207B /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		6B5B6DFB4D5C605077190224 /* RestAlarmChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestAlarmChannel.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -84,6 +87,7 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A4DCC86448C7FF0CB16F5560 /* rest_alarm.caf */ = {isa = PBXFileReference; includeInIndex = 1; path = rest_alarm.caf; sourceTree = "<group>"; };
 		A552F3386C525B3883AFF953 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE07EA462FB623B700A04717 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		BE4C1A902FB6212500050DC0 /* SmartGymTrackerActivityExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SmartGymTrackerActivityExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -215,6 +219,8 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				A4DCC86448C7FF0CB16F5560 /* rest_alarm.caf */,
+				6B5B6DFB4D5C605077190224 /* RestAlarmChannel.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -323,10 +329,11 @@
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
 			compatibilityVersion = "Xcode 9.3";
-			developmentRegion = en;
+			developmentRegion = es;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				es,
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
@@ -357,6 +364,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				C07BED7F7F61BB6C209A0F4A /* rest_alarm.caf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,6 +505,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				22256A60001ECEEE287864A9 /* RestAlarmChannel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -855,7 +864,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SmartGymTrackerActivityExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = SmartGymTrackerActivityExtension;
+				INFOPLIST_KEY_CFBundleDisplayName = "Smart Gym Tracker";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -899,7 +908,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SmartGymTrackerActivityExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = SmartGymTrackerActivityExtension;
+				INFOPLIST_KEY_CFBundleDisplayName = "Smart Gym Tracker";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -940,7 +949,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SmartGymTrackerActivityExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = SmartGymTrackerActivityExtension;
+				INFOPLIST_KEY_CFBundleDisplayName = "Smart Gym Tracker";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (

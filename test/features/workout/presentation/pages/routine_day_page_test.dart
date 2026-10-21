@@ -19,6 +19,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routi
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'package:gym_flutter/features/workout/presentation/exercise/widgets/exercise_card.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/pages/routine_day_page.dart';
 import 'package:gym_flutter/injection_container.dart' as di;
@@ -134,6 +135,10 @@ void main() {
     di.sl.registerSingleton<NotificationService>(notificationService);
     di.sl.registerSingleton<ActiveWorkoutNotifier>(activeWorkoutNotifier);
     di.sl.registerSingleton<LiveActivitiesBridge>(liveActivitiesBridge);
+    if (di.sl.isRegistered<RestAlarmScheduler>()) {
+      di.sl.unregister<RestAlarmScheduler>();
+    }
+    di.sl.registerSingleton<RestAlarmScheduler>(_NoopRestAlarmScheduler());
     if (!di.sl.isRegistered<Clock>()) {
       di.sl.registerSingleton<Clock>(const SystemClock());
     }
@@ -564,4 +569,18 @@ void main() {
 
     verify(() => mockGoRouter.pop<bool>(true)).called(1);
   });
+}
+
+class _NoopRestAlarmScheduler implements RestAlarmScheduler {
+  @override
+  Future<void> schedule(DateTime endsAt) async {}
+
+  @override
+  Future<void> switchToNotification(DateTime endsAt) async {}
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<void> onRestFinished() async {}
 }

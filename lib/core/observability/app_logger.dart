@@ -33,7 +33,7 @@ class AppLogger {
       settings: TalkerSettings(
         enabled: true,
         useConsoleLogs: kDebugMode,
-        maxHistoryItems: 500,
+        maxHistoryItems: 300,
       ),
     );
   }

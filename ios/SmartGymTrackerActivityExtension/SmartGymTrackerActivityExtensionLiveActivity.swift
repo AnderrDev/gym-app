@@ -56,9 +56,18 @@ struct SmartGymTrackerActivityExtensionLiveActivity: Widget {
                         .foregroundColor(data.isResting ? .orange : .yellow)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    ChronoText(data: data)
-                        .font(.title3.weight(.bold))
-                        .monospacedDigit()
+                    // Solo cuenta atrás del descanso; fuera del descanso el
+                    // cronómetro de sesión vive únicamente en la lock screen.
+                    if data.isResting {
+                        ChronoText(data: data)
+                            .font(.title3.weight(.bold))
+                            .monospacedDigit()
+                    } else if data.hasProgress {
+                        Text("\(data.completedSets)/\(data.totalSets)")
+                            .font(.title3.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundColor(.white)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -66,24 +75,40 @@ struct SmartGymTrackerActivityExtensionLiveActivity: Widget {
                             .font(.caption.weight(.bold))
                             .tracking(1.4)
                             .foregroundColor(.gray)
-                        Text(data.isResting
-                             ? "Descanso en curso"
-                             : "\(data.completedSets)/\(data.totalSets) series")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(data.isResting ? .orange : .white)
+                        if data.isResting {
+                            Text("Descanso en curso")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.orange)
+                        } else if data.hasProgress {
+                            Text("\(data.completedSets)/\(data.totalSets) series")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                        }
                     }
                 }
             } compactLeading: {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundColor(data.isResting ? .orange : .yellow)
             } compactTrailing: {
-                ChronoText(data: data, showsHours: false)
-                    .monospacedDigit()
-                    .frame(maxWidth: 56)
+                if data.isResting {
+                    ChronoText(data: data, showsHours: false)
+                        .monospacedDigit()
+                        .frame(maxWidth: 56)
+                } else if data.hasProgress {
+                    Text("\(data.completedSets)/\(data.totalSets)")
+                        .font(.caption2.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundColor(.white)
+                }
             } minimal: {
-                Text("\(data.completedSets)/\(data.totalSets)")
-                    .font(.caption2.weight(.bold))
-                    .foregroundColor(.white)
+                if data.hasProgress {
+                    Text("\(data.completedSets)/\(data.totalSets)")
+                        .font(.caption2.weight(.bold))
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .foregroundColor(data.isResting ? .orange : .yellow)
+                }
             }
         }
     }
@@ -115,6 +140,10 @@ private struct WorkoutData {
     }
 
     var isResting: Bool { restEndsAt != nil }
+
+    /// Tras relanzar la app el progreso es desconocido (`totalSets == 0`):
+    /// se oculta el contador en vez de mostrar "0/0 series".
+    var hasProgress: Bool { totalSets > 0 }
 
     /// Acepta tanto Int como String (`Int.init(_:)`) — el plugin a veces
     /// serializa números a String cuando viajan por el channel.
@@ -190,14 +219,16 @@ private struct LockScreenView: View {
                     .monospacedDigit()
             }
 
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.footnote)
-                Text("\(data.completedSets)/\(data.totalSets) series")
-                    .font(.footnote.weight(.medium))
-                    .foregroundColor(.white.opacity(0.85))
-                Spacer()
+            if data.hasProgress {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.footnote)
+                    Text("\(data.completedSets)/\(data.totalSets) series")
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.white.opacity(0.85))
+                    Spacer()
+                }
             }
         }
         .padding(.horizontal, 16)

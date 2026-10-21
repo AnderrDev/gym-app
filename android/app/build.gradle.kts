@@ -13,7 +13,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications 18.x requiere core library desugaring
+        // flutter_local_notifications (18+) requiere core library desugaring
         // para los APIs java.time backportados en minSdk < 26.
         isCoreLibraryDesugaringEnabled = true
     }

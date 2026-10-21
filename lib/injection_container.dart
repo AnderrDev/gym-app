@@ -28,6 +28,8 @@ import 'package:gym_flutter/features/workout/data/datasources/workout_local_data
 import 'core/notifications/active_workout_notifier.dart';
 import 'core/notifications/live_activities_bridge.dart';
 import 'core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/alarm_kit_bridge.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'core/services/active_session_service.dart';
 import 'core/services/routine_assignment_bus.dart';
 import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
@@ -362,6 +364,15 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FlutterLocalNotificationsPlugin());
   sl.registerLazySingleton(() => NotificationService(sl()));
   sl.registerLazySingleton(() => LiveActivitiesBridge());
+  sl.registerLazySingleton(() => AlarmKitBridge());
+  // Fin del descanso: AlarmKit en iOS 26+, notificación local si no.
+  sl.registerLazySingleton<RestAlarmScheduler>(
+    () => AlarmKitRestAlarmScheduler(
+      notifications: sl(),
+      alarmKit: sl(),
+      clock: sl(),
+    ),
+  );
   sl.registerLazySingleton(
     () => ActiveWorkoutNotifier(
       notifications: sl(),

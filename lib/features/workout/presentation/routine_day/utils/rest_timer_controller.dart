@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
-import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'package:gym_flutter/core/platform/capabilities.dart';
 import 'package:gym_flutter/core/utils/clock.dart';
 import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/rest_timer_button.dart';
@@ -19,7 +19,8 @@ import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/re
 ///   y al volver el contador debe mostrar el tiempo real restante.
 /// - El `ValueNotifier<RestTimerSnapshot>` que el botón observa para
 ///   rebuildearse sin afectar al resto del scaffold.
-/// - Las integraciones laterales (haptic, Live Activity, notificación push).
+/// - Las integraciones laterales (haptic, Live Activity vía [notifier],
+///   notificación local, aviso programado vía [RestAlarmScheduler]).
 ///
 /// Para mantener al controller libre de `BuildContext`, el fin natural notifica
 /// vía el callback [onNaturalEnd] — la UI decide cómo presentarlo (snackbar,
@@ -27,18 +28,27 @@ import 'package:gym_flutter/features/workout/presentation/routine_day/widgets/re
 class RestTimerController {
   RestTimerController({
     required this.notifier,
-    required this.liveActivities,
     required this.notifications,
+    required this.restAlarm,
     this.onNaturalEnd,
     this.clock = const SystemClock(),
     @visibleForTesting bool? scheduledAlertOverride,
-  }) : _scheduledAlertOverride = scheduledAlertOverride;
+    @visibleForTesting bool Function()? isForeground,
+  }) : _scheduledAlertOverride = scheduledAlertOverride,
+       _isForeground = isForeground ?? _appIsResumed;
 
   final bool? _scheduledAlertOverride;
+  final bool Function() _isForeground;
+
+  static bool _appIsResumed() =>
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
   final ActiveWorkoutNotifier notifier;
-  final LiveActivitiesBridge liveActivities;
   final NotificationService notifications;
+
+  /// Aviso programado de fin de descanso (iOS): alarma de AlarmKit en
+  /// iOS 26+ o notificación local como fallback.
+  final RestAlarmScheduler restAlarm;
   final VoidCallback? onNaturalEnd;
   final Clock clock;
 
@@ -49,13 +59,28 @@ class RestTimerController {
   Timer? _timer;
   DateTime? _endsAt;
 
-  /// iOS sin Live Activity: la app se suspende con la pantalla bloqueada y
-  /// ni el Timer ni `showRestEnded` llegan a tiempo, así que el fin del
-  /// descanso se programa en el sistema. Con Live Activity ya avisa su
-  /// `AlertConfig`; en Android el proceso sigue vivo y avisa el Timer.
+  /// Ya se pidió pasar el aviso a notificación en el último segundo.
+  bool _switchedToNotification = false;
+
+  /// `true` cuando el fin del descanso se avisa con una notificación local
+  /// **programada en el sistema** (`zonedSchedule`) en vez del `Timer`.
+  ///
+  /// Por qué en iOS siempre, haya o no Live Activity: con la app en segundo
+  /// plano o la pantalla bloqueada iOS suspende el proceso y Dart no corre.
+  /// La Live Activity sigue contando sola (el countdown es nativo), pero el
+  /// aviso sonoro no puede depender de un `updateActivity` con `alertConfig`
+  /// disparado desde el `Timer`, porque ese código no se ejecuta a tiempo.
+  /// El aviso programado es por eso la ÚNICA fuente de sonido en iOS (la Live
+  /// Activity ya no manda `alertConfig`, así no hay duplicados). Qué suena lo
+  /// decide [restAlarm]: alarma de AlarmKit (iOS 26+) o notificación local.
+  ///
+  /// En Android el proceso sigue vivo en segundo plano: el `Timer` llega a
+  /// cero y avisa con `showRestEnded`, sin programar nada.
+  ///
+  /// [scheduledAlertOverride] permite fijar el valor en tests (que corren en
+  /// el host, donde `Capabilities` no reporta iOS).
   bool get _usesScheduledAlert =>
-      _scheduledAlertOverride ??
-      (Capabilities.supportsLiveActivities && !liveActivities.isAvailable);
+      _scheduledAlertOverride ?? Capabilities.schedulesRestEndAlert;
 
   void dispose() {
     _timer?.cancel();
@@ -69,7 +94,9 @@ class RestTimerController {
       snapshot.value = const RestTimerSnapshot.idle();
       return;
     }
-    _endsAt = clock.now().add(Duration(seconds: seconds));
+    final endsAt = clock.now().add(Duration(seconds: seconds));
+    _endsAt = endsAt;
+    _switchedToNotification = false;
     snapshot.value = RestTimerSnapshot(
       isResting: true,
       secondsRemaining: seconds,
@@ -77,7 +104,7 @@ class RestTimerController {
     );
     unawaited(notifier.onRestStarted(duration: Duration(seconds: seconds)));
     if (_usesScheduledAlert) {
-      unawaited(notifications.scheduleRestEnded(Duration(seconds: seconds)));
+      unawaited(restAlarm.schedule(endsAt));
     }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
@@ -101,6 +128,7 @@ class RestTimerController {
       _onNaturalEnd();
       return;
     }
+    _maybeSwitchToNotification(next);
     if (next == current.secondsRemaining) return;
     snapshot.value = RestTimerSnapshot(
       isResting: true,
@@ -110,12 +138,29 @@ class RestTimerController {
     if (next <= 3) HapticFeedback.lightImpact();
   }
 
+  /// En el último segundo, con la app en primer plano, la alarma de
+  /// AlarmKit se cambia por la notificación: el usuario está mirando la app
+  /// y una alarma a pantalla completa sobra. Si la app está en segundo plano
+  /// o la pantalla bloqueada, Dart no llega aquí y la alarma suena.
+  void _maybeSwitchToNotification(int remaining) {
+    final endsAt = _endsAt;
+    if (!_usesScheduledAlert || _switchedToNotification || endsAt == null) {
+      return;
+    }
+    if (remaining > 1 || !_isForeground()) return;
+    _switchedToNotification = true;
+    unawaited(restAlarm.switchToNotification(endsAt));
+  }
+
   void _onNaturalEnd() {
-    // Fin NATURAL del descanso. Multi-canal de feedback evitando duplicados:
-    // si la Live Activity está activa, su `AlertConfig` ya muestra
-    // banner+sonido en iOS → omitimos el push del sistema. En Android (sin
-    // LA) sí firamos el push tradicional.
-    if (!liveActivities.isAvailable && !_usesScheduledAlert) {
+    // Fin NATURAL del descanso. En iOS el sistema ya presenta el aviso
+    // programado al llegar a cero (también en primer plano), así que no
+    // posteamos otro; si era una alarma de AlarmKit y sigue sonando (la app
+    // vuelve a primer plano tras el fin) se detiene. En Android el Timer es
+    // quien avisa.
+    if (_usesScheduledAlert) {
+      unawaited(restAlarm.onRestFinished());
+    } else {
       unawaited(notifications.showRestEnded());
     }
     HapticFeedback.vibrate();
@@ -130,10 +175,11 @@ class RestTimerController {
     // En el fin natural ya vibró `_onNaturalEnd`; no encadenar otra.
     if (!naturalEnd) {
       HapticFeedback.heavyImpact();
-      // Descanso saltado: la alerta programada ya no toca.
-      if (_usesScheduledAlert) unawaited(notifications.cancelRestEnded());
+      // Descanso saltado/parado a mano: la alerta programada ya no toca. En
+      // el fin natural NO se cancela: es la que está sonando/por sonar.
+      if (_usesScheduledAlert) unawaited(restAlarm.cancel());
     }
-    unawaited(notifier.onRestEnded(naturalEnd: naturalEnd));
+    unawaited(notifier.onRestEnded());
   }
 
   /// Ajusta el descanso en curso. Si quedaría <= 0, lo detiene.
@@ -151,7 +197,9 @@ class RestTimerController {
     final newTotal = newRemaining > current.totalRestSeconds
         ? newRemaining
         : current.totalRestSeconds;
-    _endsAt = clock.now().add(Duration(seconds: newRemaining));
+    final endsAt = clock.now().add(Duration(seconds: newRemaining));
+    _endsAt = endsAt;
+    _switchedToNotification = false;
     snapshot.value = RestTimerSnapshot(
       isResting: true,
       secondsRemaining: newRemaining,
@@ -162,10 +210,7 @@ class RestTimerController {
     unawaited(
       notifier.onRestStarted(duration: Duration(seconds: newRemaining)),
     );
-    if (_usesScheduledAlert) {
-      unawaited(
-        notifications.scheduleRestEnded(Duration(seconds: newRemaining)),
-      );
-    }
+    // Reprogramar sustituye el aviso anterior (alarma o notificación).
+    if (_usesScheduledAlert) unawaited(restAlarm.schedule(endsAt));
   }
 }

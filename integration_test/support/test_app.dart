@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
+import 'package:gym_flutter/core/notifications/rest_alarm_scheduler.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
 import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
 import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
@@ -98,6 +99,7 @@ Future<TestBackend> pumpTestApp(
     ..registerLazySingleton<SettingsBloc>(() => SettingsBloc(preferences: sl()))
     ..registerLazySingleton<NotificationService>(NoopNotificationService.new)
     ..registerLazySingleton<LiveActivitiesBridge>(NoopLiveActivitiesBridge.new)
+    ..registerLazySingleton<RestAlarmScheduler>(NoopRestAlarmScheduler.new)
     ..registerLazySingleton<ActiveWorkoutNotifier>(
       NoopActiveWorkoutNotifier.new,
     )

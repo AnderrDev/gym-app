@@ -255,7 +255,7 @@ void main() {
 
   group('finishWorkoutSession', () {
     test('debería llamar a la edge function con éxito', () async {
-      final response = FunctionResponse(data: {'success': true}, status: 200);
+      final response = const FunctionResponse(data: {'success': true}, status: 200);
       when(
         () => mockFunctionsClient.invoke(
           any(),

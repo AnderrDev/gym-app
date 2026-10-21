@@ -36,16 +36,15 @@ void main() {
     PlatformDispatcher.instance.onError = ErrorReporter.onPlatformError;
     Bloc.observer = AppBlocObserver();
 
-    if (Capabilities.supportsOrientationLock) {
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-      ]);
-    }
+    // Independientes entre sí: se lanzan en paralelo con dotenv + Supabase +
+    // DI (que son la parte lenta) y se esperan justo antes del primer frame.
+    final orientationFuture = Capabilities.supportsOrientationLock
+        ? SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+        : Future<void>.value();
+    final dateFormattingFuture = initializeDateFormatting('es', null);
     // El `SystemUiOverlayStyle` ya no se setea aquí: depende del brightness
     // del tema activo, así que vive en `_SystemUiOverlayChrome` (montado en
     // el `builder` de `MaterialApp.router`).
-
-    await initializeDateFormatting('es', null);
 
     // Con --dart-define (CI/release) el `.env` sobra. En Firebase Hosting,
     // además, el asset no se sube y la petición caía en el rewrite a
@@ -74,21 +73,38 @@ void main() {
       return;
     }
 
+    await orientationFuture;
+    await dateFormattingFuture;
+
     // Notificaciones: init del plugin local + Live Activities (iOS 16.1+) +
     // re-posteo si había una sesión activa persistida (recovery tras app
-    // killed).
-    try {
-      await di.sl<NotificationService>().init();
-      await di.sl<LiveActivitiesBridge>().init();
-      await di.sl<ActiveWorkoutNotifier>().bootstrapFromPersistedSession();
-    } catch (e, st) {
-      ErrorReporter.report(e, st, context: 'notifications_init');
-      // No bloquea el bootstrap: la app sigue sin noti si esto falla.
-    }
+    // killed). En nativo se difiere tras el primer frame (no bloquea el
+    // arranque); en web se conserva el orden previo (antes de `runApp`).
+    if (Capabilities.isWeb) await _initNotifications();
 
     AppLogger.instance.info('App bootstrap completado');
     runApp(const SmartGymTrackerApp());
+
+    if (!Capabilities.isWeb) {
+      // Tras `runApp` y el primer frame. Los servicios toleran usarse antes
+      // de que esto termine (init memoizado, `LiveActivitiesBridge.ready`).
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(_initNotifications()),
+      );
+    }
   }, (error, stack) => ErrorReporter.report(error, stack, context: 'zone'));
+}
+
+/// Init de notificaciones / Live Activities / recovery de sesión persistida,
+/// en este orden. Un fallo se reporta pero no tumba la app.
+Future<void> _initNotifications() async {
+  try {
+    await di.sl<NotificationService>().init();
+    await di.sl<LiveActivitiesBridge>().init();
+    await di.sl<ActiveWorkoutNotifier>().bootstrapFromPersistedSession();
+  } catch (e, st) {
+    ErrorReporter.report(e, st, context: 'notifications_init');
+  }
 }
 
 class SmartGymTrackerApp extends StatefulWidget {
@@ -148,8 +164,16 @@ class _SmartGymTrackerAppState extends State<SmartGymTrackerApp> {
             // `builder` corre ANTES de que el Navigator monte su Overlay,
             // por eso no envolvemos con `SelectionArea` (necesita Overlay
             // ancestor; ese wrapper vive en `TitledPage` por route).
-            builder: (ctx, child) =>
-                _SystemUiOverlayChrome(child: child ?? const SizedBox.shrink()),
+            //
+            // Dynamic Type acotado: respeta el ajuste del sistema pero evita
+            // que escalas extremas rompan los layouts densos (series, timer).
+            builder: (ctx, child) => MediaQuery.withClampedTextScaling(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 1.3,
+              child: _SystemUiOverlayChrome(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
           );
         },
       ),

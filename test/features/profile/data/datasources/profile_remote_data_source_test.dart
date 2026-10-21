@@ -52,7 +52,7 @@ void main() {
   group('deleteAccount', () {
     test('invoca delete_account_v1 con confirm y Bearer explícito', () async {
       stubInvoke(
-        () async => FunctionResponse(
+        () async => const FunctionResponse(
           data: {
             'success': true,
             'code': 'ACCOUNT_DELETED',
@@ -142,7 +142,7 @@ void main() {
 
     test('200 con success=false → mensaje genérico', () async {
       stubInvoke(
-        () async => FunctionResponse(data: {'success': false}, status: 200),
+        () async => const FunctionResponse(data: {'success': false}, status: 200),
       );
 
       final error = await captureError();

@@ -1,5 +1,5 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# Plataforma mínima explícita (igual que IPHONEOS_DEPLOYMENT_TARGET de Runner).
+platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -43,9 +43,43 @@ target 'Runner' do
   end
 end
 
+# permission_handler_apple entra solo como dependencia transitiva de
+# `live_activities` y en iOS únicamente se usa el permiso de notificaciones.
+# Compilar solo ese permiso evita enlazar APIs sensibles (cámara, ubicación,
+# contactos, ...) que el App Store review asocia a Info.plist usage strings.
+PERMISSION_HANDLER_MACROS = [
+  'PERMISSION_EVENTS=0',
+  'PERMISSION_EVENTS_FULL_ACCESS=0',
+  'PERMISSION_REMINDERS=0',
+  'PERMISSION_CONTACTS=0',
+  'PERMISSION_CAMERA=0',
+  'PERMISSION_MICROPHONE=0',
+  'PERMISSION_SPEECH_RECOGNIZER=0',
+  'PERMISSION_PHOTOS=0',
+  'PERMISSION_PHOTOS_ADD_ONLY=0',
+  'PERMISSION_LOCATION=0',
+  'PERMISSION_LOCATION_WHENINUSE=0',
+  'PERMISSION_LOCATION_ALWAYS=0',
+  'PERMISSION_NOTIFICATIONS=1',
+  'PERMISSION_MEDIA_LIBRARY=0',
+  'PERMISSION_SENSORS=0',
+  'PERMISSION_BLUETOOTH=0',
+  'PERMISSION_APP_TRACKING_TRANSPARENCY=0',
+  'PERMISSION_CRITICAL_ALERTS=0',
+  'PERMISSION_ASSISTANT=0'
+].freeze
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    if target.name == 'permission_handler_apple'
+      target.build_configurations.each do |config|
+        defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+        defs = defs.is_a?(Array) ? defs.dup : (defs ? defs.split(' ') : ['$(inherited)'])
+        defs.reject! { |d| d.start_with?('PERMISSION_') }
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs + PERMISSION_HANDLER_MACROS
+      end
+    end
     target.build_configurations.each do |config|
       # Fix Xcode 15+ build cycle con Widget Extension (`Cycle inside
       # Runner; building could produce unreliable results`). El sandboxing

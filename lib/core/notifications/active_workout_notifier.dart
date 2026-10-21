@@ -37,7 +37,15 @@ class ActiveWorkoutNotifier {
   /// emite la noti tradicional encima.
   bool get _preferLiveActivity => _liveActivities.isAvailable;
 
+  /// Reconstruye la notificación / Live Activity tras relanzar la app. El
+  /// contexto persistido no incluye el progreso de series, así que arranca
+  /// con `totalSets = 0`: las vistas ocultan el contador hasta el primer
+  /// `onProgress` / `onPlanChanged`, en vez de mostrar "0/0 series".
   Future<void> bootstrapFromPersistedSession() async {
+    // El arranque lo difiere tras el primer frame: si el usuario ya inició
+    // (o reanudó) una sesión, `onStarted` es la fuente de verdad y no se
+    // pisa con el contexto persistido (que no trae el progreso de series).
+    if (_dayName != null) return;
     final ctx = _sessionService.getContext();
     if (ctx == null) return;
     _dayName = ctx.routineDayName;
@@ -86,13 +94,14 @@ class ActiveWorkoutNotifier {
     await _post();
   }
 
-  /// [naturalEnd] true cuando el timer llegó solo a 0 (queremos alerta
-  /// audible/visual). false cuando el usuario saltó manualmente (silencioso).
-  Future<void> onRestEnded({bool naturalEnd = false}) async {
+  /// Vuelve a la vista de entrenamiento (fin natural o descanso saltado).
+  /// Es silencioso: el sonido de fin de descanso lo da la notificación
+  /// programada (iOS) o `showRestEnded` (Android), no este update.
+  Future<void> onRestEnded() async {
     if (_restEndsAt == null) return;
     _restEndsAt = null;
     if (_dayName == null) return;
-    await _post(alertOnUpdate: naturalEnd);
+    await _post();
   }
 
   Future<void> onEnded() async {
@@ -107,11 +116,14 @@ class ActiveWorkoutNotifier {
     await _notifications.cancelActiveWorkout();
   }
 
-  Future<void> _post({bool isStart = false, bool alertOnUpdate = false}) async {
+  Future<void> _post({bool isStart = false}) async {
     final dayName = _dayName;
     final startedAt = _sessionStartedAt;
     if (dayName == null || startedAt == null) return;
 
+    // Hasta que el bridge termine su init `isAvailable` es false; esperarlo
+    // evita caer a la noti tradicional cuando hay Live Activity.
+    await _liveActivities.ready;
     if (_preferLiveActivity) {
       if (isStart) {
         await _liveActivities.start(
@@ -126,7 +138,6 @@ class ActiveWorkoutNotifier {
           completedSets: _completedSets,
           totalSets: _totalSets,
           restEndsAt: _restEndsAt,
-          alertOnUpdate: alertOnUpdate,
         );
       }
       return;

@@ -31,6 +31,15 @@ class Capabilities {
   /// `hasLocalDatabase` porque depende del mismo store.
   static bool get hasOfflineSync => hasLocalDatabase;
 
+  /// La sesión de Supabase se guarda en el Keychain (iOS) / Keystore
+  /// (Android) vía `SecureSessionStorage`. En web `flutter_secure_storage`
+  /// no ofrece garantías reales (WebCrypto + localStorage), así que se
+  /// mantiene el storage por defecto de `supabase_flutter`.
+  static bool get supportsSecureSessionStorage {
+    if (kIsWeb) return false;
+    return Platform.isIOS || Platform.isAndroid;
+  }
+
   // ── Feedback táctil / sistema ─────────────────────────────────────────
 
   /// Vibración / haptic feedback. En web es no-op; preferir esconder
@@ -55,6 +64,23 @@ class Capabilities {
 
   /// iOS Live Activities (Dynamic Island, iOS 16.1+).
   static bool get supportsLiveActivities {
+    if (kIsWeb) return false;
+    return Platform.isIOS;
+  }
+
+  /// El fin del descanso se avisa con una notificación local programada en
+  /// el sistema (no con el `Timer` de Dart). Solo iOS: allí la app se
+  /// suspende en segundo plano y Dart no corre a tiempo; en Android el
+  /// proceso sigue vivo y avisa el `Timer`.
+  static bool get schedulesRestEndAlert {
+    if (kIsWeb) return false;
+    return Platform.isIOS;
+  }
+
+  /// La plataforma puede tener AlarmKit (alarma real que ignora el modo
+  /// silencio y Focus). Solo iOS; la versión mínima (26) y la autorización
+  /// se comprueban en tiempo de ejecución en el canal nativo.
+  static bool get mayUseAlarmKit {
     if (kIsWeb) return false;
     return Platform.isIOS;
   }

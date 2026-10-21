@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:live_activities/live_activities.dart';
-import 'package:live_activities/models/alert_config.dart';
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
 import 'package:gym_flutter/core/platform/capabilities.dart';
@@ -9,16 +9,22 @@ import 'package:gym_flutter/core/platform/capabilities.dart';
 /// target nativo `SmartGymTrackerActivityExtension`. En cualquier otra
 /// plataforma o iOS < 16.1 todas las llamadas son no-ops.
 class LiveActivitiesBridge {
-  LiveActivitiesBridge({LiveActivities? plugin})
-    : _plugin = plugin ?? LiveActivities();
+  LiveActivitiesBridge({
+    LiveActivities? plugin,
+    @visibleForTesting bool? supportsLiveActivitiesOverride,
+  }) : _plugin = plugin ?? LiveActivities(),
+       _supportsLiveActivities =
+           supportsLiveActivitiesOverride ??
+           Capabilities.supportsLiveActivities;
 
   final LiveActivities _plugin;
+  final bool _supportsLiveActivities;
 
   /// Bundle ID del App Group compartido entre Runner y el widget extension.
   /// Tiene que matchear con lo seteado en Xcode → Signing & Capabilities.
   static const _appGroupId = 'group.com.gymtracker.gym_flutter';
 
-  bool _initialized = false;
+  Future<void>? _initFuture;
   bool _isAvailable = false;
   String? _activityId;
 
@@ -26,20 +32,50 @@ class LiveActivitiesBridge {
   /// Para Android / web / iOS < 16.1 siempre `false`.
   bool get isAvailable => _isAvailable;
 
-  Future<void> init() async {
-    if (_initialized) return;
-    _initialized = true;
-    if (!Capabilities.supportsLiveActivities) return;
+  /// Inicializa el plugin y limpia Live Activities huérfanas.
+  ///
+  /// Las activities se crean con `removeWhenAppIsKilled: false`, así que
+  /// sobreviven a que el sistema mate la app, pero el id solo vive en
+  /// memoria (`_activityId`). Al relanzar, `bootstrapFromPersistedSession`
+  /// crearía otra y quedarían dos. Estrategia elegida: **finalizar todas**
+  /// las existentes en `init` en lugar de readoptar la primera, porque el
+  /// bootstrap siempre recrea la activity desde la sesión persistida; así
+  /// hay una única fuente de verdad, no dependemos del orden de ids ni del
+  /// payload viejo en el App Group, y evitamos mostrar datos stale.
+  Future<void> init() => _initFuture ??= _doInit();
+
+  /// Completa cuando `init` terminó (idempotente). Como el arranque lo difiere
+  /// tras el primer frame, `isAvailable` es `false` hasta entonces: quien
+  /// decida entre Live Activity y notificación debe esperar esto primero.
+  Future<void> get ready => init();
+
+  Future<void> _doInit() async {
+    if (!_supportsLiveActivities) return;
     try {
       await _plugin.init(appGroupId: _appGroupId);
       final enabled = await _plugin.areActivitiesEnabled();
       _isAvailable = enabled;
+      if (enabled) await _endOrphans();
       AppLogger.instance.info(
         'LiveActivitiesBridge: init OK, available=$_isAvailable',
       );
     } catch (e) {
       AppLogger.instance.warning('LiveActivitiesBridge.init: $e');
       _isAvailable = false;
+    }
+  }
+
+  Future<void> _endOrphans() async {
+    try {
+      final ids = await _plugin.getAllActivitiesIds();
+      if (ids.isEmpty) return;
+      AppLogger.instance.info(
+        'LiveActivitiesBridge: finalizando ${ids.length} activity(ies) '
+        'huérfana(s)',
+      );
+      await _plugin.endAllActivities();
+    } catch (e) {
+      AppLogger.instance.warning('LiveActivitiesBridge._endOrphans: $e');
     }
   }
 
@@ -55,6 +91,7 @@ class LiveActivitiesBridge {
     required DateTime sessionStartedAt,
     required int totalSets,
   }) async {
+    await init();
     if (!_isAvailable) return;
     if (_activityId != null) {
       await end();
@@ -91,8 +128,8 @@ class LiveActivitiesBridge {
     required int completedSets,
     required int totalSets,
     DateTime? restEndsAt,
-    bool alertOnUpdate = false,
   }) async {
+    await init();
     if (!_isAvailable) return;
     final id = _activityId;
     if (id == null) return;
@@ -106,20 +143,15 @@ class LiveActivitiesBridge {
           sessionStartedAt: sessionStartedAt,
           restEndsAt: restEndsAt,
         ),
-        // `alertConfig` hace que iOS muestre el banner/sonido del sistema
-        // sobre la Dynamic Island cuando llega el update — útil para
-        // notificar "¡fin del descanso!" sin que el user esté mirando.
-        alertConfig: alertOnUpdate
-            ? AlertConfig(
-                title: '¡A entrenar!',
-                body: 'Próxima serie te espera',
-                sound: 'default',
-              )
-            : null,
+        // Sin `alertConfig`: el aviso de fin de descanso lo da SOLO la
+        // notificación local programada (`NotificationService
+        // .scheduleRestEnded`). Un update con alerta depende del `Timer` de
+        // Dart, que no corre con la app suspendida, y en primer plano
+        // duplicaría el sonido.
       );
       AppLogger.instance.info(
         'LiveActivitiesBridge.update: sets=$completedSets/$totalSets '
-        'resting=${restEndsAt != null} alert=$alertOnUpdate',
+        'resting=${restEndsAt != null}',
       );
     } catch (e) {
       AppLogger.instance.warning('LiveActivitiesBridge.update: $e');
@@ -127,6 +159,7 @@ class LiveActivitiesBridge {
   }
 
   Future<void> end() async {
+    await init();
     if (!_isAvailable) return;
     final id = _activityId;
     if (id == null) return;

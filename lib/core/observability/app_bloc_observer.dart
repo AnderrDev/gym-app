@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:gym_flutter/core/observability/app_logger.dart';
@@ -8,11 +9,17 @@ import 'package:gym_flutter/core/observability/app_logger.dart';
 /// `runApp`. Vuelca los eventos en [AppLogger], lo que permite verlos en la
 /// pantalla de logs de debug sin acoplar la presentación al observador.
 class AppBlocObserver extends BlocObserver {
-  AppBlocObserver();
+  /// [verbose] controla si se registran cambios/transiciones (ruido y coste
+  /// por cada evento). Por defecto solo fuera de release; los errores se
+  /// registran siempre.
+  AppBlocObserver({bool? verbose}) : _verbose = verbose ?? !kReleaseMode;
+
+  final bool _verbose;
 
   @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
     super.onChange(bloc, change);
+    if (!_verbose) return;
     AppLogger.instance.debug(
       '[bloc] ${bloc.runtimeType} ${change.currentState.runtimeType} -> '
       '${change.nextState.runtimeType}',
@@ -25,6 +32,7 @@ class AppBlocObserver extends BlocObserver {
     Transition<dynamic, dynamic> transition,
   ) {
     super.onTransition(bloc, transition);
+    if (!_verbose) return;
     AppLogger.instance.debug(
       '[bloc] ${bloc.runtimeType} ${transition.event.runtimeType}: '
       '${transition.currentState.runtimeType} -> '
