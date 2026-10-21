@@ -89,6 +89,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   freezed: ^3.2.3
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -148,3 +149,18 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Icono de la app. Fuente: assets/icon/ (tool/generate_app_icon.py).
+# Regenerar con `dart run flutter_launcher_icons` y luego revertir
+# ios/Runner.xcodeproj/project.pbxproj y web/manifest.json: la herramienta
+# reescribe ajustes de la extensión Live Activity y el formato del manifest.
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#0066CC"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"

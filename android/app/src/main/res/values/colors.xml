@@ -3,4 +3,5 @@
     <!-- Referenced only by drawable-night/launch_background.xml. Matches
          AppPalette.dark().background in lib/core/theme/app_palette.dart. -->
     <color name="launch_background_dark">#0A0A0B</color>
+	<color name="ic_launcher_background">#0066CC</color>
 </resources>
