@@ -255,7 +255,10 @@ void main() {
 
   group('finishWorkoutSession', () {
     test('debería llamar a la edge function con éxito', () async {
-      final response = const FunctionResponse(data: {'success': true}, status: 200);
+      final response = const FunctionResponse(
+        data: {'success': true},
+        status: 200,
+      );
       when(
         () => mockFunctionsClient.invoke(
           any(),
@@ -274,6 +277,65 @@ void main() {
         ),
       ).called(1);
     });
+
+    // 404 de `finalize_workout_session_v1`: el servidor responde
+    // `NOT_FOUND_OR_COMPLETED` (B3 en docs/backend/06). Se acepta también el
+    // código antiguo que esperaba el cliente.
+    void stubFinalize404(String code) {
+      when(
+        () => mockFunctionsClient.invoke(
+          any(),
+          body: any(named: 'body'),
+          headers: any(named: 'headers'),
+        ),
+      ).thenThrow(
+        FunctionException(
+          status: 404,
+          details: {'success': false, 'code': code},
+        ),
+      );
+    }
+
+    void stubSessionRow(Map<String, dynamic>? row) {
+      final fakeQueryBuilder = FakeSupabaseQueryBuilder();
+      final fakeFilterBuilder = FakePostgrestListFilterBuilder();
+      final fakeTransformBuilder = FakePostgrestNullableMapTransformBuilder();
+      mockSupabaseClient.setFrom((_) => fakeQueryBuilder);
+      fakeQueryBuilder._select = (_) => fakeFilterBuilder;
+      fakeFilterBuilder._maybeSingle = () => fakeTransformBuilder;
+      fakeTransformBuilder.setData(row);
+    }
+
+    for (final code in [
+      'NOT_FOUND_OR_COMPLETED',
+      'NOT_FOUND_OR_ALREADY_COMPLETED',
+    ]) {
+      test('$code con la sesión ya cerrada → éxito (reintento)', () async {
+        stubFinalize404(code);
+        stubSessionRow({'completed_at': '2026-04-05T10:00:00Z'});
+
+        await dataSource.finishWorkoutSession('s1');
+      });
+    }
+
+    test(
+      'NOT_FOUND_OR_COMPLETED con la sesión abierta → propaga el código',
+      () async {
+        stubFinalize404('NOT_FOUND_OR_COMPLETED');
+        stubSessionRow(null);
+
+        await expectLater(
+          dataSource.finishWorkoutSession('s1'),
+          throwsA(
+            isA<WorkoutFunctionException>().having(
+              (e) => e.code,
+              'code',
+              'NOT_FOUND_OR_COMPLETED',
+            ),
+          ),
+        );
+      },
+    );
   });
 
   group('getWeeklyInsights', () {

@@ -3,7 +3,6 @@ import { jsonResponse, preflight } from "../_shared/cors.ts";
 import { logError, logInfo, requireUser } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
 
-const MAX_COACHING_BYTES = 64 * 1024;
 const RATE_LIMIT = {
   functionName: "finalize_workout_session_v1",
   windowSeconds: 60,
@@ -59,44 +58,34 @@ Deno.serve(async (req: Request) => {
   // respuesta para que el cliente pueda reintentar o avisar al usuario.
   let coachingWarning: string | null = null;
 
-  if (payload.coaching_analysis !== undefined) {
-    const serialized = JSON.stringify(payload.coaching_analysis);
-    if (serialized.length > MAX_COACHING_BYTES) {
-      return jsonResponse(413, {
-        success: false,
-        code: "COACHING_TOO_LARGE",
-        error: { message: `coaching_analysis exceeds ${MAX_COACHING_BYTES} bytes` },
-      });
-    }
-    if (!Array.isArray(payload.coaching_analysis)) {
-      return jsonResponse(400, {
-        success: false,
-        code: "VALIDATION_ERROR",
-        error: { message: "coaching_analysis must be an array" },
-      });
-    }
-    updateData.coaching_analysis = payload.coaching_analysis;
-  } else {
-    try {
-      const { data: coachingResult, error: coachingError } = await admin.functions
-        .invoke("generate_coaching_v1", {
-          body: { session_id: sessionId },
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // El coaching lo genera SIEMPRE el servidor. Un `coaching_analysis`
+  // mandado por el cliente se ignora: aceptarlo permitía guardar en el
+  // historial un análisis falsificado o basura (sólo se validaba que fuese
+  // un array de ≤ 64 KB). Clientes antiguos y el outbox offline pueden
+  // seguir mandándolo (siempre `null`); no es un error.
+  if (payload.coaching_analysis !== undefined && payload.coaching_analysis !== null) {
+    logInfo("CLIENT_COACHING_IGNORED", { session_id: sessionId });
+  }
 
-      if (!coachingError && coachingResult?.data?.analysis) {
-        updateData.coaching_analysis = coachingResult.data.analysis;
-      } else {
-        coachingWarning = "COACHING_GENERATION_FAILED";
-        logInfo("COACHING_INVOKE_NO_DATA", {
-          session_id: sessionId,
-          has_error: Boolean(coachingError),
-        });
-      }
-    } catch (_e) {
+  try {
+    const { data: coachingResult, error: coachingError } = await admin.functions
+      .invoke("generate_coaching_v1", {
+        body: { session_id: sessionId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+    if (!coachingError && coachingResult?.data?.analysis) {
+      updateData.coaching_analysis = coachingResult.data.analysis;
+    } else {
       coachingWarning = "COACHING_GENERATION_FAILED";
-      logInfo("COACHING_INVOKE_FAILED", { session_id: sessionId });
+      logInfo("COACHING_INVOKE_NO_DATA", {
+        session_id: sessionId,
+        has_error: Boolean(coachingError),
+      });
     }
+  } catch (_e) {
+    coachingWarning = "COACHING_GENERATION_FAILED";
+    logInfo("COACHING_INVOKE_FAILED", { session_id: sessionId });
   }
 
   const { data: updatedRows, error: updateError } = await admin

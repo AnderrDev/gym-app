@@ -55,6 +55,10 @@ void main() {
           ),
         },
         codeMappings: const {
+          'NOT_FOUND_OR_COMPLETED': WorkoutFunctionException(
+            code: 'NOT_FOUND_OR_COMPLETED',
+            userMessage: 'Ya finalizada o inexistente.',
+          ),
           'NOT_FOUND_OR_ALREADY_COMPLETED': WorkoutFunctionException(
             code: 'NOT_FOUND_OR_ALREADY_COMPLETED',
             userMessage: 'Ya finalizada o inexistente.',
@@ -75,6 +79,16 @@ void main() {
       ),
     );
     expect(e.code, 'NOT_FOUND_OR_ALREADY_COMPLETED');
+  });
+
+  test('404 con el código real del servidor → código del contrato', () async {
+    final e = await invokeThrowing(
+      const FunctionException(
+        status: 404,
+        details: {'success': false, 'code': 'NOT_FOUND_OR_COMPLETED'},
+      ),
+    );
+    expect(e.code, 'NOT_FOUND_OR_COMPLETED');
   });
 
   test('404 del gateway (función no desplegada) → error genérico', () async {

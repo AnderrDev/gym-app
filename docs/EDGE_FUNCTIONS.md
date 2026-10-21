@@ -22,13 +22,13 @@ Objetivo:
 
 Request (POST):
 - `session_id` (string, requerido)
-- `coaching_analysis` (array, opcional)
+- `coaching_analysis`: se ignora (el coaching lo genera siempre el servidor)
 
 Comportamiento:
 - Requiere JWT válido (`verify_jwt=true`).
 - Solo permite cerrar sesiones del usuario autenticado.
 - Solo cierra sesiones activas (`completed_at IS NULL`).
-- Si no llega `coaching_analysis`, intenta generarlo invocando `generate_coaching_v1`.
+- Genera el coaching invocando `generate_coaching_v1`; si falla, cierra igual y devuelve `data.warning_code = "COACHING_GENERATION_FAILED"`.
 
 Response:
 - `success`
