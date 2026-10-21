@@ -261,6 +261,8 @@ class WorkoutSessionRemoteDataSource {
     List<CoachingAnalysis>? coachingAnalysis,
   }) async {
     final payload = <String, dynamic>{'session_id': sessionId};
+    // El servidor ignora `coaching_analysis` y genera siempre el coaching;
+    // se sigue aceptando por compatibilidad con mutaciones antiguas del outbox.
     if (coachingAnalysis != null) {
       payload['coaching_analysis'] = coachingAnalysis
           .map((e) => e.toJson())
@@ -270,7 +272,7 @@ class WorkoutSessionRemoteDataSource {
     try {
       await _invokeFinalize(payload);
     } on WorkoutFunctionException catch (e) {
-      if (e.code != 'NOT_FOUND_OR_ALREADY_COMPLETED') rethrow;
+      if (e.code != _finalizeNotFoundCode) rethrow;
       // Reintento tras perder la respuesta: el servidor ya la cerró. Para
       // el usuario es éxito, no "ya fue finalizada o no existe".
       final row = await client
@@ -298,6 +300,14 @@ class WorkoutSessionRemoteDataSource {
         .toList();
   }
 
+  /// Código con el que `finalize_workout_session_v1` responde 404 (sesión
+  /// inexistente, ajena o ya cerrada).
+  static const _finalizeNotFoundCode = 'NOT_FOUND_OR_COMPLETED';
+  static const _finalizeNotFound = WorkoutFunctionException(
+    code: _finalizeNotFoundCode,
+    userMessage: 'Esta sesión ya fue finalizada o no existe.',
+  );
+
   Future<void> _invokeFinalize(Map<String, dynamic> payload) async {
     await _invoker.invoke(
       functionName: 'finalize_workout_session_v1',
@@ -306,20 +316,16 @@ class WorkoutSessionRemoteDataSource {
       genericErrorMessage:
           'No se pudo finalizar la sesión en este momento. Intenta nuevamente.',
       statusMappings: const {
-        404: WorkoutFunctionException(
-          code: 'NOT_FOUND_OR_ALREADY_COMPLETED',
-          userMessage: 'Esta sesión ya fue finalizada o no existe.',
-        ),
+        404: _finalizeNotFound,
         400: WorkoutFunctionException(
           code: 'VALIDATION_ERROR',
           userMessage: 'No se pudo finalizar la sesión por datos inválidos.',
         ),
       },
       codeMappings: const {
-        'NOT_FOUND_OR_ALREADY_COMPLETED': WorkoutFunctionException(
-          code: 'NOT_FOUND_OR_ALREADY_COMPLETED',
-          userMessage: 'Esta sesión ya fue finalizada o no existe.',
-        ),
+        _finalizeNotFoundCode: _finalizeNotFound,
+        // Código que el cliente esperaba antes de alinearlo con el servidor.
+        'NOT_FOUND_OR_ALREADY_COMPLETED': _finalizeNotFound,
         'VALIDATION_ERROR': WorkoutFunctionException(
           code: 'VALIDATION_ERROR',
           userMessage: 'No se pudo finalizar la sesión por datos inválidos.',

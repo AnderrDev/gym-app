@@ -93,7 +93,7 @@ class EdgeFunctionInvoker {
       // los mapeos del caller para no perder el código estable del contrato.
       // Si el body trae `code`, manda ese: un 404 del gateway ("función no
       // encontrada", code `NOT_FOUND`) no debe confundirse con el 404 de la
-      // función (`NOT_FOUND_OR_ALREADY_COMPLETED`), o el SyncWorker
+      // función (`NOT_FOUND_OR_COMPLETED`), o el SyncWorker
       // descartaría un finalize que hay que reintentar.
       final body = e.details;
       final bodyCode = body is Map ? body['code']?.toString() : null;
