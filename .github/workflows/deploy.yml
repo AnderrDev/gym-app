@@ -18,9 +18,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Sin secretos (hoy las migraciones se aplican a mano) los jobs se omiten
+  # en vez de dejar main en rojo en cada push.
+  check-secrets:
+    name: Check Supabase secrets
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SUPABASE_ACCESS_TOKEN vacío: no se despliegan migraciones ni Edge Functions."
+          fi
+
   deploy-db:
     name: Apply DB migrations
     runs-on: ubuntu-latest
+    needs: check-secrets
+    if: needs.check-secrets.outputs.enabled == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
