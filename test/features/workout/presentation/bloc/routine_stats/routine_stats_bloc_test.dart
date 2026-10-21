@@ -33,7 +33,7 @@ void main() {
       routineDayName: 'Day 1',
       totalVolume: 5000,
       totalReps: 100,
-      exerciseCount: 5,
+      setCount: 5,
     ),
   ];
 

@@ -8,6 +8,7 @@ class ExerciseStatsSeries {
     required this.actual,
     required this.record,
     required this.delta,
+    required this.firstDate,
   });
 
   factory ExerciseStatsSeries.from(
@@ -28,6 +29,7 @@ class ExerciseStatsSeries {
       actual: actual,
       record: record,
       delta: delta,
+      firstDate: chronological.firstOrNull?.sessionDate,
     );
   }
 
@@ -35,6 +37,9 @@ class ExerciseStatsSeries {
   final double actual;
   final double record;
   final double? delta;
+
+  /// Fecha de la sesión más antigua del periodo; `null` sin sesiones.
+  final DateTime? firstDate;
 
   bool get actualIsRecord => values.isNotEmpty && actual >= record;
 }

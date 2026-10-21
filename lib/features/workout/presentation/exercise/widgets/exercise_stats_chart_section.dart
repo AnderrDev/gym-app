@@ -73,7 +73,19 @@ class ExerciseStatsChartSection extends StatelessWidget {
           delta: series.delta,
           unit: unit,
           recordReached: series.actualIsRecord,
+          deltaCaption: 'VS SESIÓN ANT.',
+          formatter: formatter,
         ),
+        if (series.values.length >= 2) ...[
+          const SizedBox(height: Spacing.sm),
+          PeriodChangeLine(
+            since: series.firstDate!,
+            first: series.values.first,
+            last: series.actual,
+            unit: unit,
+            formatter: formatter,
+          ),
+        ],
         const SizedBox(height: 12),
         Container(
           height: 220,

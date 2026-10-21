@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 /// Número con un decimal como mucho y coma decimal (es): `40` → "40",
 /// `37.5` → "37,5". Evita el `toStringAsFixed(0)` que redondeaba 37.5 a
 /// "38". Los campos de peso aceptan coma o punto al leer.
@@ -15,3 +17,9 @@ String formatWeight(double kg) => formatDecimal(kg);
 /// "0 kg × 10" parecía un error.
 String formatLoad(double kg) =>
     kg == 0 ? 'Peso corporal' : '${formatWeight(kg)} kg';
+
+/// Volumen (suma de peso × reps) redondeado y con separador de miles es:
+/// `12450.0` → "12.450", `1800` → "1.800".
+String formatVolume(double kg) => _volumeFormat.format(kg.round());
+
+final _volumeFormat = NumberFormat.decimalPattern('es');

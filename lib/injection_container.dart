@@ -1,6 +1,7 @@
 import 'package:gym_flutter/core/services/workout_draft_service.dart';
 import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
 import 'package:gym_flutter/features/profile/domain/usecases/delete_account.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_session_detail.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/adapt_session_exercise.dart';
 import 'package:gym_flutter/features/workout/data/datasources/session_exercise_remote_data_source.dart';
@@ -216,6 +217,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateExerciseTarget(sl()));
   sl.registerLazySingleton(() => GetExercisesCatalog(sl()));
   sl.registerLazySingleton(() => GetSessionExercises(sl()));
+  sl.registerLazySingleton(() => GetSessionDetail(sl()));
   sl.registerLazySingleton(() => AdaptSessionExercise(sl()));
   sl.registerLazySingleton(() => GetExerciseDetail(sl()));
 

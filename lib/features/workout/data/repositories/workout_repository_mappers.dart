@@ -65,13 +65,14 @@ List<RoutineHistorySession> mapRoutineSessionRows(
         }
 
         return RoutineHistorySession(
+          sessionId: row['id']?.toString() ?? '',
           sessionDate: date,
           routineDayId: row['routine_day_id']?.toString() ?? '',
           routineDayName:
               routineDayData?['name']?.toString() ?? 'Día eliminado',
           totalVolume: totalVolume,
           totalReps: totalReps,
-          exerciseCount: logs.length,
+          setCount: logs.length,
         );
       })
       .whereType<RoutineHistorySession>()

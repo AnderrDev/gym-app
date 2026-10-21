@@ -14,4 +14,10 @@ void main() {
     expect(formatLoad(0), 'Peso corporal');
     expect(formatLoad(62.5), '62,5 kg');
   });
+
+  test('formatVolume redondea y agrupa miles como en es', () {
+    expect(formatVolume(12450.4), '12.450');
+    expect(formatVolume(1800), '1.800');
+    expect(formatVolume(125300), '125.300');
+  });
 }

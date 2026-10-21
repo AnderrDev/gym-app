@@ -22,11 +22,14 @@ import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_session_detail.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_weekly_plan.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_session_watcher/active_session_watcher_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/active_workout/active_workout_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboard_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
 import 'package:gym_flutter/injection_container.dart';
 import 'package:gym_flutter/main.dart';
@@ -121,6 +124,11 @@ Future<TestBackend> pumpTestApp(
         clock: sl<Clock>(),
       ),
     )
+    ..registerLazySingleton(() => GetSessionDetail(sl()))
+    ..registerFactory(
+      () => ProgressBloc(getAssignedRoutines: sl(), repository: sl()),
+    )
+    ..registerFactory(() => ExerciseStatsBloc(repository: sl()))
     ..registerFactory(
       () => ActiveSessionWatcherBloc(
         repository: sl(),

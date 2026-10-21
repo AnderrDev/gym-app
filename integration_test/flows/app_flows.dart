@@ -184,6 +184,40 @@ void appFlows() {
     });
   });
 
+  group('PROGRESO', () {
+    flowTest('semanas anteriores, historial de rutina y de ejercicio', (
+      tester,
+    ) async {
+      await pumpTestApp(tester);
+      await tapText(tester, 'PROGRESO');
+
+      expect(find.text('Esta semana'), findsOneWidget);
+      expect(find.text('ÚLTIMAS 8 SEMANAS'), findsOneWidget);
+
+      // La semana pasada tiene la sesión sembrada: 3 × 57,5 kg × 10.
+      await tester.tap(find.byTooltip('Semana anterior'));
+      await pumpUntilFound(tester, find.text('1.725 kg'));
+      expect(find.text('Semana pasada'), findsOneWidget);
+
+      // Historial de la rutina → detalle de la sesión.
+      await tapText(tester, 'Fuerza');
+      expect(find.text('1 SESIÓN'), findsOneWidget);
+      await tapText(tester, 'Torso');
+      await pumpUntilFound(tester, find.textContaining('Press banca'));
+      // Cerrar la hoja tocando fuera y volver a PROGRESO.
+      await tester.tapAt(const Offset(20, 20));
+      await settle(tester);
+      await tester.tap(find.byType(BackButton));
+      await settle(tester);
+
+      // Progreso de un ejercicio.
+      await pumpUntilFound(tester, find.text('PROGRESO POR EJERCICIO'));
+      await tapText(tester, 'Press banca');
+      await pumpUntilFound(tester, find.text('PESO MÁXIMO'));
+      expect(find.text('1 SESIÓN'), findsOneWidget);
+    });
+  });
+
   group('HOY', () {
     flowTest('historial: semana anterior y vuelta a hoy', (tester) async {
       await pumpTestApp(tester);

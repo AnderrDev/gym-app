@@ -56,7 +56,10 @@ class ProgressRoutineTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text('Ver progreso', style: context.text.bodySmall),
+                    Text(
+                      'Sesiones y volumen de cada día',
+                      style: context.text.bodySmall,
+                    ),
                   ],
                 ),
               ),

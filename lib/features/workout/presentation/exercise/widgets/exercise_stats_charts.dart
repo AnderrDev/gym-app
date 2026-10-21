@@ -9,7 +9,7 @@ import 'package:gym_flutter/features/workout/presentation/shared/utils/chart_axi
 import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 
 /// Charts del bottom sheet de estadísticas por ejercicio. Tres charts:
-/// peso máximo, 1RM estimado, carga movida. Comparten:
+/// peso máximo, 1RM estimado y volumen. Comparten:
 /// - Eje Y con grid + labels con unidad.
 /// - Tooltip en tap mostrando fecha + valor exacto.
 /// - Dot resaltado cuando la sesión rompió récord histórico.
@@ -27,7 +27,7 @@ class ExerciseMaxWeightChart extends StatelessWidget {
       values: values,
       color: context.colors.primary,
       unit: 'kg',
-      valueFormatter: _intFormat,
+      valueFormatter: formatDecimal,
     );
   }
 }
@@ -65,13 +65,12 @@ class ExerciseVolumeChart extends StatelessWidget {
       sessions: reversed,
       values: values,
       color: context.colors.primary.withValues(alpha: 0.85),
-      unit: 'kg·reps',
-      valueFormatter: _intFormat,
+      unit: 'kg',
+      valueFormatter: formatVolume,
     );
   }
 }
 
-String _intFormat(double v) => v.toStringAsFixed(0);
 String _oneDecimalFormat(double v) => formatDecimal(v);
 
 /// Implementación compartida: line chart con grid, eje Y con unidad,

@@ -13,8 +13,10 @@ import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/entities/routine_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/weekly_insights.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
@@ -314,6 +316,48 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
     finishedSessionIds.add(sessionId);
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, List<RoutineHistorySession>>> getRoutineStats(
+    String userId,
+    String routineId,
+  ) async {
+    final dayIds = {
+      for (final d in days)
+        if (d.routineId == routineId) d.id,
+    };
+    return Right(
+      [
+        for (final s in sessions)
+          if (s.completedAt != null && dayIds.contains(s.routineDayId))
+            RoutineHistorySession(
+              sessionId: s.id,
+              sessionDate: s.sessionDate,
+              routineDayId: s.routineDayId,
+              routineDayName: _dayById(s.routineDayId).name,
+              totalVolume: logsOf(
+                s.id,
+              ).fold(0, (sum, l) => sum + l.actualWeight * l.actualReps),
+              totalReps: logsOf(s.id).fold(0, (sum, l) => sum + l.actualReps),
+              setCount: logsOf(s.id).length,
+            ),
+      ]..sort((a, b) => b.sessionDate.compareTo(a.sessionDate)),
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<ExerciseHistorySession>>> getExerciseLogsHistory(
+    String userId,
+    String exerciseId,
+  ) async => Right(
+    [
+      for (final s in sessions)
+        if (s.completedAt != null)
+          if (logsOf(s.id).where((l) => l.exerciseId == exerciseId).toList()
+              case final exLogs when exLogs.isNotEmpty)
+            ExerciseHistorySession(sessionDate: s.sessionDate, logs: exLogs),
+    ]..sort((a, b) => b.sessionDate.compareTo(a.sessionDate)),
+  );
 
   @override
   Future<Either<Failure, List<CoachingAnalysis>>> getSessionCoaching(

@@ -110,20 +110,63 @@ void main() {
 
     expect(find.text('BENCH PRESS'), findsOneWidget);
     expect(find.text('PESO MÁXIMO'), findsOneWidget);
+    // Una sola gráfica: las otras métricas se eligen arriba.
+    expect(find.text('1RM ESTIMADO'), findsNothing);
+    await tester.tap(find.text('1RM'));
+    await tester.pumpAndSettle();
     expect(find.text('1RM ESTIMADO'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('CARGA MOVIDA'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('CARGA MOVIDA'), findsOneWidget);
+    await tester.tap(find.text('Volumen'));
+    await tester.pumpAndSettle();
+    expect(find.text('VOLUMEN'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('HISTORIAL DETALLADO'),
+      find.text('1 SESIÓN'),
       220,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('HISTORIAL DETALLADO'), findsOneWidget);
+    expect(find.text('1 SESIÓN'), findsOneWidget);
     expect(find.textContaining('60 kg × 10'), findsOneWidget);
+  });
+
+  testWidgets('el periodo recorta el historial y muestra el cambio en él', (
+    tester,
+  ) async {
+    ExerciseHistorySession session(DateTime date, double kg) =>
+        ExerciseHistorySession(
+          sessionDate: date,
+          logs: [
+            SetLog(
+              id: 'l$kg',
+              sessionId: 's$kg',
+              exerciseId: 'e1',
+              setIndex: 0,
+              actualReps: 5,
+              actualWeight: kg,
+            ),
+          ],
+        );
+    // Más reciente primero, como lo da el repositorio.
+    final tHistory = [
+      session(DateTime(2026, 10, 15), 70),
+      session(DateTime(2026, 10, 1), 65),
+      session(DateTime(2026, 6, 1), 50),
+    ];
+    when(
+      () => mockExerciseStatsBloc.state,
+    ).thenReturn(ExerciseStatsLoaded(history: tHistory));
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Desde el 1 jun: '), findsOneWidget);
+    expect(find.text('+20 kg (+40 %)'), findsOneWidget);
+    // 6 meses no aparece: no recortaría nada.
+    expect(find.text('6 meses'), findsNothing);
+
+    await tester.tap(find.text('1 mes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Desde el 1 oct: '), findsOneWidget);
+    expect(find.text('+5 kg (+8 %)'), findsOneWidget);
   });
 }

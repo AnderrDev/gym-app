@@ -19,9 +19,9 @@ class ExerciseHistorySessionItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: Spacing.md),
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: context.colors.surface.withValues(alpha: 0.3),
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.surfaceHighlight),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,13 +40,24 @@ class ExerciseHistorySessionItem extends StatelessWidget {
                 ),
               ),
               Text(
-                '${session.totalVolume.toStringAsFixed(0)} kg Vol.',
+                '${formatVolume(session.totalVolume)} kg de volumen',
                 style: context.text.labelSmall?.copyWith(
                   color: context.colors.textSecondary,
                 ),
               ),
             ],
           ),
+          if (session.estimated1RM > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Peso máx. ${formatLoad(session.maxWeight)} · '
+              '1RM estimado ${formatDecimal(session.estimated1RM)} kg',
+              style: context.text.bodySmall?.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
