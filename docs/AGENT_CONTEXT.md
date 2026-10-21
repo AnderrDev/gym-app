@@ -98,7 +98,7 @@ Hallazgos remotos confirmados:
 - En remoto, `workout_sessions` incluye `completed_at` y `coaching_analysis`.
 
 Auth → URL Configuration → Redirect URLs (configuracion manual en el dashboard de Supabase):
-- `<origen web>/reset-password` (p. ej. el dominio de Firebase Hosting y `http://localhost:<puerto>/reset-password` en dev).
+- `<origen web>/reset-password` (p. ej. `https://gym-tracker-anderson.netlify.app/reset-password` y `http://localhost:<puerto>/reset-password` en dev).
 - `com.gymtracker.gymflutter://reset-password` (deep link de la app movil; constante `DeepLinks.resetPassword`).
 - Si falta alguna, Supabase usa la Site URL y el enlace de recuperacion falla (PKCE: el code verifier solo existe en el dispositivo/navegador que lo pidio).
 
