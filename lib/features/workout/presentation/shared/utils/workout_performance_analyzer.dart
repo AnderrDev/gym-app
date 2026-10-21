@@ -94,7 +94,7 @@ class WorkoutPerformanceAnalyzer {
               (isRegressing ||
                   (isStagnated && currentAvgReps < ex.targetReps))) {
             recommendation =
-                '📉 RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
+                'RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
             feedback = 'WEIGHT_REDUCTION_ADVISED';
             performanceScore = performanceScore.clamp(0.0, 0.7);
           }
@@ -111,7 +111,7 @@ class WorkoutPerformanceAnalyzer {
             feedback = 'KEEP_CONSISTENCY';
           } else if (!repsMet && currentAvgWeight > ex.targetWeight) {
             recommendation =
-                '💪 Subiste el peso por encima del objetivo. Es normal perder algunas reps: mantén este peso hasta completar las ${ex.targetReps} reps.';
+                'Subiste el peso por encima del objetivo. Es normal perder algunas reps: mantén este peso hasta completar las ${ex.targetReps} reps.';
             feedback = 'HEAVIER_CONSOLIDATE';
           } else if (!repsMet) {
             recommendation =
@@ -121,12 +121,12 @@ class WorkoutPerformanceAnalyzer {
             if (currentAvgWeight > ex.targetWeight ||
                 currentAvgReps > ex.targetReps) {
               recommendation =
-                  '🚀 ¡SUPERACIÓN! Has superado los objetivos. Sube el peso un nivel la próxima sesión sin miedo.';
+                  '¡SUPERACIÓN! Has superado los objetivos. Sube el peso un nivel la próxima sesión sin miedo.';
               feedback = 'PROGRESSIVE_OVERLOAD';
               performanceScore = 1.2;
             } else {
               recommendation =
-                  '🎯 OBJETIVO CUMPLIDO. Has mantenido la intensidad. Prepárate para subir carga pronto.';
+                  'OBJETIVO CUMPLIDO. Has mantenido la intensidad. Prepárate para subir carga pronto.';
               feedback = 'READY_TO_PROGRESS';
               performanceScore = 1.0;
             }

@@ -11,6 +11,7 @@ import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/utils/calendar_dates.dart';
 import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
+import 'package:gym_flutter/features/profile/domain/repositories/profile_repository.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
@@ -241,10 +242,14 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
     required DateTime weekStart,
   }) async {
     final weekEnd = AppCalendar.addDays(weekStart, 6);
-    final done = _inRange(
-      weekStart,
-      weekEnd,
-    ).where((s) => s.completedAt != null).toList();
+    // Como `compute_weekly_insights_v1`: sólo los días de esta rutina, y la
+    // adherencia en 0–100 (días distintos completados / días planificados).
+    final routineDays = days.where((d) => d.routineId == routineId).toList();
+    final dayIds = {for (final d in routineDays) d.id};
+    final done = _inRange(weekStart, weekEnd)
+        .where((s) => s.completedAt != null && dayIds.contains(s.routineDayId))
+        .toList();
+    final completedDays = done.map((s) => s.routineDayId).toSet().length;
     double volume(Iterable<WorkoutSession> list) => list
         .expand((s) => logsOf(s.id))
         .fold(0, (sum, l) => sum + l.actualWeight * l.actualReps);
@@ -252,10 +257,12 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
       WeeklyInsights(
         weekStart: weekStart,
         weekEnd: weekEnd,
-        plannedDays: days.length,
-        completedDays: done.map((s) => s.routineDayId).toSet().length,
+        plannedDays: routineDays.length,
+        completedDays: completedDays,
         completedSessions: done.length,
-        adherenceRate: days.isEmpty ? 0 : done.length / days.length,
+        adherenceRate: routineDays.isEmpty
+            ? 0
+            : completedDays / routineDays.length * 100,
         totalVolume: volume(done),
         previousWeekVolume: 0,
         volumeTrendPercent: 0,
@@ -718,6 +725,21 @@ class FakeAuthRepository extends Fake implements AuthRepository {
     _auth.add(false);
     return const Right(null);
   }
+}
+
+/// Perfil en memoria: renombrar devuelve el nombre recibido y eliminar la
+/// cuenta siempre va bien.
+class FakeProfileRepository implements ProfileRepository {
+  @override
+  Future<Either<Failure, String?>> updateFullName({
+    required String userId,
+    required String fullName,
+  }) async => Right(fullName);
+
+  @override
+  Future<Either<Failure, void>> deleteAccount({
+    required String confirmation,
+  }) async => const Right(null);
 }
 
 /// Notificaciones, Live Activities y el notifier de sesión no tienen sentido

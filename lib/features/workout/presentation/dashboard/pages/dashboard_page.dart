@@ -236,7 +236,10 @@ class _DashboardPageState extends State<DashboardPage> {
           elevation: 0,
           // La fecha y la rutina van en la cabecera del contenido; aquí sólo
           // el nombre de la pestaña, como en el resto del shell.
-          title: Text('Hoy', style: context.text.headlineMedium),
+          title: Text(
+            'HOY',
+            style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
+          ),
         ),
         body: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, dashState) {

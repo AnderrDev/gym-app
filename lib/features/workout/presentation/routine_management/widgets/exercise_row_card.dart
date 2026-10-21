@@ -50,10 +50,12 @@ class ExerciseRowCard extends StatelessWidget {
     return s == 0 ? '$m min' : '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  /// Series × reps y carga: "3 × 10 · 60 kg".
+  /// Series × reps y carga: "3 × 10 · 60 kg". Sin peso objetivo dice "sin
+  /// carga" y no "Peso corporal": un ejercicio recién añadido (sentadilla,
+  /// remo con barra…) arranca en 0 kg hasta que se le fija el peso.
   String get _prescription =>
       '${exercise.targetSets} × ${exercise.targetReps} · '
-      '${formatLoad(exercise.targetWeight)}';
+      '${exercise.targetWeight == 0 ? 'sin carga' : formatLoad(exercise.targetWeight)}';
 
   Future<bool> _confirmRemove(BuildContext context) async {
     final ok = await AppDialog.confirm(

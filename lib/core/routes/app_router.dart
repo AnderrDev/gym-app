@@ -219,7 +219,7 @@ class AppRouter {
           final routineId =
               state.extra as String? ?? state.uri.queryParameters['id'];
           return TitledPage(
-            title: 'Editar rutina',
+            title: routineId == null ? 'Nueva rutina' : 'Editar rutina',
             child: BlocProvider<RoutineManagementBloc>(
               create: (_) => sl<RoutineManagementBloc>(),
               child: RoutineEditorPage(routineId: routineId),

@@ -426,6 +426,31 @@ class _WeightDeltaHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // "0 kg" a secas parecía un error en dominadas, fondos, etc.
+    if (weight == 0) {
+      return Padding(
+        padding: const EdgeInsets.only(top: Spacing.sm),
+        child: Row(
+          children: [
+            Icon(
+              Icons.accessibility_new_rounded,
+              size: 16,
+              color: context.colors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Sin carga = peso corporal (suma el lastre si llevas)',
+                style: context.text.labelMedium?.copyWith(
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final delta = weight - target;
     if (!weight.isFinite ||
         !target.isFinite ||

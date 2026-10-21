@@ -6,6 +6,7 @@ import 'package:gym_flutter/core/notifications/active_workout_notifier.dart';
 import 'package:gym_flutter/core/notifications/live_activities_bridge.dart';
 import 'package:gym_flutter/core/notifications/notification_service.dart';
 import 'package:gym_flutter/core/services/active_session_service.dart';
+import 'package:gym_flutter/core/services/local_user_data_cleaner.dart';
 import 'package:gym_flutter/core/services/routine_assignment_bus.dart';
 import 'package:gym_flutter/core/services/shell_tab_notifier.dart';
 import 'package:gym_flutter/core/services/workout_draft_service.dart';
@@ -19,6 +20,9 @@ import 'package:gym_flutter/features/auth/domain/usecases/sign_in_with_email.dar
 import 'package:gym_flutter/features/auth/domain/usecases/sign_out.dart';
 import 'package:gym_flutter/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:gym_flutter/features/profile/domain/repositories/profile_repository.dart';
+import 'package:gym_flutter/features/profile/domain/usecases/delete_account.dart';
+import 'package:gym_flutter/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/assign_routine.dart';
@@ -112,6 +116,21 @@ Future<TestBackend> pumpTestApp(
         signOut: sl(),
         getCurrentUser: sl(),
         activeSessionService: sl(),
+      ),
+    )
+    // Perfil
+    ..registerLazySingleton<ProfileRepository>(FakeProfileRepository.new)
+    ..registerLazySingleton(() => DeleteAccount(sl()))
+    ..registerLazySingleton(
+      () =>
+          LocalUserDataCleaner(activeSessionService: sl(), draftService: sl()),
+    )
+    ..registerFactory(
+      () => ProfileBloc(
+        repository: sl(),
+        deleteAccount: sl(),
+        localDataCleaner: sl(),
+        signOut: sl(),
       ),
     )
     // Workout

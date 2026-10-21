@@ -74,15 +74,22 @@ void appFlows() {
       expect(press.map((l) => l.actualWeight), everyElement(60));
       expect(press.map((l) => l.actualReps), everyElement(10));
 
-      // Dominadas (peso corporal): sin peso que proponer → abre la hoja.
+      // Dominadas: la última vez fueron a peso corporal, así que también se
+      // registran de un toque (sin historial abriría la hoja).
       await goToExercise(tester, 'Dominadas');
       expect(find.textContaining('Ejercicio 2 de 2'), findsOneWidget);
       for (var set = 1; set <= 2; set++) {
-        await tapCompleteSet(tester, expectLabel: 'Registrar serie $set');
-        await confirmSetSheet(tester);
+        await tapCompleteSet(
+          tester,
+          expectLabel: 'Serie $set hecha · Peso corporal × 8',
+        );
       }
       expect(repo.logsOf(sessionId), hasLength(5));
       expect(find.text('Peso corporal × 8 reps'), findsNWidgets(2));
+      // Tras la última serie no hay descanso que esperar, y el botón fijo
+      // pasa a finalizar.
+      expect(find.text('DESCANSO'), findsNothing);
+      expect(find.text('Finalizar entrenamiento'), findsOneWidget);
 
       // Finalizar → resumen → guardar.
       await tapText(tester, 'Finalizar');
@@ -134,6 +141,12 @@ void appFlows() {
         find.textContaining('Serie 2 hecha · 62,5 kg × 10'),
         findsOneWidget,
       );
+
+      // El aviso "Deshacer" se va solo: no se arrastra a otro ejercicio ni
+      // tapa las series.
+      await tapCompleteSet(tester, expectLabel: 'Serie 2 hecha');
+      expect(find.text('Deshacer'), findsOneWidget);
+      await pumpUntilGone(tester, find.text('Deshacer'));
     });
 
     flowTest('salir con la sesión abierta y reanudarla desde HOY', (
@@ -455,7 +468,11 @@ Future<void> confirmSetSheet(WidgetTester tester) async {
 Future<void> goToExercise(WidgetTester tester, String name) async {
   for (var i = 0; i < 5; i++) {
     if (find.textContaining('Ejercicio').evaluate().isNotEmpty &&
-        find.text(name).hitTestable().evaluate().isNotEmpty) {
+        find
+            .descendant(of: find.byType(PageView), matching: find.text(name))
+            .hitTestable()
+            .evaluate()
+            .isNotEmpty) {
       return;
     }
     await tester.fling(find.byType(PageView), const Offset(-400, 0), 1500);
@@ -525,4 +542,23 @@ Future<void> tapTextIgnoringCase(WidgetTester tester, String text) async {
   expect(finder, findsWidgets, reason: 'No se encontró "$text"');
   await tester.tap(finder.last);
   await settle(tester);
+}
+
+/// Bombea hasta que [finder] desaparece (p. ej. un aviso temporal), con tope
+/// de [timeout] de reloj (falso en `flutter test`, real en dispositivo).
+Future<void> pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 10),
+}) async {
+  final live = tester.binding is! AutomatedTestWidgetsFlutterBinding;
+  const step = Duration(milliseconds: 100);
+  final end = DateTime.now().add(timeout);
+  for (var i = 0; i * step.inMilliseconds < timeout.inMilliseconds; i++) {
+    if (finder.evaluate().isEmpty) return;
+    if (live && DateTime.now().isAfter(end)) break;
+    await tester.pump(step);
+    if (live) await Future<void>.delayed(step);
+  }
+  expect(finder, findsNothing);
 }

@@ -146,6 +146,18 @@ class _RoutineDayPageState extends State<RoutineDayPage> {
     );
     context.read<ActiveWorkoutBloc>().add(SaveActiveSetLog(log));
     if (isEdit) return;
+    // Con la última serie del entrenamiento no hay nada que esperar: sin
+    // descanso (y se corta el que siguiera en curso).
+    final totalSets = state.exercises.fold<int>(
+      0,
+      (sum, ex) => sum + ex.targetSets,
+    );
+    if (totalSets > 0 &&
+        completedTargetSets(state.exercises, [...state.setLogs, log]) >=
+            totalSets) {
+      _restController.stop();
+      return;
+    }
     final exercise = state.exercises.firstWhereOrNull(
       (e) => e.id == log.exerciseId,
     );

@@ -24,16 +24,16 @@ class CoachingMessages {
   static String long(String code) {
     switch (code) {
       case CoachingRecommendation.increaseWeight:
-        return '🔥 ¡Increíble! Sube un poco el peso el próximo día.';
+        return '¡Increíble! Sube un poco el peso el próximo día.';
       case CoachingRecommendation.maintainWeight:
       case CoachingRecommendation.maintain:
-        return '✅ Buen trabajo. Mantén este peso para consolidar.';
+        return 'Buen trabajo. Mantén este peso para consolidar.';
       case CoachingRecommendation.decreaseWeight:
-        return '⚠️ Baja un poco el peso para mejorar la técnica.';
+        return 'Baja un poco el peso para mejorar la técnica.';
       case CoachingRecommendation.increaseReps:
-        return '💪 Casi lo tienes. Intenta hacer 1-2 reps más.';
+        return 'Casi lo tienes. Intenta hacer 1-2 reps más.';
       case CoachingRecommendation.decreaseSets:
-        return '📉 Te has pasado un poco. Baja una serie para recuperar.';
+        return 'Te has pasado un poco. Baja una serie para recuperar.';
       default:
         return code;
     }

@@ -84,27 +84,32 @@ class WorkoutMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Spacing.xs),
-          RichText(
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: metric.value,
-                  style: context.text.headlineMedium?.copyWith(
-                    color: metric.accent,
-                    fontWeight: FontWeight.w900,
-                    fontSize: metric.valueFontSize,
-                  ),
-                ),
-                if (metric.secondary != null)
+          // Reduce en vez de cortar: "1770 k…" escondía la unidad en
+          // móviles estrechos.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: RichText(
+              maxLines: 1,
+              text: TextSpan(
+                children: [
                   TextSpan(
-                    text: ' ${metric.secondary}',
-                    style: context.text.labelSmall?.copyWith(
-                      color: context.colors.textSecondary,
+                    text: metric.value,
+                    style: context.text.headlineMedium?.copyWith(
+                      color: metric.accent,
+                      fontWeight: FontWeight.w900,
+                      fontSize: metric.valueFontSize,
                     ),
                   ),
-              ],
+                  if (metric.secondary != null)
+                    TextSpan(
+                      text: ' ${metric.secondary}',
+                      style: context.text.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],

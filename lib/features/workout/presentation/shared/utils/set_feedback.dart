@@ -56,14 +56,14 @@ SetFeedback evaluateSet({
     if (repsMet) {
       return SetFeedback(
         SetOutcome.exceededTarget,
-        '🚀 ¡Subiste +$delta kg y completaste las $targetReps reps! '
+        '¡Subiste +$delta kg y completaste las $targetReps reps! '
         'Considera subir el objetivo.',
       );
     }
     if (!isVeryLowReps(reps, targetReps)) {
       return SetFeedback(
         SetOutcome.heavierConsolidate,
-        '💪 Subiste +$delta kg sobre el objetivo. Es normal perder algunas '
+        'Subiste +$delta kg sobre el objetivo. Es normal perder algunas '
         'reps: mantén ${formatWeight(weight)} kg hasta llegar a $targetReps.',
       );
     }
@@ -98,7 +98,7 @@ SetFeedback evaluateSet({
   if (reps > targetReps) {
     return SetFeedback(
       SetOutcome.exceededTarget,
-      '🚀 ¡Hiciste $reps reps, más que el objetivo! Pronto podrás subir '
+      '¡Hiciste $reps reps, más que el objetivo! Pronto podrás subir '
       'el peso.',
     );
   }

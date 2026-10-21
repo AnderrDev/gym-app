@@ -164,7 +164,7 @@ extension RoutineDayHandlers on RoutineManagementBloc {
           state.copyWith(
             submissionStatus: RoutineManagementSubmissionStatus.success,
             lastAction: RoutineManagementAction.addExercises,
-            feedbackMessage: 'Ejercicios añadidos',
+            feedbackMessage: 'Ejercicios añadidos · tócalos para fijar el peso',
           ),
         );
       },

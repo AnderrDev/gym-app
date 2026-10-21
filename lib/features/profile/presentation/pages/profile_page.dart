@@ -50,7 +50,7 @@ class _ProfileView extends StatelessWidget {
         elevation: 0,
         title: Text(
           'PERFIL',
-          style: context.text.titleLarge?.copyWith(letterSpacing: 2),
+          style: context.text.headlineMedium?.copyWith(letterSpacing: 2),
         ),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(

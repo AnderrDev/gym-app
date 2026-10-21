@@ -217,15 +217,6 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
             itemBuilder: (context, index) {
               final ex = widget.exercises[index];
               final allSetsDone = _doneCountFor(ex) >= ex.targetSets;
-              final isLast = index == widget.exercises.length - 1;
-              // En el último ejercicio, si quedó alguno anterior sin terminar
-              // se ofrece volver a él antes que "Finalizar" ('TERMINASTE'
-              // aparecía aunque faltaran series).
-              final pendingIndex = isLast ? _firstPendingIndex() : null;
-              final nextIndex = isLast ? pendingIndex : index + 1;
-              final nextEx = nextIndex == null
-                  ? null
-                  : widget.exercises[nextIndex];
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   Spacing.lg,
@@ -310,22 +301,6 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
                               : (idx) => widget.onSetRemoved?.call(ex.id, idx),
                         ),
                       ),
-                    if (allSetsDone &&
-                        !widget.effectiveReadOnly &&
-                        !widget.isAdapting) ...[
-                      const SizedBox(height: Spacing.md),
-                      FocusViewNextStepCta(
-                        nextExerciseName: nextEx?.name,
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          if (nextIndex != null) {
-                            _jumpTo(nextIndex);
-                          } else if (widget.onFinishWorkout != null) {
-                            widget.onFinishWorkout!();
-                          }
-                        },
-                      ),
-                    ],
                   ],
                 ),
               );
@@ -365,6 +340,10 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
             'Serie ${log.setIndex} registrada · ${_loadLabel(log.actualWeight, log.actualReps)}',
           ),
           duration: const Duration(seconds: 4),
+          // Con `action` Flutter (3.38+) lo deja fijo por defecto e ignora
+          // `duration`: el aviso se arrastraba al ejercicio siguiente y
+          // tapaba series y el botón de finalizar.
+          persist: false,
           action: SnackBarAction(
             label: 'Deshacer',
             onPressed: () {
@@ -374,6 +353,43 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
           ),
         ),
       );
+  }
+
+  /// Con el ejercicio completo, la barra fija pasa a avanzar al siguiente
+  /// (o a finalizar). Vivía al final del contenido desplazable y en móviles
+  /// quedaba medio cortada bajo el borde.
+  Widget _buildNextStepBar(BuildContext context) {
+    if (widget.isAdapting) return const SizedBox.shrink();
+    final index = _currentIndex.clamp(0, widget.exercises.length - 1);
+    final isLast = index == widget.exercises.length - 1;
+    // En el último ejercicio, si quedó alguno anterior sin terminar se
+    // ofrece volver a él antes que "Finalizar" ('TERMINASTE' aparecía
+    // aunque faltaran series).
+    final nextIndex = isLast ? _firstPendingIndex() : index + 1;
+    final nextEx = nextIndex == null ? null : widget.exercises[nextIndex];
+    return SafeArea(
+      key: _completeBarKey,
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lg,
+          Spacing.xs,
+          Spacing.lg,
+          Spacing.md,
+        ),
+        child: FocusViewNextStepCta(
+          nextExerciseName: nextEx?.name,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            if (nextIndex != null) {
+              _jumpTo(nextIndex);
+            } else if (widget.onFinishWorkout != null) {
+              widget.onFinishWorkout!();
+            }
+          },
+        ),
+      ),
+    );
   }
 
   /// Botón fijo abajo, al alcance del pulgar: registra la serie siguiente
@@ -386,10 +402,9 @@ class _RoutineDayActiveFocusViewState extends State<RoutineDayActiveFocusView> {
     }
     final ex =
         widget.exercises[_currentIndex.clamp(0, widget.exercises.length - 1)];
+    if (ex.replacedByExerciseName != null) return const SizedBox.shrink();
     final next = _nextPendingSetFor(ex);
-    if (next == null || ex.replacedByExerciseName != null) {
-      return const SizedBox.shrink();
-    }
+    if (next == null) return _buildNextStepBar(context);
     final card = _cardKeyFor(ex.id).currentState;
     if (card == null && !_previewRetryScheduled) {
       _previewRetryScheduled = true;

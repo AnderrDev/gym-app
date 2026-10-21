@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
+import 'package:gym_flutter/features/workout/presentation/routine_management/widgets/day_editor_save_action.dart';
 
 class RoutineEditorAppBar extends StatelessWidget {
   const RoutineEditorAppBar({
@@ -57,21 +58,10 @@ class RoutineEditorAppBar extends StatelessWidget {
             onPressed: onDelete,
           ),
         if (isOwner)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: TextButton(
-              onPressed: isDirty ? onSave : null,
-              child: Text(
-                'GUARDAR',
-                style: context.text.labelMedium?.copyWith(
-                  color: isDirty
-                      ? colors.primary
-                      : colors.textSecondary.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
+          DayEditorSaveAction(
+            isDirty: isDirty,
+            isSaved: isExisting,
+            onSave: onSave,
           ),
       ],
     );

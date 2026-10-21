@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/i18n/app_strings.dart';
+import 'package:gym_flutter/features/workout/presentation/shared/utils/weight_format.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
 import 'package:gym_flutter/core/ui/molecules/bottom_sheet_handle.dart';
@@ -96,8 +97,8 @@ class WorkoutSummaryBottomSheet extends StatelessWidget {
                       ),
                       WorkoutMetric(
                         label: 'CARGA',
-                        value: totalVolume.toStringAsFixed(0),
-                        secondary: AppStrings.kgReps,
+                        value: formatVolume(totalVolume),
+                        secondary: 'kg',
                         accent: context.colors.textPrimary,
                         icon: Icons.local_fire_department_rounded,
                       ),

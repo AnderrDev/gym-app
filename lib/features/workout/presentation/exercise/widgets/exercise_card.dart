@@ -193,11 +193,14 @@ class ExerciseCardState extends State<ExerciseCard>
   /// Serie siguiente con los valores que se registrarían de un toque, o
   /// `null` si no hay pendientes o no hay peso que proponer (ejercicio sin
   /// objetivo ni historial: mejor confirmar en la hoja que guardar 0 kg).
+  /// Los 0 kg sí se proponen cuando el historial confirma que el ejercicio
+  /// es de peso corporal (ver [_isConfirmedBodyweight]).
   ({int setNumber, double weight, int reps})? get quickSetPreview {
     final next = _nextPendingSet;
     if (widget.readOnly || next == null) return null;
     final p = _prefillFor(next);
-    if (p.weight <= 0 || p.reps <= 0) return null;
+    if (p.reps <= 0 || p.weight < 0) return null;
+    if (p.weight == 0 && !_isConfirmedBodyweight) return null;
     return (setNumber: next, weight: p.weight, reps: p.reps);
   }
 
@@ -223,6 +226,12 @@ class ExerciseCardState extends State<ExerciseCard>
     if (!_completedSets.containsKey(setIndex)) return;
     _onSetUnsaved(setIndex);
   }
+
+  /// 0 kg es "peso corporal" y no "peso sin definir" cuando ya se hizo así:
+  /// la última sesión o una serie de esta se registró sin carga.
+  bool get _isConfirmedBodyweight =>
+      widget.lastPerformance?.actualWeight == 0 ||
+      _completedSets.values.any((l) => l.actualWeight == 0);
 
   int? get _nextPendingSet {
     for (var n = 1; n <= _targetSets; n++) {
