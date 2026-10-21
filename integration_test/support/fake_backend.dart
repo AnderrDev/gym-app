@@ -13,6 +13,7 @@ import 'package:gym_flutter/features/auth/domain/entities/user.dart';
 import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.dart';
 import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
+import 'package:gym_flutter/features/workout/domain/entities/exercise_catalog_item.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise_history_session.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine.dart';
 import 'package:gym_flutter/features/workout/domain/entities/routine_day.dart';
@@ -52,6 +53,39 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
 
   /// Series guardadas por sesión.
   final logs = <String, List<SetLog>>{};
+
+  /// Plan propio de las sesiones adaptadas (cambio o extra en la sesión).
+  /// Sin entrada, la sesión usa los ejercicios de su día.
+  final sessionPlans = <String, List<Exercise>>{};
+
+  /// Catálogo global (tabla `exercises`).
+  final catalog = const [
+    ExerciseCatalogItem(
+      id: 'ex-press',
+      name: 'Press banca',
+      muscleGroup: 'Pecho',
+    ),
+    ExerciseCatalogItem(
+      id: 'ex-dominadas',
+      name: 'Dominadas',
+      muscleGroup: 'Espalda',
+    ),
+    ExerciseCatalogItem(
+      id: 'ex-sentadilla',
+      name: 'Sentadilla',
+      muscleGroup: 'Piernas',
+    ),
+    ExerciseCatalogItem(
+      id: 'ex-remo',
+      name: 'Remo con barra',
+      muscleGroup: 'Espalda',
+    ),
+    ExerciseCatalogItem(
+      id: 'ex-press-inclinado',
+      name: 'Press inclinado',
+      muscleGroup: 'Pecho',
+    ),
+  ];
 
   int _ids = 0;
 
@@ -151,6 +185,22 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
 
   RoutineDay _dayById(String id) => days.firstWhere((d) => d.id == id);
 
+  Routine _withExerciseCount(Routine r) => r.copyWith(
+    exerciseCount: days
+        .where((d) => d.routineId == r.id)
+        .fold(0, (sum, d) => sum + d.exercises.length),
+  );
+
+  /// Sustituye los ejercicios de [dayId] recalculando los derivados.
+  void _setDayExercises(String dayId, List<Exercise> exercises) {
+    final i = days.indexWhere((d) => d.id == dayId);
+    days[i] = days[i].copyWith(
+      exercises: exercises,
+      targetSetsCount: exercises.fold(0, (sum, e) => sum + e.targetSets),
+      exerciseNamesPreview: [for (final e in exercises) e.name],
+    );
+  }
+
   /// La sesión con los contadores que en producción da la vista
   /// `view_workout_sessions_summary`.
   WorkoutSession _withCounts(WorkoutSession s) => s.copyWith(
@@ -168,7 +218,7 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
   @override
   Future<Either<Failure, List<Routine>>> getAssignedRoutines(
     String userId,
-  ) async => Right(List.of(routines));
+  ) async => Right(routines.map(_withExerciseCount).toList());
 
   @override
   Future<Either<Failure, List<RoutineDay>>> getRoutineDays(
@@ -300,7 +350,55 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
     String? routineDayId,
   }) async {
     final session = sessions.firstWhere((s) => s.id == sessionId);
-    return Right(_dayById(session.routineDayId).exercises);
+    return Right(
+      sessionPlans[sessionId] ?? _dayById(session.routineDayId).exercises,
+    );
+  }
+
+  /// Como `adapt_session_exercise_v1`: añade [exerciseId] al plan de la
+  /// sesión; con [replaceExerciseId] el original se queda con las series ya
+  /// hechas y el nuevo ocupa su sitio.
+  @override
+  Future<Either<Failure, List<Exercise>>> adaptSessionExercise(
+    String sessionId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    String? replaceExerciseId,
+  }) async {
+    final plan = List.of(
+      (await getSessionExercises(sessionId)).getOrElse((_) => const []),
+    );
+    final item = catalog.firstWhere((c) => c.id == exerciseId);
+    final session = sessions.firstWhere((s) => s.id == sessionId);
+    String? replaces;
+    if (replaceExerciseId != null) {
+      final i = plan.indexWhere((e) => e.id == replaceExerciseId);
+      final done = logsOf(
+        sessionId,
+      ).where((l) => l.exerciseId == replaceExerciseId).length;
+      replaces = plan[i].name;
+      plan[i] = plan[i].copyWith(
+        targetSets: done,
+        replacedByExerciseName: item.name,
+      );
+    }
+    plan.add(
+      Exercise(
+        id: item.id,
+        routineDayId: session.routineDayId,
+        name: item.name,
+        targetMuscle: item.muscleGroup,
+        targetWeight: targetWeight,
+        targetReps: targetReps,
+        targetSets: targetSets,
+        isExtra: replaceExerciseId == null,
+        replacesExerciseName: replaces,
+      ),
+    );
+    sessionPlans[sessionId] = plan;
+    return Right(plan);
   }
 
   @override
@@ -369,6 +467,152 @@ class FakeWorkoutRepository extends Fake implements WorkoutRepository {
     sessions.removeWhere((s) => s.id == sessionId);
     logs.remove(sessionId);
     discardedSessionIds.add(sessionId);
+    return const Right(null);
+  }
+
+  // ── Gestión de rutinas ─────────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, List<Routine>>> getAllRoutines() async =>
+      Right(routines.map(_withExerciseCount).toList());
+
+  @override
+  Future<Either<Failure, Routine>> getRoutineById(String routineId) async =>
+      Right(_withExerciseCount(routines.firstWhere((r) => r.id == routineId)));
+
+  @override
+  Future<Either<Failure, Routine>> saveRoutine(Routine routine) async {
+    final i = routines.indexWhere((r) => r.id == routine.id);
+    final saved = i < 0
+        ? routine.copyWith(id: 'routine-${++_ids}', creatorId: userId)
+        : routine;
+    if (i < 0) {
+      routines.add(saved);
+    } else {
+      routines[i] = saved;
+    }
+    return Right(_withExerciseCount(saved));
+  }
+
+  @override
+  Future<Either<Failure, void>> assignRoutineToUser(
+    String userId,
+    String routineId,
+  ) async => const Right(null);
+
+  @override
+  Future<Either<Failure, RoutineDay>> saveRoutineDay(RoutineDay day) async {
+    final i = days.indexWhere((d) => d.id == day.id);
+    final saved = i < 0 ? day.copyWith(id: 'day-${++_ids}') : day;
+    if (i < 0) {
+      days.add(saved);
+    } else {
+      days[i] = days[i].copyWith(name: day.name, dayOfWeek: day.dayOfWeek);
+    }
+    return Right(_dayById(saved.id));
+  }
+
+  @override
+  Future<Either<Failure, List<ExerciseCatalogItem>>> getExercisesCatalog({
+    String? muscleGroup,
+    String? search,
+    int limit = 200,
+  }) async => Right(
+    catalog
+        .where((c) => muscleGroup == null || c.muscleGroup == muscleGroup)
+        .where(
+          (c) =>
+              search == null ||
+              c.name.toLowerCase().contains(search.toLowerCase()),
+        )
+        .take(limit)
+        .toList(),
+  );
+
+  @override
+  Future<Either<Failure, void>> addExerciseToDay(
+    String dayId,
+    String exerciseId, {
+    required int targetSets,
+    required int targetReps,
+    required double targetWeight,
+    int restSeconds = 90,
+  }) => addExercisesToDay(dayId, [
+    AddExerciseToDayPayload(
+      exerciseId: exerciseId,
+      targetSets: targetSets,
+      targetReps: targetReps,
+      targetWeight: targetWeight,
+      restSeconds: restSeconds,
+    ),
+  ]);
+
+  @override
+  Future<Either<Failure, void>> addExercisesToDay(
+    String dayId,
+    List<AddExerciseToDayPayload> items,
+  ) async {
+    final added = [
+      for (final p in items)
+        if (catalog.firstWhere((c) => c.id == p.exerciseId) case final item)
+          Exercise(
+            id: item.id,
+            routineDayId: dayId,
+            name: item.name,
+            targetMuscle: item.muscleGroup,
+            targetWeight: p.targetWeight,
+            targetReps: p.targetReps,
+            targetSets: p.targetSets,
+            restTimerSeconds: p.restSeconds,
+          ),
+    ];
+    _setDayExercises(dayId, [..._dayById(dayId).exercises, ...added]);
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> removeExerciseFromDay(
+    String dayId,
+    String exerciseId,
+  ) async {
+    _setDayExercises(dayId, [
+      for (final e in _dayById(dayId).exercises)
+        if (e.id != exerciseId) e,
+    ]);
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateExerciseTarget(
+    String routineDayId,
+    String exerciseId,
+    double targetWeight,
+    int targetReps, {
+    int? targetSets,
+    int? restSeconds,
+  }) async {
+    _setDayExercises(routineDayId, [
+      for (final e in _dayById(routineDayId).exercises)
+        if (e.id == exerciseId)
+          e.copyWith(
+            targetWeight: targetWeight,
+            targetReps: targetReps,
+            targetSets: targetSets ?? e.targetSets,
+            restTimerSeconds: restSeconds ?? e.restTimerSeconds,
+          )
+        else
+          e,
+    ]);
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> reorderExercisesInDay(
+    String dayId,
+    List<String> exerciseIds,
+  ) async {
+    final byId = {for (final e in _dayById(dayId).exercises) e.id: e};
+    _setDayExercises(dayId, [for (final id in exerciseIds) byId[id]!]);
     return const Right(null);
   }
 

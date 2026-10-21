@@ -182,6 +182,119 @@ void appFlows() {
       expect(find.text('TE TOCA HOY'), findsOneWidget);
       expect(find.text('Entrenar hoy'), findsOneWidget);
     });
+
+    flowTest('sustituir un ejercicio a mitad de sesión conserva lo hecho', (
+      tester,
+    ) async {
+      final backend = await pumpTestApp(tester);
+      final repo = backend.workout;
+      await tapText(tester, 'Entrenar hoy');
+      await tapText(tester, 'Iniciar entrenamiento');
+      final sessionId = repo.openSession!.id;
+      await tapCompleteSet(tester, expectLabel: 'Serie 1 hecha');
+
+      // Press banca → Press inclinado para las 2 series que faltan.
+      await tester.tap(find.byTooltip('Opciones del ejercicio').first);
+      await settle(tester);
+      await tapText(tester, 'Sustituir ejercicio');
+      expect(find.text('Solo esta sesión'), findsOneWidget);
+      await tapText(tester, 'Press inclinado');
+      expect(find.text('Seleccionado: Press inclinado'), findsOneWidget);
+      await typeText(tester, find.byType(TextField).last, '50');
+      await tester.tap(find.text('Sustituir ejercicio').last);
+      await settle(tester);
+
+      // El plan de la sesión cambia; la rutina no.
+      final plan = repo.sessionPlans[sessionId]!;
+      final press = plan.firstWhere((e) => e.id == 'ex-press');
+      final inclinado = plan.firstWhere((e) => e.id == 'ex-press-inclinado');
+      expect(press.targetSets, 1);
+      expect(press.replacedByExerciseName, 'Press inclinado');
+      expect(inclinado.targetSets, 2);
+      expect(inclinado.targetWeight, 50);
+      expect(inclinado.replacesExerciseName, 'Press banca');
+      expect(
+        repo.days
+            .firstWhere((d) => d.id == FakeWorkoutRepository.torsoDayId)
+            .exercises
+            .map((e) => e.name),
+        ['Press banca', 'Dominadas'],
+      );
+      expect(
+        find.text('Sustituye a Press banca · Solo esta sesión'),
+        findsOneWidget,
+      );
+
+      // La cabecera sigue a la tarjeta del sustituto (se quedaba en el
+      // ejercicio anterior).
+      expect(find.text('Ejercicio 3 de 3'), findsOneWidget);
+
+      // La serie ya hecha se conserva y el sustituto se registra aparte.
+      await tapCompleteSet(tester, expectLabel: 'Serie 1 hecha · 50 kg × 10');
+      final logs = repo.logsOf(sessionId);
+      expect(logs.where((l) => l.exerciseId == 'ex-press'), hasLength(1));
+      final sub = logs.singleWhere((l) => l.exerciseId == 'ex-press-inclinado');
+      expect(sub.actualWeight, 50);
+      expect(sub.actualReps, 10);
+    });
+  });
+
+  group('RUTINAS', () {
+    flowTest('crear rutina con un día, ejercicios del catálogo y objetivos', (
+      tester,
+    ) async {
+      final backend = await pumpTestApp(tester);
+      final repo = backend.workout;
+      await tapText(tester, 'RUTINAS');
+      expect(find.text('Fuerza'), findsOneWidget);
+
+      // Rutina nueva: al añadir el primer día se guarda sola.
+      await tapText(tester, 'NUEVA RUTINA');
+      await typeText(tester, find.byType(TextField).first, 'Mi rutina');
+      await tapText(tester, 'AÑADIR DÍA');
+      final routine = repo.routines.singleWhere((r) => r.name == 'Mi rutina');
+      expect(routine.creatorId, FakeWorkoutRepository.userId);
+      final dayId = repo.days.singleWhere((d) => d.routineId == routine.id).id;
+      expect(find.text('Sin ejercicios · toca para añadir'), findsOneWidget);
+
+      // Editor del día: dos ejercicios del catálogo de una vez.
+      await tapText(tester, 'Nuevo Día');
+      await tapText(tester, 'AÑADIR EJERCICIOS');
+      await tapText(tester, 'Remo con barra');
+      await tapText(tester, 'Press inclinado');
+      await tapText(tester, 'Añadir 2 ejercicios');
+      List<String> names() => [
+        for (final e in repo.days.firstWhere((d) => d.id == dayId).exercises)
+          e.name,
+      ];
+      expect(names(), ['Remo con barra', 'Press inclinado']);
+      expect(find.text('6 series'), findsOneWidget);
+
+      // Objetivo del remo: 50 kg.
+      await tapText(tester, 'Remo con barra');
+      expect(find.text('Editar objetivos'), findsOneWidget);
+      await typeText(tester, find.byType(TextField).last, '50');
+      await tester.tap(find.text('GUARDAR').last);
+      await settle(tester);
+      final remo = repo.days
+          .firstWhere((d) => d.id == dayId)
+          .exercises
+          .firstWhere((e) => e.name == 'Remo con barra');
+      expect(remo.targetWeight, 50);
+      expect(find.textContaining('3 × 10 · 50 kg'), findsOneWidget);
+
+      // Nombre del día.
+      await typeText(tester, find.byType(TextField).first, 'Espalda');
+      await tapText(tester, 'GUARDAR');
+      expect(repo.days.firstWhere((d) => d.id == dayId).name, 'Espalda');
+
+      // GUARDAR vuelve a la rutina; de ahí, a la lista.
+      expect(find.text('Espalda'), findsOneWidget);
+      expect(find.text('Remo con barra · Press inclinado'), findsOneWidget);
+      await tester.tap(find.byTooltip('Cerrar editor'));
+      await settle(tester);
+      expect(find.text('Mi rutina'), findsOneWidget);
+    });
   });
 
   group('PROGRESO', () {

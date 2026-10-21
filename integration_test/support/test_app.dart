@@ -21,6 +21,19 @@ import 'package:gym_flutter/features/auth/domain/usecases/sign_up_with_email.dar
 import 'package:gym_flutter/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gym_flutter/features/workout/domain/repositories/workout_repository.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_assigned_routines.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/assign_routine.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_all_routines.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/get_routine_by_id.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/save_routine.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/delete_routine.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/fork_routine.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/save_routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/delete_routine_day.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/add_exercise_to_day.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/add_exercises_to_day.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/remove_exercise_from_day.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/reorder_exercises.dart';
+import 'package:gym_flutter/features/workout/domain/usecases/update_exercise_target.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_exercises_catalog.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_detail.dart';
 import 'package:gym_flutter/features/workout/domain/usecases/get_session_exercises.dart';
@@ -31,6 +44,7 @@ import 'package:gym_flutter/features/workout/presentation/bloc/dashboard/dashboa
 import 'package:gym_flutter/features/workout/presentation/bloc/exercise_stats/exercise_stats_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/progress/progress_bloc.dart';
 import 'package:gym_flutter/features/workout/presentation/bloc/routine_day/routine_day_bloc.dart';
+import 'package:gym_flutter/features/workout/presentation/bloc/routine_management/routine_management_bloc.dart';
 import 'package:gym_flutter/injection_container.dart';
 import 'package:gym_flutter/main.dart';
 
@@ -129,6 +143,40 @@ Future<TestBackend> pumpTestApp(
       () => ProgressBloc(getAssignedRoutines: sl(), repository: sl()),
     )
     ..registerFactory(() => ExerciseStatsBloc(repository: sl()))
+    // RUTINAS
+    ..registerLazySingleton(() => AssignRoutine(sl()))
+    ..registerLazySingleton(() => GetAllRoutines(sl()))
+    ..registerLazySingleton(() => GetRoutineById(sl()))
+    ..registerLazySingleton(() => SaveRoutine(sl()))
+    ..registerLazySingleton(() => DeleteRoutine(sl()))
+    ..registerLazySingleton(() => ForkRoutine(sl()))
+    ..registerLazySingleton(() => SaveRoutineDay(sl()))
+    ..registerLazySingleton(() => DeleteRoutineDay(sl()))
+    ..registerLazySingleton(() => AddExerciseToDay(sl()))
+    ..registerLazySingleton(() => AddExercisesToDay(sl()))
+    ..registerLazySingleton(() => RemoveExerciseFromDay(sl()))
+    ..registerLazySingleton(() => ReorderExercises(sl()))
+    ..registerLazySingleton(() => UpdateExerciseTarget(sl()))
+    ..registerFactory(
+      () => RoutineManagementBloc(
+        assignRoutine: sl(),
+        getAllRoutines: sl(),
+        getAssignedRoutines: sl(),
+        getWeeklyPlan: sl(),
+        getRoutineById: sl(),
+        saveRoutine: sl(),
+        deleteRoutine: sl(),
+        forkRoutine: sl(),
+        saveRoutineDay: sl(),
+        deleteRoutineDay: sl(),
+        addExerciseToDay: sl(),
+        addExercisesToDay: sl(),
+        removeExerciseFromDay: sl(),
+        reorderExercises: sl(),
+        updateExerciseTarget: sl(),
+        getExercisesCatalog: sl(),
+      ),
+    )
     ..registerFactory(
       () => ActiveSessionWatcherBloc(
         repository: sl(),
