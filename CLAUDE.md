@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Smart Gym Tracker — Flutter app (Android, iOS, Web) for strength/hypertrophy training with progressive overload. Backend is Supabase (Auth + Postgres + Edge Functions). Web hosting is Netlify (site `gym-tracker-anderson`, CI/CD from GitHub — see `netlify.toml`); the old Firebase host (`firebase.json`/`.firebaserc`) is kept only as a fallback.
 
-The authoritative architecture document is `docs/AGENT_CONTEXT.md` — read it before any non-trivial change. `AGENTS.md` lists supplementary agent rules.
+The authoritative architecture document is `docs/AGENT_CONTEXT.md` — read it before any non-trivial change. `AGENTS.md` lists supplementary agent rules. The full backend reference (schema, RLS, RPCs, Edge Function contracts, auth, client flows and client-only business logic — written for building the native web client) lives in `docs/backend/`; keep it updated when you add migrations, RPCs or functions.
 
 ## Commands
 

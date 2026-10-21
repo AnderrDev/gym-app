@@ -41,7 +41,7 @@ confirmar contra producción.
   ejercicio del catálogo **borra historial**.
 - Sin UNIQUE `(user_id, routine_day_id, session_date)`: un segundo cliente puede
   crear duplicados y el `maybeSingle()` de "sesión existente" fallaría.
-- ~~`sessions_update` permite reabrir una sesión desde el cliente (`completed_at = NULL`).~~ Cerrado por `guard_session_completion_v1` (20261021130000, pendiente de desplegar).
+- ~~`sessions_update` permite reabrir una sesión desde el cliente (`completed_at = NULL`).~~ Cerrado por `guard_session_completion_v1` (20261021130000, desplegada 2026-10-21).
 - Rutina asignada que deja de ser visible → el usuario pierde lectura de sus días.
 - Configuración de Auth solo en el dashboard; **Site URL aún en localhost**.
 
@@ -49,7 +49,7 @@ confirmar contra producción.
 
 ### Antes de empezar (backend)
 1. Dump del esquema de producción → migración baseline + revisar [01](01_esquema.md#verificación-pendiente).
-2. ~~Arreglar **B1** y **B2**; unificar el código de **B3**.~~ Hecho (2026-10-21); falta desplegar las migraciones `20261021120000` y `20261021130000` y la función `finalize_workout_session_v1`.
+2. ~~Arreglar **B1** y **B2**; unificar el código de **B3**.~~ Hecho y desplegado (2026-10-21): migraciones `20261021120000` y `20261021130000` y función `finalize_workout_session_v1`.
 3. Site URL = dominio definitivo de la web; añadir `<web>/reset-password` y
    `localhost` a Redirect URLs.
 4. Generar tipos: `supabase gen types typescript --linked > src/lib/database.types.ts`

@@ -83,7 +83,7 @@ del snapshot. Errores: 42501, `session closed` 23514, `invalid exercise targets`
 4. Pone `exercise_plan = NULL` y borra `set_logs` + la sesión → `true`.
 
 ✅ **B1 arreglado** (`20261021120000_fix_discard_session_with_replaced_exercise.sql`,
-pendiente de desplegar): antes, si la sesión abierta tenía un original
+desplegado 2026-10-21): antes, si la sesión abierta tenía un original
 **sustituido con series**, el trigger `guard_session_set_log_v1` rechazaba el
 `DELETE` de esos logs (`23514 retained original logs are immutable`) y el
 descarte fallaba. Ahora se quita el plan antes de borrar, como
@@ -156,7 +156,7 @@ Cierra la sesión y guarda el coaching.
 Request: `{"session_id": "uuid"}`
 - Siempre llama a `generate_coaching_v1` (consume su rate limit); si falla,
   cierra igualmente y añade `warning_code: "COACHING_GENERATION_FAILED"`.
-- ✅ **B2 arreglado** (pendiente de desplegar): un `coaching_analysis` enviado
+- ✅ **B2 arreglado** (2026-10-21): un `coaching_analysis` enviado
   por el cliente **se ignora** (antes se guardaba tal cual, sin validar).
   Mandarlo no es un error.
 - Hace `UPDATE workout_sessions SET completed_at = now(), coaching_analysis = …
