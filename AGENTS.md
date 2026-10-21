@@ -22,7 +22,7 @@ See `CLAUDE.md#Commands`. Local dev uses `.env` at the repo root (loaded by `flu
 ## Offline-first wiring
 Removed. Runtime is remote-only. See `CLAUDE.md#Known drift` §1. Re-introduction needs a fresh design discussion, not a silent revival of the deleted scaffolding.
 
-## Web hosting (Firebase)
-- Hosting output is `build/web` (`firebase.json`).
-- Default Firebase project: `gym-flutter-web-224` (`.firebaserc`).
-- Deploy: `flutter build web --wasm --dart-define-from-file=.env` then `firebase deploy --only hosting`.
+## Web hosting (Netlify)
+- Netlify site `gym-tracker-anderson` (https://gym-tracker-anderson.netlify.app), connected to the GitHub repo: every push to `main` builds and publishes; every PR gets a deploy preview.
+- Build: `netlify.toml` → `scripts/netlify_build.sh` (installs Flutter 3.38.9, `flutter build web --wasm`). Supabase credentials come from the site's env vars `SUPABASE_URL` / `SUPABASE_ANON_KEY`.
+- No manual deploys needed. `firebase.json`/`.firebaserc` (old host `gym-flutter-web-224`) are kept only as a fallback.

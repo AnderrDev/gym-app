@@ -1,16 +1,12 @@
-name: Deploy (Supabase + Web)
+name: Deploy (Supabase)
 
-# Despliega migraciones, edge functions y la web a Firebase Hosting al
-# mergear a main. Cada job es independiente: si una migración falla, las
-# functions y la web siguen probando, pero el job global queda rojo.
+# Despliega migraciones y edge functions al mergear a main. La web la
+# construye y publica Netlify (ver netlify.toml).
 #
 # Secrets requeridos en el repo:
 #   SUPABASE_ACCESS_TOKEN   — para `supabase` CLI
 #   SUPABASE_PROJECT_REF    — ej. benadgxgowycjxypyunc
 #   SUPABASE_DB_PASSWORD    — para `supabase db push`
-#   SUPABASE_URL            — para build web (--dart-define)
-#   SUPABASE_ANON_KEY       — para build web (--dart-define)
-#   FIREBASE_SERVICE_ACCOUNT_JSON — JSON del SA con rol Hosting Admin
 
 on:
   push:
@@ -22,9 +18,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Sin secretos (hoy las migraciones se aplican a mano) los jobs se omiten
+  # en vez de dejar main en rojo en cada push.
+  check-secrets:
+    name: Check Supabase secrets
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SUPABASE_ACCESS_TOKEN vacío: no se despliegan migraciones ni Edge Functions."
+          fi
+
   deploy-db:
     name: Apply DB migrations
     runs-on: ubuntu-latest
+    needs: check-secrets
+    if: needs.check-secrets.outputs.enabled == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -58,37 +75,3 @@ jobs:
         run: supabase functions deploy get_weekly_insights_v1
       - name: Deploy delete account
         run: supabase functions deploy delete_account_v1
-
-  deploy-web:
-    name: Build & deploy Flutter Web
-    runs-on: ubuntu-latest
-    needs: deploy-functions
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.38.9
-          cache: true
-      # `.env` es un asset declarado en pubspec pero está gitignored: sin él
-      # `flutter build` falla con `No file or variants found for asset: .env`.
-      # Vacío basta (las credenciales llegan por --dart-define).
-      - name: Placeholder .env
-        run: touch .env
-      - name: Pub get
-        run: flutter pub get
-      # `--wasm` genera dart2wasm + skwasm para navegadores con WasmGC
-      # (Chrome/Edge/Firefox recientes) y conserva main.dart.js + CanvasKit
-      # como fallback; `flutter_bootstrap.js` elige en runtime.
-      - name: Build web
-        run: |
-          flutter build web --release --wasm \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          projectId: gym-flutter-web-224
-          channelId: live
