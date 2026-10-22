@@ -13,7 +13,6 @@ import 'package:gym_flutter/features/auth/domain/repositories/auth_repository.da
 import 'package:gym_flutter/features/workout/data/datasources/workout_local_data_source.dart';
 import 'package:gym_flutter/features/workout/data/datasources/workout_remote_data_source.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
-import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 
 /// Política de drop: motivos que el worker considera no-recuperables.
@@ -256,18 +255,20 @@ class SyncWorkerImpl implements SyncWorker {
           return;
         case MutationKind.finalizeSession:
           final sessionId = m.payload['session_id'] as String;
-          final coachingRaw = m.payload['coaching_analysis'] as List<dynamic>?;
-          final coaching = coachingRaw
-              ?.whereType<Map<String, dynamic>>()
-              .map(CoachingAnalysis.fromJson)
-              .toList();
-          await _remote.finishWorkoutSession(
-            sessionId,
-            coachingAnalysis: coaching,
-          );
-          // Si hay coaching, lo aplicamos en local para que la UI reaccione.
-          if (coaching != null && coaching.isNotEmpty) {
-            await _local.applyCoachingForSession(sessionId, coaching);
+          // El servidor genera el coaching al cerrar e ignora el que mande el
+          // cliente (las mutaciones viejas del outbox aún pueden traerlo).
+          await _remote.finishWorkoutSession(sessionId);
+          // Best-effort: el cierre ya está hecho; si falla la lectura, la
+          // sesión se queda sin coaching en local hasta el próximo refresco.
+          try {
+            final coaching = await _remote.getSessionCoaching(sessionId);
+            if (coaching != null && coaching.isNotEmpty) {
+              await _local.applyCoachingForSession(sessionId, coaching);
+            }
+          } catch (e) {
+            AppLogger.instance.warning(
+              'sync_worker.coaching_refresh_failed: $e',
+            );
           }
           return;
       }

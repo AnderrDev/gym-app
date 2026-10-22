@@ -23,25 +23,43 @@ class CoachingAnalysis extends Equatable {
     this.performanceScore,
   });
 
+  /// Lectura tolerante: un campo con tipo inesperado se descarta en vez de
+  /// lanzar `TypeError`, para que un cambio aditivo del servidor (o un dato
+  /// viejo) no rompa la carga de toda la sesión.
   factory CoachingAnalysis.fromJson(Map<String, dynamic> json) {
+    Object? read(String camel, String snake) => json[camel] ?? json[snake];
+    String? str(Object? v) => v is String ? v : null;
+    int? integer(Object? v) => v is num ? v.toInt() : null;
+    bool? boolean(Object? v) => v is bool ? v : null;
+
+    var recommendation = str(json['recommendation']) ?? '';
+    var feedback = str(json['feedback']);
+    // Clientes viejos guardaban la frase en `recommendation` y el código en
+    // `feedback`: se normaliza a la forma del servidor.
+    if (!_isCode(recommendation) && feedback != null && _isCode(feedback)) {
+      final code = feedback;
+      feedback = recommendation.isEmpty ? null : recommendation;
+      recommendation = code;
+    }
+
     return CoachingAnalysis(
-      exerciseId: (json['exerciseId'] ?? json['exercise_id']) as String?,
-      exerciseName:
-          (json['exerciseName'] ?? json['exercise_name'] ?? 'Ejercicio')
-              as String,
-      completedSets: (json['completedSets'] ?? json['completed_sets']) as int?,
-      targetSets: (json['targetSets'] ?? json['target_sets']) as int?,
-      weightMet: (json['weightMet'] ?? json['weight_met']) as bool?,
-      repsMet: (json['repsMet'] ?? json['reps_met']) as bool?,
-      recommendation: (json['recommendation'] ?? '') as String,
-      feedback: json['feedback'] as String?,
-      performanceScore:
-          (json['performanceScore'] ?? json['performance_score']) is num
-          ? ((json['performanceScore'] ?? json['performance_score']) as num)
-                .toDouble()
-          : null,
+      exerciseId: str(read('exerciseId', 'exercise_id')),
+      exerciseName: str(read('exerciseName', 'exercise_name')) ?? 'Ejercicio',
+      completedSets: integer(read('completedSets', 'completed_sets')),
+      targetSets: integer(read('targetSets', 'target_sets')),
+      weightMet: boolean(read('weightMet', 'weight_met')),
+      repsMet: boolean(read('repsMet', 'reps_met')),
+      recommendation: recommendation,
+      feedback: feedback,
+      performanceScore: switch (read('performanceScore', 'performance_score')) {
+        final num n => n.toDouble(),
+        _ => null,
+      },
     );
   }
+
+  static final _codePattern = RegExp(r'^[A-Z_]+$');
+  static bool _isCode(String value) => _codePattern.hasMatch(value);
 
   Map<String, dynamic> toJson() {
     return {
@@ -57,15 +75,13 @@ class CoachingAnalysis extends Equatable {
     };
   }
 
-  /// Indica si este coaching aporta una recomendación accionable. Los estados
-  /// `PENDING` (todavía sin generar) y `IN_PROGRESS` (workout en curso, no hay
-  /// veredicto final) son ruido visual durante la sesión activa.
-  bool get hasActionableAdvice {
-    final f = feedback;
-    if (f == null || f.isEmpty) return false;
-    if (f == 'PENDING' || f == 'IN_PROGRESS') return false;
-    return true;
-  }
+  /// Indica si este coaching aporta una recomendación accionable. Sin código
+  /// (ejercicio sin series todavía) o con `PENDING`/`IN_PROGRESS` (workout en
+  /// curso, no hay veredicto final) es ruido visual durante la sesión activa.
+  bool get hasActionableAdvice =>
+      recommendation.isNotEmpty &&
+      recommendation != 'PENDING' &&
+      recommendation != 'IN_PROGRESS';
 
   @override
   List<Object?> get props => [

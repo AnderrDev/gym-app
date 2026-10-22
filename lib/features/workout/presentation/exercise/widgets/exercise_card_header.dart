@@ -57,7 +57,7 @@ class ExerciseCardHeader extends StatelessWidget {
 
   /// Si no es `null`, el menú ofrece "Sustituir ejercicio" (sesión activa).
   final VoidCallback? onReplace;
-  final String Function(String) recommendationText;
+  final String Function(CoachingAnalysis) recommendationText;
   final bool showExpandChevron;
 
   const ExerciseCardHeader({

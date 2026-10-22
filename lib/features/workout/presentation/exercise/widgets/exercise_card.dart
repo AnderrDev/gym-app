@@ -423,7 +423,8 @@ class ExerciseCardState extends State<ExerciseCard>
     );
   }
 
-  String _getFriendlyRecommendation(String rec) => CoachingMessages.short(rec);
+  String _getFriendlyRecommendation(CoachingAnalysis coaching) =>
+      CoachingMessages.describe(coaching.recommendation, coaching.feedback);
 
   void _showRemoteTargetEditor() {
     RemoteTargetSheet.show(

@@ -1,3 +1,4 @@
+import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
@@ -39,8 +40,8 @@ void main() {
       exercise,
     ], logs('today', 40, 8)).single;
 
-    expect(result.feedback, 'HEAVIER_CONSOLIDATE');
-    expect(result.recommendation.toLowerCase(), isNot(contains('baja')));
+    expect(result.recommendation, CoachingRecommendation.maintain);
+    expect(result.feedback!.toLowerCase(), isNot(contains('baja')));
   });
 
   test('mismo peso con menos reps sí sugiere ajustar', () {
@@ -48,7 +49,7 @@ void main() {
       exercise,
     ], logs('today', 38, 8)).single;
 
-    expect(result.feedback, 'MODERATE_ADJUSTMENT');
+    expect(result.recommendation, CoachingRecommendation.increaseReps);
   });
 
   test('historial en regresión no pisa una subida de peso de hoy', () {
@@ -61,7 +62,7 @@ void main() {
       historyLogs: {'s2': logs('s2', 38, 7), 's1': logs('s1', 38, 9)},
     ).single;
 
-    expect(result.feedback, isNot('WEIGHT_REDUCTION_ADVISED'));
+    expect(result.recommendation, isNot(CoachingRecommendation.decreaseWeight));
   });
 
   test('historial en regresión sin subida de peso → aconseja bajar', () {
@@ -72,7 +73,7 @@ void main() {
       historyLogs: {'s2': logs('s2', 38, 7), 's1': logs('s1', 38, 9)},
     ).single;
 
-    expect(result.feedback, 'WEIGHT_REDUCTION_ADVISED');
+    expect(result.recommendation, CoachingRecommendation.decreaseWeight);
   });
   test('superar el objetivo prevalece sobre una regresión histórica', () {
     final result = WorkoutPerformanceAnalyzer.analyzePerformance(
@@ -81,8 +82,8 @@ void main() {
       history: [session('s2', 8), session('s1', 5)],
       historyLogs: {'s2': logs('s2', 42, 7), 's1': logs('s1', 42, 9)},
     ).single;
-    expect(result.feedback, 'PROGRESSIVE_OVERLOAD');
-    expect(result.recommendation.toLowerCase(), isNot(contains('bajar')));
+    expect(result.recommendation, CoachingRecommendation.increaseWeight);
+    expect(result.feedback!.toLowerCase(), isNot(contains('bajar')));
   });
 
   test(
@@ -94,7 +95,8 @@ void main() {
         history: [session('s2', 8), session('s1', 5)],
         historyLogs: {'s2': logs('s2', 42, 7), 's1': logs('s1', 42, 9)},
       ).single;
-      expect(result.feedback, 'HEAVIER_CONSOLIDATE');
+      expect(result.recommendation, CoachingRecommendation.maintain);
+      expect(result.feedback, contains('mantén este peso'));
     },
   );
 
@@ -105,6 +107,7 @@ void main() {
       history: [session('s2', 8), session('s1', 5)],
       historyLogs: {'s2': logs('s2', 38, 7), 's1': logs('s1', 38, 9)},
     ).single;
-    expect(result.feedback, 'IN_PROGRESS');
+    expect(result.recommendation, CoachingRecommendation.inProgress);
+    expect(result.hasActionableAdvice, isFalse);
   });
 }

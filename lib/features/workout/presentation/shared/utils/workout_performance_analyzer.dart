@@ -4,6 +4,10 @@ import 'package:gym_flutter/features/workout/domain/entities/exercise.dart';
 import 'package:gym_flutter/features/workout/domain/entities/set_log.dart';
 import 'package:gym_flutter/features/workout/domain/entities/workout_session.dart';
 
+/// Pistas en vivo durante el entreno, calculadas en el cliente. El veredicto
+/// final es siempre el de `generate_coaching_v1` (servidor). Devuelve la misma
+/// forma que el servidor: el código en `recommendation` (ver
+/// [CoachingRecommendation]) y la frase para el usuario en `feedback`.
 class WorkoutPerformanceAnalyzer {
   const WorkoutPerformanceAnalyzer._();
 
@@ -93,41 +97,41 @@ class WorkoutPerformanceAnalyzer {
               !increasedWeightToday &&
               (isRegressing ||
                   (isStagnated && currentAvgReps < ex.targetReps))) {
-            recommendation =
+            recommendation = CoachingRecommendation.decreaseWeight;
+            feedback =
                 'RENDIMIENTO DECRECIENTE: Llevas dos sesiones sin alcanzar las reps objetivo. Te aconsejo bajar un poco el peso (2.5 - 5kg) para recuperar la progresión y técnica.';
-            feedback = 'WEIGHT_REDUCTION_ADVISED';
             performanceScore = performanceScore.clamp(0.0, 0.7);
           }
         }
 
         if (recommendation.isEmpty) {
           if (completedSets < ex.targetSets) {
-            recommendation =
+            recommendation = CoachingRecommendation.inProgress;
+            feedback =
                 'Sigue así. Te faltan ${ex.targetSets - completedSets} series para completar el objetivo.';
-            feedback = 'IN_PROGRESS';
           } else if (!weightMet) {
-            recommendation =
+            recommendation = CoachingRecommendation.maintain;
+            feedback =
                 'Peso por debajo del objetivo. Prioriza la técnica hoy, pero intenta subir 1-2kg la próxima sesión.';
-            feedback = 'KEEP_CONSISTENCY';
           } else if (!repsMet && currentAvgWeight > ex.targetWeight) {
-            recommendation =
+            recommendation = CoachingRecommendation.maintain;
+            feedback =
                 'Subiste el peso por encima del objetivo. Es normal perder algunas reps: mantén este peso hasta completar las ${ex.targetReps} reps.';
-            feedback = 'HEAVIER_CONSOLIDATE';
           } else if (!repsMet) {
-            recommendation =
+            recommendation = CoachingRecommendation.increaseReps;
+            feedback =
                 'Reps por debajo del objetivo. Si te sientes pesado, baja 2.5kg para asegurar el rango de reps.';
-            feedback = 'MODERATE_ADJUSTMENT';
           } else {
             if (currentAvgWeight > ex.targetWeight ||
                 currentAvgReps > ex.targetReps) {
-              recommendation =
+              recommendation = CoachingRecommendation.increaseWeight;
+              feedback =
                   '¡SUPERACIÓN! Has superado los objetivos. Sube el peso un nivel la próxima sesión sin miedo.';
-              feedback = 'PROGRESSIVE_OVERLOAD';
               performanceScore = 1.2;
             } else {
-              recommendation =
+              recommendation = CoachingRecommendation.maintain;
+              feedback =
                   'OBJETIVO CUMPLIDO. Has mantenido la intensidad. Prepárate para subir carga pronto.';
-              feedback = 'READY_TO_PROGRESS';
               performanceScore = 1.0;
             }
           }
@@ -135,7 +139,7 @@ class WorkoutPerformanceAnalyzer {
       } else {
         recommendation = '';
         performanceScore = 1.0;
-        feedback = 'PENDING';
+        feedback = null;
       }
 
       results.add(
@@ -171,7 +175,11 @@ class WorkoutPerformanceAnalyzer {
     return grouped;
   }
 
-  static String friendlyRecommendation(String recommendation) {
-    return CoachingMessages.long(recommendation);
+  static String friendlyRecommendation(CoachingAnalysis coaching) {
+    return CoachingMessages.describe(
+      coaching.recommendation,
+      coaching.feedback,
+      long: true,
+    );
   }
 }

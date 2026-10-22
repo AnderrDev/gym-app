@@ -77,14 +77,19 @@ Hay **tres** motores distintos:
 **Motor en vivo**:
 - score = `0.45·(pesoMedio/objetivoPeso) + 0.45·(repsMedias/objetivoReps) + 0.1·clamp(series/objetivoSeries, 0, 1)`
   (cada ratio = 1 si su objetivo es 0).
-- Bajar peso (`WEIGHT_REDUCTION_ADVISED`, score ≤ 0.7) si: series completas, reps no
+- Misma forma que el servidor: código en `recommendation`, frase en `feedback`.
+- Bajar peso (`DECREASE_WEIGHT`, score ≤ 0.7) si: series completas, reps no
   cumplidas, peso ≤ objetivo, no subió respecto a la última, y (empeora reps
   con igual o menos peso, o lleva 2 sesiones sin llegar a las reps).
-- Si no: `IN_PROGRESS` → `KEEP_CONSISTENCY` (peso bajo objetivo) →
-  `HEAVIER_CONSOLIDATE` → `MODERATE_ADJUSTMENT` ("baja 2.5kg") →
-  `PROGRESSIVE_OVERLOAD` (score 1.2, "¡SUPERACIÓN!") → `READY_TO_PROGRESS` (1.0).
-- ⚠️ Guarda los campos al revés que el servidor: `recommendation` = frase,
-  `feedback` = código.
+- Si no: `IN_PROGRESS` (faltan series; no accionable) → `MAINTAIN` (peso bajo
+  objetivo) → `MAINTAIN` (subió peso y consolida) → `INCREASE_REPS` ("baja
+  2.5kg" si pesa) → `INCREASE_WEIGHT` (score 1.2, "¡SUPERACIÓN!") → `MAINTAIN`
+  (objetivo cumplido, 1.0).
+- Sólo son pistas durante el entreno: no se envían al finalizar (el servidor
+  ignora el coaching del cliente). Tras un finalize desde el outbox, el
+  SyncWorker lee el coaching del servidor y lo guarda en local.
+- `CoachingAnalysis.fromJson` es tolerante a tipos inesperados y normaliza el
+  formato viejo (frase en `recommendation`, código en `feedback`).
 
 **Feedback por serie**: umbral "reps muy bajas" = `reps < max(4, 0.6·target_reps)`
 (mismo umbral que `DECREASE_WEIGHT` del servidor, duplicado a mano). Casos:

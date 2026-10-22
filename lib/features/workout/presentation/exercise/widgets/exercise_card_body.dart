@@ -16,7 +16,7 @@ class ExerciseCardBody extends StatelessWidget {
   final Map<int, SetLog> completedSets;
   final bool readOnly;
   final CoachingAnalysis? coachingAnalysis;
-  final String Function(String) recommendationText;
+  final String Function(CoachingAnalysis) recommendationText;
 
   /// Primera serie sin completar, o `null` si ya están todas.
   final int? nextPendingSet;
