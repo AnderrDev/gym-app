@@ -100,6 +100,8 @@ El e1RM se calcula asumiendo que la serie terminó cerca del fallo (estimación 
 
 ### Fase 2 — Motor v2 basado en evidencia (`engine_version = "2.0"`)
 
+**Estado (2026-10-22):** implementado en `generate_coaching_v1/engine_v2.ts` (19 tests Deno) y activo como motor principal; el v1 queda en sombra en `coaching_events`. Diferencias con lo planeado: sin RIR (fase 1c) y sin `session_flags` (la descarga se deduce en el cliente si la mayoría de ejercicios vienen con `REGRESSION`).
+
 Entradas: últimas ≤6 exposiciones del ejercicio desde `exercise_session_stats` (cualquier rutina, ordenadas por `completed_at`, no por UUID), la prescripción del snapshot y las señales de esfuerzo deducidas (fase 1c).
 
 Orden de evaluación (la primera regla que aplica decide):
@@ -152,6 +154,8 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 
 ### Fase 3 — Que el coach mande en el siguiente entreno (clientes)
 
+**Estado (2026-10-23):** hecho en gym_ios (cliente objetivo, ver decisión de foco): precarga con la sugerencia del coach y motivo en "La última vez" (gym-ios#2), "Próxima: X kg × N" en la pantalla de logro, y rango de reps desde–hasta en el editor de rutinas (gym-ios#3). Sin aviso de descarga: el motor no emite `session_flags`. Flutter no se ha tocado.
+
 - Nueva RPC `get_next_targets_v1(p_exercise_ids uuid[])`: devuelve la última sugerencia vigente por ejercicio (`suggested_weight`, `suggested_reps`, `reason_code`, antigüedad) desde `coaching_events`.
 - Precarga de peso en ambas apps: **sugerencia del coach > última serie > objetivo de la rutina**. Se muestra como "Coach: 42,5 kg × 8" con el motivo en una línea; el usuario la ajusta con −/+ como siempre.
 - Pantallas de cierre e historial: mostrar el peso sugerido y el motivo; el color sigue a `performance_score` (que ahora significa algo).
@@ -161,6 +165,19 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 - **Acierto:** % de sugerencias seguidas en las que se alcanzan las reps objetivo. Meta: 70–85 %. Menos indica que el coach es agresivo; más, que es conservador.
 - **Seguimiento:** % de veces que el usuario usa el peso sugerido. Si es bajo, el coach no se percibe como útil.
 - **Progreso:** Δ e1RM a 4 y 8 semanas por ejercicio.
+
+Consulta para comparar motores (el v1 sigue registrándose en sombra):
+
+```sql
+select engine_version,
+       count(*) filter (where labeled_at is not null)                                as etiquetadas,
+       round(avg(hit_target::int) filter (where labeled_at is not null) * 100, 1)    as acierto_pct,
+       round(avg(followed::int)   filter (where followed is not null)   * 100, 1)    as seguimiento_pct,
+       round(avg(e1rm_delta)      filter (where labeled_at is not null), 2)          as e1rm_delta_medio
+from coaching_events group by engine_version order by engine_version;
+```
+
+Línea base (2026-10-23): v1 con 34 etiquetadas, **44,1 %** de acierto (48 % en el backfill inicial). El v2 aún no tiene etiquetas: se rellenan al volver a entrenar cada ejercicio. Retirar el v1 en sombra cuando el v2 supere su acierto con ≥30 etiquetadas.
 
 ### Fase 4 — Personalización estadística (cuando haya datos)
 

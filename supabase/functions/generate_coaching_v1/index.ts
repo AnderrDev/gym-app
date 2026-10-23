@@ -3,6 +3,12 @@ import { jsonResponse, preflight } from "../_shared/cors.ts";
 import { logError, logInfo, requireUser, userClient } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
 import { analyzeSession, type CoachingInputs } from "./engine.ts";
+import { analyzeSessionV2, type CoachingInputsV2 } from "./engine_v2.ts";
+
+/// Motor cuyo análisis se guarda y ve el usuario ("2.0" por defecto). El otro
+/// se calcula en sombra y solo se registra en `coaching_events` (finalize).
+/// `COACH_PRIMARY_ENGINE=1.0` en los secrets de la función vuelve al v1.
+const PRIMARY_ENGINE = Deno.env.get("COACH_PRIMARY_ENGINE") === "1.0" ? "1.0" : "2.0";
 
 const RATE_LIMIT = {
   functionName: "generate_coaching_v1",
@@ -83,9 +89,29 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const analysis = analyzeSession(inputs);
+  const v1 = analyzeSession(inputs);
 
-  logInfo("COACHING_READY", { user_id: userId, session_id: sessionId, items: analysis.length });
+  // Motor v2: si sus entradas fallan, el v1 sigue respondiendo como principal.
+  let v2: ReturnType<typeof analyzeSessionV2> | null = null;
+  const { data: v2Payload, error: v2Error } = await userClient(token)
+    .rpc("get_coaching_inputs_v2", { p_user_id: userId, p_session_id: sessionId })
+    .maybeSingle();
+  if (v2Error) {
+    logError("COACHING_V2_INPUTS_ERROR", { user_id: userId, session_id: sessionId, message: v2Error.message });
+  } else {
+    v2 = analyzeSessionV2((v2Payload ?? {}) as CoachingInputsV2);
+  }
+
+  const useV2 = PRIMARY_ENGINE === "2.0" && v2 !== null;
+  const analysis = useV2 ? v2! : v1;
+  const shadowAnalysis = useV2 ? v1 : (v2 ?? []);
+
+  logInfo("COACHING_READY", {
+    user_id: userId,
+    session_id: sessionId,
+    items: analysis.length,
+    engine: useV2 ? "2.0" : "1.0",
+  });
 
   return jsonResponse(200, {
     success: true,
@@ -93,6 +119,7 @@ Deno.serve(async (req: Request) => {
     data: {
       session_id: sessionId,
       analysis,
+      shadow_analysis: shadowAnalysis,
     },
   });
 });
