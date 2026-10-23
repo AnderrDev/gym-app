@@ -142,7 +142,8 @@ void main() {
 
     test('200 con success=false → mensaje genérico', () async {
       stubInvoke(
-        () async => const FunctionResponse(data: {'success': false}, status: 200),
+        () async =>
+            const FunctionResponse(data: {'success': false}, status: 200),
       );
 
       final error = await captureError();
