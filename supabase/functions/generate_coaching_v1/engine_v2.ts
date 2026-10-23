@@ -19,7 +19,8 @@ export type ReasonCode =
   | "TOO_HEAVY"
   | "RESET_AFTER_MISSES"
   | "REGRESSION"
-  | "PLATEAU";
+  | "PLATEAU"
+  | "BUILDING_REPS";
 
 export type Confidence = "low" | "medium" | "high";
 
@@ -122,11 +123,20 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
     const done = sets.length;
     const reps = sets.map((s) => Number(s.actual_reps ?? 0));
     const weights = sets.map((s) => Number(s.actual_weight ?? 0));
-    const top = done > 0 ? Math.max(...weights) : 0;
-    const minReps = done > 0 ? Math.min(...reps) : 0;
+    // Peso de trabajo: el de más series (empate → el más pesado). Una serie
+    // suelta más pesada (un intento de 110×3 entre series de 100×6) no debe
+    // ser la referencia de la progresión.
+    const counts = new Map<number, number>();
+    for (const w of weights) counts.set(w, (counts.get(w) ?? 0) + 1);
+    const top = done > 0
+      ? [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0]
+      : 0;
+    const heaviest = done > 0 ? Math.max(...weights) : 0;
+    const workReps = sets.filter((s) => Number(s.actual_weight ?? 0) === top).map((s) => Number(s.actual_reps ?? 0));
+    const minReps = done > 0 ? Math.min(...workReps) : 0;
     const avgReps = done > 0 ? reps.reduce((a, b) => a + b, 0) / done : 0;
     const dropoff = done > 1 ? reps[0] - reps[done - 1] : 0;
-    const bodyweight = done > 0 && top === 0;
+    const bodyweight = done > 0 && heaviest === 0;
     // Clasificado y sin incremento = sin carga externa (plancha, etc.).
     const noLoad = bodyweight || (info?.movement_type != null && info.load_increment_kg == null);
     const increment = Number(info?.load_increment_kg ?? 2.5);
@@ -140,7 +150,13 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
     const smoothed = ewma(series);
     const expected = smoothed.length ? smoothed[smoothed.length - 1] : null;
 
-    const weightMet = top >= targetWeight;
+    // Carga que el e1RM de hoy permite para `reps` (redondeada hacia abajo).
+    // Epley pierde fiabilidad por encima de 12 reps: ahí no se acota.
+    const fit = (r: number) => e1rm != null && !noLoad && reliable.length > 0 && r <= 12
+      ? roundTo(e1rm / (1 + r / 30), increment, "down")
+      : Infinity;
+
+    const weightMet = heaviest >= targetWeight;
     const repsMet = done > 0 && minReps >= repsMin;
 
     let recommendation: Recommendation = "MAINTAIN";
@@ -206,16 +222,28 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
         reason = "IN_RANGE_ADD_REPS";
         suggestedReps = Math.min(topThreshold, minReps + 1);
         feedback = `Mantén ${formatKg(top)} y suma una rep: busca ${suggestedReps}.`;
+      } else if (prev && isMissAt(prev, top) && minReps > prev.min_reps && minReps >= Math.max(4, repsMin * 0.6)) {
+        // Sigue sin llegar al mínimo pero suma reps sesión a sesión: progresa.
+        recommendation = "INCREASE_REPS";
+        reason = "BUILDING_REPS";
+        suggestedReps = Math.min(repsMin, minReps + 1);
+        feedback = `Vas sumando reps con ${formatKg(top)}: busca ${suggestedReps} la próxima vez.`;
       } else if (prev && isMissAt(prev, top)) {
         recommendation = "DECREASE_WEIGHT";
         reason = "RESET_AFTER_MISSES";
-        suggestedWeight = Math.min(roundTo(top * 0.9, increment), round2(top - increment));
+        suggestedWeight = Math.min(roundTo(top * 0.9, increment), round2(top - increment), fit(repsMin));
         feedback = `Dos sesiones sin llegar a ${repsMin} reps: baja a ${formatKg(Math.max(suggestedWeight, 0))} y reconstruye.`;
       } else if (minReps < Math.max(4, repsMin * 0.6)) {
         recommendation = "DECREASE_WEIGHT";
         reason = "TOO_HEAVY";
-        suggestedWeight = Math.min(roundTo(top * 0.95, increment), round2(top - increment));
+        suggestedWeight = Math.min(roundTo(top * 0.95, increment), round2(top - increment), fit(repsMin));
         feedback = `Carga demasiado alta para ${repsMin} reps: baja a ${formatKg(Math.max(suggestedWeight, 0))}.`;
+      } else if (fit(repsMin) < top) {
+        // Hoy no da para el mínimo con este peso: se ajusta a lo que permite el e1RM.
+        recommendation = "DECREASE_WEIGHT";
+        reason = "TOO_HEAVY";
+        suggestedWeight = fit(repsMin);
+        feedback = `Para ${repsMin} reps tu fuerza de hoy da para ${formatKg(suggestedWeight)}.`;
       } else {
         reason = "FIRST_MISS";
         feedback = `Repite ${formatKg(top)} e intenta llegar a ${repsMin} reps en todas las series.`;
@@ -224,16 +252,17 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
       // Regresión / estancamiento sobre el e1RM (solo si no se sube carga).
       if (recommendation !== "INCREASE_WEIGHT" && !noLoad && e1rm != null && series.length >= 2) {
         const peak = Math.max(...series);
-        if (e1rm <= peak * 0.95 && reason !== "RESET_AFTER_MISSES") {
+        if (e1rm <= peak * 0.95 && reason !== "RESET_AFTER_MISSES" && reason !== "BUILDING_REPS") {
           recommendation = "DECREASE_WEIGHT";
           reason = "REGRESSION";
-          suggestedWeight = Math.min(roundTo(top * 0.95, increment), round2(top - increment));
+          suggestedWeight = Math.min(roundTo(top * 0.95, increment), round2(top - increment), fit(repsMin));
           suggestedReps = repsMin;
           feedback = `Tu fuerza estimada bajó respecto a tu mejor marca: baja a ${formatKg(Math.max(suggestedWeight, 0))} y recupera.`;
         } else if (series.length >= 3) {
           const all = ewma([...series, e1rm]);
           const before = all[all.length - 4] ?? all[0];
-          if (all[all.length - 1] <= before * 1.01 && reason !== "RESET_AFTER_MISSES" && reason !== "TOO_HEAVY") {
+          if (all[all.length - 1] <= before * 1.01 && reason !== "RESET_AFTER_MISSES" && reason !== "TOO_HEAVY" &&
+              reason !== "BUILDING_REPS") {
             reason = "PLATEAU";
             feedback = `Llevas varias sesiones sin progresar con ${formatKg(top)}. Prueba a variar el rango de reps o descansar mejor.`;
           }
