@@ -58,6 +58,8 @@ Fecha: 2026-10-22 · Alcance: backend Supabase (este repo), gym_ios (`~/Desktop/
 
 ### Fase 1 — Fundación de datos
 
+**Estado (2026-10-22):** implementada en `20261022130000_coach_catalog_and_rep_range.sql` y `20261022140000_coach_stats_and_events.sql`, con `finalize_workout_session_v1` registrando eventos y recalculando métricas. Test: `scripts/run_coach_sql_tests.sh`.
+
 Migraciones nuevas (timestamped, aditivas):
 
 **a) Catálogo de ejercicios**

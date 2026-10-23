@@ -40,6 +40,7 @@ function expect(item: CoachingItem, recommendation: string, score: number) {
     throw new Error(`score ${item.performance_score}, esperaba ${score}`);
   }
   if (!item.feedback) throw new Error("feedback vacío");
+  if (item.engine_version !== "1.0") throw new Error("engine_version");
 }
 
 Deno.test("series incompletas mantienen la carga", () => {

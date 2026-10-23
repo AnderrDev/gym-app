@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { jsonResponse, preflight } from "../_shared/cors.ts";
 import { logError, logInfo, requireUser } from "../_shared/auth.ts";
 import { enforceRateLimit } from "../_shared/rate_limit.ts";
+import { toCoachingEvents } from "./coaching_events.ts";
 
 const RATE_LIMIT = {
   functionName: "finalize_workout_session_v1",
@@ -112,6 +113,26 @@ Deno.serve(async (req: Request) => {
       code: "NOT_FOUND_OR_COMPLETED",
       error: { message: "Session not found or already completed" },
     });
+  }
+
+  // Coach v2 (docs/coach/PLAN_COACH_V2.md), best-effort: el cierre ya está
+  // hecho y no se revierte si esto falla. Primero se registra cada
+  // recomendación; después se recalculan las métricas de la sesión, lo que
+  // etiqueta el resultado de las recomendaciones de la exposición anterior.
+  const events = toCoachingEvents(sessionId, userId, updateData.coaching_analysis);
+  if (events.length > 0) {
+    const { error: eventsError } = await admin
+      .from("coaching_events")
+      .upsert(events, { onConflict: "session_id,exercise_id,engine_version", ignoreDuplicates: true });
+    if (eventsError) {
+      logError("COACHING_EVENTS_ERROR", { session_id: sessionId, message: eventsError.message });
+    }
+  }
+  const { error: statsError } = await admin.rpc("refresh_exercise_session_stats_v1", {
+    p_session_id: sessionId,
+  });
+  if (statsError) {
+    logError("SESSION_STATS_ERROR", { session_id: sessionId, message: statsError.message });
   }
 
   // Best-effort summary desde la vista. Si falla, devolvemos sin él para

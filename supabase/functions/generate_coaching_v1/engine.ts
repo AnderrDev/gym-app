@@ -3,6 +3,9 @@
 // recomendación por ejercicio a partir de esas entradas.
 import { shouldReduceWeight } from "./weight_reduction.ts";
 
+/// Versión del motor: viaja en cada item y en `coaching_events`.
+export const ENGINE_VERSION = "1.0";
+
 export type Recommendation =
   | "INCREASE_WEIGHT"
   | "INCREASE_REPS"
@@ -47,6 +50,7 @@ export type CoachingItem = {
   recommendation: Recommendation;
   feedback: string;
   performance_score: number;
+  engine_version: string;
 };
 
 type Log = { actual_weight: number; actual_reps: number };
@@ -116,6 +120,7 @@ export function analyzeSession(inputs: CoachingInputs): CoachingItem[] {
       recommendation,
       feedback,
       performance_score: performanceScore,
+      engine_version: ENGINE_VERSION,
     };
   });
 }

@@ -51,6 +51,13 @@ Es "la última serie que hiciste", no la mejor. Gate: `p_user_id` debe ser
   bloquea la fila con `FOR UPDATE`). Más de 100 → `23514 'too many exercises'`.
 - Desde ese momento, editar la rutina **no** cambia el entrenamiento en curso.
 - Entradas con `target_sets = 0` son originales sustituidos sin series pendientes: el cliente las oculta.
+- Cada entrada lleva además `target_reps_max` (puede ser `null`) desde 20261022130000.
+
+### `refresh_exercise_session_stats_v1(p_session_id)` — solo service_role
+Recalcula `exercise_session_stats` de la sesión (borra e inserta: idempotente)
+y etiqueta en `coaching_events` las recomendaciones de la exposición anterior
+de cada ejercicio. Devuelve cuántas filas de métricas escribió. La llama
+`finalize_workout_session_v1`; no está concedida a `authenticated`.
 
 ### `adapt_session_exercise_v1` — añadir extra o sustituir
 Validaciones en orden (todas sobre el snapshot, nunca toca la rutina):
@@ -161,6 +168,9 @@ Request: `{"session_id": "uuid"}`
   Mandarlo no es un error.
 - Hace `UPDATE workout_sessions SET completed_at = now(), coaching_analysis = …
   WHERE id = … AND user_id = <jwt> AND completed_at IS NULL`.
+- Tras cerrar (best-effort, no cambia la respuesta): upsert de cada item del
+  análisis en `coaching_events` y `refresh_exercise_session_stats_v1`. Los
+  fallos solo se registran (`COACHING_EVENTS_ERROR`, `SESSION_STATS_ERROR`).
 
 200:
 ```json
@@ -200,6 +210,9 @@ actual vs previa de `get_coaching_inputs_v1`):
 | peso ≥ previo y reps < objetivo | `INCREASE_REPS` | 0.88 |
 | peso ≤ objetivo y reps < `max(4, 0.6·target_reps)` | `DECREASE_WEIGHT` | 0.55 |
 | resto | `MAINTAIN` | 0.9 |
+
+Cada item lleva `engine_version` (hoy `"1.0"`). La lógica vive en
+`generate_coaching_v1/engine.ts` (función pura con tests Deno).
 
 200: `{"success":true,"code":"COACHING_GENERATED","data":{"session_id":"…","analysis":[…]}}`.
 Errores: 400 `VALIDATION_ERROR`, 404 `SESSION_NOT_FOUND`, 500 `COACHING_INPUTS_ERROR`.
