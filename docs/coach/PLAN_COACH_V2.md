@@ -100,6 +100,8 @@ El e1RM se calcula asumiendo que la serie terminó cerca del fallo (estimación 
 
 ### Fase 2 — Motor v2 basado en evidencia (`engine_version = "2.0"`)
 
+**Estado (2026-10-22):** implementado en `generate_coaching_v1/engine_v2.ts` (19 tests Deno) y activo como motor principal; el v1 queda en sombra en `coaching_events`. Diferencias con lo planeado: sin RIR (fase 1c) y sin `session_flags` (la descarga se deduce en el cliente si la mayoría de ejercicios vienen con `REGRESSION`).
+
 Entradas: últimas ≤6 exposiciones del ejercicio desde `exercise_session_stats` (cualquier rutina, ordenadas por `completed_at`, no por UUID), la prescripción del snapshot y las señales de esfuerzo deducidas (fase 1c).
 
 Orden de evaluación (la primera regla que aplica decide):

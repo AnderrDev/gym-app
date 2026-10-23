@@ -58,6 +58,8 @@ Deno.serve(async (req: Request) => {
   // sesión (UX prioritaria) pero devolvemos `warning_code` en la
   // respuesta para que el cliente pueda reintentar o avisar al usuario.
   let coachingWarning: string | null = null;
+  // Análisis del motor en sombra: solo se registra en `coaching_events`.
+  let shadowAnalysis: unknown = [];
 
   // El coaching lo genera SIEMPRE el servidor. Un `coaching_analysis`
   // mandado por el cliente se ignora: aceptarlo permitía guardar en el
@@ -77,6 +79,7 @@ Deno.serve(async (req: Request) => {
 
     if (!coachingError && coachingResult?.data?.analysis) {
       updateData.coaching_analysis = coachingResult.data.analysis;
+      shadowAnalysis = coachingResult.data.shadow_analysis ?? [];
     } else {
       coachingWarning = "COACHING_GENERATION_FAILED";
       logInfo("COACHING_INVOKE_NO_DATA", {
@@ -117,9 +120,13 @@ Deno.serve(async (req: Request) => {
 
   // Coach v2 (docs/coach/PLAN_COACH_V2.md), best-effort: el cierre ya está
   // hecho y no se revierte si esto falla. Primero se registra cada
-  // recomendación; después se recalculan las métricas de la sesión, lo que
-  // etiqueta el resultado de las recomendaciones de la exposición anterior.
-  const events = toCoachingEvents(sessionId, userId, updateData.coaching_analysis);
+  // recomendación (motor principal y en sombra); después se recalculan las
+  // métricas de la sesión, lo que etiqueta el resultado de las
+  // recomendaciones de la exposición anterior.
+  const events = [
+    ...toCoachingEvents(sessionId, userId, updateData.coaching_analysis),
+    ...toCoachingEvents(sessionId, userId, shadowAnalysis),
+  ];
   if (events.length > 0) {
     const { error: eventsError } = await admin
       .from("coaching_events")

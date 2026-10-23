@@ -53,6 +53,22 @@ Es "la última serie que hiciste", no la mejor. Gate: `p_user_id` debe ser
 - Entradas con `target_sets = 0` son originales sustituidos sin series pendientes: el cliente las oculta.
 - Cada entrada lleva además `target_reps_max` (puede ser `null`) desde 20261022130000.
 
+### `get_coaching_inputs_v2(p_user_id, p_session_id)` — entradas del motor v2
+Como `get_coaching_inputs_v1` (mismo control `p_user_id = auth.uid()`, si no
+`42501`) pero devuelve `{session, targets[] (con target_reps_max; sin
+sustituidos), current_logs[], catalog[] (movement_type, body_region,
+load_increment_kg), history[]}`. `history` son filas de
+`exercise_session_stats` de sesiones **cerradas**, ≤6 por ejercicio, la más
+reciente primero, de cualquier rutina (20261022150000).
+
+### `get_next_targets_v1(p_exercise_ids uuid[])` — sugerencia para el próximo entreno
+Por ejercicio, la última recomendación **con peso** del usuario
+(`coaching_events`), con su `suggested_weight`, `suggested_reps`,
+`recommendation`, `reason_code`, `source_session_date`, `days_since` y
+`layoff_adjusted`. Ajuste por pausa: <14 días sin cambio; 14–27 −7,5 %;
+28–55 −15 %; ≥56 −25 %, redondeado al `load_increment_kg` (o 2,5).
+Ejercicios sin sugerencia no aparecen. La usan los clientes para precargar.
+
 ### `refresh_exercise_session_stats_v1(p_session_id)` — solo service_role
 Recalcula `exercise_session_stats` de la sesión (borra e inserta: idempotente)
 y etiqueta en `coaching_events` las recomendaciones de la exposición anterior
@@ -211,8 +227,16 @@ actual vs previa de `get_coaching_inputs_v1`):
 | peso ≤ objetivo y reps < `max(4, 0.6·target_reps)` | `DECREASE_WEIGHT` | 0.55 |
 | resto | `MAINTAIN` | 0.9 |
 
-Cada item lleva `engine_version` (hoy `"1.0"`). La lógica vive en
-`generate_coaching_v1/engine.ts` (función pura con tests Deno).
+**Motor v2 (principal desde 2026-10-22)**: `engine_v2.ts`, con entradas de
+`get_coaching_inputs_v2`. Doble progresión sobre el rango, peso sugerido
+(tope +10 %, redondeado al incremento del ejercicio), arranque en frío sin
+subir carga, reset tras dos fallos, regresión (e1RM ≥5 % bajo el pico) y
+estancamiento (EWMA plano). Cada item añade `suggested_weight`,
+`suggested_reps`, `reason_code`, `confidence` y `engine_version: "2.0"`; los
+4 códigos de `recommendation` no cambian. El v1 (`engine.ts`) se calcula en
+sombra y viaja en `data.shadow_analysis`; finalize registra ambos en
+`coaching_events`. Si fallan las entradas v2, responde el v1. Volver al v1:
+secret `COACH_PRIMARY_ENGINE=1.0`.
 
 200: `{"success":true,"code":"COACHING_GENERATED","data":{"session_id":"…","analysis":[…]}}`.
 Errores: 400 `VALIDATION_ERROR`, 404 `SESSION_NOT_FOUND`, 500 `COACHING_INPUTS_ERROR`.
