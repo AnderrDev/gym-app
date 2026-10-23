@@ -31,6 +31,8 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
         trendIcon = Icons.trending_down_rounded;
         break;
       case CoachingRecommendation.maintain:
+      case CoachingRecommendation.maintainWeight:
+      case CoachingRecommendation.maintainWeightLegacy:
         trendIcon = Icons.trending_flat_rounded;
         break;
     }
@@ -77,7 +79,7 @@ class ExerciseCardCoachingBadge extends StatelessWidget {
 class ExerciseCardCoachingAdvice extends StatelessWidget {
   final CoachingAnalysis coaching;
   final bool compact;
-  final String Function(String) recommendationText;
+  final String Function(CoachingAnalysis) recommendationText;
 
   const ExerciseCardCoachingAdvice({
     super.key,
@@ -112,9 +114,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                coaching.recommendation.isEmpty
-                    ? (coaching.feedback ?? '')
-                    : recommendationText(coaching.recommendation),
+                recommendationText(coaching),
                 style: context.text.labelMedium?.copyWith(
                   color: context.colors.textPrimary,
                   fontStyle: FontStyle.italic,
@@ -153,7 +153,7 @@ class ExerciseCardCoachingAdvice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              recommendationText(coaching.recommendation),
+              recommendationText(coaching),
               style: context.text.bodySmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,

@@ -10,7 +10,12 @@ class CoachingRecommendation {
   static const String increaseReps = 'INCREASE_REPS';
   static const String decreaseSets = 'DECREASE_SETS';
   static const String maintain = 'MAINTAIN';
-  static const String maintainWeight = 'MANTAIN_WEIGHT'; // legacy spelling
+  static const String maintainWeight = 'MAINTAIN_WEIGHT';
+  static const String maintainWeightLegacy = 'MANTAIN_WEIGHT'; // errata vieja
+
+  /// Sólo del análisis en vivo del cliente: faltan series objetivo. No es un
+  /// consejo accionable (ver `CoachingAnalysis.hasActionableAdvice`).
+  static const String inProgress = 'IN_PROGRESS';
 }
 
 /// Mensajes user-facing en español. Hay dos variantes para cubrir los dos
@@ -26,6 +31,7 @@ class CoachingMessages {
       case CoachingRecommendation.increaseWeight:
         return '¡Increíble! Sube un poco el peso el próximo día.';
       case CoachingRecommendation.maintainWeight:
+      case CoachingRecommendation.maintainWeightLegacy:
       case CoachingRecommendation.maintain:
         return 'Buen trabajo. Mantén este peso para consolidar.';
       case CoachingRecommendation.decreaseWeight:
@@ -48,11 +54,22 @@ class CoachingMessages {
         return 'Baja un poco el peso para mejorar la técnica';
       case CoachingRecommendation.increaseReps:
         return 'Intenta hacer mas repeticiones con este peso';
+      case CoachingRecommendation.decreaseSets:
+        return 'Baja una serie para recuperar';
       case CoachingRecommendation.maintain:
       case CoachingRecommendation.maintainWeight:
+      case CoachingRecommendation.maintainWeightLegacy:
         return 'Buen trabajo, mantén el peso actual';
       default:
         return code;
     }
+  }
+
+  /// Texto a mostrar para un consejo: la frase concreta del motor
+  /// (`feedback`) si existe; si no, el mensaje genérico del código.
+  static String describe(String code, String? feedback, {bool long = false}) {
+    final text = feedback?.trim();
+    if (text != null && text.isNotEmpty) return text;
+    return long ? CoachingMessages.long(code) : short(code);
   }
 }

@@ -10,6 +10,7 @@ import 'package:gym_flutter/core/sync/outbox_repository.dart';
 import 'package:gym_flutter/core/sync/sync_worker.dart';
 import 'package:gym_flutter/core/sync/sync_worker_impl.dart';
 import 'package:gym_flutter/features/workout/data/models/set_log_model.dart';
+import 'package:gym_flutter/features/workout/domain/entities/coaching_analysis.dart';
 
 import '../../helpers/mocks.dart';
 
@@ -239,6 +240,104 @@ void main() {
         await worker.stop();
       },
     );
+  });
+
+  group('finalize', () {
+    test(
+      'tras cerrar guarda en local el coaching del servidor, no el del payload',
+      () async {
+        const serverCoaching = [
+          CoachingAnalysis(
+            exerciseId: 'e1',
+            exerciseName: 'Press',
+            recommendation: 'INCREASE_WEIGHT',
+            feedback: 'Sube el peso.',
+          ),
+        ];
+        final m = pending(
+          id: 12,
+          kind: MutationKind.finalizeSession,
+          payload: {
+            'session_id': 'sess-1',
+            'coaching_analysis': [
+              {'recommendation': 'MAINTAIN', 'exerciseName': 'Viejo'},
+            ],
+          },
+        );
+        var first = true;
+        when(
+          () => outbox.peekReady(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          if (first) {
+            first = false;
+            return [m];
+          }
+          return [];
+        });
+        when(
+          () => remote.finishWorkoutSession(
+            any(),
+            coachingAnalysis: any(named: 'coachingAnalysis'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => remote.getSessionCoaching('sess-1'),
+        ).thenAnswer((_) async => serverCoaching);
+        when(
+          () => local.applyCoachingForSession('sess-1', serverCoaching),
+        ).thenAnswer((_) async {});
+
+        final worker = buildWorker();
+        worker.start();
+        await worker.drain();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        verify(
+          () => remote.finishWorkoutSession('sess-1', coachingAnalysis: null),
+        ).called(1);
+        verify(
+          () => local.applyCoachingForSession('sess-1', serverCoaching),
+        ).called(1);
+        verify(() => outbox.markSuccess(12)).called(1);
+        await worker.stop();
+      },
+    );
+
+    test('si falla leer el coaching, el cierre cuenta como aplicado', () async {
+      final m = pending(
+        id: 13,
+        kind: MutationKind.finalizeSession,
+        payload: {'session_id': 'sess-1'},
+      );
+      var first = true;
+      when(
+        () => outbox.peekReady(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async {
+        if (first) {
+          first = false;
+          return [m];
+        }
+        return [];
+      });
+      when(
+        () => remote.finishWorkoutSession(
+          any(),
+          coachingAnalysis: any(named: 'coachingAnalysis'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => remote.getSessionCoaching(any()),
+      ).thenThrow(Exception('offline'));
+
+      final worker = buildWorker();
+      worker.start();
+      await worker.drain();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      verify(() => outbox.markSuccess(13)).called(1);
+      verifyNever(() => local.applyCoachingForSession(any(), any()));
+      await worker.stop();
+    });
   });
 
   group('pausa por auth', () {

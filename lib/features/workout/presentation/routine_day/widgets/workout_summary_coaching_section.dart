@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gym_flutter/core/i18n/coaching_messages.dart';
 import 'package:gym_flutter/core/theme/theme_context.dart';
 import 'package:gym_flutter/core/theme/tokens/radii.dart';
 import 'package:gym_flutter/core/theme/tokens/spacing.dart';
@@ -55,7 +56,7 @@ class _CoachingRow extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            item.recommendation,
+            CoachingMessages.describe(item.recommendation, item.feedback),
             style: context.text.bodySmall?.copyWith(
               color: context.colors.textSecondary,
               fontStyle: FontStyle.italic,

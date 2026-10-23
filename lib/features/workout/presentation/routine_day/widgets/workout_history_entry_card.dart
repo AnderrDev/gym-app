@@ -233,9 +233,7 @@ class _CoachingAdvice extends StatelessWidget {
           const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(
-              WorkoutPerformanceAnalyzer.friendlyRecommendation(
-                coaching.recommendation,
-              ),
+              WorkoutPerformanceAnalyzer.friendlyRecommendation(coaching),
               style: context.text.bodySmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontStyle: FontStyle.italic,
