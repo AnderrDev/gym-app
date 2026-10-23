@@ -15,6 +15,7 @@ run supabase/migrations/20261015144656_session_exercises.sql
 run supabase/tests/coach_stats_fixture.sql
 run supabase/migrations/20261022130000_coach_catalog_and_rep_range.sql
 run supabase/migrations/20261022140000_coach_stats_and_events.sql
-run supabase/migrations/20261022150000_coach_v2_rpcs.sql
+run supabase/migrations/20261022232000_coach_v2_rpcs.sql
+run supabase/migrations/20261022233000_coach_inputs_v2_names.sql
 run supabase/tests/coach_stats.sql
 run supabase/tests/coach_v2_rpcs.sql

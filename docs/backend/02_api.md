@@ -59,7 +59,7 @@ Como `get_coaching_inputs_v1` (mismo control `p_user_id = auth.uid()`, si no
 sustituidos), current_logs[], catalog[] (movement_type, body_region,
 load_increment_kg), history[]}`. `history` son filas de
 `exercise_session_stats` de sesiones **cerradas**, ≤6 por ejercicio, la más
-reciente primero, de cualquier rutina (20261022150000).
+reciente primero, de cualquier rutina (20261022232000).
 
 ### `get_next_targets_v1(p_exercise_ids uuid[])` — sugerencia para el próximo entreno
 Por ejercicio, la última recomendación **con peso** del usuario

@@ -18,7 +18,7 @@ function run(opts: {
   current: CoachingInputsV2["current_logs"];
   history?: HistoryRow[];
   target?: { sets?: number; min?: number; max?: number | null; weight?: number };
-  catalog?: { movement_type: string | null; body_region?: string | null; load_increment_kg: number | null };
+  catalog?: { movement_type: string | null; body_region?: string | null; load_increment_kg: number | null; name?: string };
   date?: string;
 }): CoachingItemV2 {
   const t = opts.target ?? {};
@@ -89,8 +89,10 @@ Deno.test("series incompletas → mantener", () => {
   expect(run({ current: sets(60, [12, 12]), history: prev }), "MAINTAIN", "INCOMPLETE_SETS", 60, 8);
 });
 
-Deno.test("sin series → objetivo de la rutina", () => {
-  expect(run({ current: [], history: prev }), "MAINTAIN", "NO_DATA", 60, 8);
+Deno.test("sin series → objetivo de la rutina, con el nombre del catálogo", () => {
+  const item = run({ current: [], history: prev, catalog: { movement_type: "compound", load_increment_kg: 2.5, name: "Remo con barra" } });
+  expect(item, "MAINTAIN", "NO_DATA", 60, 8);
+  if (item.exercise_name !== "Remo con barra") throw new Error(`nombre ${item.exercise_name}`);
 });
 
 Deno.test("peso corporal o sin incremento → progresa solo por reps", () => {

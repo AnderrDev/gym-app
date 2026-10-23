@@ -1,4 +1,4 @@
--- Contrato de get_coaching_inputs_v2 y get_next_targets_v1 (20261022150000).
+-- Contrato de get_coaching_inputs_v2 y get_next_targets_v1 (20261022232000).
 -- Ejecutar sólo en un PostgreSQL desechable, tras coach_stats_fixture.sql y
 -- las migraciones del coach (ver scripts/run_coach_sql_tests.sh).
 \set ON_ERROR_STOP on
@@ -35,6 +35,7 @@ select pg_temp.check((select jsonb_array_length(j->'targets') from i)=1,'sustitu
 select pg_temp.check((select (j->'targets'->0->>'target_reps_max')::int from i)=10,'rango en objetivos');
 select pg_temp.check((select jsonb_array_length(j->'current_logs') from i)=1,'series de la sesión');
 select pg_temp.check((select (j->'catalog'->0->>'load_increment_kg')::numeric from i)=2.5,'catálogo');
+select pg_temp.check((select j->'catalog'->0->>'name' from i)='Press banca barra','nombre en el catálogo');
 select pg_temp.check((select jsonb_array_length(j->'history') from i)=2,'historial (c1, c2; c6 abierta no cuenta)');
 select pg_temp.check((select j->'history'->0->>'session_date' from i)='2026-10-05','más reciente primero');
 do $$ begin

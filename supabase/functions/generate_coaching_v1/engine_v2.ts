@@ -61,6 +61,7 @@ export type CoachingInputsV2 = {
   }>;
   catalog?: Array<{
     exercise_id: string;
+    name?: string | null;
     movement_type: string | null;
     body_region: string | null;
     load_increment_kg: number | null;
@@ -111,7 +112,7 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
       .sort((a, b) => a.set_index - b.set_index);
     const past = history.filter((h) => h.exercise_id === t.exercise_id);
     const info = catalog.get(t.exercise_id);
-    const name = sets[0]?.name ?? "Ejercicio";
+    const name = sets[0]?.name ?? info?.name ?? "Ejercicio";
 
     const targetSets = t.target_sets;
     const repsMin = Number(t.target_reps ?? 0);
