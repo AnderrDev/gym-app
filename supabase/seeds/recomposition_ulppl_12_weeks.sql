@@ -67,7 +67,7 @@ BEGIN
   WHERE re.routine_day_id=did AND x.id=re.exercise_id
     AND NOT EXISTS (SELECT 1 FROM plan_import p WHERE p.day_of_week=d.day_of_week AND lower(p.exercise_name)=lower(x.name));
   FOR e IN SELECT * FROM plan_import WHERE day_of_week=d.day_of_week ORDER BY exercise_order LOOP
-   UPDATE public.routine_exercises re SET "order"=e.exercise_order,target_sets=e.sets,target_reps=e.reps_min,rest_timer_seconds=e.rest_seconds
+   UPDATE public.routine_exercises re SET "order"=e.exercise_order,target_sets=e.sets,target_reps=e.reps_min,target_reps_max=e.reps_max,rest_timer_seconds=e.rest_seconds
    FROM public.exercises x
    WHERE re.routine_day_id=did AND x.id=re.exercise_id AND lower(x.name)=lower(e.exercise_name);
    IF NOT FOUND THEN
@@ -76,8 +76,8 @@ BEGIN
      INSERT INTO public.exercises(name,muscle_group,description)
      VALUES(e.exercise_name,e.muscle_group,'Mantener técnica controlada y ajustar la carga al objetivo de repeticiones.') RETURNING id INTO eid;
     END IF;
-    INSERT INTO public.routine_exercises(routine_day_id,exercise_id,"order",target_sets,target_reps,target_weight,rest_timer_seconds)
-    VALUES(did,eid,e.exercise_order,e.sets,e.reps_min,0,e.rest_seconds);
+    INSERT INTO public.routine_exercises(routine_day_id,exercise_id,"order",target_sets,target_reps,target_reps_max,target_weight,rest_timer_seconds)
+    VALUES(did,eid,e.exercise_order,e.sets,e.reps_min,e.reps_max,0,e.rest_seconds);
    END IF;
   END LOOP;
  END LOOP;

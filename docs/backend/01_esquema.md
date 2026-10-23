@@ -37,11 +37,14 @@ auth.users 1─1 profiles ──< routines (creator_id, NULL = catálogo/anonimi
 |---|---|---|
 | id | uuid PK | default `gen_random_uuid()` |
 | name | text NOT NULL | sin UNIQUE (los seeds deduplican por `lower(name)`) |
-| description, muscle_group | text NULL | `muscle_group` es texto libre: Pecho, Espalda, Hombros, Bíceps, Tríceps, Piernas, Pantorrillas, Glúteos, Abdomen (los seeds de mock usan además "Triceps", "Pierna") |
+| description, muscle_group | text NULL | `muscle_group` es texto libre: Pecho, Espalda, Hombros, Bíceps, Tríceps, Piernas, Pantorrillas, Glúteos, Abdomen. Las variantes "Pierna", "Hombro" y "Triceps" se normalizaron en 20261022130000 |
 | image_url, animation_url, video_url | text NULL | imagen/GIF-MP4 en bucket `exercise-media`; vídeo = URL externa (20260520120000) |
 | instructions, tips | text NULL | "Markdown-lite": párrafos con línea en blanco, viñetas `- ` |
 | equipment | text NULL | p. ej. "Barra olímpica". **Poco poblado**: no fiable para lógica |
 | difficulty | text NULL | CHECK `principiante` \| `intermedio` \| `avanzado` |
+| movement_type | text NULL | CHECK `compound` \| `isolation` (coach v2, 20261022130000; backfill por nombre) |
+| body_region | text NULL | CHECK `upper` \| `lower` \| `core` (derivado de `muscle_group`) |
+| load_increment_kg | numeric NULL | salto mínimo de carga del equipo (> 0). NULL = sin carga externa: el coach progresa por reps. Ejercicios nuevos quedan NULL en las tres columnas y el motor usa valores por defecto |
 
 ### `routines`
 | Columna | Tipo | Notas |
@@ -82,7 +85,8 @@ Asignar = `upsert(..., onConflict: 'user_id')`.
 | exercise_id | uuid NOT NULL | FK `exercises` CASCADE |
 | "order" | int NOT NULL | 0 (palabra reservada: va entre comillas) |
 | target_sets | int NOT NULL | 3 |
-| target_reps | int NOT NULL | 10 (un solo valor, no rango) |
+| target_reps | int NOT NULL | 10 (mínimo del rango) |
+| target_reps_max | int NULL | máximo del rango para la doble progresión (20261022130000). NULL = rango de un valor. Sin CHECK contra `target_reps`: el motor usa `greatest(max, target_reps)` |
 | target_weight | numeric **NULL** | 0 (0 = sin carga / peso corporal) |
 | rest_timer_seconds | int NOT NULL | 90 |
 
@@ -136,7 +140,34 @@ snake_case **o** camelCase.
 
 - UNIQUE `uq_set_logs_session_exercise_set_index (session_id, exercise_id, set_index)`.
 - Índices por `session_id`, `exercise_id`, `(session_id, created_at)`, `(exercise_id, created_at DESC)`.
-- Sin RPE/RIR, notas ni `updated_at`.
+- Sin RPE/RIR, notas ni `updated_at`. El RIR no se capturará: el esfuerzo se deduce en `exercise_session_stats` (decisión 2026-10-22).
+
+### `exercise_session_stats` — métricas del coach v2 (20261022140000)
+Una fila por `(session_id, exercise_id)` con series registradas. La escribe
+solo `refresh_exercise_session_stats_v1` (service_role); el usuario lee las
+suyas (RLS `user_id = auth.uid()`). FK a `workout_sessions` y `exercises` con
+CASCADE.
+
+| Grupo | Columnas |
+|---|---|
+| Identidad | `session_id`, `exercise_id`, `user_id`, `session_date` |
+| Historial | `prev_session_id` (exposición anterior del ejercicio, cualquier rutina), `exposure_n`, `days_since_prev` |
+| Prescripción | `sets_target`, `target_reps`, `target_reps_max`, `target_weight` (del snapshot, o de la rutina en sesiones sin snapshot) |
+| Realizado | `sets_done`, `top_weight`, `min_reps`, `total_reps`, `volume_load` (Σ peso×reps) |
+| Fuerza | `best_e1rm` (Epley sobre la mejor serie de ≤12 reps; asume series cerca del fallo), `low_confidence` (solo había series de >12 reps) |
+| Esfuerzo deducido | `rep_shortfall` (objetivo − media), `rep_dropoff` (reps 1.ª − última serie), `at_range_top` (todas las series objetivo en el máximo del rango), `is_bodyweight` |
+
+### `coaching_events` — recomendaciones y su resultado (20261022140000)
+Append-only; la escribe `finalize_workout_session_v1` (service_role) y el
+usuario lee las suyas. UNIQUE `(session_id, exercise_id, engine_version)`.
+- Al recomendar: `engine_version`, `recommendation`, `reason_code`,
+  `suggested_weight`, `suggested_reps`, `performance_score`, `features` (jsonb).
+- Al recalcular la siguiente exposición del ejercicio se rellena el resultado:
+  `outcome_session_id` (SET NULL si se borra), `hit_target`, `followed`
+  (± un `load_increment_kg` del peso sugerido; NULL sin sugerencia),
+  `e1rm_delta`, `labeled_at`.
+- Backfill: el `coaching_analysis` histórico se cargó como `engine_version = '1.0'`
+  (con el formato viejo de cliente normalizado).
 
 ### `function_rate_limits` (interna)
 `(user_id, function_name, window_start)` PK, `count`. RLS activo **sin
