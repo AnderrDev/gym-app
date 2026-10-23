@@ -5,8 +5,8 @@ Fecha: 2026-10-22 · Alcance: backend Supabase (este repo), gym_ios (`~/Desktop/
 ## 0. Resumen ejecutivo
 
 - **Hoy no hay datos para entrenar ML.** Producción tiene 7 usuarios, 4 con sesiones, 23 sesiones, 225 series, 59 ejercicios (medido 2026-10-22). Un modelo entrenado con eso solo memorizaría ruido.
-- **Lo que sí da el mejor resultado ahora:** un motor determinista basado en evidencia (doble progresión + autorregulación por RIR + detección de estancamiento sobre e1RM suavizado), con **peso sugerido concreto** y guardarraíles de seguridad. Es lo que hacen en la práctica Fitbod, Juggernaut AI o RP, y la literatura no muestra ventaja de modelos complejos frente a reglas bien hechas.
-- **La ingeniería de datos es la inversión clave:** registrar cada recomendación y su resultado (etiquetas), una tabla de métricas por ejercicio y sesión, y capturar RIR. Así, cuando haya volumen (~1.000 resultados etiquetados), el paso a un modelo estadístico personalizado (bayes empírico + regresión logística) es un cambio de parámetros, no de arquitectura.
+- **Lo que sí da el mejor resultado ahora:** un motor determinista basado en evidencia (doble progresión + detección de estancamiento sobre e1RM suavizado + señales de esfuerzo deducidas de las series), con **peso sugerido concreto** y guardarraíles de seguridad. Es lo que hacen en la práctica Fitbod, Juggernaut AI o RP, y la literatura no muestra ventaja de modelos complejos frente a reglas bien hechas.
+- **La ingeniería de datos es la inversión clave:** registrar cada recomendación y su resultado (etiquetas), y una tabla de métricas por ejercicio y sesión. Así, cuando haya volumen (~1.000 resultados etiquetados), el paso a un modelo estadístico personalizado (bayes empírico + regresión logística) es un cambio de parámetros, no de arquitectura.
 - **Antes de mejorar hay que unificar:** hoy existen **tres motores de coaching que se contradicen** (servidor, analizador en vivo de Flutter, reglas por serie en iOS), y Flutter guarda `recommendation`/`feedback` invertidos (riesgo B4).
 
 ## 1. Diagnóstico (estado actual)
@@ -14,8 +14,8 @@ Fecha: 2026-10-22 · Alcance: backend Supabase (este repo), gym_ios (`~/Desktop/
 ### Datos
 | Qué | Estado | Consecuencia |
 |---|---|---|
-| `set_logs` | solo peso, reps, `set_index`, `created_at` | sin esfuerzo (RIR/RPE) no se distingue "10 fáciles" de "10 al fallo" |
-| `routine_exercises.target_reps` | un único valor | no hay rango → no se puede aplicar doble progresión. El seed ULPPL traía `reps_max` y `rir` y se descartan al importar |
+| `set_logs` | solo peso, reps, `set_index`, `created_at` | sin esfuerzo declarado; se deduce de las series (ver fase 1c). No se pedirá RIR al usuario (decisión 2026-10-22) |
+| `routine_exercises.target_reps` | un único valor | no hay rango → no se puede aplicar doble progresión. El seed ULPPL traía `reps_max` y se descarta al importar |
 | `exercises` | `muscle_group` texto libre con variantes ("Pierna"/"Piernas", "Triceps"/"Tríceps"), `equipment` casi vacío | no se sabe si es compuesto o aislamiento ni el incremento de carga posible |
 | `profiles` | solo `full_name` | sin unidades (kg implícito), sin experiencia |
 | `workout_sessions.coaching_analysis` | jsonb sobrescrito, sin versión | no hay historial ni forma de evaluar si el coach acierta |
@@ -65,19 +65,24 @@ Migraciones nuevas (timestamped, aditivas):
 - Normalizar `muscle_group` (unificar variantes) y backfill de los 59 ejercicios.
 
 **b) Prescripción con rango**
-- `routine_exercises.target_reps_max int NULL` (si es NULL, rango = `target_reps`..`target_reps`) y `routine_exercises.target_rir smallint NULL`.
-- Propagar ambos al snapshot `exercise_plan` (`get_session_exercises_v1`, `adapt_session_exercise_v1`).
-- Reimportar `reps_max` y `rir` del seed ULPPL.
+- `routine_exercises.target_reps_max int NULL` (si es NULL, rango = `target_reps`..`target_reps`).
+- Propagarlo al snapshot `exercise_plan` (`get_session_exercises_v1`, `adapt_session_exercise_v1`).
+- Reimportar `reps_max` del seed ULPPL.
 
-**c) Esfuerzo por serie**
-- `set_logs.rir smallint NULL CHECK (rir BETWEEN 0 AND 5)` (5 = "5 o más").
-- Captura con mínima fricción (encaja con el estilo de botones −/+, sin teclado): **solo en la última serie de cada ejercicio**, 4 chips de un toque `0 · 1 · 2 · 3+` y opción de saltar. Si falta, el motor cae a las reglas solo con reps.
-- Ajuste de sesgo: la gente subestima en ~1 rep lo que le queda (meta-análisis Halperin 2021) → el motor usa `rir_efectivo = rir + 1` para el e1RM.
+**c) Esfuerzo deducido, sin preguntar al usuario**
+
+Decisión 2026-10-22: **no se captura RIR**. La mayoría de usuarios no sabe estimar cuántas repeticiones le quedaban y la pregunta añade fricción. El esfuerzo se infiere de lo que ya se registra:
+- **Caída de reps entre series** al mismo peso (p. ej. 10-9-7): una caída fuerte indica series cerca del fallo; reps estables indican margen.
+- **Posición en el rango:** todas las series en el máximo del rango dos sesiones seguidas indica que la carga se quedó corta.
+- **Consistencia entre sesiones:** mismas reps al mismo peso varias veces = carga dominada; reps que bajan = fatiga o carga excesiva.
+- **Series incompletas o por debajo del mínimo** = carga demasiado alta.
+
+El e1RM se calcula asumiendo que la serie terminó cerca del fallo (estimación conservadora). Sin RIR la confianza es algo menor, por eso el motor exige 2 sesiones confirmando antes de subir carga cuando la caída de reps entre series es fuerte (señal de que las series fueron al límite).
 
 **d) Tabla de métricas `exercise_session_stats`** (una fila por usuario × ejercicio × sesión cerrada)
-- `best_e1rm`: Epley `w·(1 + (reps + rir_efectivo)/30)` sobre la mejor serie con ≤12 reps efectivas; las series de más de 12 marcan `low_confidence`.
+- `best_e1rm`: Epley `w·(1 + reps/30)` sobre la mejor serie con ≤12 reps; las series de más de 12 marcan `low_confidence`.
 - `top_weight`, `total_reps`, `volume_load` (Σ peso×reps), `sets_done`, `sets_target`.
-- `rep_shortfall` (reps objetivo − reps medias), `rep_dropoff` (caída de reps de la primera a la última serie), `avg_rir`.
+- `rep_shortfall` (reps objetivo − reps medias), `rep_dropoff` (caída de reps de la primera a la última serie), `at_range_top` (todas las series en el máximo del rango).
 - `days_since_prev` (días desde la exposición anterior del mismo ejercicio), `exposure_n` (número de exposición).
 - `is_bodyweight` (peso 0 → progresión solo por reps).
 - Escrita por una RPC idempotente `refresh_exercise_session_stats_v1(session_id)` que llama `finalize_workout_session_v1` antes de generar el coaching, más una función de backfill para el histórico (225 series: trivial).
@@ -93,7 +98,7 @@ Migraciones nuevas (timestamped, aditivas):
 
 ### Fase 2 — Motor v2 basado en evidencia (`engine_version = "2.0"`)
 
-Entradas: últimas ≤6 exposiciones del ejercicio desde `exercise_session_stats` (cualquier rutina, ordenadas por `completed_at`, no por UUID), la prescripción del snapshot y el RIR.
+Entradas: últimas ≤6 exposiciones del ejercicio desde `exercise_session_stats` (cualquier rutina, ordenadas por `completed_at`, no por UUID), la prescripción del snapshot y las señales de esfuerzo deducidas (fase 1c).
 
 Orden de evaluación (la primera regla que aplica decide):
 
@@ -109,7 +114,7 @@ Orden de evaluación (la primera regla que aplica decide):
 
 3. **Arranque en frío** (menos de 2 exposiciones): solo `MAINTAIN` o `INCREASE_REPS`.
 4. **Doble progresión con rango `[min, max]`:**
-   - Todas las series en `max` y RIR ≥ objetivo (o sin RIR) → `INCREASE_WEIGHT`, nuevo peso = actual + `max(load_increment_kg, 2.5 % del peso)`, redondeado al incremento y **con tope +10 %**; reps sugeridas = `min`.
+   - Todas las series en `max` (si la caída de reps entre series fue fuerte, se exige que se repita en la sesión siguiente) → `INCREASE_WEIGHT`, nuevo peso = actual + `max(load_increment_kg, 2.5 % del peso)`, redondeado al incremento y **con tope +10 %**; reps sugeridas = `min`.
    - Dentro del rango → `INCREASE_REPS` (+1 rep en la serie más baja). Plotkin 2022: subir reps es tan eficaz como subir carga para hipertrofia, así que no es una recomendación de segunda.
    - Por debajo de `min` → regla de fallos.
 5. **Fallos consecutivos** a la misma carga: el 1.º → `MAINTAIN` (repetir); el 2.º → `DECREASE_WEIGHT` −5–10 % (`RESET`).
@@ -130,7 +135,7 @@ Guardarraíles siempre activos: nunca subir peso y reps a la vez; como máximo u
   // nuevos, opcionales:
   "suggested_weight": 42.5, "suggested_reps": 8,
   "reason_code": "DOUBLE_PROGRESSION_TOP",
-  "confidence": "high",                       // low | medium | high según exposiciones y RIR
+  "confidence": "high",                       // low | medium | high según exposiciones y consistencia
   "engine_version": "2.0"
 }
 ```
@@ -139,7 +144,7 @@ Más `session_flags` a nivel de respuesta, y se guarda en `workout_sessions.coac
 El texto de `feedback` sale de plantillas en español por `reason_code`, con los números interpolados. Así es consistente y traducible.
 
 **Validación:**
-- Suite de escenarios en tests Deno: progresión limpia, estancamiento, regresión, pausa, peso corporal, ejercicio sustituido o extra, arranque en frío, sin RIR.
+- Suite de escenarios en tests Deno: progresión limpia, estancamiento, regresión, pausa, peso corporal, ejercicio sustituido o extra, arranque en frío, caída de reps fuerte vs. estable.
 - Assertions de contenido en `scripts/contract_smoke_supabase.sh`.
 - Despliegue con flag: v1 y v2 en paralelo durante 2 semanas guardando ambos en `coaching_events`; revisión manual de discrepancias (con 4 usuarios activos es una revisión cualitativa, no estadística). Después se activa v2.
 
@@ -148,7 +153,6 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 - Nueva RPC `get_next_targets_v1(p_exercise_ids uuid[])`: devuelve la última sugerencia vigente por ejercicio (`suggested_weight`, `suggested_reps`, `reason_code`, antigüedad) desde `coaching_events`.
 - Precarga de peso en ambas apps: **sugerencia del coach > última serie > objetivo de la rutina**. Se muestra como "Coach: 42,5 kg × 8" con el motivo en una línea; el usuario la ajusta con −/+ como siempre.
 - Pantallas de cierre e historial: mostrar el peso sugerido y el motivo; el color sigue a `performance_score` (que ahora significa algo).
-- Chips de RIR en la última serie (iOS `SetPanel`, Flutter `CompleteSetSheet`) y su sincronización por el outbox.
 - Mostrar el aviso de descarga cuando llegue `DELOAD_SUGGESTED`.
 
 **Métricas de producto** (consultas sobre `coaching_events`):
@@ -165,7 +169,7 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
    - La pendiente de cada usuario se encoge hacia ese prior según cuántos datos tiene.
    - Ajusta el tamaño del incremento y el umbral de estancamiento por persona. Cabe en SQL.
 2. **Regresión logística P(alcanzar reps objetivo).**
-   - Variables: carga relativa al e1RM, reps objetivo, días desde la última vez, fallos recientes, RIR medio y categoría.
+   - Variables: carga relativa al e1RM, reps objetivo, días desde la última vez, fallos recientes, caída de reps entre series y categoría.
    - Elige la carga con P ≈ 0.75.
    - Se entrena fuera de línea en Python (notebook en `tools/coach_model/`); los coeficientes van a una tabla `coach_model_params` que lee la Edge Function, con `engine_version = "3.0"`.
    - Validación temporal (entrenar con el pasado, evaluar con el futuro), calibración y comparación de acierto contra v2 en shadow antes de activarlo.
@@ -184,11 +188,12 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 | Core ML / Create ML en el dispositivo | El consejo divergiría entre iOS, Flutter y web; `coaching_analysis` solo lo escribe el servidor |
 | Redes neuronales / deep learning | Con cientos o miles de sesiones sobreajustan; no son explicables |
 | Bandits / RL para elegir carga | La señal es lenta y ruidosa, y explorar con carga tiene riesgo de lesión; no hay trabajos revisados por pares que lo respalden |
-| Readiness diario (sueño, agujetas) | Añade fricción en cada sesión; se puede reconsiderar tras medir la adopción del RIR |
+| Readiness diario (sueño, agujetas) | Añade fricción en cada sesión; no se pide (mismo motivo que el RIR) |
+| Pedir RIR / RPE por serie | Los usuarios no saben estimarlo con fiabilidad y añade fricción; el esfuerzo se deduce de las series (decisión 2026-10-22) |
 
 ## 5. Riesgos
 
-- **Adopción del RIR:** si nadie lo rellena, el motor funciona igual (cae a reglas solo con reps), pero pierde precisión. Hay que medir la tasa de captura.
+- **Sin esfuerzo declarado:** el motor no distingue del todo "8 fáciles" de "8 al límite" en una sola sesión. Se mitiga con la caída de reps entre series y exigiendo confirmación en 2 sesiones; el acierto se vigila con `coaching_events`.
 - **Calidad del catálogo:** `load_increment_kg` y `movement_type` mal puestos dan saltos incorrectos. El backfill necesita revisión manual de los 59 ejercicios.
 - **Unidades:** todo es kg implícito. Si algún día hay libras, los incrementos dependen de la unidad. Fuera de alcance, pero se anota.
 - **`session_date` local:** dos sesiones el mismo día. Ordenar por `completed_at`.
@@ -202,17 +207,16 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 | 0a | Desplegar guard + motor extraído con tests | gym_flutter (supabase) | — |
 | 0b | Saneamiento de coaching en Flutter | gym_flutter (lib) | — |
 | 0c | Refetch tras finalize offline | gym_ios + gym_flutter | — |
-| 1 | Migraciones: catálogo, rango, RIR, stats, coaching_events + backfill | gym_flutter (supabase) | 0a |
+| 1 | Migraciones: catálogo, rango, stats, coaching_events + backfill | gym_flutter (supabase) | 0a |
 | 2 | Motor v2 + shadow + smoke con assertions | gym_flutter (supabase) | 1 |
 | 3a | `get_next_targets_v1` + precarga + UI de motivo | supabase + ambos clientes | 2 |
-| 3b | Chips de RIR | ambos clientes | 1 |
 | 4 | Modelo personalizado | tools/ + supabase | puerta de datos |
 
-0b, 0c y 3b pueden ir en paralelo con el backend. Cada migración o RPC nueva actualiza `docs/backend/`.
+0b y 0c pueden ir en paralelo con el backend. El cliente objetivo de las fases 1–3 es gym_ios. Cada migración o RPC nueva actualiza `docs/backend/`.
 
 ## 7. Decisiones abiertas para el producto
 
-1. ¿Capturar RIR (chips en la última serie) o empezar sin él?
+1. ~~¿Capturar RIR?~~ **Decidido 2026-10-22: no.** El esfuerzo se deduce de las series.
 2. ¿Exponer el rango de reps (`min`–`max`) en el editor de rutinas o solo vía seed y backend al principio?
 3. ¿El coach precarga el peso automáticamente o solo lo muestra como sugerencia que el usuario acepta con un toque?
 
