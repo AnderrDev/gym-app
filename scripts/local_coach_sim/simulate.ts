@@ -45,44 +45,54 @@ const EXERCISES: Ex[] = [
   { id: "c0ac0000-0000-4000-8000-000000000008", name: "Curl femoral", muscle: "Piernas", movement: "isolation", region: "lower", increment: 2.5, equipment: "Máquina de curl femoral", day: "B", sets: 3, reps: 10, repsMax: 15, weight: 40, e1rm: 58, weeklyGrowth: 0.005 },
 ];
 
-const ROUTINE_ID = "c0ac0000-0000-4000-8000-0000000000a0";
-const DAY_IDS = { A: "c0ac0000-0000-4000-8000-0000000000a1", B: "c0ac0000-0000-4000-8000-0000000000a2" };
-
 // Días desde el inicio (hace 62 días). Tras el día 32 hay una pausa de 18
 // días; el día 57 es un "mal día" (fuerza −10 % solo esa sesión).
-const SCHEDULE = [0, 2, 4, 7, 9, 11, 14, 16, 18, 21, 23, 25, 28, 30, 32, 50, 52, 54, 57, 59, 61];
-const BAD_DAY = 57;
-const LAYOFF_AFTER = 32;
+export const DEFAULT_SCHEDULE = [0, 2, 4, 7, 9, 11, 14, 16, 18, 21, 23, 25, 28, 30, 32, 50, 52, 54, 57, 59, 61];
 const DETRAINING = 0.95;
 
-// PRNG determinista (mulberry32) para que cada ejecución dé lo mismo.
-let seed = 20261024;
-function rand(): number {
-  seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+export type SimOptions = {
+  email?: string;
+  /** Días (desde el inicio) en los que entrena; el último debe ser ≤ hoy. */
+  schedule?: number[];
+  /** Día con fuerza −10 % (null = ninguno). */
+  badDay?: number | null;
+  /** A partir de este día, fuerza −5 % (null = sin pérdida por pausa). */
+  layoffAfter?: number | null;
+  seed?: number;
+  /** Espera entre cierres: el rate limit de finalize y de coaching es 30/min por usuario. */
+  paceMs?: number;
+  quiet?: boolean;
+};
+
+// PRNG determinista (mulberry32): cada ejecución con la misma semilla da lo mismo.
+function makeRand(seed: number) {
+  let s = seed;
+  return () => {
+    s |= 0; s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
-const noise = () => (rand() < 0.2 ? -1 : rand() > 0.85 ? 1 : 0);
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
 // Mismo ajuste por pausa que get_next_targets_v1, pero con la fecha simulada.
 function layoffAdjust(weight: number, days: number, step: number): number {
-  if (days < 14 || weight === 0) return weight;
-  const f = days < 28 ? 0.925 : days < 56 ? 0.85 : 0.75;
+  if (days < 21 || weight === 0) return weight;
+  const f = days < 28 ? 0.95 : days < 56 ? 0.90 : 0.80;
   return Math.max(0, Math.round((weight * f) / step) * step);
 }
 
 // ── Preparación ──────────────────────────────────────────────────────────
-async function setup(admin: SupabaseClient): Promise<string> {
+async function setup(admin: SupabaseClient, email: string) {
   // Usuario de prueba (se recrea en cada ejecución: borra su historial).
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const old = list?.users.find((u) => u.email === SIM_EMAIL);
+  const old = list?.users.find((u) => u.email === email);
   if (old) await admin.auth.admin.deleteUser(old.id);
   const { data: created, error } = await admin.auth.admin.createUser({
-    email: SIM_EMAIL, password: SIM_PASSWORD, email_confirm: true,
+    email, password: SIM_PASSWORD, email_confirm: true,
     user_metadata: { full_name: "Atleta Simulado" },
   });
   if (error || !created.user) throw error ?? new Error("No se creó el usuario");
@@ -94,45 +104,57 @@ async function setup(admin: SupabaseClient): Promise<string> {
     id: e.id, name: e.name, muscle_group: e.muscle, equipment: e.equipment,
     movement_type: e.movement, body_region: e.region, load_increment_kg: e.increment,
   }))), "ejercicios");
-  must(await admin.from("routines").upsert({ id: ROUTINE_ID, name: "Coach sim · Torso / Pierna", creator_id: userId, is_public: false }), "rutina");
-  must(await admin.from("routine_days").upsert([
-    { id: DAY_IDS.A, routine_id: ROUTINE_ID, day_of_week: 1, name: "Torso" },
-    { id: DAY_IDS.B, routine_id: ROUTINE_ID, day_of_week: 2, name: "Pierna" },
+  // Rutina propia de cada usuario de prueba.
+  const routineId = crypto.randomUUID();
+  const dayIds = { A: crypto.randomUUID(), B: crypto.randomUUID() };
+  must(await admin.from("routines").insert({ id: routineId, name: "Coach sim · Torso / Pierna", creator_id: userId, is_public: false }), "rutina");
+  must(await admin.from("routine_days").insert([
+    { id: dayIds.A, routine_id: routineId, day_of_week: 1, name: "Torso" },
+    { id: dayIds.B, routine_id: routineId, day_of_week: 2, name: "Pierna" },
   ]), "días");
-  must(await admin.from("routine_exercises").delete().in("routine_day_id", Object.values(DAY_IDS)), "limpiar objetivos");
   must(await admin.from("routine_exercises").insert(EXERCISES.map((e, i) => ({
-    routine_day_id: DAY_IDS[e.day], exercise_id: e.id, order: i, target_sets: e.sets,
+    routine_day_id: dayIds[e.day], exercise_id: e.id, order: i, target_sets: e.sets,
     target_reps: e.reps, target_reps_max: e.repsMax, target_weight: e.weight, rest_timer_seconds: 120,
   }))), "objetivos");
-  must(await admin.from("user_routines").upsert({ user_id: userId, routine_id: ROUTINE_ID }), "asignación");
-  return userId;
+  must(await admin.from("user_routines").upsert({ user_id: userId, routine_id: routineId }), "asignación");
+  return { userId, dayIds };
 }
 
 // ── Simulación ───────────────────────────────────────────────────────────
 type Row = { day: number; date: string; dayName: string; lines: string[] };
 
-async function simulate() {
+export async function simulate(opts: SimOptions = {}) {
+  const email = opts.email ?? SIM_EMAIL;
+  const schedule = opts.schedule ?? DEFAULT_SCHEDULE;
+  const badDay = opts.badDay === undefined ? 57 : opts.badDay;
+  const layoffAfter = opts.layoffAfter === undefined ? 32 : opts.layoffAfter;
+  const rand = makeRand(opts.seed ?? 20261024);
+  const noise = () => (rand() < 0.2 ? -1 : rand() > 0.85 ? 1 : 0);
+  const log = opts.quiet ? () => {} : console.log;
+
   const admin = createClient(API_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const userId = await setup(admin);
+  const { userId, dayIds } = await setup(admin, email);
   const user = createClient(API_URL, ANON_KEY, { auth: { persistSession: false } });
-  const { data: auth, error: authError } = await user.auth.signInWithPassword({ email: SIM_EMAIL, password: SIM_PASSWORD });
+  const { data: auth, error: authError } = await user.auth.signInWithPassword({ email, password: SIM_PASSWORD });
   if (authError || !auth.session) throw authError ?? new Error("Sin sesión");
   const token = auth.session.access_token;
 
-  const start = new Date(); start.setUTCDate(start.getUTCDate() - 62);
+  const span = schedule[schedule.length - 1] + 1;
+  const start = new Date(); start.setUTCDate(start.getUTCDate() - span);
   const report: Row[] = [];
+  const finalizeMs: number[] = [];
   let alternate = 0;
 
-  for (const offset of SCHEDULE) {
+  for (const offset of schedule) {
     const date = new Date(start); date.setUTCDate(start.getUTCDate() + offset);
     const sessionDate = isoDate(date);
     const day: "A" | "B" = alternate++ % 2 === 0 ? "A" : "B";
     const weeks = offset / 7;
-    const strengthFactor = (offset > LAYOFF_AFTER ? DETRAINING : 1) * (offset === BAD_DAY ? 0.9 : 1);
+    const strengthFactor = (layoffAfter != null && offset > layoffAfter ? DETRAINING : 1) * (offset === badDay ? 0.9 : 1);
 
     // 1. Sesión abierta y su plan congelado (como el cliente).
     const { data: session, error: sErr } = await user.from("workout_sessions")
-      .insert({ user_id: userId, routine_day_id: DAY_IDS[day], session_date: sessionDate }).select("id").single();
+      .insert({ user_id: userId, routine_day_id: dayIds[day], session_date: sessionDate }).select("id").single();
     if (sErr || !session) throw new Error(`sesión ${sessionDate}: ${JSON.stringify(sErr)}`);
     const { data: plan, error: pErr } = await user.rpc("get_session_exercises_v1", { p_session_id: session.id });
     if (pErr) throw new Error(`plan: ${pErr.message}`);
@@ -173,31 +195,34 @@ async function simulate() {
     }
 
     // 4. Cierre real: Edge Function con el JWT del usuario.
+    const t0 = performance.now();
     const res = await fetch(`${API_URL}/functions/v1/finalize_workout_session_v1`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, apikey: ANON_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: session.id }),
     });
     const body = await res.json();
+    finalizeMs.push(performance.now() - t0);
     if (!res.ok || body.data?.warning_code) throw new Error(`finalize ${sessionDate}: ${res.status} ${JSON.stringify(body)}`);
     report.push(row);
-    await new Promise((r) => setTimeout(r, 400)); // holgura con el rate limit (30/min)
+    await new Promise((r) => setTimeout(r, opts.paceMs ?? 400));
   }
 
   for (const r of report) {
-    console.log(`\n${r.date} (día ${r.day}) · ${r.dayName}`);
-    for (const l of r.lines) console.log(`  ${l}`);
+    log(`\n${r.date} (día ${r.day}) · ${r.dayName}`);
+    for (const l of r.lines) log(`  ${l}`);
   }
 
   // 5. Lo que verá la app hoy: la RPC real, como el usuario.
   const { data: next, error: nErr } = await user.rpc("get_next_targets_v1", { p_exercise_ids: EXERCISES.map((e) => e.id) });
   if (nErr) throw new Error(`get_next_targets_v1: ${nErr.message}`);
-  console.log("\nPróximo entreno (get_next_targets_v1, como el usuario):");
+  log("\nPróximo entreno (get_next_targets_v1, como el usuario):");
   for (const n of next as Array<Record<string, unknown>>) {
     const ex = EXERCISES.find((e) => e.id === n.exercise_id)!;
-    console.log(`  ${ex.name.padEnd(27)} ${n.suggested_weight} kg × ${n.suggested_reps ?? "-"}  ${n.reason_code}  (hace ${n.days_since} d)`);
+    log(`  ${ex.name.padEnd(27)} ${n.suggested_weight} kg × ${n.suggested_reps ?? "-"}  ${n.reason_code}  (hace ${n.days_since} d)`);
   }
-  console.log(`\nUsuario de prueba: ${SIM_EMAIL} (id ${userId}) · contraseña en scripts/local_coach_sim/README.md`);
+  log(`\nUsuario de prueba: ${email} (id ${userId}) · contraseña en scripts/local_coach_sim/README.md`);
+  return { userId, token, finalizeMs, exerciseIds: EXERCISES.map((e) => e.id) };
 }
 
-await simulate();
+if (import.meta.main) await simulate();

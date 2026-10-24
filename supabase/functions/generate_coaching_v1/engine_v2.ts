@@ -102,7 +102,28 @@ function ewma(values: number[]): number[] {
   return out;
 }
 
-export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
+/// Ajustes del motor. Los valores por defecto son los elegidos con el banco
+/// de escenarios (scripts/local_coach_sim/scenarios.ts y compare.ts), que
+/// prueba variantes con los mismos atletas simulados.
+export type EngineOptions = {
+  /** Cuándo se da el rango por completado: todas las series en el máximo, o
+   *  la primera serie en el máximo con las demás a ≤1 rep de media (fatiga). */
+  progression?: "all_sets" | "top_set";
+  /** Rutinas sin rango (un solo objetivo): subir en cuanto se cumple o pedir
+   *  una segunda sesión que lo confirme. */
+  singleTarget?: "immediate" | "confirm";
+  /** Estancamiento: e1RM plano (EWMA) o, además, ni carga ni reps han subido
+   *  en las últimas 4 exposiciones. */
+  plateau?: "e1rm" | "load_and_reps";
+};
+
+export function analyzeSessionV2(inputs: CoachingInputsV2, options: EngineOptions = {}): CoachingItemV2[] {
+  const progression = options.progression ?? "all_sets";
+  // Elegidos con el banco (2026-10-24): sin rango, confirmar baja los fallos
+  // del 36 % al 27 %; el estancamiento por carga y reps reduce las falsas
+  // alarmas un 35–50 % en quien progresa.
+  const singleTarget = options.singleTarget ?? "confirm";
+  const plateauRule = options.plateau ?? "load_and_reps";
   const logs = inputs.current_logs ?? [];
   const history = inputs.history ?? [];
   const catalog = new Map((inputs.catalog ?? []).map((c) => [c.exercise_id, c]));
@@ -118,6 +139,7 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
     const targetSets = t.target_sets;
     const repsMin = Number(t.target_reps ?? 0);
     const repsMax = Math.max(Number(t.target_reps_max ?? repsMin), repsMin);
+    const hasRange = repsMax > repsMin;
     const targetWeight = Number(t.target_weight ?? 0);
 
     const done = sets.length;
@@ -202,11 +224,19 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
       const prev = past[0];
       const prevTopSameWeight = prev && Math.abs(prev.top_weight - top) < 0.01 && prev.at_range_top === true;
 
-      if (minReps >= topThreshold) {
-        if (dropoff >= STRONG_DROPOFF && !prevTopSameWeight) {
+      const shortfall = workReps.reduce((sum, r) => sum + Math.max(0, topThreshold - r), 0);
+      const rangeDone = progression === "top_set"
+        ? workReps[0] >= topThreshold && minReps >= repsMin && shortfall <= workReps.length
+        : minReps >= topThreshold;
+      const needsConfirm = (!hasRange && singleTarget === "confirm") || dropoff >= STRONG_DROPOFF;
+
+      if (rangeDone) {
+        if (needsConfirm && !prevTopSameWeight) {
           reason = "CONFIRM_TOP";
           suggestedReps = repsMax;
-          feedback = `Llegaste al máximo pero muy al límite. Repite ${formatKg(top)} para confirmar.`;
+          feedback = dropoff >= STRONG_DROPOFF
+            ? `Llegaste al máximo pero muy al límite. Repite ${formatKg(top)} para confirmar.`
+            : `Cumpliste el objetivo. Repite ${formatKg(top)} una vez más para confirmarlo antes de subir.`;
         } else {
           const step = Math.max(increment, roundTo(top * 0.025, increment));
           const capped = bigStep ? top + increment : Math.min(top + step, top * (1 + MAX_JUMP));
@@ -271,8 +301,13 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
         } else if (series.length >= 3) {
           const all = ewma([...series, e1rm]);
           const before = all[all.length - 4] ?? all[0];
-          if (all[all.length - 1] <= before * 1.01 && reason !== "RESET_AFTER_MISSES" && reason !== "TOO_HEAVY" &&
-              reason !== "BUILDING_REPS") {
+          // Sin subir carga ni reps en 4 exposiciones (hoy + 3 anteriores).
+          const recent = past.slice(0, 3);
+          const stuck = recent.length === 3 &&
+            recent.every((h) => h.top_weight >= top - 0.01) &&
+            minReps <= Math.max(...recent.map((h) => h.min_reps));
+          if (all[all.length - 1] <= before * 1.01 && (plateauRule === "e1rm" || stuck) &&
+              reason !== "RESET_AFTER_MISSES" && reason !== "TOO_HEAVY" && reason !== "BUILDING_REPS") {
             reason = "PLATEAU";
             feedback = `Llevas varias sesiones sin progresar con ${formatKg(top)}. Prueba a variar el rango de reps o descansar mejor.`;
           }

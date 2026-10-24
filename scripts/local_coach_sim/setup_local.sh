@@ -21,6 +21,9 @@ if [[ "${1:-}" == "stop" ]]; then
   exit 0
 fi
 
+# Si ya hay una simulación en marcha, se para antes de recrear la copia: si
+# no, la base no se reinicia y el runtime de funciones pierde su carpeta.
+[[ -d "$SIM_DIR/supabase" ]] && { supabase stop --workdir "$SIM_DIR" --no-backup >/dev/null 2>&1 || true; }
 rm -rf "$SIM_DIR"
 mkdir -p "$SIM_DIR"
 # Los ficheros versionados de supabase/, con su contenido actual (incluye

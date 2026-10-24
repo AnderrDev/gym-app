@@ -49,8 +49,9 @@ create temp table n as select * from public.get_next_targets_v1(array[
 select pg_temp.check((select count(*) from n)=2,'solo lo del usuario y con peso');
 select pg_temp.check((select (suggested_weight,suggested_reps,reason_code,layoff_adjusted) is not distinct from (65::numeric,8,'DOUBLE_PROGRESSION_TOP',false)
   from n where exercise_id='00000000-0000-0000-0000-0000000000e1'),'sugerencia reciente intacta');
--- 30 días de pausa: 100 × 0,85 = 85, redondeado al incremento de la prensa (5).
-select pg_temp.check((select (suggested_weight,days_since,layoff_adjusted) is not distinct from (85::numeric,30,true)
+-- 30 días de pausa: 100 × 0,90 = 90, redondeado al incremento de la prensa (5)
+-- (tabla suave de 20261024163000).
+select pg_temp.check((select (suggested_weight,days_since,layoff_adjusted) is not distinct from (90::numeric,30,true)
   from n where exercise_id='00000000-0000-0000-0000-0000000000e2'),'ajuste por pausa');
 reset role;
 

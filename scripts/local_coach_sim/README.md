@@ -44,6 +44,17 @@ Si cambias una Edge Function o una migración, vuelve a ejecutar
 
 Para pararlo y borrar la copia: `bash scripts/local_coach_sim/setup_local.sh stop`.
 
+## Banco de escenarios y volumen
+
+- `scenarios.ts`: 12 perfiles de atleta (novato, estancado, regresión real, pausa larga, asistencia irregular, va al fallo, no sigue al coach, rutina sin rango…) × N atletas sobre el motor real, sin base de datos. Unas 113 000 sesiones en ~1,5 s.
+  `deno run --allow-read scripts/local_coach_sim/scenarios.ts 200`
+- `compare.ts`: las mismas semillas con variantes del motor (`EngineOptions`) y de la tabla de pausa, para medir antes y después.
+  `deno run --allow-read scripts/local_coach_sim/compare.ts 200`
+- `load.ts`: volumen contra el Supabase local por el camino real (20 usuarios a la vez y un veterano con un año), con latencias.
+  `deno run --allow-net --allow-env scripts/local_coach_sim/load.ts 20 52` (tarda ~6 min por el rate limit de 30 cierres/min por usuario).
+
+Resultados y propuestas: `docs/coach/SIMULACION_ESCENARIOS.md`.
+
 ## App de iOS contra el Supabase local
 
 Sin tocar `Config/Secrets.xcconfig`, compila pasando la URL y la clave como
