@@ -126,8 +126,31 @@ Deno.test("estancamiento: e1RM plano varias sesiones → mantener con motivo PLA
   if (item.recommendation === "INCREASE_WEIGHT" || item.recommendation === "DECREASE_WEIGHT") throw new Error("sin cambio de carga");
 });
 
-Deno.test("sin máximo de rango (rutinas de un solo valor) → sube al cumplir el objetivo", () => {
-  expect(run({ current: sets(60, [8, 8, 8]), history: prev, target: { max: null } }), "INCREASE_WEIGHT", "DOUBLE_PROGRESSION_TOP", 62.5, 8);
+Deno.test("sin rango (un solo objetivo): la primera vez que se cumple pide confirmarlo", () => {
+  expect(run({ current: sets(60, [8, 8, 8]), history: prev, target: { max: null } }), "MAINTAIN", "CONFIRM_TOP", 60, 8);
+});
+
+Deno.test("sin rango: cumplido dos sesiones seguidas al mismo peso → sube", () => {
+  const confirmed = [hist("2026-10-16", 60, 8, { at_range_top: true })];
+  expect(run({ current: sets(60, [8, 8, 8]), history: confirmed, target: { max: null } }), "INCREASE_WEIGHT", "DOUBLE_PROGRESSION_TOP", 62.5, 8);
+});
+
+Deno.test("con la opción inmediata, sin rango sube al cumplir (comportamiento anterior)", () => {
+  const items = analyzeSessionV2({
+    session: { id: "s", user_id: "u", session_date: "2026-10-20" },
+    targets: [{ exercise_id: EX, target_sets: 3, target_reps: 8, target_reps_max: null, target_weight: 60 }],
+    current_logs: sets(60, [8, 8, 8]),
+    catalog: [{ exercise_id: EX, movement_type: "compound", body_region: "upper", load_increment_kg: 2.5 }],
+    history: prev,
+  }, { singleTarget: "immediate" });
+  if (items[0].recommendation !== "INCREASE_WEIGHT") throw new Error(items[0].reason_code);
+});
+
+Deno.test("no es estancamiento si la carga subió en las últimas sesiones aunque el e1RM esté plano", () => {
+  // e1RM plano pero viene de 57,5 → 60: progresa por carga.
+  const h = [hist("2026-10-16", 60, 9), hist("2026-10-12", 57.5, 10), hist("2026-10-08", 57.5, 10), hist("2026-10-04", 57.5, 10)];
+  const item = run({ current: sets(60, [9, 9, 9]), history: h });
+  if (item.reason_code === "PLATEAU") throw new Error("falsa alarma de estancamiento");
 });
 
 Deno.test("confianza y score", () => {

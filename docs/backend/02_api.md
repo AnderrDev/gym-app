@@ -65,8 +65,9 @@ reciente primero, de cualquier rutina (20261022232000).
 Por ejercicio, la última recomendación **con peso** del usuario
 (`coaching_events`), con su `suggested_weight`, `suggested_reps`,
 `recommendation`, `reason_code`, `source_session_date`, `days_since` y
-`layoff_adjusted`. Ajuste por pausa: <14 días sin cambio; 14–27 −7,5 %;
-28–55 −15 %; ≥56 −25 %, redondeado al `load_increment_kg` (o 2,5).
+`layoff_adjusted`. Ajuste por pausa (desde 20261024163000): <21 días sin
+cambio; 21–27 −5 %; 28–55 −10 %; ≥56 −20 %, redondeado al `load_increment_kg`
+(o 2,5). Antes: 14–27 −7,5 %, 28–55 −15 %, ≥56 −25 %.
 Ejercicios sin sugerencia no aparecen. La usan los clientes para precargar.
 
 ### `refresh_exercise_session_stats_v1(p_session_id)` — solo service_role
@@ -228,7 +229,10 @@ actual vs previa de `get_coaching_inputs_v1`):
 | resto | `MAINTAIN` | 0.9 |
 
 **Motor v2 (principal desde 2026-10-22)**: `engine_v2.ts`, con entradas de
-`get_coaching_inputs_v2`. Doble progresión sobre el rango, peso sugerido
+`get_coaching_inputs_v2`. Sin rango (un solo objetivo) pide confirmar dos
+sesiones antes de subir; "estancamiento" exige e1RM plano y que ni carga ni
+reps suban en 4 sesiones (`EngineOptions`, elegidos con el banco de escenarios,
+`docs/coach/SIMULACION_ESCENARIOS.md`). Doble progresión sobre el rango, peso sugerido
 (tope +10 %, redondeado al incremento del ejercicio), arranque en frío sin
 subir carga, reset tras dos fallos, regresión (e1RM ≥5 % bajo el pico) y
 estancamiento (EWMA plano). Cada item añade `suggested_weight`,

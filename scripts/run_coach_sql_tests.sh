@@ -17,5 +17,6 @@ run supabase/migrations/20261022130000_coach_catalog_and_rep_range.sql
 run supabase/migrations/20261022140000_coach_stats_and_events.sql
 run supabase/migrations/20261022232000_coach_v2_rpcs.sql
 run supabase/migrations/20261022233000_coach_inputs_v2_names.sql
+run supabase/migrations/20261024163000_coach_layoff_soft.sql
 run supabase/tests/coach_stats.sql
 run supabase/tests/coach_v2_rpcs.sql
