@@ -166,7 +166,7 @@ El texto de `feedback` sale de plantillas en español por `reason_code`, con los
 - **Seguimiento:** % de veces que el usuario usa el peso sugerido. Si es bajo, el coach no se percibe como útil.
 - **Progreso:** Δ e1RM a 4 y 8 semanas por ejercicio.
 
-Consulta para comparar motores (el v1 sigue registrándose en sombra):
+Consulta de acierto y seguimiento por motor:
 
 ```sql
 select engine_version,
@@ -177,7 +177,17 @@ select engine_version,
 from coaching_events group by engine_version order by engine_version;
 ```
 
-Línea base (2026-10-23): v1 con 34 etiquetadas, **44,1 %** de acierto (48 % en el backfill inicial). El v2 aún no tiene etiquetas: se rellenan al volver a entrenar cada ejercicio. Retirar el v1 en sombra cuando el v2 supere su acierto con ≥30 etiquetadas.
+**Ojo (simulación local, 2026-10-24):** el acierto del v1 y del v2 sale idéntico por construcción. Las dos recomendaciones de una misma sesión se etiquetan con el mismo resultado: lo que el usuario hizo la vez siguiente, que solo depende de lo que la app le precargó (el v2). Comparar motores por `acierto_pct` no mide nada. Lo que sí mide:
+
+- **Acierto del v2 cuando se sigue** (`followed = true`). Meta: 70–85 %. Simulación: 84,4 %, con el 95 % de sugerencias seguidas.
+- **Progreso real:** evolución del e1RM por ejercicio a 4 y 8 semanas.
+- **Seguridad:** que no haya cadenas de bajadas en un ejercicio. La simulación encontró una (el curl bajaba hasta 0 kg) y está corregida.
+
+El v1 en sombra ya no aporta información y se puede retirar cuando convenga.
+
+Línea base real (2026-10-23): 34 etiquetadas, 44,1 % de acierto, aún con la precarga del cliente y no del coach.
+
+Simulación reproducible de todo el circuito: `scripts/local_coach_sim/` (README).
 
 ### Fase 4 — Personalización estadística (cuando haya datos)
 

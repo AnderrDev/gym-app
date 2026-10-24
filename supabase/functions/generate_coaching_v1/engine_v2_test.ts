@@ -69,9 +69,9 @@ Deno.test("primer fallo por debajo del mínimo → repetir peso", () => {
   expect(run({ current: sets(60, [8, 7, 7]), history: prev }), "MAINTAIN", "FIRST_MISS", 60, 8);
 });
 
-Deno.test("segundo fallo seguido al mismo peso → baja ~10 % al incremento más cercano", () => {
+Deno.test("segundo fallo seguido al mismo peso → baja entre 5 y 10 % según la fuerza de hoy", () => {
   const missed = [hist("2026-10-16", 60, 7)];
-  expect(run({ current: sets(60, [8, 7, 6]), history: missed }), "DECREASE_WEIGHT", "RESET_AFTER_MISSES", 55, 8);
+  expect(run({ current: sets(60, [8, 7, 6]), history: missed }), "DECREASE_WEIGHT", "RESET_AFTER_MISSES", 57.5, 8);
 });
 
 Deno.test("reps muy por debajo del objetivo → baja a lo que permite el e1RM para el mínimo", () => {
@@ -114,9 +114,9 @@ Deno.test("la subida nunca supera el 10 % ni baja del incremento mínimo", () =>
   expect(item, "INCREASE_WEIGHT", "DOUBLE_PROGRESSION_TOP", 205, 8);
 });
 
-Deno.test("regresión: e1RM ≥5 % bajo el pico reciente → bajar", () => {
-  const h = [hist("2026-10-16", 70, 10), hist("2026-10-12", 70, 10)];
-  expect(run({ current: sets(60, [9, 8, 8]), history: h }), "DECREASE_WEIGHT", "REGRESSION", 57.5, 8);
+Deno.test("regresión: falla dos sesiones seguidas y el e1RM cae ≥5 % bajo el pico → bajar", () => {
+  const h = [hist("2026-10-16", 70, 7), hist("2026-10-12", 70, 10)];
+  expect(run({ current: sets(60, [7, 6, 6]), history: h }), "DECREASE_WEIGHT", "REGRESSION", 57.5, 8);
 });
 
 Deno.test("estancamiento: e1RM plano varias sesiones → mantener con motivo PLATEAU", () => {
@@ -164,7 +164,7 @@ Deno.test("una sugerencia nunca supera lo que permite el e1RM de hoy", () => {
 Deno.test("sin mejora de reps tras un fallo al mismo peso sí hay reset", () => {
   const item = run({ current: sets(60, [7, 7, 7]), history: [hist("2026-10-16", 60, 7)] });
   expect(item, "DECREASE_WEIGHT", "RESET_AFTER_MISSES");
-  if (!(item.suggested_weight! <= 55)) throw new Error(`peso ${item.suggested_weight}`);
+  if (item.suggested_weight !== 57.5) throw new Error(`peso ${item.suggested_weight}`);
 });
 
 Deno.test("con más de 12 reps objetivo no se acota por e1RM", () => {
@@ -177,6 +177,41 @@ Deno.test("empate de series entre dos pesos → manda el más pesado", () => {
   const current = [...sets(20, [10, 10]), ...sets(15, [12, 12]).map((s, i) => ({ ...s, set_index: i + 3 }))];
   const item = run({ current, history: prev, target: { sets: 4, min: 8, max: 12, weight: 20 } });
   if (item.suggested_weight !== 20) throw new Error(`peso ${item.suggested_weight}`);
+});
+
+// Casos encontrados con la simulación local (scripts/local_coach_sim, 2026-10-24).
+Deno.test("simulación: llegar al máximo con menos peso no es regresión (el curl no cae a 0)", () => {
+  const curl = { movement_type: "isolation", load_increment_kg: 2 };
+  const h = [hist("2026-10-16", 14, 11), hist("2026-10-12", 14, 10)];
+  const item = run({ current: sets(12, [12, 12, 12]), history: h, catalog: curl, target: { min: 10, max: 12, weight: 14 } });
+  expect(item, "INCREASE_REPS", "IN_RANGE_ADD_REPS", 12, 13);
+});
+
+Deno.test("simulación: un mal día tras una sesión buena no es regresión", () => {
+  const h = [hist("2026-10-16", 72.5, 8, { target_reps: 6 }), hist("2026-10-12", 80, 7, { target_reps: 6 })];
+  const item = run({ current: sets(72.5, [7, 6, 5]), history: h, target: { min: 6, max: 8, weight: 72.5 } });
+  expect(item, "MAINTAIN", "FIRST_MISS", 72.5, 6);
+});
+
+Deno.test("simulación: series topadas en el máximo no se diagnostican como estancamiento", () => {
+  const h = [hist("2026-10-16", 95, 6, { target_reps: 5 }), hist("2026-10-12", 95, 6, { target_reps: 5 }),
+    hist("2026-10-08", 95, 6, { target_reps: 5 }), hist("2026-10-04", 95, 6, { target_reps: 5 })];
+  const item = run({ current: sets(95, [8, 8, 6]), history: h, target: { min: 5, max: 8, weight: 95 } });
+  expect(item, "INCREASE_REPS", "IN_RANGE_ADD_REPS", 95, 7);
+});
+
+Deno.test("simulación: el reset tras dos fallos baja solo lo que pide la fuerza (−6 %, no −10 %)", () => {
+  const h = [hist("2026-10-16", 80, 5, { target_reps: 6 })];
+  const item = run({ current: sets(80, [7, 6, 5]), history: h, target: { min: 6, max: 8, weight: 80 } });
+  expect(item, "DECREASE_WEIGHT", "RESET_AFTER_MISSES", 75, 6);
+});
+
+Deno.test("un ejercicio con carga nunca baja de su incremento mínimo", () => {
+  const curl = { movement_type: "isolation", load_increment_kg: 2 };
+  const item = run({ current: sets(2, [3, 3, 3]), history: [hist("2026-10-16", 2, 4)], catalog: curl, target: { min: 10, max: 12, weight: 2 } });
+  if (item.suggested_weight !== 2 || item.recommendation === "DECREASE_WEIGHT") {
+    throw new Error(`${item.recommendation} ${item.suggested_weight}`);
+  }
 });
 
 Deno.test("formato de kg en español", () => {
