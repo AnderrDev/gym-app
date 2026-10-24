@@ -231,7 +231,9 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
       } else if (prev && isMissAt(prev, top)) {
         recommendation = "DECREASE_WEIGHT";
         reason = "RESET_AFTER_MISSES";
-        suggestedWeight = Math.min(roundTo(top * 0.9, increment), round2(top - increment), fit(repsMin));
+        // Entre −5 % y −10 %: lo que permita la fuerza de hoy para el mínimo.
+        const byStrength = Math.min(fit(repsMin), roundTo(top * 0.95, increment), round2(top - increment));
+        suggestedWeight = Math.min(Math.max(roundTo(top * 0.9, increment), byStrength), round2(top - increment));
         feedback = `Dos sesiones sin llegar a ${repsMin} reps: baja a ${formatKg(Math.max(suggestedWeight, 0))} y reconstruye.`;
       } else if (minReps < Math.max(4, repsMin * 0.6)) {
         recommendation = "DECREASE_WEIGHT";
@@ -250,9 +252,17 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
       }
 
       // Regresión / estancamiento sobre el e1RM (solo si no se sube carga).
-      if (recommendation !== "INCREASE_WEIGHT" && !noLoad && e1rm != null && series.length >= 2) {
+      // Si la mejor serie llegó al máximo del rango, el atleta paró ahí: el
+      // e1RM es una cota inferior y no sirve para diagnosticar (simulación
+      // 2026-10-24: el curl caía 2 kg por sesión hasta 0 con 12/12/12).
+      const capped = workReps.length > 0 && Math.max(...workReps) >= repsMax;
+      const failing = minReps < repsMin;
+      const prevMissed = prev != null && prev.min_reps < Number(prev.target_reps ?? repsMin);
+      if (recommendation !== "INCREASE_WEIGHT" && !noLoad && e1rm != null && series.length >= 2 && !capped) {
         const peak = Math.max(...series);
-        if (e1rm <= peak * 0.95 && reason !== "RESET_AFTER_MISSES" && reason !== "BUILDING_REPS") {
+        // Regresión: falla hoy y fallaba la vez anterior (un mal día no basta).
+        if (e1rm <= peak * 0.95 && failing && prevMissed &&
+            reason !== "RESET_AFTER_MISSES" && reason !== "BUILDING_REPS") {
           recommendation = "DECREASE_WEIGHT";
           reason = "REGRESSION";
           suggestedWeight = Math.min(roundTo(top * 0.95, increment), round2(top - increment), fit(repsMin));
@@ -271,6 +281,16 @@ export function analyzeSessionV2(inputs: CoachingInputsV2): CoachingItemV2[] {
     }
 
     if (suggestedWeight != null) suggestedWeight = Math.max(0, round2(suggestedWeight));
+    // Un ejercicio con carga nunca baja de su incremento mínimo (antes podía
+    // acabar en 0 kg y tratarse como peso corporal).
+    if (suggestedWeight != null && top > 0 && !noLoad && suggestedWeight < increment) {
+      suggestedWeight = Math.min(top, increment);
+      if (recommendation === "DECREASE_WEIGHT" && suggestedWeight >= top) {
+        recommendation = "MAINTAIN";
+        reason = "FIRST_MISS";
+        feedback = `Repite ${formatKg(top)} e intenta llegar a ${repsMin} reps en todas las series.`;
+      }
+    }
 
     const daysSincePrev = past[0] && sessionDate ? daysBetween(past[0].session_date, sessionDate) : null;
     let confidence: Confidence = past.length === 0 ? "low" : past.length < 3 ? "medium" : "high";
